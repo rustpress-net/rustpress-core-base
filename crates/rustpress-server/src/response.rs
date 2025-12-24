@@ -289,7 +289,8 @@ mod tests {
 
     #[test]
     fn test_pagination_meta() {
-        let meta = PaginationMeta::new(100, 1, 10);
+        // PaginationMeta::new(page, per_page, total)
+        let meta = PaginationMeta::new(1, 10, 100);
         assert_eq!(meta.total, 100);
         assert_eq!(meta.page, 1);
         assert_eq!(meta.per_page, 10);
