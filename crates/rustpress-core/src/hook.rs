@@ -109,6 +109,7 @@ impl Action {
 
 /// Filters are hooks that can modify data as it passes through
 pub struct Filter<T: Clone + Send + 'static> {
+    #[allow(dead_code)]
     name: String,
     callbacks: Vec<FilterCallback<T>>,
 }
