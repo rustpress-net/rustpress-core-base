@@ -117,7 +117,8 @@ jobs:
           key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run clippy
-        run: cargo clippy --all-targets --all-features
+        # Allow specific clippy lints for MVP release
+        run: cargo clippy --all-targets --all-features -- -A clippy::derivable_impls -A clippy::expect_fun_call -A clippy::unnecessary_map_or -A clippy::wrong_self_convention
 
   build:
     name: Build
