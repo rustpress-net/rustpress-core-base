@@ -3,10 +3,10 @@
 //! Generates responsive image srcsets and handles image optimization.
 
 use image::{DynamicImage, GenericImageView, ImageFormat};
+use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use parking_lot::RwLock;
 use thiserror::Error;
 use tokio::fs;
 
@@ -38,12 +38,42 @@ pub struct ImageSize {
 /// Default WordPress-like image sizes
 pub fn default_image_sizes() -> Vec<ImageSize> {
     vec![
-        ImageSize { name: "thumbnail".to_string(), width: 150, height: 150, crop: true },
-        ImageSize { name: "medium".to_string(), width: 300, height: 300, crop: false },
-        ImageSize { name: "medium_large".to_string(), width: 768, height: 0, crop: false },
-        ImageSize { name: "large".to_string(), width: 1024, height: 1024, crop: false },
-        ImageSize { name: "1536x1536".to_string(), width: 1536, height: 1536, crop: false },
-        ImageSize { name: "2048x2048".to_string(), width: 2048, height: 2048, crop: false },
+        ImageSize {
+            name: "thumbnail".to_string(),
+            width: 150,
+            height: 150,
+            crop: true,
+        },
+        ImageSize {
+            name: "medium".to_string(),
+            width: 300,
+            height: 300,
+            crop: false,
+        },
+        ImageSize {
+            name: "medium_large".to_string(),
+            width: 768,
+            height: 0,
+            crop: false,
+        },
+        ImageSize {
+            name: "large".to_string(),
+            width: 1024,
+            height: 1024,
+            crop: false,
+        },
+        ImageSize {
+            name: "1536x1536".to_string(),
+            width: 1536,
+            height: 1536,
+            crop: false,
+        },
+        ImageSize {
+            name: "2048x2048".to_string(),
+            width: 2048,
+            height: 2048,
+            crop: false,
+        },
     ]
 }
 
@@ -125,7 +155,11 @@ impl ResponsiveImageGenerator {
     }
 
     /// Generate all sizes for an image
-    pub async fn generate(&self, source: &Path, base_url: &str) -> Result<GeneratedImageSet, ImageError> {
+    pub async fn generate(
+        &self,
+        source: &Path,
+        base_url: &str,
+    ) -> Result<GeneratedImageSet, ImageError> {
         let cache_key = source.to_string_lossy().to_string();
 
         // Check cache
@@ -138,13 +172,15 @@ impl ResponsiveImageGenerator {
         let (orig_width, orig_height) = img.dimensions();
 
         // Create output directory
-        let output_subdir = self.output_dir.join(
-            source.file_stem().unwrap().to_string_lossy().to_string()
-        );
+        let output_subdir = self
+            .output_dir
+            .join(source.file_stem().unwrap().to_string_lossy().to_string());
         fs::create_dir_all(&output_subdir).await?;
 
         // Save original (optimized)
-        let original_info = self.save_optimized(&img, &output_subdir, "original", base_url).await?;
+        let original_info = self
+            .save_optimized(&img, &output_subdir, "original", base_url)
+            .await?;
 
         // Generate each size
         let mut sizes_map = HashMap::new();
@@ -156,14 +192,19 @@ impl ResponsiveImageGenerator {
         let sizes = self.sizes.read().clone();
         for size in &sizes {
             // Skip if original is smaller
-            if size.width > 0 && orig_width <= size.width && (size.height == 0 || orig_height <= size.height) {
+            if size.width > 0
+                && orig_width <= size.width
+                && (size.height == 0 || orig_height <= size.height)
+            {
                 continue;
             }
 
             let resized = self.resize_image(&img, size);
             if let Some(resized) = resized {
                 let (w, _h) = resized.dimensions();
-                let info = self.save_optimized(&resized, &output_subdir, &size.name, base_url).await?;
+                let info = self
+                    .save_optimized(&resized, &output_subdir, &size.name, base_url)
+                    .await?;
 
                 srcset_parts.push(format!("{} {}w", info.url, w));
                 sizes_map.insert(size.name.clone(), info);
@@ -196,8 +237,7 @@ impl ResponsiveImageGenerator {
 
     async fn load_image(&self, path: &Path) -> Result<DynamicImage, ImageError> {
         let data = fs::read(path).await?;
-        image::load_from_memory(&data)
-            .map_err(|e| ImageError::ImageProcessing(e.to_string()))
+        image::load_from_memory(&data).map_err(|e| ImageError::ImageProcessing(e.to_string()))
     }
 
     fn resize_image(&self, img: &DynamicImage, size: &ImageSize) -> Option<DynamicImage> {
@@ -235,11 +275,7 @@ impl ResponsiveImageGenerator {
                 return None; // Don't upscale
             }
 
-            Some(img.resize(
-                new_width,
-                new_height,
-                image::imageops::FilterType::Lanczos3,
-            ))
+            Some(img.resize(new_width, new_height, image::imageops::FilterType::Lanczos3))
         }
     }
 
@@ -293,7 +329,11 @@ impl ResponsiveImageGenerator {
             if i == sorted.len() - 1 {
                 parts.push(format!("{}px", size.width));
             } else {
-                parts.push(format!("(max-width: {}px) {}px", size.width + 100, size.width));
+                parts.push(format!(
+                    "(max-width: {}px) {}px",
+                    size.width + 100,
+                    size.width
+                ));
             }
         }
 
@@ -349,8 +389,7 @@ impl ResponsiveImageGenerator {
   <source type="image/webp" srcset="{}">
   {}
 </picture>"#,
-            image_set.srcset,
-            img_tag
+            image_set.srcset, img_tag
         )
     }
 
@@ -419,8 +458,7 @@ impl ArtDirection {
             let image_set = generator.generate(&bp.source, base_url).await?;
             sources.push(format!(
                 r#"<source media="{}" srcset="{}">"#,
-                bp.media_query,
-                image_set.srcset
+                bp.media_query, image_set.srcset
             ));
         }
 
@@ -463,7 +501,12 @@ impl Default for FocalPoint {
 }
 
 /// Smart crop using focal point
-pub fn smart_crop(img: &DynamicImage, target_width: u32, target_height: u32, focal: FocalPoint) -> DynamicImage {
+pub fn smart_crop(
+    img: &DynamicImage,
+    target_width: u32,
+    target_height: u32,
+    focal: FocalPoint,
+) -> DynamicImage {
     let (orig_width, orig_height) = img.dimensions();
 
     // Calculate crop dimensions
@@ -489,7 +532,11 @@ pub fn smart_crop(img: &DynamicImage, target_width: u32, target_height: u32, foc
 
     // Crop and resize
     let cropped = img.crop_imm(crop_x, crop_y, crop_width, crop_height);
-    cropped.resize_exact(target_width, target_height, image::imageops::FilterType::Lanczos3)
+    cropped.resize_exact(
+        target_width,
+        target_height,
+        image::imageops::FilterType::Lanczos3,
+    )
 }
 
 /// Placeholder image generator
@@ -501,7 +548,8 @@ impl PlaceholderGenerator {
         let resized = img.resize(size, size, image::imageops::FilterType::Nearest);
 
         let mut buffer = std::io::Cursor::new(Vec::new());
-        resized.write_to(&mut buffer, ImageFormat::Jpeg)
+        resized
+            .write_to(&mut buffer, ImageFormat::Jpeg)
             .map_err(|e| ImageError::ImageProcessing(e.to_string()))?;
 
         let base64 = base64_encode(&buffer.into_inner());
@@ -517,7 +565,11 @@ impl PlaceholderGenerator {
     }
 
     /// Generate an SVG blur placeholder
-    pub fn generate_svg_blur(img: &DynamicImage, width: u32, height: u32) -> Result<String, ImageError> {
+    pub fn generate_svg_blur(
+        img: &DynamicImage,
+        width: u32,
+        height: u32,
+    ) -> Result<String, ImageError> {
         let tiny = img.resize(20, 20, image::imageops::FilterType::Gaussian);
 
         let mut buffer = std::io::Cursor::new(Vec::new());

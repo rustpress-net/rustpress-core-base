@@ -3,7 +3,7 @@
 //! Provides markdown to HTML conversion with syntax highlighting,
 //! table support, and GFM (GitHub Flavored Markdown) extensions.
 
-use pulldown_cmark::{html, Event, Options, Parser, Tag, HeadingLevel};
+use pulldown_cmark::{html, Event, HeadingLevel, Options, Parser, Tag};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -338,9 +338,10 @@ impl MarkdownProcessor {
                     events.push(event);
 
                     // Update the heading start tag to include ID
-                    if let Some(start_idx) = events.iter().rposition(|e| {
-                        matches!(e, Event::Start(Tag::Heading(_, _, _)))
-                    }) {
+                    if let Some(start_idx) = events
+                        .iter()
+                        .rposition(|e| matches!(e, Event::Start(Tag::Heading(_, _, _))))
+                    {
                         let new_tag = format!("<h{} id=\"{}\">", heading_level, slug);
                         events[start_idx] = Event::Html(new_tag.into());
                     }
@@ -358,7 +359,9 @@ impl MarkdownProcessor {
         let mut result = html.to_string();
 
         // Find code blocks with language
-        if let Ok(re) = regex::Regex::new(r#"<pre><code class="language-(\w+)">([\s\S]*?)</code></pre>"#) {
+        if let Ok(re) =
+            regex::Regex::new(r#"<pre><code class="language-(\w+)">([\s\S]*?)</code></pre>"#)
+        {
             result = re.replace_all(&result, |caps: &regex::Captures| {
                 let lang = caps.get(1).map(|m| m.as_str()).unwrap_or("");
                 let code = caps.get(2).map(|m| m.as_str()).unwrap_or("");
@@ -412,12 +415,73 @@ pub struct MarkdownLink {
 fn highlight_code(code: &str, language: &str) -> String {
     // This is a basic implementation. For production, use syntect.
     let keywords: HashMap<&str, Vec<&str>> = [
-        ("rust", vec!["fn", "let", "mut", "const", "static", "pub", "mod", "use", "impl", "trait", "struct", "enum", "type", "where", "async", "await", "match", "if", "else", "for", "while", "loop", "return", "break", "continue", "self", "Self", "super", "crate"]),
-        ("javascript", vec!["function", "const", "let", "var", "return", "if", "else", "for", "while", "do", "switch", "case", "break", "continue", "class", "extends", "import", "export", "default", "async", "await", "try", "catch", "finally", "throw", "new", "this"]),
-        ("python", vec!["def", "class", "return", "if", "elif", "else", "for", "while", "break", "continue", "import", "from", "as", "try", "except", "finally", "raise", "with", "lambda", "yield", "global", "nonlocal", "pass", "True", "False", "None", "and", "or", "not", "in", "is"]),
-        ("go", vec!["func", "package", "import", "type", "struct", "interface", "const", "var", "return", "if", "else", "for", "switch", "case", "default", "break", "continue", "go", "chan", "select", "defer", "range", "map", "make", "new"]),
-        ("sql", vec!["SELECT", "FROM", "WHERE", "JOIN", "LEFT", "RIGHT", "INNER", "OUTER", "ON", "AND", "OR", "NOT", "IN", "IS", "NULL", "AS", "ORDER", "BY", "GROUP", "HAVING", "LIMIT", "OFFSET", "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE", "CREATE", "TABLE", "ALTER", "DROP", "INDEX"]),
-    ].into_iter().collect();
+        (
+            "rust",
+            vec![
+                "fn", "let", "mut", "const", "static", "pub", "mod", "use", "impl", "trait",
+                "struct", "enum", "type", "where", "async", "await", "match", "if", "else", "for",
+                "while", "loop", "return", "break", "continue", "self", "Self", "super", "crate",
+            ],
+        ),
+        (
+            "javascript",
+            vec![
+                "function", "const", "let", "var", "return", "if", "else", "for", "while", "do",
+                "switch", "case", "break", "continue", "class", "extends", "import", "export",
+                "default", "async", "await", "try", "catch", "finally", "throw", "new", "this",
+            ],
+        ),
+        (
+            "python",
+            vec![
+                "def", "class", "return", "if", "elif", "else", "for", "while", "break",
+                "continue", "import", "from", "as", "try", "except", "finally", "raise", "with",
+                "lambda", "yield", "global", "nonlocal", "pass", "True", "False", "None", "and",
+                "or", "not", "in", "is",
+            ],
+        ),
+        (
+            "go",
+            vec![
+                "func",
+                "package",
+                "import",
+                "type",
+                "struct",
+                "interface",
+                "const",
+                "var",
+                "return",
+                "if",
+                "else",
+                "for",
+                "switch",
+                "case",
+                "default",
+                "break",
+                "continue",
+                "go",
+                "chan",
+                "select",
+                "defer",
+                "range",
+                "map",
+                "make",
+                "new",
+            ],
+        ),
+        (
+            "sql",
+            vec![
+                "SELECT", "FROM", "WHERE", "JOIN", "LEFT", "RIGHT", "INNER", "OUTER", "ON", "AND",
+                "OR", "NOT", "IN", "IS", "NULL", "AS", "ORDER", "BY", "GROUP", "HAVING", "LIMIT",
+                "OFFSET", "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE", "CREATE", "TABLE",
+                "ALTER", "DROP", "INDEX",
+            ],
+        ),
+    ]
+    .into_iter()
+    .collect();
 
     let lang_keywords = keywords.get(language).cloned().unwrap_or_default();
 
@@ -429,25 +493,33 @@ fn highlight_code(code: &str, language: &str) -> String {
 
     // Highlight strings
     if let Ok(re) = regex::Regex::new(r#"("[^"]*"|'[^']*')"#) {
-        result = re.replace_all(&result, r#"<span class="string">$1</span>"#).to_string();
+        result = re
+            .replace_all(&result, r#"<span class="string">$1</span>"#)
+            .to_string();
     }
 
     // Highlight comments (simple // and # style)
     if let Ok(re) = regex::Regex::new(r"(//.*|#.*)$") {
-        result = re.replace_all(&result, r#"<span class="comment">$1</span>"#).to_string();
+        result = re
+            .replace_all(&result, r#"<span class="comment">$1</span>"#)
+            .to_string();
     }
 
     // Highlight keywords
     for keyword in lang_keywords {
         let pattern = format!(r"\b({})\b", regex::escape(keyword));
         if let Ok(re) = regex::Regex::new(&pattern) {
-            result = re.replace_all(&result, r#"<span class="keyword">$1</span>"#).to_string();
+            result = re
+                .replace_all(&result, r#"<span class="keyword">$1</span>"#)
+                .to_string();
         }
     }
 
     // Highlight numbers
     if let Ok(re) = regex::Regex::new(r"\b(\d+(?:\.\d+)?)\b") {
-        result = re.replace_all(&result, r#"<span class="number">$1</span>"#).to_string();
+        result = re
+            .replace_all(&result, r#"<span class="number">$1</span>"#)
+            .to_string();
     }
 
     result
@@ -513,7 +585,9 @@ mod tests {
     #[test]
     fn test_extract_links() {
         let processor = MarkdownProcessor::new();
-        let links = processor.extract_links("Check out [Google](https://google.com) and [GitHub](https://github.com)");
+        let links = processor.extract_links(
+            "Check out [Google](https://google.com) and [GitHub](https://github.com)",
+        );
 
         assert_eq!(links.len(), 2);
         assert_eq!(links[0].text, "Google");

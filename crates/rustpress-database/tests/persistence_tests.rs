@@ -314,8 +314,14 @@ mod assertions {
         assert_eq!(original.status, loaded.status, "status mismatch");
         assert_eq!(original.post_type, loaded.post_type, "post_type mismatch");
         assert_eq!(original.author_id, loaded.author_id, "author_id mismatch");
-        assert_eq!(original.meta_title, loaded.meta_title, "meta_title mismatch");
-        assert_eq!(original.meta_description, loaded.meta_description, "meta_description mismatch");
+        assert_eq!(
+            original.meta_title, loaded.meta_title,
+            "meta_title mismatch"
+        );
+        assert_eq!(
+            original.meta_description, loaded.meta_description,
+            "meta_description mismatch"
+        );
     }
 
     /// Verify user data matches after round-trip
@@ -324,7 +330,10 @@ mod assertions {
         assert_eq!(original.site_id, loaded.site_id, "site_id mismatch");
         assert_eq!(original.email, loaded.email, "email mismatch");
         assert_eq!(original.username, loaded.username, "username mismatch");
-        assert_eq!(original.display_name, loaded.display_name, "display_name mismatch");
+        assert_eq!(
+            original.display_name, loaded.display_name,
+            "display_name mismatch"
+        );
         assert_eq!(original.status, loaded.status, "status mismatch");
         assert_eq!(original.locale, loaded.locale, "locale mismatch");
         assert_eq!(original.timezone, loaded.timezone, "timezone mismatch");
@@ -344,9 +353,18 @@ mod assertions {
     /// Verify option data matches after round-trip
     pub fn assert_option_equals(original: &TestOption, loaded: &TestOption) {
         assert_eq!(original.site_id, loaded.site_id, "site_id mismatch");
-        assert_eq!(original.option_name, loaded.option_name, "option_name mismatch");
-        assert_eq!(original.option_value, loaded.option_value, "option_value mismatch");
-        assert_eq!(original.option_group, loaded.option_group, "option_group mismatch");
+        assert_eq!(
+            original.option_name, loaded.option_name,
+            "option_name mismatch"
+        );
+        assert_eq!(
+            original.option_value, loaded.option_value,
+            "option_value mismatch"
+        );
+        assert_eq!(
+            original.option_group, loaded.option_group,
+            "option_group mismatch"
+        );
         assert_eq!(original.autoload, loaded.autoload, "autoload mismatch");
     }
 
@@ -355,10 +373,16 @@ mod assertions {
         assert_eq!(original.id, loaded.id, "id mismatch");
         assert_eq!(original.site_id, loaded.site_id, "site_id mismatch");
         assert_eq!(original.filename, loaded.filename, "filename mismatch");
-        assert_eq!(original.original_filename, loaded.original_filename, "original_filename mismatch");
+        assert_eq!(
+            original.original_filename, loaded.original_filename,
+            "original_filename mismatch"
+        );
         assert_eq!(original.mime_type, loaded.mime_type, "mime_type mismatch");
         assert_eq!(original.file_size, loaded.file_size, "file_size mismatch");
-        assert_eq!(original.storage_path, loaded.storage_path, "storage_path mismatch");
+        assert_eq!(
+            original.storage_path, loaded.storage_path,
+            "storage_path mismatch"
+        );
         assert_eq!(original.url, loaded.url, "url mismatch");
         assert_eq!(original.width, loaded.width, "width mismatch");
         assert_eq!(original.height, loaded.height, "height mismatch");

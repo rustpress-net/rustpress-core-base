@@ -80,7 +80,11 @@ impl HttpError {
     }
 
     pub fn unprocessable_entity(message: impl Into<String>) -> Self {
-        Self::new(StatusCode::UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", message)
+        Self::new(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "VALIDATION_ERROR",
+            message,
+        )
     }
 
     pub fn internal_error(message: impl Into<String>) -> Self {
@@ -88,7 +92,11 @@ impl HttpError {
     }
 
     pub fn service_unavailable(message: impl Into<String>) -> Self {
-        Self::new(StatusCode::SERVICE_UNAVAILABLE, "SERVICE_UNAVAILABLE", message)
+        Self::new(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "SERVICE_UNAVAILABLE",
+            message,
+        )
     }
 
     pub fn with_details(mut self, details: HashMap<String, String>) -> Self {
@@ -118,11 +126,13 @@ impl From<CoreError> for HttpError {
                 HttpError::conflict(format!("{} with {} already exists", entity_type, field))
             }
             CoreError::Authentication { message } => HttpError::unauthorized(message.clone()),
-            CoreError::Authorization { action, required } => {
-                HttpError::forbidden(format!("Permission '{}' required for action '{}'", required, action))
-            }
+            CoreError::Authorization { action, required } => HttpError::forbidden(format!(
+                "Permission '{}' required for action '{}'",
+                required, action
+            )),
             CoreError::Validation(validation_errors) => {
-                let details: HashMap<String, String> = validation_errors.errors
+                let details: HashMap<String, String> = validation_errors
+                    .errors
                     .iter()
                     .map(|e| (e.field.clone(), e.message.clone()))
                     .collect();
@@ -137,7 +147,10 @@ impl From<CoreError> for HttpError {
                 tracing::error!("Database error: {}", message);
                 HttpError::internal_error("A database error occurred")
             }
-            CoreError::Internal { message, request_id } => {
+            CoreError::Internal {
+                message,
+                request_id,
+            } => {
                 tracing::error!("Internal error: {}", message);
                 let mut error = HttpError::internal_error("An internal error occurred");
                 if let Some(rid) = request_id {
@@ -175,7 +188,10 @@ impl From<CoreError> for HttpError {
             CoreError::PluginNotFound { plugin_id } => {
                 HttpError::not_found(format!("Plugin '{}' not found", plugin_id))
             }
-            CoreError::PluginDependency { plugin_id, dependency } => {
+            CoreError::PluginDependency {
+                plugin_id,
+                dependency,
+            } => {
                 HttpError::bad_request(format!("Plugin '{}' requires '{}'", plugin_id, dependency))
             }
             CoreError::Configuration { message } => {
@@ -197,7 +213,10 @@ impl From<CoreError> for HttpError {
                 tracing::error!("Job error ({}): {}", job_id, message);
                 HttpError::internal_error("A job error occurred")
             }
-            CoreError::JobTimeout { job_id, timeout_secs } => {
+            CoreError::JobTimeout {
+                job_id,
+                timeout_secs,
+            } => {
                 tracing::error!("Job timeout ({}): {}s", job_id, timeout_secs);
                 HttpError::internal_error("Job timed out")
             }

@@ -1,13 +1,13 @@
 //! R2 Storage API handlers
 
+use crate::error::CloudflareResult;
+use crate::services::CloudflareServices;
 use axum::{
-    extract::{Path, Query, State, Multipart},
+    extract::{Multipart, Path, Query, State},
     Json,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use crate::error::CloudflareResult;
-use crate::services::CloudflareServices;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateBucketRequest {
@@ -80,7 +80,10 @@ pub async fn list_objects(
     Path(bucket): Path<String>,
     Query(query): Query<ListObjectsQuery>,
 ) -> CloudflareResult<Json<serde_json::Value>> {
-    let objects = services.r2.list_objects(&bucket, query.prefix.as_deref()).await?;
+    let objects = services
+        .r2
+        .list_objects(&bucket, query.prefix.as_deref())
+        .await?;
 
     Ok(Json(serde_json::json!({
         "success": true,
@@ -119,9 +122,13 @@ pub async fn upload_object(
                 }
             }
             content_type = field.content_type().map(|s| s.to_string());
-            data = field.bytes().await.map_err(|e| {
-                crate::error::CloudflareError::R2Error(format!("Failed to read file: {}", e))
-            })?.to_vec();
+            data = field
+                .bytes()
+                .await
+                .map_err(|e| {
+                    crate::error::CloudflareError::R2Error(format!("Failed to read file: {}", e))
+                })?
+                .to_vec();
         }
     }
 
@@ -139,7 +146,10 @@ pub async fn upload_object(
         })));
     }
 
-    services.r2.upload(&bucket, &key, data.clone(), content_type.as_deref()).await?;
+    services
+        .r2
+        .upload(&bucket, &key, data.clone(), content_type.as_deref())
+        .await?;
 
     Ok(Json(serde_json::json!({
         "success": true,

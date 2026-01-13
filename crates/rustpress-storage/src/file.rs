@@ -341,10 +341,7 @@ mod tests {
             PathGenerator::sanitize_filename("My Photo (1).JPG"),
             "my-photo-_1_.jpg"
         );
-        assert_eq!(
-            PathGenerator::sanitize_filename("report.PDF"),
-            "report.pdf"
-        );
+        assert_eq!(PathGenerator::sanitize_filename("report.PDF"), "report.pdf");
     }
 
     #[test]

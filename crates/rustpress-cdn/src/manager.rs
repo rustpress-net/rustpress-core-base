@@ -6,7 +6,7 @@
 use crate::{
     bunnycdn::{BunnyCdnClient, BunnyCdnConfig},
     cloudflare::{CloudflareClient, CloudflareConfig},
-    CacheRule, CdnClient, CdnConfiguration, CdnStats, PurgeResult, Result, CdnError,
+    CacheRule, CdnClient, CdnConfiguration, CdnError, CdnStats, PurgeResult, Result,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -118,24 +118,21 @@ impl CdnManager {
         match provider.as_str() {
             "cloudflare" => {
                 let config = CloudflareConfig {
-                    api_token: std::env::var("CLOUDFLARE_API_TOKEN")
-                        .map_err(|_| CdnError::Configuration(
-                            "CLOUDFLARE_API_TOKEN not set".to_string()
-                        ))?,
-                    zone_id: std::env::var("CLOUDFLARE_ZONE_ID")
-                        .map_err(|_| CdnError::Configuration(
-                            "CLOUDFLARE_ZONE_ID not set".to_string()
-                        ))?,
+                    api_token: std::env::var("CLOUDFLARE_API_TOKEN").map_err(|_| {
+                        CdnError::Configuration("CLOUDFLARE_API_TOKEN not set".to_string())
+                    })?,
+                    zone_id: std::env::var("CLOUDFLARE_ZONE_ID").map_err(|_| {
+                        CdnError::Configuration("CLOUDFLARE_ZONE_ID not set".to_string())
+                    })?,
                     ..Default::default()
                 };
                 Ok(Self::cloudflare(config))
             }
             "bunnycdn" | "bunny" => {
                 let config = BunnyCdnConfig {
-                    api_key: std::env::var("BUNNYCDN_API_KEY")
-                        .map_err(|_| CdnError::Configuration(
-                            "BUNNYCDN_API_KEY not set".to_string()
-                        ))?,
+                    api_key: std::env::var("BUNNYCDN_API_KEY").map_err(|_| {
+                        CdnError::Configuration("BUNNYCDN_API_KEY not set".to_string())
+                    })?,
                     pull_zone_id: std::env::var("BUNNYCDN_PULL_ZONE_ID")
                         .ok()
                         .and_then(|s| s.parse().ok()),
@@ -177,9 +174,10 @@ impl CdnManager {
 
     /// Auto-configure CDN for the domain
     pub async fn auto_configure(&mut self) -> Result<CdnConfiguration> {
-        let client = self.client.as_ref().ok_or_else(|| {
-            CdnError::Configuration("No CDN provider configured".to_string())
-        })?;
+        let client = self
+            .client
+            .as_ref()
+            .ok_or_else(|| CdnError::Configuration("No CDN provider configured".to_string()))?;
 
         if self.domain.is_empty() {
             return Err(CdnError::Configuration("Domain not set".to_string()));
@@ -200,18 +198,20 @@ impl CdnManager {
 
     /// Purge specific URLs from cache
     pub async fn purge_urls(&self, urls: &[String]) -> Result<PurgeResult> {
-        let client = self.client.as_ref().ok_or_else(|| {
-            CdnError::Configuration("No CDN provider configured".to_string())
-        })?;
+        let client = self
+            .client
+            .as_ref()
+            .ok_or_else(|| CdnError::Configuration("No CDN provider configured".to_string()))?;
 
         client.purge_urls(urls).await
     }
 
     /// Purge entire cache
     pub async fn purge_all(&self) -> Result<PurgeResult> {
-        let client = self.client.as_ref().ok_or_else(|| {
-            CdnError::Configuration("No CDN provider configured".to_string())
-        })?;
+        let client = self
+            .client
+            .as_ref()
+            .ok_or_else(|| CdnError::Configuration("No CDN provider configured".to_string()))?;
 
         info!("Purging entire CDN cache");
         client.purge_all().await
@@ -219,9 +219,10 @@ impl CdnManager {
 
     /// Purge cache by tags
     pub async fn purge_tags(&self, tags: &[String]) -> Result<PurgeResult> {
-        let client = self.client.as_ref().ok_or_else(|| {
-            CdnError::Configuration("No CDN provider configured".to_string())
-        })?;
+        let client = self
+            .client
+            .as_ref()
+            .ok_or_else(|| CdnError::Configuration("No CDN provider configured".to_string()))?;
 
         client.purge_tags(tags).await
     }
@@ -235,11 +236,11 @@ impl CdnManager {
         };
 
         let urls = vec![
-            format!("{}/", base_url),                          // Home page
-            format!("{}/posts/{}", base_url, post_slug),       // Post page
-            format!("{}/api/v1/posts/{}", base_url, post_id),  // API endpoint
-            format!("{}/sitemap.xml", base_url),               // Sitemap
-            format!("{}/feed.xml", base_url),                  // RSS feed
+            format!("{}/", base_url),                         // Home page
+            format!("{}/posts/{}", base_url, post_slug),      // Post page
+            format!("{}/api/v1/posts/{}", base_url, post_id), // API endpoint
+            format!("{}/sitemap.xml", base_url),              // Sitemap
+            format!("{}/feed.xml", base_url),                 // RSS feed
         ];
 
         self.purge_urls(&urls).await
@@ -247,18 +248,20 @@ impl CdnManager {
 
     /// Get CDN statistics
     pub async fn get_stats(&self) -> Result<CdnStats> {
-        let client = self.client.as_ref().ok_or_else(|| {
-            CdnError::Configuration("No CDN provider configured".to_string())
-        })?;
+        let client = self
+            .client
+            .as_ref()
+            .ok_or_else(|| CdnError::Configuration("No CDN provider configured".to_string()))?;
 
         client.get_stats().await
     }
 
     /// Configure cache rules
     pub async fn configure_rules(&self, rules: Vec<CacheRule>) -> Result<()> {
-        let client = self.client.as_ref().ok_or_else(|| {
-            CdnError::Configuration("No CDN provider configured".to_string())
-        })?;
+        let client = self
+            .client
+            .as_ref()
+            .ok_or_else(|| CdnError::Configuration("No CDN provider configured".to_string()))?;
 
         client.configure_rules(rules).await
     }
@@ -280,7 +283,11 @@ impl CdnManager {
     /// Get CDN URL for an asset
     pub fn get_cdn_url(&self, path: &str) -> String {
         if let Some(config) = &self.configuration {
-            format!("https://{}/{}", config.cdn_domain, path.trim_start_matches('/'))
+            format!(
+                "https://{}/{}",
+                config.cdn_domain,
+                path.trim_start_matches('/')
+            )
         } else if !self.domain.is_empty() {
             format!("https://{}/{}", self.domain, path.trim_start_matches('/'))
         } else {
@@ -302,7 +309,10 @@ impl CdnHeaders {
     /// Generate cache headers for static assets
     pub fn static_asset() -> Vec<(&'static str, String)> {
         vec![
-            ("Cache-Control", "public, max-age=31536000, immutable".to_string()),
+            (
+                "Cache-Control",
+                "public, max-age=31536000, immutable".to_string(),
+            ),
             ("CDN-Cache-Control", "max-age=31536000".to_string()),
         ]
     }
@@ -310,7 +320,10 @@ impl CdnHeaders {
     /// Generate cache headers for dynamic content
     pub fn dynamic_content(max_age: u64) -> Vec<(&'static str, String)> {
         vec![
-            ("Cache-Control", format!("public, max-age={}, s-maxage={}", max_age / 2, max_age)),
+            (
+                "Cache-Control",
+                format!("public, max-age={}, s-maxage={}", max_age / 2, max_age),
+            ),
             ("CDN-Cache-Control", format!("max-age={}", max_age)),
             ("Vary", "Accept-Encoding".to_string()),
         ]
@@ -319,7 +332,10 @@ impl CdnHeaders {
     /// Generate no-cache headers
     pub fn no_cache() -> Vec<(&'static str, String)> {
         vec![
-            ("Cache-Control", "private, no-cache, no-store, must-revalidate".to_string()),
+            (
+                "Cache-Control",
+                "private, no-cache, no-store, must-revalidate".to_string(),
+            ),
             ("Pragma", "no-cache".to_string()),
             ("Expires", "0".to_string()),
         ]
@@ -353,7 +369,9 @@ mod tests {
         assert!(!headers.is_empty());
 
         let no_cache = CdnHeaders::no_cache();
-        assert!(no_cache.iter().any(|(k, v)| *k == "Cache-Control" && v.contains("no-cache")));
+        assert!(no_cache
+            .iter()
+            .any(|(k, v)| *k == "Cache-Control" && v.contains("no-cache")));
     }
 
     #[test]

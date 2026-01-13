@@ -2,11 +2,11 @@
 //!
 //! Database query result caching with automatic invalidation based on table changes.
 
+use parking_lot::RwLock;
+use serde::{de::DeserializeOwned, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use parking_lot::RwLock;
-use serde::{de::DeserializeOwned, Serialize};
 use thiserror::Error;
 
 /// Query cache errors
@@ -423,31 +423,51 @@ fn extract_tables_from_sql(sql: &str) -> Vec<String> {
 
     for cap in from_regex.captures_iter(sql) {
         if let Some(m) = cap.get(1) {
-            tables.push(m.as_str().trim_matches(|c| c == '`' || c == '"').to_string());
+            tables.push(
+                m.as_str()
+                    .trim_matches(|c| c == '`' || c == '"')
+                    .to_string(),
+            );
         }
     }
 
     for cap in join_regex.captures_iter(sql) {
         if let Some(m) = cap.get(1) {
-            tables.push(m.as_str().trim_matches(|c| c == '`' || c == '"').to_string());
+            tables.push(
+                m.as_str()
+                    .trim_matches(|c| c == '`' || c == '"')
+                    .to_string(),
+            );
         }
     }
 
     for cap in update_regex.captures_iter(sql) {
         if let Some(m) = cap.get(1) {
-            tables.push(m.as_str().trim_matches(|c| c == '`' || c == '"').to_string());
+            tables.push(
+                m.as_str()
+                    .trim_matches(|c| c == '`' || c == '"')
+                    .to_string(),
+            );
         }
     }
 
     for cap in insert_regex.captures_iter(sql) {
         if let Some(m) = cap.get(1) {
-            tables.push(m.as_str().trim_matches(|c| c == '`' || c == '"').to_string());
+            tables.push(
+                m.as_str()
+                    .trim_matches(|c| c == '`' || c == '"')
+                    .to_string(),
+            );
         }
     }
 
     for cap in delete_regex.captures_iter(sql) {
         if let Some(m) = cap.get(1) {
-            tables.push(m.as_str().trim_matches(|c| c == '`' || c == '"').to_string());
+            tables.push(
+                m.as_str()
+                    .trim_matches(|c| c == '`' || c == '"')
+                    .to_string(),
+            );
         }
     }
 
@@ -548,12 +568,14 @@ mod tests {
 
         let fingerprint = cache.fingerprint("SELECT * FROM posts WHERE id = ?", &["1"]);
 
-        cache.store(
-            fingerprint.clone(),
-            &vec!["post1", "post2"],
-            vec!["posts".to_string()],
-            None,
-        ).unwrap();
+        cache
+            .store(
+                fingerprint.clone(),
+                &vec!["post1", "post2"],
+                vec!["posts".to_string()],
+                None,
+            )
+            .unwrap();
 
         let result: Vec<String> = cache.get(&fingerprint).unwrap();
         assert_eq!(result.len(), 2);
@@ -566,8 +588,12 @@ mod tests {
         let fp1 = "query1".to_string();
         let fp2 = "query2".to_string();
 
-        cache.store(fp1.clone(), &"result1", vec!["posts".to_string()], None).unwrap();
-        cache.store(fp2.clone(), &"result2", vec!["users".to_string()], None).unwrap();
+        cache
+            .store(fp1.clone(), &"result1", vec!["posts".to_string()], None)
+            .unwrap();
+        cache
+            .store(fp2.clone(), &"result2", vec!["users".to_string()], None)
+            .unwrap();
 
         assert!(cache.get::<String>(&fp1).is_ok());
         assert!(cache.get::<String>(&fp2).is_ok());

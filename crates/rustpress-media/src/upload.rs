@@ -8,7 +8,7 @@
 
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 use std::path::{Path, PathBuf};
 use tokio::fs;
@@ -16,8 +16,8 @@ use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 
 use crate::{
-    MediaConfig, MediaError, MediaItem, MediaResult, MediaType,
     image_optimizer::{ImageOptimizer, OptimizationConfig},
+    MediaConfig, MediaError, MediaItem, MediaResult, MediaType,
 };
 
 /// Upload service
@@ -70,13 +70,14 @@ impl UploadService {
         }
 
         // Process and save file
-        let (width, height, processed_data) = if media_type == MediaType::Image && self.config.optimize_images {
-            let (w, h) = ImageOptimizer::dimensions(data)?;
-            let optimized = self.optimizer.optimize(data, image::guess_format(data)?)?;
-            (Some(w as i32), Some(h as i32), optimized)
-        } else {
-            (None, None, data.to_vec())
-        };
+        let (width, height, processed_data) =
+            if media_type == MediaType::Image && self.config.optimize_images {
+                let (w, h) = ImageOptimizer::dimensions(data)?;
+                let optimized = self.optimizer.optimize(data, image::guess_format(data)?)?;
+                (Some(w as i32), Some(h as i32), optimized)
+            } else {
+                (None, None, data.to_vec())
+            };
 
         // Write file
         let mut file = fs::File::create(&full_path).await?;
@@ -104,7 +105,7 @@ impl UploadService {
                 media_type, mime_type, file_size, path, url, thumbnail_url,
                 width, height, duration, file_hash, folder_id,
                 metadata, uploaded_by, created_at, updated_at
-            "#
+            "#,
         )
         .bind(filename)
         .bind(filename) // title defaults to filename
@@ -230,7 +231,9 @@ impl UploadService {
         }
 
         // Upload combined file
-        let media = self.upload(filename, content_type, &combined, uploaded_by, folder_id).await?;
+        let media = self
+            .upload(filename, content_type, &combined, uploaded_by, folder_id)
+            .await?;
 
         // Cleanup temp directory
         fs::remove_dir_all(&temp_path).await?;
@@ -291,7 +294,7 @@ impl UploadService {
             FROM media_items
             WHERE file_hash = $1
             LIMIT 1
-            "#
+            "#,
         )
         .bind(hash)
         .fetch_optional(&self.pool)
@@ -337,7 +340,8 @@ impl UploadService {
         let path = Path::new(original_path);
         let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("thumb");
         let thumb_filename = format!("{}_thumb.jpg", stem);
-        let thumb_path = path.parent()
+        let thumb_path = path
+            .parent()
             .map(|p| p.join(&thumb_filename))
             .unwrap_or_else(|| PathBuf::from(&thumb_filename));
 
@@ -345,7 +349,8 @@ impl UploadService {
         file.write_all(&thumb_data).await?;
 
         // Generate URL
-        let relative_path = thumb_path.to_string_lossy()
+        let relative_path = thumb_path
+            .to_string_lossy()
             .replace(&self.config.storage_path, "")
             .trim_start_matches('/')
             .to_string();
@@ -361,16 +366,18 @@ impl UploadService {
         let variants = srcset_gen.generate_variants(data, original_width)?;
 
         let base_path = Path::new(&media.path);
-        let stem = base_path.file_stem().and_then(|s| s.to_str()).unwrap_or("img");
-        let parent = base_path.parent().map(|p| p.to_path_buf()).unwrap_or_default();
+        let stem = base_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("img");
+        let parent = base_path
+            .parent()
+            .map(|p| p.to_path_buf())
+            .unwrap_or_default();
 
         for variant in variants {
-            let variant_filename = format!(
-                "{}-{}.{}",
-                stem,
-                variant.width,
-                variant.format.extension()
-            );
+            let variant_filename =
+                format!("{}-{}.{}", stem, variant.width, variant.format.extension());
             let variant_path = parent.join(&variant_filename);
             let full_path = format!("{}/{}", self.config.storage_path, variant_path.display());
 

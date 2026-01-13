@@ -82,11 +82,7 @@ impl QueryHelper {
 
     /// Build LIMIT/OFFSET clause
     pub fn pagination(params: &ListParams) -> String {
-        format!(
-            "LIMIT {} OFFSET {}",
-            params.per_page,
-            params.offset()
-        )
+        format!("LIMIT {} OFFSET {}", params.per_page, params.offset())
     }
 
     /// Build search condition
@@ -384,34 +380,34 @@ pub mod posts {
                 PostRow::COLUMNS
             );
             sqlx::query_as::<_, PostRow>(&query)
-            .bind(post.id)
-            .bind(post.site_id)
-            .bind(&post.post_type)
-            .bind(post.author_id)
-            .bind(&post.title)
-            .bind(&post.slug)
-            .bind(&post.content)
-            .bind(&post.excerpt)
-            .bind(&post.status)
-            .bind(&post.visibility)
-            .bind(&post.password)
-            .bind(post.parent_id)
-            .bind(post.menu_order)
-            .bind(&post.template)
-            .bind(post.featured_image_id)
-            .bind(&post.comment_status)
-            .bind(post.comment_count)
-            .bind(&post.ping_status)
-            .bind(&post.meta_title)
-            .bind(&post.meta_description)
-            .bind(&post.canonical_url)
-            .bind(post.published_at)
-            .bind(post.scheduled_at)
-            .bind(post.created_at)
-            .bind(post.updated_at)
-            .fetch_one(&self.pool)
-            .await
-            .map_err(|e| Error::database_with_source("Failed to create post", e))
+                .bind(post.id)
+                .bind(post.site_id)
+                .bind(&post.post_type)
+                .bind(post.author_id)
+                .bind(&post.title)
+                .bind(&post.slug)
+                .bind(&post.content)
+                .bind(&post.excerpt)
+                .bind(&post.status)
+                .bind(&post.visibility)
+                .bind(&post.password)
+                .bind(post.parent_id)
+                .bind(post.menu_order)
+                .bind(&post.template)
+                .bind(post.featured_image_id)
+                .bind(&post.comment_status)
+                .bind(post.comment_count)
+                .bind(&post.ping_status)
+                .bind(&post.meta_title)
+                .bind(&post.meta_description)
+                .bind(&post.canonical_url)
+                .bind(post.published_at)
+                .bind(post.scheduled_at)
+                .bind(post.created_at)
+                .bind(post.updated_at)
+                .fetch_one(&self.pool)
+                .await
+                .map_err(|e| Error::database_with_source("Failed to create post", e))
         }
 
         pub async fn update(&self, post: &PostRow) -> Result<PostRow> {
@@ -443,28 +439,28 @@ pub mod posts {
                 PostRow::COLUMNS
             );
             sqlx::query_as::<_, PostRow>(&query)
-            .bind(post.id)
-            .bind(&post.title)
-            .bind(&post.slug)
-            .bind(&post.content)
-            .bind(&post.excerpt)
-            .bind(&post.status)
-            .bind(&post.visibility)
-            .bind(&post.password)
-            .bind(post.parent_id)
-            .bind(post.menu_order)
-            .bind(&post.template)
-            .bind(post.featured_image_id)
-            .bind(&post.comment_status)
-            .bind(&post.ping_status)
-            .bind(&post.meta_title)
-            .bind(&post.meta_description)
-            .bind(&post.canonical_url)
-            .bind(post.published_at)
-            .bind(post.scheduled_at)
-            .fetch_one(&self.pool)
-            .await
-            .map_err(|e| Error::database_with_source("Failed to update post", e))
+                .bind(post.id)
+                .bind(&post.title)
+                .bind(&post.slug)
+                .bind(&post.content)
+                .bind(&post.excerpt)
+                .bind(&post.status)
+                .bind(&post.visibility)
+                .bind(&post.password)
+                .bind(post.parent_id)
+                .bind(post.menu_order)
+                .bind(&post.template)
+                .bind(post.featured_image_id)
+                .bind(&post.comment_status)
+                .bind(&post.ping_status)
+                .bind(&post.meta_title)
+                .bind(&post.meta_description)
+                .bind(&post.canonical_url)
+                .bind(post.published_at)
+                .bind(post.scheduled_at)
+                .fetch_one(&self.pool)
+                .await
+                .map_err(|e| Error::database_with_source("Failed to update post", e))
         }
 
         pub async fn soft_delete(&self, id: Uuid) -> Result<()> {
@@ -656,9 +652,11 @@ pub mod options {
         pub async fn get_all_grouped(&self) -> Result<Vec<SettingsGroup>> {
             let options = self.get_all().await?;
 
-            let mut groups: std::collections::HashMap<String, Vec<OptionRow>> = std::collections::HashMap::new();
+            let mut groups: std::collections::HashMap<String, Vec<OptionRow>> =
+                std::collections::HashMap::new();
             for option in options {
-                groups.entry(option.option_group.clone())
+                groups
+                    .entry(option.option_group.clone())
                     .or_default()
                     .push(option);
             }
@@ -669,10 +667,24 @@ pub mod options {
                 .collect();
 
             // Sort groups in a logical order
-            let group_order = ["general", "reading", "discussion", "media", "permalinks", "privacy", "security"];
+            let group_order = [
+                "general",
+                "reading",
+                "discussion",
+                "media",
+                "permalinks",
+                "privacy",
+                "security",
+            ];
             result.sort_by(|a, b| {
-                let a_idx = group_order.iter().position(|&g| g == a.group).unwrap_or(999);
-                let b_idx = group_order.iter().position(|&g| g == b.group).unwrap_or(999);
+                let a_idx = group_order
+                    .iter()
+                    .position(|&g| g == a.group)
+                    .unwrap_or(999);
+                let b_idx = group_order
+                    .iter()
+                    .position(|&g| g == b.group)
+                    .unwrap_or(999);
                 a_idx.cmp(&b_idx)
             });
 
@@ -728,7 +740,9 @@ pub mod comments {
     use std::collections::HashMap;
 
     /// Comment status enum matching database
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type, serde::Serialize, serde::Deserialize)]
+    #[derive(
+        Debug, Clone, Copy, PartialEq, Eq, sqlx::Type, serde::Serialize, serde::Deserialize,
+    )]
     #[sqlx(type_name = "comment_status", rename_all = "lowercase")]
     #[serde(rename_all = "lowercase")]
     pub enum CommentStatus {
@@ -1078,9 +1092,8 @@ pub mod comments {
             }
 
             // Use PostgreSQL ANY() for batch update
-            let result = sqlx::query(
-                &format!(
-                    r#"
+            let result = sqlx::query(&format!(
+                r#"
                     UPDATE comments SET
                         status = $1,
                         moderated_by = $2,
@@ -1088,9 +1101,8 @@ pub mod comments {
                         updated_at = NOW()
                     WHERE id = ANY($3) AND {}
                     "#,
-                    self.site_condition()
-                )
-            )
+                self.site_condition()
+            ))
             .bind(status)
             .bind(moderator_id)
             .bind(ids)
@@ -1212,7 +1224,11 @@ pub mod comments {
         }
 
         /// List comments by post with author info
-        pub async fn list_by_post_with_authors(&self, post_id: Uuid, status: Option<CommentStatus>) -> Result<Vec<CommentWithAuthor>> {
+        pub async fn list_by_post_with_authors(
+            &self,
+            post_id: Uuid,
+            status: Option<CommentStatus>,
+        ) -> Result<Vec<CommentWithAuthor>> {
             let status_condition = match status {
                 Some(s) => format!("AND c.status = '{}'", s),
                 None => String::new(),
@@ -1258,7 +1274,9 @@ pub mod comments {
             let rows: Vec<(String, i64)> = sqlx::query_as(&query)
                 .fetch_all(&self.pool)
                 .await
-                .map_err(|e| Error::database_with_source("Failed to count comments by status", e))?;
+                .map_err(|e| {
+                    Error::database_with_source("Failed to count comments by status", e)
+                })?;
 
             Ok(rows.into_iter().collect())
         }
@@ -1283,14 +1301,13 @@ pub mod comments {
 
         /// Remove a like from a comment
         pub async fn remove_like(&self, comment_id: Uuid, user_id: Uuid) -> Result<bool> {
-            let result = sqlx::query(
-                "DELETE FROM comment_likes WHERE comment_id = $1 AND user_id = $2",
-            )
-            .bind(comment_id)
-            .bind(user_id)
-            .execute(&self.pool)
-            .await
-            .map_err(|e| Error::database_with_source("Failed to remove like", e))?;
+            let result =
+                sqlx::query("DELETE FROM comment_likes WHERE comment_id = $1 AND user_id = $2")
+                    .bind(comment_id)
+                    .bind(user_id)
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|e| Error::database_with_source("Failed to remove like", e))?;
 
             Ok(result.rows_affected() > 0)
         }
@@ -1321,7 +1338,11 @@ pub mod comments {
         }
 
         /// Get comment meta
-        pub async fn get_meta(&self, comment_id: Uuid, key: &str) -> Result<Option<serde_json::Value>> {
+        pub async fn get_meta(
+            &self,
+            comment_id: Uuid,
+            key: &str,
+        ) -> Result<Option<serde_json::Value>> {
             let result: Option<(Option<serde_json::Value>,)> = sqlx::query_as(
                 "SELECT meta_value FROM comment_meta WHERE comment_id = $1 AND meta_key = $2",
             )
@@ -1335,7 +1356,12 @@ pub mod comments {
         }
 
         /// Set comment meta
-        pub async fn set_meta(&self, comment_id: Uuid, key: &str, value: serde_json::Value) -> Result<()> {
+        pub async fn set_meta(
+            &self,
+            comment_id: Uuid,
+            key: &str,
+            value: serde_json::Value,
+        ) -> Result<()> {
             let id = Uuid::now_v7();
 
             sqlx::query(
@@ -1370,7 +1396,12 @@ pub mod comments {
         }
 
         /// Update spam score
-        pub async fn update_spam_score(&self, id: Uuid, score: f64, reasons: Option<serde_json::Value>) -> Result<()> {
+        pub async fn update_spam_score(
+            &self,
+            id: Uuid,
+            score: f64,
+            reasons: Option<serde_json::Value>,
+        ) -> Result<()> {
             sqlx::query(
                 "UPDATE comments SET spam_score = $2, spam_reasons = $3, updated_at = NOW() WHERE id = $1",
             )
@@ -1427,7 +1458,9 @@ pub mod comments {
                 .bind(email)
                 .fetch_one(&self.pool)
                 .await
-                .map_err(|e| Error::database_with_source("Failed to check approved comment by email", e))?;
+                .map_err(|e| {
+                    Error::database_with_source("Failed to check approved comment by email", e)
+                })?;
 
             Ok(result.0)
         }
@@ -1451,7 +1484,9 @@ pub mod comments {
                 .bind(user_id)
                 .fetch_one(&self.pool)
                 .await
-                .map_err(|e| Error::database_with_source("Failed to check approved comment by user", e))?;
+                .map_err(|e| {
+                    Error::database_with_source("Failed to check approved comment by user", e)
+                })?;
 
             Ok(result.0)
         }
@@ -1699,7 +1734,11 @@ pub mod themes {
         }
 
         /// Update theme settings/customizations
-        pub async fn update_settings(&self, theme_id: &str, settings: serde_json::Value) -> Result<ThemeRow> {
+        pub async fn update_settings(
+            &self,
+            theme_id: &str,
+            settings: serde_json::Value,
+        ) -> Result<ThemeRow> {
             let query = format!(
                 r#"
                 UPDATE themes
@@ -1732,7 +1771,9 @@ pub mod themes {
                 .map_err(|e| Error::database_with_source("Failed to delete theme", e))?;
 
             if result.rows_affected() == 0 {
-                return Err(Error::validation("Cannot delete active theme or theme not found"));
+                return Err(Error::validation(
+                    "Cannot delete active theme or theme not found",
+                ));
             }
             Ok(())
         }
@@ -1754,7 +1795,11 @@ pub mod themes {
         }
 
         /// Get a specific option
-        pub async fn get_option(&self, theme_id: &str, option_name: &str) -> Result<Option<serde_json::Value>> {
+        pub async fn get_option(
+            &self,
+            theme_id: &str,
+            option_name: &str,
+        ) -> Result<Option<serde_json::Value>> {
             let query = format!(
                 "SELECT option_value FROM theme_options WHERE theme_id = $1 AND option_name = $2 AND {}",
                 self.site_condition()
@@ -1771,7 +1816,13 @@ pub mod themes {
         }
 
         /// Set a theme option
-        pub async fn set_option(&self, theme_id: &str, option_name: &str, value: serde_json::Value, option_type: Option<&str>) -> Result<()> {
+        pub async fn set_option(
+            &self,
+            theme_id: &str,
+            option_name: &str,
+            value: serde_json::Value,
+            option_type: Option<&str>,
+        ) -> Result<()> {
             let id = Uuid::now_v7();
 
             sqlx::query(
@@ -1800,7 +1851,10 @@ pub mod themes {
         // ============ Menu Assignments ============
 
         /// Get menu assignments for a theme
-        pub async fn get_menu_assignments(&self, theme_id: &str) -> Result<Vec<ThemeMenuAssignmentRow>> {
+        pub async fn get_menu_assignments(
+            &self,
+            theme_id: &str,
+        ) -> Result<Vec<ThemeMenuAssignmentRow>> {
             let query = format!(
                 "SELECT * FROM theme_menu_assignments WHERE theme_id = $1 AND {}",
                 self.site_condition()
@@ -1814,7 +1868,12 @@ pub mod themes {
         }
 
         /// Assign a menu to a theme location
-        pub async fn assign_menu(&self, theme_id: &str, location_slug: &str, menu_id: Uuid) -> Result<()> {
+        pub async fn assign_menu(
+            &self,
+            theme_id: &str,
+            location_slug: &str,
+            menu_id: Uuid,
+        ) -> Result<()> {
             let id = Uuid::now_v7();
 
             sqlx::query(
@@ -1858,7 +1917,11 @@ pub mod themes {
         // ============ Widget Assignments ============
 
         /// Get widget assignments for a theme area
-        pub async fn get_widget_assignments(&self, theme_id: &str, area_slug: Option<&str>) -> Result<Vec<ThemeWidgetAssignmentRow>> {
+        pub async fn get_widget_assignments(
+            &self,
+            theme_id: &str,
+            area_slug: Option<&str>,
+        ) -> Result<Vec<ThemeWidgetAssignmentRow>> {
             let query = if let Some(area) = area_slug {
                 format!(
                     "SELECT * FROM theme_widget_assignments WHERE theme_id = $1 AND area_slug = '{}' AND {} ORDER BY position",
@@ -1879,7 +1942,13 @@ pub mod themes {
         }
 
         /// Assign a widget to a theme area
-        pub async fn assign_widget(&self, theme_id: &str, area_slug: &str, widget_id: Uuid, position: i32) -> Result<()> {
+        pub async fn assign_widget(
+            &self,
+            theme_id: &str,
+            area_slug: &str,
+            widget_id: Uuid,
+            position: i32,
+        ) -> Result<()> {
             let id = Uuid::now_v7();
 
             sqlx::query(
@@ -1908,7 +1977,13 @@ pub mod themes {
         // ============ Preview Sessions ============
 
         /// Create a preview session
-        pub async fn create_preview(&self, user_id: Uuid, theme_id: &str, token: &str, expires_at: DateTime<Utc>) -> Result<ThemePreviewRow> {
+        pub async fn create_preview(
+            &self,
+            user_id: Uuid,
+            theme_id: &str,
+            token: &str,
+            expires_at: DateTime<Utc>,
+        ) -> Result<ThemePreviewRow> {
             let id = Uuid::now_v7();
 
             sqlx::query_as::<_, ThemePreviewRow>(
@@ -1936,7 +2011,7 @@ pub mod themes {
         /// Get preview by token
         pub async fn get_preview_by_token(&self, token: &str) -> Result<Option<ThemePreviewRow>> {
             sqlx::query_as::<_, ThemePreviewRow>(
-                "SELECT * FROM theme_previews WHERE preview_token = $1 AND expires_at > NOW()"
+                "SELECT * FROM theme_previews WHERE preview_token = $1 AND expires_at > NOW()",
             )
             .bind(token)
             .fetch_optional(&self.pool)

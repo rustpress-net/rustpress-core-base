@@ -119,9 +119,12 @@ pub async fn execute(ctx: &CliContext, cmd: CronCommand) -> CliResult<()> {
         CronSubcommand::Enable { task } => enable_task(ctx, &task).await,
         CronSubcommand::Disable { task } => disable_task(ctx, &task).await,
         CronSubcommand::History { task, limit } => show_history(ctx, task, limit).await,
-        CronSubcommand::Create { name, schedule, command, description } => {
-            create_task(ctx, &name, &schedule, &command, description).await
-        }
+        CronSubcommand::Create {
+            name,
+            schedule,
+            command,
+            description,
+        } => create_task(ctx, &name, &schedule, &command, description).await,
         CronSubcommand::Delete { task, force } => delete_task(ctx, &task, force).await,
     }
 }
@@ -148,7 +151,11 @@ async fn list_tasks(ctx: &CliContext) -> CliResult<()> {
         let status = response.status();
         if status == reqwest::StatusCode::NOT_FOUND {
             // Fallback: Show built-in tasks info
-            println!("{}", ctx.output_format.info("Cron API not available. Showing default tasks:"));
+            println!(
+                "{}",
+                ctx.output_format
+                    .info("Cron API not available. Showing default tasks:")
+            );
             println!();
 
             let default_tasks = vec![
@@ -182,10 +189,15 @@ async fn list_tasks(ctx: &CliContext) -> CliResult<()> {
             return Ok(());
         }
         let body = response.text().await.unwrap_or_default();
-        return Err(CliError::OperationFailed(format!("Failed to list tasks ({}): {}", status, body)));
+        return Err(CliError::OperationFailed(format!(
+            "Failed to list tasks ({}): {}",
+            status, body
+        )));
     }
 
-    let tasks: Vec<CronTaskRow> = response.json().await
+    let tasks: Vec<CronTaskRow> = response
+        .json()
+        .await
         .map_err(|e| CliError::Serialization(format!("Failed to parse response: {}", e)))?;
 
     if tasks.is_empty() {
@@ -216,7 +228,10 @@ async fn get_task(ctx: &CliContext, task: &str) -> CliResult<()> {
             return Err(CliError::NotFound(format!("Task not found: {}", task)));
         }
         let body = response.text().await.unwrap_or_default();
-        return Err(CliError::OperationFailed(format!("Failed to get task ({}): {}", status, body)));
+        return Err(CliError::OperationFailed(format!(
+            "Failed to get task ({}): {}",
+            status, body
+        )));
     }
 
     #[derive(Deserialize)]
@@ -232,7 +247,9 @@ async fn get_task(ctx: &CliContext, task: &str) -> CliResult<()> {
         run_count: i64,
     }
 
-    let task_details: TaskDetails = response.json().await
+    let task_details: TaskDetails = response
+        .json()
+        .await
         .map_err(|e| CliError::Serialization(format!("Failed to parse response: {}", e)))?;
 
     print_header("Task Details");
@@ -271,14 +288,25 @@ async fn run_task(ctx: &CliContext, task: &str) -> CliResult<()> {
     if !response.status().is_success() {
         let status = response.status();
         if status == reqwest::StatusCode::NOT_FOUND {
-            println!("{}", ctx.output_format.info("Cron task execution via API is not available."));
+            println!(
+                "{}",
+                ctx.output_format
+                    .info("Cron task execution via API is not available.")
+            );
             return Ok(());
         }
         let body = response.text().await.unwrap_or_default();
-        return Err(CliError::OperationFailed(format!("Failed to run task ({}): {}", status, body)));
+        return Err(CliError::OperationFailed(format!(
+            "Failed to run task ({}): {}",
+            status, body
+        )));
     }
 
-    println!("{}", ctx.output_format.success(&format!("Task '{}' executed successfully", task)));
+    println!(
+        "{}",
+        ctx.output_format
+            .success(&format!("Task '{}' executed successfully", task))
+    );
     Ok(())
 }
 
@@ -296,10 +324,17 @@ async fn enable_task(ctx: &CliContext, task: &str) -> CliResult<()> {
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
-        return Err(CliError::OperationFailed(format!("Failed to enable task ({}): {}", status, body)));
+        return Err(CliError::OperationFailed(format!(
+            "Failed to enable task ({}): {}",
+            status, body
+        )));
     }
 
-    println!("{}", ctx.output_format.success(&format!("Task '{}' enabled", task)));
+    println!(
+        "{}",
+        ctx.output_format
+            .success(&format!("Task '{}' enabled", task))
+    );
     Ok(())
 }
 
@@ -317,10 +352,17 @@ async fn disable_task(ctx: &CliContext, task: &str) -> CliResult<()> {
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
-        return Err(CliError::OperationFailed(format!("Failed to disable task ({}): {}", status, body)));
+        return Err(CliError::OperationFailed(format!(
+            "Failed to disable task ({}): {}",
+            status, body
+        )));
     }
 
-    println!("{}", ctx.output_format.success(&format!("Task '{}' disabled", task)));
+    println!(
+        "{}",
+        ctx.output_format
+            .success(&format!("Task '{}' disabled", task))
+    );
     Ok(())
 }
 
@@ -329,7 +371,12 @@ async fn show_history(ctx: &CliContext, task: Option<String>, limit: u32) -> Cli
 
     let client = ctx.http_client();
     let url = match &task {
-        Some(t) => format!("{}/api/v1/cron/tasks/{}/history?limit={}", ctx.server_url(), t, limit),
+        Some(t) => format!(
+            "{}/api/v1/cron/tasks/{}/history?limit={}",
+            ctx.server_url(),
+            t,
+            limit
+        ),
         None => format!("{}/api/v1/cron/history?limit={}", ctx.server_url(), limit),
     };
 
@@ -343,14 +390,22 @@ async fn show_history(ctx: &CliContext, task: Option<String>, limit: u32) -> Cli
     if !response.status().is_success() {
         let status = response.status();
         if status == reqwest::StatusCode::NOT_FOUND {
-            println!("{}", ctx.output_format.info("No execution history available"));
+            println!(
+                "{}",
+                ctx.output_format.info("No execution history available")
+            );
             return Ok(());
         }
         let body = response.text().await.unwrap_or_default();
-        return Err(CliError::OperationFailed(format!("Failed to get history ({}): {}", status, body)));
+        return Err(CliError::OperationFailed(format!(
+            "Failed to get history ({}): {}",
+            status, body
+        )));
     }
 
-    let history: Vec<CronHistoryRow> = response.json().await
+    let history: Vec<CronHistoryRow> = response
+        .json()
+        .await
         .map_err(|e| CliError::Serialization(format!("Failed to parse response: {}", e)))?;
 
     if history.is_empty() {
@@ -398,14 +453,25 @@ async fn create_task(
     if !response.status().is_success() {
         let status = response.status();
         if status == reqwest::StatusCode::NOT_FOUND {
-            println!("{}", ctx.output_format.info("Cron task creation via API is not available."));
+            println!(
+                "{}",
+                ctx.output_format
+                    .info("Cron task creation via API is not available.")
+            );
             return Ok(());
         }
         let body = response.text().await.unwrap_or_default();
-        return Err(CliError::OperationFailed(format!("Failed to create task ({}): {}", status, body)));
+        return Err(CliError::OperationFailed(format!(
+            "Failed to create task ({}): {}",
+            status, body
+        )));
     }
 
-    println!("{}", ctx.output_format.success(&format!("Task '{}' created successfully", name)));
+    println!(
+        "{}",
+        ctx.output_format
+            .success(&format!("Task '{}' created successfully", name))
+    );
     Ok(())
 }
 
@@ -437,9 +503,16 @@ async fn delete_task(ctx: &CliContext, task: &str, force: bool) -> CliResult<()>
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
-        return Err(CliError::OperationFailed(format!("Failed to delete task ({}): {}", status, body)));
+        return Err(CliError::OperationFailed(format!(
+            "Failed to delete task ({}): {}",
+            status, body
+        )));
     }
 
-    println!("{}", ctx.output_format.success(&format!("Task '{}' deleted", task)));
+    println!(
+        "{}",
+        ctx.output_format
+            .success(&format!("Task '{}' deleted", task))
+    );
     Ok(())
 }

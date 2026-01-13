@@ -1001,10 +1001,9 @@ impl PluginManifest {
 
     /// Parse a manifest from a file
     pub fn from_file(path: &Path) -> Result<Self, ManifestError> {
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| ManifestError::Io(e.to_string()))?;
-        Self::from_toml(&content)
-            .map_err(|e| ManifestError::Parse(e.to_string()))
+        let content =
+            std::fs::read_to_string(path).map_err(|e| ManifestError::Io(e.to_string()))?;
+        Self::from_toml(&content).map_err(|e| ManifestError::Parse(e.to_string()))
     }
 
     /// Serialize to TOML string
@@ -1028,7 +1027,10 @@ impl PluginManifest {
 
         // Validate name
         if self.plugin.name.is_empty() {
-            errors.push(ValidationError::new("plugin.name", "Plugin name is required"));
+            errors.push(ValidationError::new(
+                "plugin.name",
+                "Plugin name is required",
+            ));
         }
 
         // Validate version
@@ -1086,7 +1088,10 @@ impl PluginManifest {
 
     /// Get the full API namespace
     pub fn api_namespace(&self) -> String {
-        self.api.namespace.clone().unwrap_or_else(|| self.plugin.id.clone())
+        self.api
+            .namespace
+            .clone()
+            .unwrap_or_else(|| self.plugin.id.clone())
     }
 
     /// Check if the plugin has any database migrations

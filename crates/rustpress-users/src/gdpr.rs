@@ -77,14 +77,17 @@ impl DataExportRequest {
     }
 
     pub fn is_download_valid(&self) -> bool {
-        self.status == ExportStatus::Ready &&
-        self.download_expires.map(|e| Utc::now() < e).unwrap_or(false)
+        self.status == ExportStatus::Ready
+            && self
+                .download_expires
+                .map(|e| Utc::now() < e)
+                .unwrap_or(false)
     }
 
     pub fn download_url(&self, base_url: &str) -> Option<String> {
-        self.download_token.as_ref().map(|token| {
-            format!("{}/user/export/download?token={}", base_url, token)
-        })
+        self.download_token
+            .as_ref()
+            .map(|token| format!("{}/user/export/download?token={}", base_url, token))
     }
 }
 
@@ -319,12 +322,18 @@ impl DeletionRequest {
     }
 
     pub fn is_ready_for_deletion(&self) -> bool {
-        self.status == DeletionStatus::Scheduled &&
-        self.scheduled_deletion.map(|d| Utc::now() >= d).unwrap_or(false)
+        self.status == DeletionStatus::Scheduled
+            && self
+                .scheduled_deletion
+                .map(|d| Utc::now() >= d)
+                .unwrap_or(false)
     }
 
     pub fn confirmation_url(&self, base_url: &str) -> String {
-        format!("{}/account/delete/confirm?token={}", base_url, self.confirmation_token)
+        format!(
+            "{}/account/delete/confirm?token={}",
+            base_url, self.confirmation_token
+        )
     }
 }
 
@@ -375,7 +384,9 @@ impl DeletionManager {
 
     /// Confirm deletion
     pub fn confirm(&mut self, token: &str) -> Result<&DeletionRequest, String> {
-        let request = self.requests.values_mut()
+        let request = self
+            .requests
+            .values_mut()
             .find(|r| r.confirmation_token == token && r.status == DeletionStatus::Pending)
             .ok_or_else(|| "Invalid or expired confirmation token".to_string())?;
 
@@ -387,10 +398,15 @@ impl DeletionManager {
 
     /// Cancel deletion
     pub fn cancel(&mut self, request_id: Uuid) -> Result<(), String> {
-        let request = self.requests.get_mut(&request_id)
+        let request = self
+            .requests
+            .get_mut(&request_id)
             .ok_or_else(|| "Request not found".to_string())?;
 
-        if matches!(request.status, DeletionStatus::Completed | DeletionStatus::Processing) {
+        if matches!(
+            request.status,
+            DeletionStatus::Completed | DeletionStatus::Processing
+        ) {
             return Err("Cannot cancel deletion at this stage".to_string());
         }
 
@@ -400,20 +416,28 @@ impl DeletionManager {
 
     /// Get pending request for user
     pub fn get_pending(&self, user_id: i64) -> Option<&DeletionRequest> {
-        self.requests.values()
-            .find(|r| r.user_id == user_id && !matches!(r.status, DeletionStatus::Completed | DeletionStatus::Cancelled))
+        self.requests.values().find(|r| {
+            r.user_id == user_id
+                && !matches!(
+                    r.status,
+                    DeletionStatus::Completed | DeletionStatus::Cancelled
+                )
+        })
     }
 
     /// Get requests ready for deletion
     pub fn get_ready_for_deletion(&self) -> Vec<&DeletionRequest> {
-        self.requests.values()
+        self.requests
+            .values()
             .filter(|r| r.is_ready_for_deletion())
             .collect()
     }
 
     /// Process deletion
     pub fn process(&mut self, request_id: Uuid) -> Result<&DeletionRequest, String> {
-        let request = self.requests.get_mut(&request_id)
+        let request = self
+            .requests
+            .get_mut(&request_id)
             .ok_or_else(|| "Request not found".to_string())?;
 
         if !request.is_ready_for_deletion() {
@@ -587,7 +611,8 @@ impl ConsentManager {
 
     /// Record consent
     pub fn record(&mut self, consent: Consent) {
-        self.consents.entry(consent.user_id)
+        self.consents
+            .entry(consent.user_id)
             .or_insert_with(Vec::new)
             .push(consent);
     }
@@ -596,9 +621,11 @@ impl ConsentManager {
     pub fn has_consent(&self, user_id: i64, consent_type: &ConsentType) -> bool {
         let current_version = self.policy_versions.get(consent_type);
 
-        self.consents.get(&user_id)
+        self.consents
+            .get(&user_id)
             .map(|consents| {
-                consents.iter()
+                consents
+                    .iter()
                     .filter(|c| &c.consent_type == consent_type && c.granted)
                     .any(|c| current_version.map(|v| &c.version == v).unwrap_or(true))
             })
@@ -607,7 +634,8 @@ impl ConsentManager {
 
     /// Get all consents for user
     pub fn get_user_consents(&self, user_id: i64) -> Vec<&Consent> {
-        self.consents.get(&user_id)
+        self.consents
+            .get(&user_id)
             .map(|c| c.iter().collect())
             .unwrap_or_default()
     }
@@ -625,7 +653,8 @@ impl ConsentManager {
 
     /// Update policy version (requires re-consent)
     pub fn update_policy_version(&mut self, consent_type: ConsentType, version: &str) {
-        self.policy_versions.insert(consent_type, version.to_string());
+        self.policy_versions
+            .insert(consent_type, version.to_string());
     }
 
     /// Get users needing re-consent
@@ -635,13 +664,17 @@ impl ConsentManager {
             None => return Vec::new(),
         };
 
-        self.consents.iter()
+        self.consents
+            .iter()
             .filter(|(_, consents)| {
-                let latest = consents.iter()
+                let latest = consents
+                    .iter()
                     .filter(|c| &c.consent_type == consent_type && c.granted)
                     .max_by_key(|c| c.granted_at);
 
-                latest.map(|c| &c.version != current_version).unwrap_or(true)
+                latest
+                    .map(|c| &c.version != current_version)
+                    .unwrap_or(true)
             })
             .map(|(user_id, _)| *user_id)
             .collect()

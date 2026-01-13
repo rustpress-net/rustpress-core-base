@@ -334,7 +334,10 @@ fn save_config(config: &ArtifactConfig) -> Result<(), Box<dyn std::error::Error>
 fn list_artifacts(args: ListArgs) -> Result<(), Box<dyn std::error::Error>> {
     let config = get_config()?;
 
-    println!("{}", "Listing artifacts from RustPress Artifactory...".cyan());
+    println!(
+        "{}",
+        "Listing artifacts from RustPress Artifactory...".cyan()
+    );
     println!();
 
     // Determine bucket based on artifact type
@@ -342,7 +345,11 @@ fn list_artifacts(args: ListArgs) -> Result<(), Box<dyn std::error::Error>> {
         Some("release") | Some("releases") => vec!["rustpress-releases"],
         Some("theme") | Some("themes") => vec!["rustpress-themes"],
         Some("plugin") | Some("plugins") => vec!["rustpress-plugins"],
-        None => vec!["rustpress-releases", "rustpress-themes", "rustpress-plugins"],
+        None => vec![
+            "rustpress-releases",
+            "rustpress-themes",
+            "rustpress-plugins",
+        ],
         Some(t) => {
             eprintln!("{}: Unknown artifact type: {}", "Error".red(), t);
             return Ok(());
@@ -711,7 +718,10 @@ fn browse_by_commit(args: BrowseArgs) -> Result<(), Box<dyn std::error::Error>> 
     if found_artifacts.is_empty() {
         println!("{}", "No artifacts found for this commit.".yellow());
         println!();
-        println!("{}: Make sure the commit has been built and artifacts uploaded.", "Tip".dimmed());
+        println!(
+            "{}: Make sure the commit has been built and artifacts uploaded.",
+            "Tip".dimmed()
+        );
         return Ok(());
     }
 
@@ -774,13 +784,19 @@ fn browse_by_commit(args: BrowseArgs) -> Result<(), Box<dyn std::error::Error>> 
 
         fs::write(save_path, &output)?;
         println!();
-        println!("{} Saved artifact listing to {}", "✓".green(), save_path.display());
+        println!(
+            "{} Saved artifact listing to {}",
+            "✓".green(),
+            save_path.display()
+        );
     }
 
     // Download all if requested
     if args.download_all {
         let output_dir = args.out_dir.unwrap_or_else(|| {
-            PathBuf::from(".").join("artifacts").join(&args.commit[..7.min(args.commit.len())])
+            PathBuf::from(".")
+                .join("artifacts")
+                .join(&args.commit[..7.min(args.commit.len())])
         });
 
         fs::create_dir_all(&output_dir)?;
@@ -789,11 +805,8 @@ fn browse_by_commit(args: BrowseArgs) -> Result<(), Box<dyn std::error::Error>> 
         println!("{}", "Downloading artifacts...".cyan());
 
         for artifact in &found_artifacts {
-            let artifact_path = output_dir.join(format!(
-                "{}-{}.tar.gz",
-                artifact.name,
-                artifact.version
-            ));
+            let artifact_path =
+                output_dir.join(format!("{}-{}.tar.gz", artifact.name, artifact.version));
 
             println!("  {} Downloading {}...", "→".cyan(), artifact.name);
 
@@ -806,7 +819,11 @@ fn browse_by_commit(args: BrowseArgs) -> Result<(), Box<dyn std::error::Error>> 
         }
 
         println!();
-        println!("{} All artifacts downloaded to {}", "✓".green(), output_dir.display());
+        println!(
+            "{} All artifacts downloaded to {}",
+            "✓".green(),
+            output_dir.display()
+        );
     }
 
     println!();
@@ -824,9 +841,18 @@ mod tests {
 
     #[test]
     fn test_artifact_type_parsing() {
-        assert_eq!("release".parse::<ArtifactType>().unwrap(), ArtifactType::Release);
-        assert_eq!("theme".parse::<ArtifactType>().unwrap(), ArtifactType::Theme);
-        assert_eq!("plugin".parse::<ArtifactType>().unwrap(), ArtifactType::Plugin);
+        assert_eq!(
+            "release".parse::<ArtifactType>().unwrap(),
+            ArtifactType::Release
+        );
+        assert_eq!(
+            "theme".parse::<ArtifactType>().unwrap(),
+            ArtifactType::Theme
+        );
+        assert_eq!(
+            "plugin".parse::<ArtifactType>().unwrap(),
+            ArtifactType::Plugin
+        );
     }
 
     #[test]

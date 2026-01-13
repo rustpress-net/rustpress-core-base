@@ -7,7 +7,7 @@ use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
 use rustpress_core::error::{Error, Result};
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use uuid::Uuid;
 
@@ -39,7 +39,11 @@ impl OAuth2ClientProvider {
             authorization_url: "https://accounts.google.com/o/oauth2/v2/auth".to_string(),
             token_url: "https://oauth2.googleapis.com/token".to_string(),
             userinfo_url: Some("https://www.googleapis.com/oauth2/v3/userinfo".to_string()),
-            scopes: vec!["openid".to_string(), "email".to_string(), "profile".to_string()],
+            scopes: vec![
+                "openid".to_string(),
+                "email".to_string(),
+                "profile".to_string(),
+            ],
             redirect_uri,
             enabled: true,
             auth_params: HashMap::new(),
@@ -72,7 +76,9 @@ impl OAuth2ClientProvider {
             client_secret,
             authorization_url: "https://www.facebook.com/v18.0/dialog/oauth".to_string(),
             token_url: "https://graph.facebook.com/v18.0/oauth/access_token".to_string(),
-            userinfo_url: Some("https://graph.facebook.com/v18.0/me?fields=id,name,email,picture".to_string()),
+            userinfo_url: Some(
+                "https://graph.facebook.com/v18.0/me?fields=id,name,email,picture".to_string(),
+            ),
             scopes: vec!["email".to_string(), "public_profile".to_string()],
             redirect_uri,
             enabled: true,
@@ -99,16 +105,31 @@ impl OAuth2ClientProvider {
     }
 
     /// Create a Microsoft/Azure AD OAuth2 provider
-    pub fn microsoft(client_id: String, client_secret: String, redirect_uri: String, tenant: Option<String>) -> Self {
+    pub fn microsoft(
+        client_id: String,
+        client_secret: String,
+        redirect_uri: String,
+        tenant: Option<String>,
+    ) -> Self {
         let tenant = tenant.unwrap_or_else(|| "common".to_string());
         Self {
             name: "microsoft".to_string(),
             client_id,
             client_secret,
-            authorization_url: format!("https://login.microsoftonline.com/{}/oauth2/v2.0/authorize", tenant),
-            token_url: format!("https://login.microsoftonline.com/{}/oauth2/v2.0/token", tenant),
+            authorization_url: format!(
+                "https://login.microsoftonline.com/{}/oauth2/v2.0/authorize",
+                tenant
+            ),
+            token_url: format!(
+                "https://login.microsoftonline.com/{}/oauth2/v2.0/token",
+                tenant
+            ),
             userinfo_url: Some("https://graph.microsoft.com/v1.0/me".to_string()),
-            scopes: vec!["openid".to_string(), "email".to_string(), "profile".to_string()],
+            scopes: vec![
+                "openid".to_string(),
+                "email".to_string(),
+                "profile".to_string(),
+            ],
             redirect_uri,
             enabled: true,
             auth_params: HashMap::new(),
@@ -320,7 +341,11 @@ pub trait OAuth2StateStore: Send + Sync {
 #[async_trait::async_trait]
 pub trait SocialConnectionStore: Send + Sync {
     async fn create(&self, connection: &SocialConnection) -> Result<()>;
-    async fn get_by_provider(&self, provider: &str, provider_user_id: &str) -> Result<Option<SocialConnection>>;
+    async fn get_by_provider(
+        &self,
+        provider: &str,
+        provider_user_id: &str,
+    ) -> Result<Option<SocialConnection>>;
     async fn get_user_connections(&self, user_id: Uuid) -> Result<Vec<SocialConnection>>;
     async fn update(&self, connection: &SocialConnection) -> Result<()>;
     async fn delete(&self, id: Uuid) -> Result<()>;
@@ -356,10 +381,13 @@ impl<S: OAuth2StateStore, C: SocialConnectionStore> OAuth2Client<S, C> {
         provider_name: &str,
         redirect_after: Option<String>,
     ) -> Result<(String, OAuth2State)> {
-        let provider = self.providers.get(provider_name).ok_or_else(|| Error::InvalidInput {
-            field: "provider".to_string(),
-            message: format!("Unknown provider: {}", provider_name),
-        })?;
+        let provider = self
+            .providers
+            .get(provider_name)
+            .ok_or_else(|| Error::InvalidInput {
+                field: "provider".to_string(),
+                message: format!("Unknown provider: {}", provider_name),
+            })?;
 
         if !provider.enabled {
             return Err(Error::InvalidInput {
@@ -400,12 +428,19 @@ impl<S: OAuth2StateStore, C: SocialConnectionStore> OAuth2Client<S, C> {
         // Add PKCE if enabled
         if let Some(ref verifier) = code_verifier {
             let challenge = generate_code_challenge(verifier);
-            url.push_str(&format!("&code_challenge={}&code_challenge_method=S256", challenge));
+            url.push_str(&format!(
+                "&code_challenge={}&code_challenge_method=S256",
+                challenge
+            ));
         }
 
         // Add additional auth params
         for (key, value) in &provider.auth_params {
-            url.push_str(&format!("&{}={}", urlencoding::encode(key), urlencoding::encode(value)));
+            url.push_str(&format!(
+                "&{}={}",
+                urlencoding::encode(key),
+                urlencoding::encode(value)
+            ));
         }
 
         Ok((url, oauth_state))
@@ -418,12 +453,13 @@ impl<S: OAuth2StateStore, C: SocialConnectionStore> OAuth2Client<S, C> {
         state: &str,
     ) -> Result<(OAuth2TokenResponse, OAuth2UserInfo)> {
         // Validate state
-        let oauth_state = self.state_store
-            .get_state(state)
-            .await?
-            .ok_or_else(|| Error::Authentication {
-                message: "Invalid OAuth2 state".to_string(),
-            })?;
+        let oauth_state =
+            self.state_store
+                .get_state(state)
+                .await?
+                .ok_or_else(|| Error::Authentication {
+                    message: "Invalid OAuth2 state".to_string(),
+                })?;
 
         if !oauth_state.is_valid() {
             return Err(Error::Authentication {
@@ -434,17 +470,23 @@ impl<S: OAuth2StateStore, C: SocialConnectionStore> OAuth2Client<S, C> {
         // Delete state (single use)
         self.state_store.delete_state(state).await?;
 
-        let provider = self.providers.get(&oauth_state.provider).ok_or_else(|| Error::Internal {
-            message: "Provider not found".to_string(),
-            request_id: None,
-        })?;
+        let provider =
+            self.providers
+                .get(&oauth_state.provider)
+                .ok_or_else(|| Error::Internal {
+                    message: "Provider not found".to_string(),
+                    request_id: None,
+                })?;
 
         // Exchange code for token
-        let token_response = self.exchange_code(provider, code, oauth_state.code_verifier.as_deref()).await?;
+        let token_response = self
+            .exchange_code(provider, code, oauth_state.code_verifier.as_deref())
+            .await?;
 
         // Get user info
         let user_info = if let Some(ref userinfo_url) = provider.userinfo_url {
-            self.fetch_user_info(provider, &token_response.access_token, userinfo_url).await?
+            self.fetch_user_info(provider, &token_response.access_token, userinfo_url)
+                .await?
         } else {
             // Try to extract from ID token if available
             if let Some(ref id_token) = token_response.id_token {
@@ -505,7 +547,11 @@ impl<S: OAuth2StateStore, C: SocialConnectionStore> OAuth2Client<S, C> {
     }
 
     /// Parse ID token (JWT)
-    fn parse_id_token(&self, _provider: &OAuth2ClientProvider, id_token: &str) -> Result<OAuth2UserInfo> {
+    fn parse_id_token(
+        &self,
+        _provider: &OAuth2ClientProvider,
+        id_token: &str,
+    ) -> Result<OAuth2UserInfo> {
         // In a real implementation, this would decode the JWT
         let _ = id_token;
         Err(Error::Internal {
@@ -523,7 +569,8 @@ impl<S: OAuth2StateStore, C: SocialConnectionStore> OAuth2Client<S, C> {
         token_response: &OAuth2TokenResponse,
     ) -> Result<SocialConnection> {
         // Check if already linked
-        if let Some(existing) = self.connection_store
+        if let Some(existing) = self
+            .connection_store
             .get_by_provider(provider_name, &user_info.provider_user_id)
             .await?
         {
@@ -545,7 +592,9 @@ impl<S: OAuth2StateStore, C: SocialConnectionStore> OAuth2Client<S, C> {
             email: user_info.email.clone(),
             access_token_hash: hash_token(&token_response.access_token),
             refresh_token_hash: token_response.refresh_token.as_ref().map(|t| hash_token(t)),
-            token_expires_at: token_response.expires_in.map(|e| now + Duration::seconds(e)),
+            token_expires_at: token_response
+                .expires_in
+                .map(|e| now + Duration::seconds(e)),
             metadata: user_info.raw_data.clone(),
             connected_at: now,
             last_used_at: Some(now),
@@ -562,7 +611,9 @@ impl<S: OAuth2StateStore, C: SocialConnectionStore> OAuth2Client<S, C> {
 
     /// Unlink social account
     pub async fn unlink_account(&self, user_id: Uuid, provider_name: &str) -> Result<()> {
-        self.connection_store.delete_user_connection(user_id, provider_name).await
+        self.connection_store
+            .delete_user_connection(user_id, provider_name)
+            .await
     }
 
     /// Find user by social login
@@ -571,7 +622,9 @@ impl<S: OAuth2StateStore, C: SocialConnectionStore> OAuth2Client<S, C> {
         provider_name: &str,
         provider_user_id: &str,
     ) -> Result<Option<SocialConnection>> {
-        self.connection_store.get_by_provider(provider_name, provider_user_id).await
+        self.connection_store
+            .get_by_provider(provider_name, provider_user_id)
+            .await
     }
 
     /// Get available providers
@@ -695,7 +748,11 @@ impl SocialConnectionStore for InMemorySocialConnectionStore {
         Ok(())
     }
 
-    async fn get_by_provider(&self, provider: &str, provider_user_id: &str) -> Result<Option<SocialConnection>> {
+    async fn get_by_provider(
+        &self,
+        provider: &str,
+        provider_user_id: &str,
+    ) -> Result<Option<SocialConnection>> {
         let connections = self.connections.read().map_err(|_| Error::Internal {
             message: "Lock poisoned".to_string(),
             request_id: None,
@@ -711,7 +768,11 @@ impl SocialConnectionStore for InMemorySocialConnectionStore {
             message: "Lock poisoned".to_string(),
             request_id: None,
         })?;
-        Ok(connections.values().filter(|c| c.user_id == user_id).cloned().collect())
+        Ok(connections
+            .values()
+            .filter(|c| c.user_id == user_id)
+            .cloned()
+            .collect())
     }
 
     async fn update(&self, connection: &SocialConnection) -> Result<()> {
@@ -774,7 +835,8 @@ mod tests {
     async fn test_authorization_url() {
         let state_store = InMemoryOAuth2StateStore::new();
         let connection_store = InMemorySocialConnectionStore::new();
-        let mut client = OAuth2Client::new(state_store, connection_store, OAuth2ClientConfig::default());
+        let mut client =
+            OAuth2Client::new(state_store, connection_store, OAuth2ClientConfig::default());
 
         client.register_provider(OAuth2ClientProvider::google(
             "test_client_id".to_string(),
@@ -782,10 +844,7 @@ mod tests {
             "https://example.com/callback".to_string(),
         ));
 
-        let (url, state) = client
-            .get_authorization_url("google", None)
-            .await
-            .unwrap();
+        let (url, state) = client.get_authorization_url("google", None).await.unwrap();
 
         assert!(url.contains("accounts.google.com"));
         assert!(url.contains("client_id=test_client_id"));

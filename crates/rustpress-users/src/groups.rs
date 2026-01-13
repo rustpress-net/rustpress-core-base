@@ -124,7 +124,9 @@ impl InvitationManager {
     /// Send invitation
     pub fn invite(&mut self, invitation: Invitation) -> Result<&Invitation, String> {
         // Check for existing pending invitations
-        let pending_count = self.by_email.get(&invitation.email)
+        let pending_count = self
+            .by_email
+            .get(&invitation.email)
             .map(|ids| {
                 ids.iter()
                     .filter_map(|id| self.invitations.get(id))
@@ -150,16 +152,21 @@ impl InvitationManager {
 
     /// Get invitation by token
     pub fn get_by_token(&self, token: &str) -> Option<&Invitation> {
-        self.by_token.get(token)
+        self.by_token
+            .get(token)
             .and_then(|id| self.invitations.get(id))
     }
 
     /// Validate and accept invitation
     pub fn accept(&mut self, token: &str, user_id: i64) -> Result<&Invitation, String> {
-        let invitation_id = *self.by_token.get(token)
+        let invitation_id = *self
+            .by_token
+            .get(token)
             .ok_or_else(|| "Invalid invitation token".to_string())?;
 
-        let invitation = self.invitations.get_mut(&invitation_id)
+        let invitation = self
+            .invitations
+            .get_mut(&invitation_id)
             .ok_or_else(|| "Invitation not found".to_string())?;
 
         if !invitation.is_valid() {
@@ -173,7 +180,9 @@ impl InvitationManager {
 
     /// Revoke invitation
     pub fn revoke(&mut self, invitation_id: Uuid) -> Result<(), String> {
-        let invitation = self.invitations.get_mut(&invitation_id)
+        let invitation = self
+            .invitations
+            .get_mut(&invitation_id)
             .ok_or_else(|| "Invitation not found".to_string())?;
 
         invitation.revoke();
@@ -182,14 +191,16 @@ impl InvitationManager {
 
     /// Get invitations sent by user
     pub fn get_sent_by(&self, user_id: i64) -> Vec<&Invitation> {
-        self.invitations.values()
+        self.invitations
+            .values()
             .filter(|i| i.invited_by == user_id)
             .collect()
     }
 
     /// Get pending invitations for email
     pub fn get_pending_for_email(&self, email: &str) -> Vec<&Invitation> {
-        self.by_email.get(email)
+        self.by_email
+            .get(email)
             .map(|ids| {
                 ids.iter()
                     .filter_map(|id| self.invitations.get(id))
@@ -201,7 +212,9 @@ impl InvitationManager {
 
     /// Cleanup expired invitations
     pub fn cleanup_expired(&mut self) {
-        let expired: Vec<Uuid> = self.invitations.iter()
+        let expired: Vec<Uuid> = self
+            .invitations
+            .iter()
             .filter(|(_, i)| i.status == InvitationStatus::Pending && Utc::now() > i.expires_at)
             .map(|(id, _)| *id)
             .collect();
@@ -359,14 +372,23 @@ impl ApprovalManager {
 
     /// Get pending users
     pub fn get_pending(&self) -> Vec<&PendingUser> {
-        self.pending.values()
+        self.pending
+            .values()
             .filter(|u| u.status == ApprovalStatus::Pending)
             .collect()
     }
 
     /// Approve user
-    pub fn approve(&mut self, pending_id: Uuid, by_user: i64, user_id: i64, notes: Option<&str>) -> Result<(), String> {
-        let pending = self.pending.get_mut(&pending_id)
+    pub fn approve(
+        &mut self,
+        pending_id: Uuid,
+        by_user: i64,
+        user_id: i64,
+        notes: Option<&str>,
+    ) -> Result<(), String> {
+        let pending = self
+            .pending
+            .get_mut(&pending_id)
             .ok_or_else(|| "Pending user not found".to_string())?;
 
         pending.approve(by_user, user_id, notes);
@@ -374,8 +396,15 @@ impl ApprovalManager {
     }
 
     /// Reject user
-    pub fn reject(&mut self, pending_id: Uuid, by_user: i64, notes: Option<&str>) -> Result<(), String> {
-        let pending = self.pending.get_mut(&pending_id)
+    pub fn reject(
+        &mut self,
+        pending_id: Uuid,
+        by_user: i64,
+        notes: Option<&str>,
+    ) -> Result<(), String> {
+        let pending = self
+            .pending
+            .get_mut(&pending_id)
             .ok_or_else(|| "Pending user not found".to_string())?;
 
         pending.reject(by_user, notes);
@@ -531,7 +560,13 @@ impl GroupManager {
     }
 
     /// Add member
-    pub fn add_member(&mut self, group_id: Uuid, user_id: i64, role: GroupRole, invited_by: Option<i64>) {
+    pub fn add_member(
+        &mut self,
+        group_id: Uuid,
+        user_id: i64,
+        role: GroupRole,
+        invited_by: Option<i64>,
+    ) {
         let member = GroupMember {
             group_id,
             user_id,
@@ -540,11 +575,13 @@ impl GroupManager {
             invited_by,
         };
 
-        self.members.entry(group_id)
+        self.members
+            .entry(group_id)
             .or_insert_with(Vec::new)
             .push(member);
 
-        self.user_groups.entry(user_id)
+        self.user_groups
+            .entry(user_id)
             .or_insert_with(Vec::new)
             .push(group_id);
 
@@ -555,11 +592,16 @@ impl GroupManager {
 
     /// Remove member
     pub fn remove_member(&mut self, group_id: Uuid, user_id: i64) -> Result<(), String> {
-        let members = self.members.get_mut(&group_id)
+        let members = self
+            .members
+            .get_mut(&group_id)
             .ok_or_else(|| "Group not found".to_string())?;
 
         // Cannot remove owner
-        if members.iter().any(|m| m.user_id == user_id && m.role == GroupRole::Owner) {
+        if members
+            .iter()
+            .any(|m| m.user_id == user_id && m.role == GroupRole::Owner)
+        {
             return Err("Cannot remove group owner".to_string());
         }
 
@@ -578,32 +620,32 @@ impl GroupManager {
 
     /// Get group members
     pub fn get_members(&self, group_id: Uuid) -> Vec<&GroupMember> {
-        self.members.get(&group_id)
+        self.members
+            .get(&group_id)
             .map(|m| m.iter().collect())
             .unwrap_or_default()
     }
 
     /// Get user's groups
     pub fn get_user_groups(&self, user_id: i64) -> Vec<&UserGroup> {
-        self.user_groups.get(&user_id)
-            .map(|ids| {
-                ids.iter()
-                    .filter_map(|id| self.groups.get(id))
-                    .collect()
-            })
+        self.user_groups
+            .get(&user_id)
+            .map(|ids| ids.iter().filter_map(|id| self.groups.get(id)).collect())
             .unwrap_or_default()
     }
 
     /// Check if user is member
     pub fn is_member(&self, group_id: Uuid, user_id: i64) -> bool {
-        self.members.get(&group_id)
+        self.members
+            .get(&group_id)
             .map(|m| m.iter().any(|member| member.user_id == user_id))
             .unwrap_or(false)
     }
 
     /// Get public groups
     pub fn get_public_groups(&self) -> Vec<&UserGroup> {
-        self.groups.values()
+        self.groups
+            .values()
             .filter(|g| g.visibility == GroupVisibility::Public)
             .collect()
     }
@@ -754,7 +796,12 @@ impl PrivacySettings {
         }
     }
 
-    pub fn can_view_field(&self, privacy: FieldPrivacy, viewer_id: Option<i64>, is_following: bool) -> bool {
+    pub fn can_view_field(
+        &self,
+        privacy: FieldPrivacy,
+        viewer_id: Option<i64>,
+        is_following: bool,
+    ) -> bool {
         match privacy {
             FieldPrivacy::Public => true,
             FieldPrivacy::Registered => viewer_id.is_some(),
@@ -811,7 +858,8 @@ impl PrivacyManager {
     }
 
     pub fn get_or_create(&mut self, user_id: i64) -> &mut PrivacySettings {
-        self.settings.entry(user_id)
+        self.settings
+            .entry(user_id)
             .or_insert_with(|| PrivacySettings::new(user_id))
     }
 

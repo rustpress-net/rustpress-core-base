@@ -1,7 +1,9 @@
 //! Password hashing and validation.
 
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher as _, PasswordVerifier, SaltString},
+    password_hash::{
+        rand_core::OsRng, PasswordHash, PasswordHasher as _, PasswordVerifier, SaltString,
+    },
     Argon2,
 };
 use rustpress_core::error::{Error, Result, ValidationErrors};
@@ -117,7 +119,10 @@ impl PasswordValidator {
         if password.len() < self.rules.min_length {
             errors.add_with_code(
                 "password",
-                format!("Password must be at least {} characters", self.rules.min_length),
+                format!(
+                    "Password must be at least {} characters",
+                    self.rules.min_length
+                ),
                 "PASSWORD_TOO_SHORT",
             );
         }
@@ -125,7 +130,10 @@ impl PasswordValidator {
         if password.len() > self.rules.max_length {
             errors.add_with_code(
                 "password",
-                format!("Password must not exceed {} characters", self.rules.max_length),
+                format!(
+                    "Password must not exceed {} characters",
+                    self.rules.max_length
+                ),
                 "PASSWORD_TOO_LONG",
             );
         }
@@ -156,7 +164,9 @@ impl PasswordValidator {
         }
 
         if self.rules.require_special
-            && !password.chars().any(|c| self.rules.special_chars.contains(c))
+            && !password
+                .chars()
+                .any(|c| self.rules.special_chars.contains(c))
         {
             errors.add_with_code(
                 "password",
@@ -193,7 +203,10 @@ impl PasswordValidator {
         if password.chars().any(|c| c.is_ascii_digit()) {
             score += 1;
         }
-        if password.chars().any(|c| self.rules.special_chars.contains(c)) {
+        if password
+            .chars()
+            .any(|c| self.rules.special_chars.contains(c))
+        {
             score += 1;
         }
 
@@ -290,18 +303,9 @@ mod tests {
     fn test_password_strength() {
         let validator = PasswordValidator::default();
 
-        assert_eq!(
-            validator.strength("weak"),
-            PasswordStrength::Weak
-        );
-        assert_eq!(
-            validator.strength("Password1"),
-            PasswordStrength::Good
-        );
-        assert_eq!(
-            validator.strength("SecurePass123"),
-            PasswordStrength::Good
-        );
+        assert_eq!(validator.strength("weak"), PasswordStrength::Weak);
+        assert_eq!(validator.strength("Password1"), PasswordStrength::Good);
+        assert_eq!(validator.strength("SecurePass123"), PasswordStrength::Good);
         assert_eq!(
             validator.strength("V3ryS3cur3P@ssw0rd!"),
             PasswordStrength::Strong

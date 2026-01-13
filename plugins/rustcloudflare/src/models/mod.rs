@@ -1,7 +1,7 @@
 //! Data models for Cloudflare API
 
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 // ============================================================================
 // API Response Types

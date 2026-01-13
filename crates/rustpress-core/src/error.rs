@@ -352,9 +352,7 @@ impl Error {
     pub fn status_code(&self) -> u16 {
         match self {
             Error::NotFound { .. } | Error::FileNotFound { .. } => 404,
-            Error::Authentication { .. }
-            | Error::TokenExpired
-            | Error::InvalidToken { .. } => 401,
+            Error::Authentication { .. } | Error::TokenExpired | Error::InvalidToken { .. } => 401,
             Error::Authorization { .. } => 403,
             Error::Validation(_) | Error::InvalidInput { .. } => 400,
             Error::Duplicate { .. } => 409,

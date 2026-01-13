@@ -55,7 +55,12 @@ impl LockoutStatus {
         }
     }
 
-    pub fn locked(failed_attempts: u32, max_attempts: u32, until: DateTime<Utc>, next_duration: Duration) -> Self {
+    pub fn locked(
+        failed_attempts: u32,
+        max_attempts: u32,
+        until: DateTime<Utc>,
+        next_duration: Duration,
+    ) -> Self {
         Self {
             is_locked: true,
             failed_attempts,
@@ -67,9 +72,8 @@ impl LockoutStatus {
     }
 
     pub fn seconds_until_unlock(&self) -> Option<i64> {
-        self.locked_until.map(|until| {
-            (until - Utc::now()).num_seconds().max(0)
-        })
+        self.locked_until
+            .map(|until| (until - Utc::now()).num_seconds().max(0))
     }
 }
 
@@ -100,9 +104,9 @@ impl Default for BruteForceConfig {
     fn default() -> Self {
         Self {
             max_attempts: 5,
-            window_seconds: 900, // 15 minutes
+            window_seconds: 900,         // 15 minutes
             initial_lockout_seconds: 60, // 1 minute
-            max_lockout_seconds: 3600, // 1 hour
+            max_lockout_seconds: 3600,   // 1 hour
             backoff_multiplier: 2.0,
             clear_on_success: true,
             track_ip: true,
@@ -125,7 +129,12 @@ pub trait BruteForceStore: Send + Sync {
     async fn get_lockout(&self, identifier: &str) -> Result<Option<(DateTime<Utc>, u32)>>;
 
     /// Set lockout
-    async fn set_lockout(&self, identifier: &str, until: DateTime<Utc>, attempt_count: u32) -> Result<()>;
+    async fn set_lockout(
+        &self,
+        identifier: &str,
+        until: DateTime<Utc>,
+        attempt_count: u32,
+    ) -> Result<()>;
 
     /// Clear lockout
     async fn clear_lockout(&self, identifier: &str) -> Result<()>;
@@ -134,7 +143,11 @@ pub trait BruteForceStore: Send + Sync {
     async fn clear_attempts(&self, identifier: &str) -> Result<()>;
 
     /// Get recent attempts for an identifier
-    async fn get_recent_attempts(&self, identifier: &str, limit: usize) -> Result<Vec<LoginAttempt>>;
+    async fn get_recent_attempts(
+        &self,
+        identifier: &str,
+        limit: usize,
+    ) -> Result<Vec<LoginAttempt>>;
 }
 
 /// Brute force protection manager
@@ -168,9 +181,15 @@ impl<S: BruteForceStore> BruteForceProtection<S> {
 
         // Count recent failed attempts
         let window_start = Utc::now() - Duration::seconds(self.config.window_seconds as i64);
-        let failed_count = self.store.get_failed_count(identifier, window_start).await?;
+        let failed_count = self
+            .store
+            .get_failed_count(identifier, window_start)
+            .await?;
 
-        Ok(LockoutStatus::unlocked(failed_count, self.config.max_attempts))
+        Ok(LockoutStatus::unlocked(
+            failed_count,
+            self.config.max_attempts,
+        ))
     }
 
     /// Record a failed login attempt
@@ -212,13 +231,18 @@ impl<S: BruteForceStore> BruteForceProtection<S> {
 
         // Check if we should lock out
         let window_start = Utc::now() - Duration::seconds(self.config.window_seconds as i64);
-        let failed_count = self.store.get_failed_count(identifier, window_start).await?;
+        let failed_count = self
+            .store
+            .get_failed_count(identifier, window_start)
+            .await?;
 
         if failed_count >= self.config.max_attempts {
             let lockout_duration = self.calculate_lockout_duration(failed_count);
             let locked_until = Utc::now() + lockout_duration;
 
-            self.store.set_lockout(identifier, locked_until, failed_count).await?;
+            self.store
+                .set_lockout(identifier, locked_until, failed_count)
+                .await?;
 
             let next_duration = self.calculate_next_lockout_duration(failed_count);
             return Ok(LockoutStatus::locked(
@@ -229,7 +253,10 @@ impl<S: BruteForceStore> BruteForceProtection<S> {
             ));
         }
 
-        Ok(LockoutStatus::unlocked(failed_count, self.config.max_attempts))
+        Ok(LockoutStatus::unlocked(
+            failed_count,
+            self.config.max_attempts,
+        ))
     }
 
     /// Record a successful login
@@ -283,7 +310,11 @@ impl<S: BruteForceStore> BruteForceProtection<S> {
     }
 
     /// Get recent login attempts
-    pub async fn get_recent_attempts(&self, identifier: &str, limit: usize) -> Result<Vec<LoginAttempt>> {
+    pub async fn get_recent_attempts(
+        &self,
+        identifier: &str,
+        limit: usize,
+    ) -> Result<Vec<LoginAttempt>> {
         self.store.get_recent_attempts(identifier, limit).await
     }
 
@@ -345,11 +376,7 @@ impl BruteForceStore for InMemoryBruteForceStore {
 
         let count = attempts
             .iter()
-            .filter(|a| {
-                a.identifier == identifier
-                    && !a.success
-                    && a.attempted_at >= window_start
-            })
+            .filter(|a| a.identifier == identifier && !a.success && a.attempted_at >= window_start)
             .count() as u32;
 
         Ok(count)
@@ -363,7 +390,12 @@ impl BruteForceStore for InMemoryBruteForceStore {
         Ok(lockouts.get(identifier).cloned())
     }
 
-    async fn set_lockout(&self, identifier: &str, until: DateTime<Utc>, attempt_count: u32) -> Result<()> {
+    async fn set_lockout(
+        &self,
+        identifier: &str,
+        until: DateTime<Utc>,
+        attempt_count: u32,
+    ) -> Result<()> {
         let mut lockouts = self.lockouts.write().map_err(|_| Error::Internal {
             message: "Lock poisoned".to_string(),
             request_id: None,
@@ -390,7 +422,11 @@ impl BruteForceStore for InMemoryBruteForceStore {
         Ok(())
     }
 
-    async fn get_recent_attempts(&self, identifier: &str, limit: usize) -> Result<Vec<LoginAttempt>> {
+    async fn get_recent_attempts(
+        &self,
+        identifier: &str,
+        limit: usize,
+    ) -> Result<Vec<LoginAttempt>> {
         let attempts = self.attempts.read().map_err(|_| Error::Internal {
             message: "Lock poisoned".to_string(),
             request_id: None,
@@ -435,7 +471,13 @@ mod tests {
         // Record failures
         for _ in 0..3 {
             protection
-                .record_failure("user@example.com", IdentifierType::Email, "1.2.3.4", None, None)
+                .record_failure(
+                    "user@example.com",
+                    IdentifierType::Email,
+                    "1.2.3.4",
+                    None,
+                    None,
+                )
                 .await
                 .unwrap();
         }
@@ -458,7 +500,13 @@ mod tests {
         // Record some failures
         for _ in 0..3 {
             protection
-                .record_failure("user@example.com", IdentifierType::Email, "1.2.3.4", None, None)
+                .record_failure(
+                    "user@example.com",
+                    IdentifierType::Email,
+                    "1.2.3.4",
+                    None,
+                    None,
+                )
                 .await
                 .unwrap();
         }

@@ -6,8 +6,8 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-use crate::{MediaError, MediaResult, MediaItem};
 use crate::image_optimizer::ImageOptimizer;
+use crate::{MediaError, MediaItem, MediaResult};
 
 /// Srcset configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,18 +65,25 @@ impl SrcsetGenerator {
     }
 
     /// Generate srcset variants from image data
-    pub fn generate_variants(&self, data: &[u8], original_width: u32) -> MediaResult<Vec<ImageVariant>> {
+    pub fn generate_variants(
+        &self,
+        data: &[u8],
+        original_width: u32,
+    ) -> MediaResult<Vec<ImageVariant>> {
         let mut variants = Vec::new();
 
         // Get applicable widths (smaller than original)
-        let widths: Vec<u32> = self.config.widths
+        let widths: Vec<u32> = self
+            .config
+            .widths
             .iter()
             .filter(|&&w| w <= original_width && w <= self.config.max_width)
             .copied()
             .collect();
 
         // Always include the original if within max_width
-        let widths = if original_width <= self.config.max_width && !widths.contains(&original_width) {
+        let widths = if original_width <= self.config.max_width && !widths.contains(&original_width)
+        {
             let mut w = widths;
             w.push(original_width);
             w.sort();
@@ -114,7 +121,12 @@ impl SrcsetGenerator {
     }
 
     /// Generate srcset attribute string
-    pub fn generate_srcset(&self, base_url: &str, filename: &str, format: ImageVariantFormat) -> String {
+    pub fn generate_srcset(
+        &self,
+        base_url: &str,
+        filename: &str,
+        format: ImageVariantFormat,
+    ) -> String {
         let ext = match format {
             ImageVariantFormat::Jpeg => "jpg",
             ImageVariantFormat::Png => "png",
@@ -127,7 +139,8 @@ impl SrcsetGenerator {
             .and_then(|s| s.to_str())
             .unwrap_or(filename);
 
-        self.config.widths
+        self.config
+            .widths
             .iter()
             .map(|w| format!("{}/{}-{}.{} {}w", base_url, name, w, ext, w))
             .collect::<Vec<_>>()
@@ -137,21 +150,15 @@ impl SrcsetGenerator {
     /// Generate sizes attribute for common layouts
     pub fn generate_sizes(&self, layout: SrcsetLayout) -> String {
         match layout {
-            SrcsetLayout::FullWidth => {
-                "100vw".to_string()
-            }
+            SrcsetLayout::FullWidth => "100vw".to_string(),
             SrcsetLayout::Container => {
                 "(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 1200px".to_string()
             }
-            SrcsetLayout::HalfWidth => {
-                "(max-width: 640px) 100vw, 50vw".to_string()
-            }
+            SrcsetLayout::HalfWidth => "(max-width: 640px) 100vw, 50vw".to_string(),
             SrcsetLayout::ThirdWidth => {
                 "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw".to_string()
             }
-            SrcsetLayout::Thumbnail => {
-                "150px".to_string()
-            }
+            SrcsetLayout::Thumbnail => "150px".to_string(),
             SrcsetLayout::Custom(sizes) => sizes,
         }
     }
@@ -195,7 +202,12 @@ impl SrcsetGenerator {
 
         html.push_str(&format!(
             "<img src=\"{}\" srcset=\"{}\" sizes=\"{}\" alt=\"{}\"{}{}",
-            media.url, jpeg_srcset, sizes, escape_html(alt), loading, decoding
+            media.url,
+            jpeg_srcset,
+            sizes,
+            escape_html(alt),
+            loading,
+            decoding
         ));
 
         if let (Some(w), Some(h)) = (media.width, media.height) {
@@ -329,7 +341,10 @@ pub fn generate_art_directed_picture(
 
     html.push_str(&format!(
         "<img src=\"{}\" alt=\"{}\"{}{}",
-        fallback.url, escape_html(alt), loading, decoding
+        fallback.url,
+        escape_html(alt),
+        loading,
+        decoding
     ));
 
     if let (Some(w), Some(h)) = (fallback.width, fallback.height) {

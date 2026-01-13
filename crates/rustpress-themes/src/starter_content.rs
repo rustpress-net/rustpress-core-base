@@ -176,11 +176,9 @@ impl StarterContent {
         let content = fs::read_to_string(path).await?;
 
         if path.extension().map_or(false, |e| e == "json") {
-            serde_json::from_str(&content)
-                .map_err(|e| StarterContentError::Parse(e.to_string()))
+            serde_json::from_str(&content).map_err(|e| StarterContentError::Parse(e.to_string()))
         } else {
-            toml::from_str(&content)
-                .map_err(|e| StarterContentError::Parse(e.to_string()))
+            toml::from_str(&content).map_err(|e| StarterContentError::Parse(e.to_string()))
         }
     }
 
@@ -291,7 +289,9 @@ impl StarterContentInstaller {
         for attachment in &self.content.attachments {
             match self.install_attachment(attachment).await {
                 Ok(_) => result.attachments_created.push(attachment.id.clone()),
-                Err(e) => result.errors.push(format!("Attachment {}: {}", attachment.id, e)),
+                Err(e) => result
+                    .errors
+                    .push(format!("Attachment {}: {}", attachment.id, e)),
             }
         }
 
@@ -330,7 +330,10 @@ impl StarterContentInstaller {
         Ok(result)
     }
 
-    async fn install_attachment(&self, attachment: &StarterAttachment) -> Result<(), StarterContentError> {
+    async fn install_attachment(
+        &self,
+        attachment: &StarterAttachment,
+    ) -> Result<(), StarterContentError> {
         if self.dry_run {
             return Ok(());
         }
@@ -364,7 +367,11 @@ impl StarterContentInstaller {
         Ok(())
     }
 
-    async fn install_menu(&self, _location: &str, menu: &StarterNavMenu) -> Result<(), StarterContentError> {
+    async fn install_menu(
+        &self,
+        _location: &str,
+        menu: &StarterNavMenu,
+    ) -> Result<(), StarterContentError> {
         if self.dry_run {
             return Ok(());
         }
@@ -374,13 +381,21 @@ impl StarterContentInstaller {
         Ok(())
     }
 
-    async fn configure_widgets(&self, sidebar: &str, widgets: &[StarterWidget]) -> Result<(), StarterContentError> {
+    async fn configure_widgets(
+        &self,
+        sidebar: &str,
+        widgets: &[StarterWidget],
+    ) -> Result<(), StarterContentError> {
         if self.dry_run {
             return Ok(());
         }
 
         // In a real implementation, this would configure widgets
-        tracing::debug!("Configuring {} widgets for sidebar: {}", widgets.len(), sidebar);
+        tracing::debug!(
+            "Configuring {} widgets for sidebar: {}",
+            widgets.len(),
+            sidebar
+        );
         Ok(())
     }
 }
@@ -400,7 +415,8 @@ pub fn create_default_starter_content() -> StarterContent {
 <!-- wp:paragraph -->
 <p>This is your homepage. Edit it to add your own content.</p>
 <!-- /wp:paragraph -->
-"#.to_string(),
+"#
+        .to_string(),
         template: Some("front-page".to_string()),
         parent: None,
         menu_order: 0,
@@ -419,7 +435,8 @@ pub fn create_default_starter_content() -> StarterContent {
 <!-- wp:paragraph -->
 <p>Tell your visitors about yourself and your site.</p>
 <!-- /wp:paragraph -->
-"#.to_string(),
+"#
+        .to_string(),
         template: None,
         parent: None,
         menu_order: 1,
@@ -438,7 +455,8 @@ pub fn create_default_starter_content() -> StarterContent {
 <!-- wp:paragraph -->
 <p>Get in touch with us using the form below.</p>
 <!-- /wp:paragraph -->
-"#.to_string(),
+"#
+        .to_string(),
         template: None,
         parent: None,
         menu_order: 2,
@@ -465,38 +483,50 @@ pub fn create_default_starter_content() -> StarterContent {
         content: r#"<!-- wp:paragraph -->
 <p>Welcome to your new site! This is your first post. Edit or delete it, then start writing!</p>
 <!-- /wp:paragraph -->
-"#.to_string(),
+"#
+        .to_string(),
         excerpt: Some("Welcome to your new site!".to_string()),
         categories: vec!["uncategorized".to_string()],
         ..Default::default()
     });
 
     // Primary menu
-    content.add_nav_menu("primary", StarterNavMenu {
-        name: "Primary Menu".to_string(),
-        items: vec![
-            StarterMenuItem {
-                title: "Home".to_string(),
-                item_type: MenuItemType::Page { page_id: "home".to_string() },
-                children: Vec::new(),
-            },
-            StarterMenuItem {
-                title: "About".to_string(),
-                item_type: MenuItemType::Page { page_id: "about".to_string() },
-                children: Vec::new(),
-            },
-            StarterMenuItem {
-                title: "Blog".to_string(),
-                item_type: MenuItemType::Page { page_id: "blog".to_string() },
-                children: Vec::new(),
-            },
-            StarterMenuItem {
-                title: "Contact".to_string(),
-                item_type: MenuItemType::Page { page_id: "contact".to_string() },
-                children: Vec::new(),
-            },
-        ],
-    });
+    content.add_nav_menu(
+        "primary",
+        StarterNavMenu {
+            name: "Primary Menu".to_string(),
+            items: vec![
+                StarterMenuItem {
+                    title: "Home".to_string(),
+                    item_type: MenuItemType::Page {
+                        page_id: "home".to_string(),
+                    },
+                    children: Vec::new(),
+                },
+                StarterMenuItem {
+                    title: "About".to_string(),
+                    item_type: MenuItemType::Page {
+                        page_id: "about".to_string(),
+                    },
+                    children: Vec::new(),
+                },
+                StarterMenuItem {
+                    title: "Blog".to_string(),
+                    item_type: MenuItemType::Page {
+                        page_id: "blog".to_string(),
+                    },
+                    children: Vec::new(),
+                },
+                StarterMenuItem {
+                    title: "Contact".to_string(),
+                    item_type: MenuItemType::Page {
+                        page_id: "contact".to_string(),
+                    },
+                    children: Vec::new(),
+                },
+            ],
+        },
+    );
 
     // Set front page
     content.set_option("show_on_front", serde_json::json!("page"));

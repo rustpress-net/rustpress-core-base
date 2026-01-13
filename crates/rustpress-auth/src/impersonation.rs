@@ -194,19 +194,33 @@ pub trait ImpersonationStore: Send + Sync {
     async fn get(&self, id: Uuid) -> Result<Option<ImpersonationSession>>;
 
     /// Get active session for impersonator
-    async fn get_active_for_impersonator(&self, impersonator_id: Uuid) -> Result<Option<ImpersonationSession>>;
+    async fn get_active_for_impersonator(
+        &self,
+        impersonator_id: Uuid,
+    ) -> Result<Option<ImpersonationSession>>;
 
     /// Get active sessions for target user
-    async fn get_active_for_target(&self, target_user_id: Uuid) -> Result<Vec<ImpersonationSession>>;
+    async fn get_active_for_target(
+        &self,
+        target_user_id: Uuid,
+    ) -> Result<Vec<ImpersonationSession>>;
 
     /// End session
     async fn end(&self, id: Uuid, reason: ImpersonationEndReason) -> Result<()>;
 
     /// End all sessions for impersonator
-    async fn end_all_for_impersonator(&self, impersonator_id: Uuid, reason: ImpersonationEndReason) -> Result<u64>;
+    async fn end_all_for_impersonator(
+        &self,
+        impersonator_id: Uuid,
+        reason: ImpersonationEndReason,
+    ) -> Result<u64>;
 
     /// Get impersonation history for target
-    async fn get_history(&self, target_user_id: Uuid, limit: usize) -> Result<Vec<ImpersonationSession>>;
+    async fn get_history(
+        &self,
+        target_user_id: Uuid,
+        limit: usize,
+    ) -> Result<Vec<ImpersonationSession>>;
 
     /// Cleanup expired sessions
     async fn cleanup_expired(&self) -> Result<u64>;
@@ -244,7 +258,7 @@ impl<S: ImpersonationStore, R: UserRoleChecker> ImpersonationManager<S, R> {
 
     /// Hash a token
     fn hash_token(token: &str) -> String {
-        use sha2::{Sha256, Digest};
+        use sha2::{Digest, Sha256};
         let mut hasher = Sha256::new();
         hasher.update(token.as_bytes());
         hex::encode(hasher.finalize())
@@ -265,15 +279,18 @@ impl<S: ImpersonationStore, R: UserRoleChecker> ImpersonationManager<S, R> {
         if self.config.require_reason && reason.len() < self.config.min_reason_length {
             return Err(Error::InvalidInput {
                 field: "reason".to_string(),
-                message: format!("Reason must be at least {} characters", self.config.min_reason_length),
+                message: format!(
+                    "Reason must be at least {} characters",
+                    self.config.min_reason_length
+                ),
             });
         }
 
         // Check impersonator has permission
         let impersonator_roles = self.role_checker.get_user_roles(impersonator_id).await?;
-        let can_impersonate = impersonator_roles.iter().any(|r| {
-            self.config.allowed_impersonator_roles.contains(r)
-        });
+        let can_impersonate = impersonator_roles
+            .iter()
+            .any(|r| self.config.allowed_impersonator_roles.contains(r));
         if !can_impersonate {
             return Err(Error::Authorization {
                 action: "You don't have permission to impersonate users".to_string(),
@@ -283,9 +300,9 @@ impl<S: ImpersonationStore, R: UserRoleChecker> ImpersonationManager<S, R> {
 
         // Check target is not protected
         let target_roles = self.role_checker.get_user_roles(target_user_id).await?;
-        let is_protected = target_roles.iter().any(|r| {
-            self.config.protected_roles.contains(r)
-        });
+        let is_protected = target_roles
+            .iter()
+            .any(|r| self.config.protected_roles.contains(r));
         if is_protected {
             return Err(Error::Authorization {
                 action: "This user cannot be impersonated".to_string(),
@@ -302,7 +319,11 @@ impl<S: ImpersonationStore, R: UserRoleChecker> ImpersonationManager<S, R> {
         }
 
         // Check for existing active session
-        if let Some(_existing) = self.store.get_active_for_impersonator(impersonator_id).await? {
+        if let Some(_existing) = self
+            .store
+            .get_active_for_impersonator(impersonator_id)
+            .await?
+        {
             return Err(Error::InvalidInput {
                 field: "impersonator_id".to_string(),
                 message: "You already have an active impersonation session".to_string(),
@@ -343,12 +364,13 @@ impl<S: ImpersonationStore, R: UserRoleChecker> ImpersonationManager<S, R> {
     /// Validate impersonation token
     pub async fn validate(&self, token: &str) -> Result<ImpersonationSession> {
         let token_hash = Self::hash_token(token);
-        let session = self.store
-            .get_by_token(&token_hash)
-            .await?
-            .ok_or_else(|| Error::Authentication {
-                message: "Invalid impersonation token".to_string(),
-            })?;
+        let session =
+            self.store
+                .get_by_token(&token_hash)
+                .await?
+                .ok_or_else(|| Error::Authentication {
+                    message: "Invalid impersonation token".to_string(),
+                })?;
 
         if !session.is_active() {
             return Err(Error::Authentication {
@@ -388,7 +410,9 @@ impl<S: ImpersonationStore, R: UserRoleChecker> ImpersonationManager<S, R> {
     /// End impersonation
     pub async fn end(&self, token: &str) -> Result<()> {
         let session = self.validate(token).await?;
-        self.store.end(session.id, ImpersonationEndReason::ManualEnd).await
+        self.store
+            .end(session.id, ImpersonationEndReason::ManualEnd)
+            .await
     }
 
     /// End impersonation by ID
@@ -397,7 +421,11 @@ impl<S: ImpersonationStore, R: UserRoleChecker> ImpersonationManager<S, R> {
     }
 
     /// End all impersonation sessions for a user being impersonated
-    pub async fn end_all_for_target(&self, target_user_id: Uuid, reason: ImpersonationEndReason) -> Result<u64> {
+    pub async fn end_all_for_target(
+        &self,
+        target_user_id: Uuid,
+        reason: ImpersonationEndReason,
+    ) -> Result<u64> {
         let sessions = self.store.get_active_for_target(target_user_id).await?;
         let mut count = 0;
         for session in sessions {
@@ -408,7 +436,11 @@ impl<S: ImpersonationStore, R: UserRoleChecker> ImpersonationManager<S, R> {
     }
 
     /// Get impersonation history for a user
-    pub async fn get_history(&self, target_user_id: Uuid, limit: usize) -> Result<Vec<ImpersonationSession>> {
+    pub async fn get_history(
+        &self,
+        target_user_id: Uuid,
+        limit: usize,
+    ) -> Result<Vec<ImpersonationSession>> {
         self.store.get_history(target_user_id, limit).await
     }
 
@@ -459,7 +491,10 @@ impl ImpersonationStore for InMemoryImpersonationStore {
             message: "Lock poisoned".to_string(),
             request_id: None,
         })?;
-        Ok(sessions.values().find(|s| s.token_hash == token_hash).cloned())
+        Ok(sessions
+            .values()
+            .find(|s| s.token_hash == token_hash)
+            .cloned())
     }
 
     async fn get(&self, id: Uuid) -> Result<Option<ImpersonationSession>> {
@@ -470,7 +505,10 @@ impl ImpersonationStore for InMemoryImpersonationStore {
         Ok(sessions.get(&id).cloned())
     }
 
-    async fn get_active_for_impersonator(&self, impersonator_id: Uuid) -> Result<Option<ImpersonationSession>> {
+    async fn get_active_for_impersonator(
+        &self,
+        impersonator_id: Uuid,
+    ) -> Result<Option<ImpersonationSession>> {
         let sessions = self.sessions.read().map_err(|_| Error::Internal {
             message: "Lock poisoned".to_string(),
             request_id: None,
@@ -481,7 +519,10 @@ impl ImpersonationStore for InMemoryImpersonationStore {
             .cloned())
     }
 
-    async fn get_active_for_target(&self, target_user_id: Uuid) -> Result<Vec<ImpersonationSession>> {
+    async fn get_active_for_target(
+        &self,
+        target_user_id: Uuid,
+    ) -> Result<Vec<ImpersonationSession>> {
         let sessions = self.sessions.read().map_err(|_| Error::Internal {
             message: "Lock poisoned".to_string(),
             request_id: None,
@@ -506,7 +547,11 @@ impl ImpersonationStore for InMemoryImpersonationStore {
         Ok(())
     }
 
-    async fn end_all_for_impersonator(&self, impersonator_id: Uuid, reason: ImpersonationEndReason) -> Result<u64> {
+    async fn end_all_for_impersonator(
+        &self,
+        impersonator_id: Uuid,
+        reason: ImpersonationEndReason,
+    ) -> Result<u64> {
         let mut sessions = self.sessions.write().map_err(|_| Error::Internal {
             message: "Lock poisoned".to_string(),
             request_id: None,
@@ -524,7 +569,11 @@ impl ImpersonationStore for InMemoryImpersonationStore {
         Ok(count)
     }
 
-    async fn get_history(&self, target_user_id: Uuid, limit: usize) -> Result<Vec<ImpersonationSession>> {
+    async fn get_history(
+        &self,
+        target_user_id: Uuid,
+        limit: usize,
+    ) -> Result<Vec<ImpersonationSession>> {
         let sessions = self.sessions.read().map_err(|_| Error::Internal {
             message: "Lock poisoned".to_string(),
             request_id: None,
@@ -550,7 +599,9 @@ impl ImpersonationStore for InMemoryImpersonationStore {
         let before = sessions.len();
         sessions.retain(|_, s| {
             // Keep active sessions and recently ended ones
-            s.is_active() || s.ended_at.map_or(false, |e| now.signed_duration_since(e).num_days() < 30)
+            s.is_active()
+                || s.ended_at
+                    .map_or(false, |e| now.signed_duration_since(e).num_days() < 30)
         });
         Ok((before - sessions.len()) as u64)
     }
@@ -612,10 +663,15 @@ mod tests {
         let admin_id = Uuid::now_v7();
         let user_id = Uuid::now_v7();
 
-        role_checker.set_roles(admin_id, vec!["administrator".to_string()]).unwrap();
-        role_checker.set_roles(user_id, vec!["subscriber".to_string()]).unwrap();
+        role_checker
+            .set_roles(admin_id, vec!["administrator".to_string()])
+            .unwrap();
+        role_checker
+            .set_roles(user_id, vec!["subscriber".to_string()])
+            .unwrap();
 
-        let manager = ImpersonationManager::new(store, role_checker, ImpersonationConfig::default());
+        let manager =
+            ImpersonationManager::new(store, role_checker, ImpersonationConfig::default());
 
         let (token, session) = manager
             .start(
@@ -644,10 +700,15 @@ mod tests {
         let admin_id = Uuid::now_v7();
         let super_admin_id = Uuid::now_v7();
 
-        role_checker.set_roles(admin_id, vec!["administrator".to_string()]).unwrap();
-        role_checker.set_roles(super_admin_id, vec!["super_admin".to_string()]).unwrap();
+        role_checker
+            .set_roles(admin_id, vec!["administrator".to_string()])
+            .unwrap();
+        role_checker
+            .set_roles(super_admin_id, vec!["super_admin".to_string()])
+            .unwrap();
 
-        let manager = ImpersonationManager::new(store, role_checker, ImpersonationConfig::default());
+        let manager =
+            ImpersonationManager::new(store, role_checker, ImpersonationConfig::default());
 
         let result = manager
             .start(
@@ -685,9 +746,12 @@ mod tests {
         let admin_id = Uuid::now_v7();
         let user_id = Uuid::now_v7();
 
-        role_checker.set_roles(admin_id, vec!["administrator".to_string()]).unwrap();
+        role_checker
+            .set_roles(admin_id, vec!["administrator".to_string()])
+            .unwrap();
 
-        let manager = ImpersonationManager::new(store, role_checker, ImpersonationConfig::default());
+        let manager =
+            ImpersonationManager::new(store, role_checker, ImpersonationConfig::default());
 
         let (token, _) = manager
             .start(

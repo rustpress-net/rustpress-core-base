@@ -2,11 +2,11 @@
 //!
 //! Provides session management and sticky session support for load-balanced environments.
 
+use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use parking_lot::RwLock;
-use serde::{Deserialize, Serialize};
 
 /// Session configuration
 #[derive(Debug, Clone)]
@@ -99,7 +99,9 @@ impl Session {
 
     /// Get a value from session
     pub fn get<T: serde::de::DeserializeOwned>(&self, key: &str) -> Option<T> {
-        self.data.get(key).and_then(|v| serde_json::from_value(v.clone()).ok())
+        self.data
+            .get(key)
+            .and_then(|v| serde_json::from_value(v.clone()).ok())
     }
 
     /// Set a value in session
@@ -162,7 +164,8 @@ impl MemorySessionStore {
 
     /// Get sessions for a user
     pub fn get_user_sessions(&self, user_id: i64) -> Vec<Session> {
-        self.sessions.read()
+        self.sessions
+            .read()
             .values()
             .filter(|s| s.user_id == Some(user_id))
             .cloned()
@@ -294,14 +297,11 @@ impl LoadBalancer {
                 *idx = (*idx + 1) % healthy_nodes.len();
                 node
             }
-            LoadBalancingStrategy::WeightedRoundRobin => {
-                self.weighted_round_robin(&healthy_nodes)
-            }
-            LoadBalancingStrategy::LeastConnections => {
-                healthy_nodes.iter()
-                    .min_by_key(|n| n.active_connections)
-                    .unwrap()
-            }
+            LoadBalancingStrategy::WeightedRoundRobin => self.weighted_round_robin(&healthy_nodes),
+            LoadBalancingStrategy::LeastConnections => healthy_nodes
+                .iter()
+                .min_by_key(|n| n.active_connections)
+                .unwrap(),
             LoadBalancingStrategy::IpHash => {
                 if let Some(ip) = client_ip {
                     let hash = self.hash_string(ip);
@@ -317,7 +317,8 @@ impl LoadBalancer {
             }
             LoadBalancingStrategy::LeastResponseTime => {
                 // In a real implementation, this would track response times
-                healthy_nodes.iter()
+                healthy_nodes
+                    .iter()
                     .min_by_key(|n| n.active_connections)
                     .unwrap()
             }
@@ -325,7 +326,9 @@ impl LoadBalancer {
 
         // Set session affinity
         if let Some(sid) = session_id {
-            self.session_affinity.write().insert(sid.to_string(), selected.id.clone());
+            self.session_affinity
+                .write()
+                .insert(sid.to_string(), selected.id.clone());
         }
 
         Some((*selected).clone())
@@ -435,7 +438,12 @@ impl HealthChecker {
     pub async fn check(&self, node: &ServerNode) -> bool {
         // In a real implementation, this would make an HTTP request
         // to the node's health check endpoint
-        tracing::debug!("Health check for node {}: {}{}", node.id, node.address, self.check_path);
+        tracing::debug!(
+            "Health check for node {}: {}{}",
+            node.id,
+            node.address,
+            self.check_path
+        );
         true
     }
 }

@@ -1,13 +1,13 @@
 //! Workers API handlers
 
+use crate::error::CloudflareResult;
+use crate::services::CloudflareServices;
 use axum::{
     extract::{Path, Query, State},
     Json,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use crate::error::CloudflareResult;
-use crate::services::CloudflareServices;
 
 #[derive(Debug, Deserialize)]
 pub struct DeployWorkerRequest {
@@ -136,7 +136,10 @@ pub async fn create_route(
     State(services): State<Arc<CloudflareServices>>,
     Json(req): Json<CreateRouteRequest>,
 ) -> CloudflareResult<Json<serde_json::Value>> {
-    let route = services.workers.create_route(&req.pattern, &req.script).await?;
+    let route = services
+        .workers
+        .create_route(&req.pattern, &req.script)
+        .await?;
 
     Ok(Json(serde_json::json!({
         "success": true,
@@ -239,7 +242,10 @@ pub async fn set_kv_value(
     Path((namespace, key)): Path<(String, String)>,
     Json(req): Json<SetKvValueRequest>,
 ) -> CloudflareResult<Json<serde_json::Value>> {
-    services.workers.set_kv(&namespace, &key, &req.value).await?;
+    services
+        .workers
+        .set_kv(&namespace, &key, &req.value)
+        .await?;
 
     Ok(Json(serde_json::json!({
         "success": true,

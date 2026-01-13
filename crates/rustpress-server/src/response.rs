@@ -108,7 +108,8 @@ impl<T: Serialize> CreatedAt<T> {
 
 impl<T: Serialize> IntoResponse for CreatedAt<T> {
     fn into_response(self) -> Response {
-        let mut response = (StatusCode::CREATED, Json(SuccessResponse::new(self.data))).into_response();
+        let mut response =
+            (StatusCode::CREATED, Json(SuccessResponse::new(self.data))).into_response();
         if let Ok(location) = HeaderValue::from_str(&self.location) {
             response.headers_mut().insert(header::LOCATION, location);
         }
@@ -171,7 +172,11 @@ pub struct FileDownload {
 }
 
 impl FileDownload {
-    pub fn new(data: Vec<u8>, filename: impl Into<String>, content_type: impl Into<String>) -> Self {
+    pub fn new(
+        data: Vec<u8>,
+        filename: impl Into<String>,
+        content_type: impl Into<String>,
+    ) -> Self {
         Self {
             data,
             filename: filename.into(),

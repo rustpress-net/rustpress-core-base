@@ -30,9 +30,9 @@ pub struct VideoMetadata {
 /// Transcoded video version
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TranscodedVersion {
-    pub quality: String,       // "1080p", "720p", "480p", "360p"
-    pub format: String,        // "mp4", "webm"
-    pub codec: String,         // "h264", "vp9"
+    pub quality: String, // "1080p", "720p", "480p", "360p"
+    pub format: String,  // "mp4", "webm"
+    pub codec: String,   // "h264", "vp9"
     pub bitrate: i32,
     pub file_size: i64,
     pub url: String,
@@ -57,17 +57,18 @@ impl VideoService {
                    has_audio, poster_url, transcoded_versions, created_at
             FROM video_metadata
             WHERE media_id = $1
-            "#
+            "#,
         )
         .bind(media_id)
         .fetch_optional(&self.pool)
         .await?
         .ok_or(MediaError::NotFound(media_id))?;
 
-        let transcoded_value: serde_json::Value = row.try_get("transcoded_versions")
+        let transcoded_value: serde_json::Value = row
+            .try_get("transcoded_versions")
             .unwrap_or_else(|_| serde_json::json!([]));
-        let transcoded: Vec<TranscodedVersion> = serde_json::from_value(transcoded_value)
-            .unwrap_or_default();
+        let transcoded: Vec<TranscodedVersion> =
+            serde_json::from_value(transcoded_value).unwrap_or_default();
 
         Ok(VideoMetadata {
             id: row.get("id"),
@@ -164,7 +165,10 @@ impl VideoService {
         }
 
         // Fallback
-        html.push_str(&format!("<source src=\"{}\" type=\"video/mp4\">", fallback_url));
+        html.push_str(&format!(
+            "<source src=\"{}\" type=\"video/mp4\">",
+            fallback_url
+        ));
         html.push_str("Your browser does not support the video tag.");
         html.push_str("</video>");
 

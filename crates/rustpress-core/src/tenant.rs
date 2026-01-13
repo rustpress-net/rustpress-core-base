@@ -332,11 +332,7 @@ impl std::fmt::Display for QuotaViolation {
                 write!(f, "User quota exceeded: {} of {} users", current, max)
             }
             Self::Storage { current, max } => {
-                write!(
-                    f,
-                    "Storage quota exceeded: {} of {} bytes",
-                    current, max
-                )
+                write!(f, "Storage quota exceeded: {} of {} bytes", current, max)
             }
             Self::Posts { current, max } => {
                 write!(f, "Post quota exceeded: {} of {} posts", current, max)

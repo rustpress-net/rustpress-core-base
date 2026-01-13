@@ -68,7 +68,10 @@ pub mod permissions {
     use super::Permission;
 
     // Posts
-    pub const POSTS_READ: Permission = Permission { resource: String::new(), action: String::new() };
+    pub const POSTS_READ: Permission = Permission {
+        resource: String::new(),
+        action: String::new(),
+    };
 
     pub fn posts_read() -> Permission {
         Permission::new("posts", "read")
@@ -275,7 +278,12 @@ pub mod roles {
     pub fn subscriber() -> Role {
         Role::new("subscriber", "Subscriber")
             .with_description("Can read content and post comments")
-            .with_permissions([posts_read(), pages_read(), comments_read(), comments_create()])
+            .with_permissions([
+                posts_read(),
+                pages_read(),
+                comments_read(),
+                comments_create(),
+            ])
     }
 }
 
@@ -348,12 +356,7 @@ impl PermissionChecker {
     }
 
     /// Check if user with given roles can perform action
-    pub fn can(
-        &self,
-        user_roles: &[String],
-        resource: &str,
-        action: &str,
-    ) -> bool {
+    pub fn can(&self, user_roles: &[String], resource: &str, action: &str) -> bool {
         let permission = Permission::new(resource, action);
         user_roles
             .iter()
@@ -418,8 +421,7 @@ mod tests {
     fn test_role_inheritance() {
         let mut checker = PermissionChecker::new();
 
-        let base = Role::new("base", "Base")
-            .with_permission(Permission::new("resource", "read"));
+        let base = Role::new("base", "Base").with_permission(Permission::new("resource", "read"));
 
         let extended = Role::new("extended", "Extended")
             .inherits("base")

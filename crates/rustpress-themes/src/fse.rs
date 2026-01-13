@@ -2,11 +2,11 @@
 //!
 //! Block-based site editing with templates and template parts.
 
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use parking_lot::RwLock;
 use thiserror::Error;
 use tokio::fs;
 
@@ -169,7 +169,8 @@ impl FseManager {
 
         // Load custom templates (override theme)
         if self.custom_templates_dir.exists() {
-            self.load_templates_from_dir(&self.custom_templates_dir, true).await?;
+            self.load_templates_from_dir(&self.custom_templates_dir, true)
+                .await?;
         }
 
         Ok(())
@@ -183,7 +184,8 @@ impl FseManager {
 
             if path.extension().map_or(false, |e| e == "html") {
                 let content = fs::read_to_string(&path).await?;
-                let slug = path.file_stem()
+                let slug = path
+                    .file_stem()
                     .and_then(|s| s.to_str())
                     .ok_or_else(|| FseError::InvalidTemplate("Invalid filename".to_string()))?
                     .to_string();
@@ -196,7 +198,12 @@ impl FseManager {
         Ok(())
     }
 
-    fn parse_template(&self, slug: &str, content: &str, is_custom: bool) -> Result<FseTemplate, FseError> {
+    fn parse_template(
+        &self,
+        slug: &str,
+        content: &str,
+        is_custom: bool,
+    ) -> Result<FseTemplate, FseError> {
         // Extract metadata from HTML comments if present
         let (title, description, post_types) = self.extract_template_metadata(content);
 
@@ -211,11 +218,18 @@ impl FseManager {
             post_types,
             template_parts: self.find_template_parts(content),
             is_custom,
-            source: if is_custom { None } else { Some("theme".to_string()) },
+            source: if is_custom {
+                None
+            } else {
+                Some("theme".to_string())
+            },
         })
     }
 
-    fn extract_template_metadata(&self, content: &str) -> (Option<String>, Option<String>, Vec<String>) {
+    fn extract_template_metadata(
+        &self,
+        content: &str,
+    ) -> (Option<String>, Option<String>, Vec<String>) {
         let mut title = None;
         let mut description = None;
         let mut post_types = Vec::new();
@@ -236,7 +250,8 @@ impl FseManager {
                                 description = Some(d.to_string());
                             }
                             if let Some(pt) = meta.get("postTypes").and_then(|v| v.as_array()) {
-                                post_types = pt.iter()
+                                post_types = pt
+                                    .iter()
                                     .filter_map(|v| v.as_str().map(|s| s.to_string()))
                                     .collect();
                             }
@@ -289,8 +304,8 @@ impl FseManager {
         let mut parts = Vec::new();
 
         // Find wp:template-part blocks
-        let re = regex::Regex::new(r#"<!-- wp:template-part \{[^}]*"slug":"([^"]+)"[^}]*\}"#)
-            .unwrap();
+        let re =
+            regex::Regex::new(r#"<!-- wp:template-part \{[^}]*"slug":"([^"]+)"[^}]*\}"#).unwrap();
 
         for cap in re.captures_iter(content) {
             parts.push(cap[1].to_string());
@@ -324,7 +339,8 @@ impl FseManager {
 
             if path.extension().map_or(false, |e| e == "html") {
                 let content = fs::read_to_string(&path).await?;
-                let slug = path.file_stem()
+                let slug = path
+                    .file_stem()
                     .and_then(|s| s.to_str())
                     .ok_or_else(|| FseError::InvalidTemplate("Invalid filename".to_string()))?
                     .to_string();
@@ -337,7 +353,12 @@ impl FseManager {
         Ok(())
     }
 
-    fn parse_part(&self, slug: &str, content: &str, is_custom: bool) -> Result<TemplatePart, FseError> {
+    fn parse_part(
+        &self,
+        slug: &str,
+        content: &str,
+        is_custom: bool,
+    ) -> Result<TemplatePart, FseError> {
         let (title, area) = self.extract_part_metadata(content, slug);
 
         Ok(TemplatePart {
@@ -346,11 +367,19 @@ impl FseManager {
             area,
             content: content.to_string(),
             is_custom,
-            source: if is_custom { None } else { Some("theme".to_string()) },
+            source: if is_custom {
+                None
+            } else {
+                Some("theme".to_string())
+            },
         })
     }
 
-    fn extract_part_metadata(&self, content: &str, slug: &str) -> (Option<String>, TemplatePartArea) {
+    fn extract_part_metadata(
+        &self,
+        content: &str,
+        slug: &str,
+    ) -> (Option<String>, TemplatePartArea) {
         let mut title = None;
         let mut area = self.infer_part_area(slug);
 
@@ -439,15 +468,20 @@ impl FseManager {
         // Save to custom templates directory
         fs::create_dir_all(&self.custom_templates_dir).await?;
 
-        let path = self.custom_templates_dir.join(format!("{}.html", template.slug));
+        let path = self
+            .custom_templates_dir
+            .join(format!("{}.html", template.slug));
         fs::write(&path, &template.content).await?;
 
         // Update cache
         let mut templates = self.templates.write();
-        templates.insert(template.slug.clone(), FseTemplate {
-            is_custom: true,
-            ..template
-        });
+        templates.insert(
+            template.slug.clone(),
+            FseTemplate {
+                is_custom: true,
+                ..template
+            },
+        );
 
         Ok(())
     }
@@ -462,10 +496,13 @@ impl FseManager {
 
         // Update cache
         let mut parts = self.parts.write();
-        parts.insert(part.slug.clone(), TemplatePart {
-            is_custom: true,
-            ..part
-        });
+        parts.insert(
+            part.slug.clone(),
+            TemplatePart {
+                is_custom: true,
+                ..part
+            },
+        );
 
         Ok(())
     }
@@ -479,7 +516,10 @@ impl FseManager {
         }
 
         // Reload from theme
-        let theme_path = self.theme_path.join("templates").join(format!("{}.html", slug));
+        let theme_path = self
+            .theme_path
+            .join("templates")
+            .join(format!("{}.html", slug));
         if theme_path.exists() {
             let content = fs::read_to_string(&theme_path).await?;
             let template = self.parse_template(slug, &content, false)?;
@@ -493,7 +533,10 @@ impl FseManager {
 
     /// Delete a custom template part
     pub async fn delete_custom_part(&self, slug: &str) -> Result<(), FseError> {
-        let path = self.custom_templates_dir.join("parts").join(format!("{}.html", slug));
+        let path = self
+            .custom_templates_dir
+            .join("parts")
+            .join(format!("{}.html", slug));
 
         if path.exists() {
             fs::remove_file(&path).await?;
@@ -514,7 +557,8 @@ impl FseManager {
 
     /// Render a template (resolving template parts)
     pub fn render(&self, template_slug: &str) -> Result<String, FseError> {
-        let template = self.get_template(template_slug)
+        let template = self
+            .get_template(template_slug)
             .ok_or_else(|| FseError::TemplateNotFound(template_slug.to_string()))?;
 
         self.render_with_parts(&template.content)
@@ -524,9 +568,8 @@ impl FseManager {
         let mut result = content.to_string();
 
         // Replace template-part blocks with their content
-        let re = regex::Regex::new(
-            r#"<!-- wp:template-part \{[^}]*"slug":"([^"]+)"[^}]*\} /-->"#
-        ).unwrap();
+        let re = regex::Regex::new(r#"<!-- wp:template-part \{[^}]*"slug":"([^"]+)"[^}]*\} /-->"#)
+            .unwrap();
 
         for cap in re.captures_iter(content) {
             let full_match = cap.get(0).unwrap().as_str();
@@ -556,10 +599,7 @@ mod tests {
     #[tokio::test]
     async fn test_fse_manager_creation() {
         let dir = tempdir().unwrap();
-        let manager = FseManager::new(
-            dir.path().to_path_buf(),
-            dir.path().join("custom"),
-        );
+        let manager = FseManager::new(dir.path().to_path_buf(), dir.path().join("custom"));
 
         assert!(manager.get_all_templates().is_empty());
         assert!(manager.get_all_parts().is_empty());
@@ -568,10 +608,7 @@ mod tests {
     #[test]
     fn test_format_title() {
         let dir = tempdir().unwrap();
-        let manager = FseManager::new(
-            dir.path().to_path_buf(),
-            dir.path().join("custom"),
-        );
+        let manager = FseManager::new(dir.path().to_path_buf(), dir.path().join("custom"));
 
         assert_eq!(manager.format_title("front-page"), "Front Page");
         assert_eq!(manager.format_title("single-post"), "Single Post");

@@ -2,11 +2,11 @@
 //!
 //! Minifies CSS, JavaScript, and HTML content. Provides bundling support for assets.
 
+use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use parking_lot::RwLock;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Minification errors
@@ -332,21 +332,25 @@ fn optimize_css(css: &str) -> String {
     // Shorten color values (e.g., #aabbcc -> #abc)
     // Rust regex doesn't support backreferences, so we find and shorten manually
     let color_re = regex::Regex::new(r"#([0-9a-fA-F]{6})\b").unwrap();
-    result = color_re.replace_all(&result, |caps: &regex::Captures| {
-        let hex = &caps[1];
-        let chars: Vec<char> = hex.chars().collect();
-        // Check if it's a shortable color (pairs are identical)
-        if chars[0].eq_ignore_ascii_case(&chars[1])
-            && chars[2].eq_ignore_ascii_case(&chars[3])
-            && chars[4].eq_ignore_ascii_case(&chars[5]) {
-            format!("#{}{}{}", chars[0], chars[2], chars[4])
-        } else {
-            format!("#{}", hex)
-        }
-    }).to_string();
+    result = color_re
+        .replace_all(&result, |caps: &regex::Captures| {
+            let hex = &caps[1];
+            let chars: Vec<char> = hex.chars().collect();
+            // Check if it's a shortable color (pairs are identical)
+            if chars[0].eq_ignore_ascii_case(&chars[1])
+                && chars[2].eq_ignore_ascii_case(&chars[3])
+                && chars[4].eq_ignore_ascii_case(&chars[5])
+            {
+                format!("#{}{}{}", chars[0], chars[2], chars[4])
+            } else {
+                format!("#{}", hex)
+            }
+        })
+        .to_string();
 
     // Remove units from zero values
-    let zero_re = regex::Regex::new(r"\b0(px|em|rem|%|pt|cm|mm|in|pc|ex|ch|vw|vh|vmin|vmax)\b").unwrap();
+    let zero_re =
+        regex::Regex::new(r"\b0(px|em|rem|%|pt|cm|mm|in|pc|ex|ch|vw|vh|vmin|vmax)\b").unwrap();
     result = zero_re.replace_all(&result, "0").to_string();
 
     // Shorten common values
@@ -499,7 +503,8 @@ fn remove_html_comments(html: &str) -> String {
         } else {
             String::new()
         }
-    }).to_string()
+    })
+    .to_string()
 }
 
 fn collapse_html_whitespace(html: &str) -> String {
@@ -609,7 +614,11 @@ impl Bundler {
     }
 
     /// Bundle JavaScript files
-    pub fn bundle_js(&self, entry: &BundleEntry, contents: &[String]) -> Result<BundleResult, MinificationError> {
+    pub fn bundle_js(
+        &self,
+        entry: &BundleEntry,
+        contents: &[String],
+    ) -> Result<BundleResult, MinificationError> {
         if entry.bundle_type != BundleType::JavaScript {
             return Err(MinificationError::InvalidInput(
                 "Expected JavaScript bundle type".to_string(),
@@ -638,7 +647,9 @@ impl Bundler {
         };
 
         let hash = blake3::hash(final_content.as_bytes()).to_hex()[..8].to_string();
-        let filename = self.config.filename_pattern
+        let filename = self
+            .config
+            .filename_pattern
             .replace("[name]", &entry.name)
             .replace("[hash]", &hash);
 
@@ -648,12 +659,20 @@ impl Bundler {
             hash,
             original_size,
             bundle_size: final_content.len(),
-            sources: entry.sources.iter().map(|p| p.display().to_string()).collect(),
+            sources: entry
+                .sources
+                .iter()
+                .map(|p| p.display().to_string())
+                .collect(),
         })
     }
 
     /// Bundle CSS files
-    pub fn bundle_css(&self, entry: &BundleEntry, contents: &[String]) -> Result<BundleResult, MinificationError> {
+    pub fn bundle_css(
+        &self,
+        entry: &BundleEntry,
+        contents: &[String],
+    ) -> Result<BundleResult, MinificationError> {
         if entry.bundle_type != BundleType::Css {
             return Err(MinificationError::InvalidInput(
                 "Expected CSS bundle type".to_string(),
@@ -679,7 +698,9 @@ impl Bundler {
         };
 
         let hash = blake3::hash(final_content.as_bytes()).to_hex()[..8].to_string();
-        let filename = self.config.filename_pattern
+        let filename = self
+            .config
+            .filename_pattern
             .replace("[name]", &entry.name)
             .replace("[hash]", &hash)
             .replace(".js", ".css");
@@ -690,7 +711,11 @@ impl Bundler {
             hash,
             original_size,
             bundle_size: final_content.len(),
-            sources: entry.sources.iter().map(|p| p.display().to_string()).collect(),
+            sources: entry
+                .sources
+                .iter()
+                .map(|p| p.display().to_string())
+                .collect(),
         })
     }
 }
@@ -721,8 +746,19 @@ impl CriticalCssExtractor {
 
         // For now, extract rules that likely affect above-the-fold content
         let critical_selectors = [
-            "html", "body", "header", "nav", "main", "h1", "h2", ".hero",
-            ".banner", ".header", ".navigation", ".nav", ".menu",
+            "html",
+            "body",
+            "header",
+            "nav",
+            "main",
+            "h1",
+            "h2",
+            ".hero",
+            ".banner",
+            ".header",
+            ".navigation",
+            ".nav",
+            ".menu",
         ];
 
         let mut critical_css = String::new();
@@ -733,9 +769,7 @@ impl CriticalCssExtractor {
             let rules = cap.get(2).map(|m| m.as_str()).unwrap_or("");
 
             // Check if selector matches any critical patterns
-            let is_critical = critical_selectors.iter().any(|cs| {
-                selector.contains(cs)
-            });
+            let is_critical = critical_selectors.iter().any(|cs| selector.contains(cs));
 
             if is_critical {
                 critical_css.push_str(selector);

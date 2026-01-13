@@ -7,5 +7,5 @@ pub mod event;
 pub mod subscriber;
 
 pub use bus::EventBus;
-pub use event::{Event, EventType, DomainEvent};
+pub use event::{DomainEvent, Event, EventType};
 pub use subscriber::{EventHandler, Subscriber};

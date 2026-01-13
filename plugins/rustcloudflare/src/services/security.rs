@@ -14,7 +14,10 @@ pub struct SecurityService {
 
 impl SecurityService {
     pub fn new(client: Arc<CloudflareClient>, db: PgPool) -> Self {
-        Self { client: Some(client), db }
+        Self {
+            client: Some(client),
+            db,
+        }
     }
 
     /// Create without a configured client (for initial setup)
@@ -24,9 +27,11 @@ impl SecurityService {
 
     /// Get the client or return an error if not configured
     fn get_client(&self) -> CloudflareResult<&CloudflareClient> {
-        self.client.as_ref()
-            .map(|c| c.as_ref())
-            .ok_or_else(|| CloudflareError::ConfigError("Cloudflare not configured. Please connect your account.".to_string()))
+        self.client.as_ref().map(|c| c.as_ref()).ok_or_else(|| {
+            CloudflareError::ConfigError(
+                "Cloudflare not configured. Please connect your account.".to_string(),
+            )
+        })
     }
 
     pub async fn get_security_level(&self) -> CloudflareResult<String> {
@@ -57,7 +62,10 @@ impl SecurityService {
         client.list_firewall_rules().await
     }
 
-    pub async fn create_firewall_rule(&self, rule: CreateFirewallRule) -> CloudflareResult<FirewallRule> {
+    pub async fn create_firewall_rule(
+        &self,
+        rule: CreateFirewallRule,
+    ) -> CloudflareResult<FirewallRule> {
         let client = self.get_client()?;
         client.create_firewall_rule(rule).await
     }
@@ -69,25 +77,29 @@ impl SecurityService {
 
     pub async fn block_ip(&self, ip: &str, note: Option<&str>) -> CloudflareResult<IpAccessRule> {
         let client = self.get_client()?;
-        client.create_ip_access_rule(CreateIpAccessRule {
-            mode: "block".to_string(),
-            configuration: IpConfiguration {
-                target: "ip".to_string(),
-                value: ip.to_string(),
-            },
-            notes: note.map(|s| s.to_string()),
-        }).await
+        client
+            .create_ip_access_rule(CreateIpAccessRule {
+                mode: "block".to_string(),
+                configuration: IpConfiguration {
+                    target: "ip".to_string(),
+                    value: ip.to_string(),
+                },
+                notes: note.map(|s| s.to_string()),
+            })
+            .await
     }
 
     pub async fn allow_ip(&self, ip: &str, note: Option<&str>) -> CloudflareResult<IpAccessRule> {
         let client = self.get_client()?;
-        client.create_ip_access_rule(CreateIpAccessRule {
-            mode: "whitelist".to_string(),
-            configuration: IpConfiguration {
-                target: "ip".to_string(),
-                value: ip.to_string(),
-            },
-            notes: note.map(|s| s.to_string()),
-        }).await
+        client
+            .create_ip_access_rule(CreateIpAccessRule {
+                mode: "whitelist".to_string(),
+                configuration: IpConfiguration {
+                    target: "ip".to_string(),
+                    value: ip.to_string(),
+                },
+                notes: note.map(|s| s.to_string()),
+            })
+            .await
     }
 }

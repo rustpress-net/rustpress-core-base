@@ -15,7 +15,7 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Row, Column, TypeInfo};
+use sqlx::{Column, PgPool, Row, TypeInfo};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -198,7 +198,7 @@ pub const BLOCKED_COMMANDS: &[&str] = &[
     "DROP SCHEMA",
     "CREATE DATABASE",
     "ALTER SYSTEM",
-    "COPY",  // Prevent file system access
+    "COPY", // Prevent file system access
     "pg_read_file",
     "pg_write_file",
     "lo_import",
@@ -221,13 +221,18 @@ pub const DESTRUCTIVE_COMMANDS: &[&str] = &[
 /// Check if a query contains blocked commands
 fn is_blocked_query(query: &str) -> Option<&'static str> {
     let query_upper = query.to_uppercase();
-    BLOCKED_COMMANDS.iter().find(|&blocked| query_upper.contains(blocked)).copied()
+    BLOCKED_COMMANDS
+        .iter()
+        .find(|&blocked| query_upper.contains(blocked))
+        .copied()
 }
 
 /// Check if a query is destructive and requires confirmation
 fn is_destructive_query(query: &str) -> bool {
     let query_upper = query.to_uppercase();
-    DESTRUCTIVE_COMMANDS.iter().any(|cmd| query_upper.contains(cmd))
+    DESTRUCTIVE_COMMANDS
+        .iter()
+        .any(|cmd| query_upper.contains(cmd))
 }
 
 /// Save query request
@@ -447,7 +452,7 @@ pub struct RateLimitConfig {
 impl Default for RateLimitConfig {
     fn default() -> Self {
         Self {
-            max_requests: 100,  // 100 requests per minute
+            max_requests: 100, // 100 requests per minute
             window_seconds: 60,
         }
     }
@@ -543,7 +548,8 @@ impl DbManagerState {
     /// Initialize database tables for persistence (call this on startup)
     pub async fn init_tables(&self) -> Result<(), sqlx::Error> {
         // Create saved queries table
-        sqlx::query(r#"
+        sqlx::query(
+            r#"
             CREATE TABLE IF NOT EXISTS dbmanager_saved_queries (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(255) NOT NULL,
@@ -552,12 +558,14 @@ impl DbManagerState {
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
-        "#)
+        "#,
+        )
         .execute(&self.pool)
         .await?;
 
         // Create query history table
-        sqlx::query(r#"
+        sqlx::query(
+            r#"
             CREATE TABLE IF NOT EXISTS dbmanager_query_history (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 query TEXT NOT NULL,
@@ -567,20 +575,24 @@ impl DbManagerState {
                 error_message TEXT,
                 executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
-        "#)
+        "#,
+        )
         .execute(&self.pool)
         .await?;
 
         // Create index for faster history retrieval
-        sqlx::query(r#"
+        sqlx::query(
+            r#"
             CREATE INDEX IF NOT EXISTS idx_dbmanager_query_history_executed_at
             ON dbmanager_query_history(executed_at DESC)
-        "#)
+        "#,
+        )
         .execute(&self.pool)
         .await?;
 
         // Create audit log table
-        sqlx::query(r#"
+        sqlx::query(
+            r#"
             CREATE TABLE IF NOT EXISTS dbmanager_audit_log (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 event_type VARCHAR(100) NOT NULL,
@@ -590,29 +602,36 @@ impl DbManagerState {
                 user_agent TEXT,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
-        "#)
+        "#,
+        )
         .execute(&self.pool)
         .await?;
 
         // Create indexes for audit log
-        sqlx::query(r#"
+        sqlx::query(
+            r#"
             CREATE INDEX IF NOT EXISTS idx_dbmanager_audit_log_created_at
             ON dbmanager_audit_log(created_at DESC)
-        "#)
+        "#,
+        )
         .execute(&self.pool)
         .await?;
 
-        sqlx::query(r#"
+        sqlx::query(
+            r#"
             CREATE INDEX IF NOT EXISTS idx_dbmanager_audit_log_event_type
             ON dbmanager_audit_log(event_type)
-        "#)
+        "#,
+        )
         .execute(&self.pool)
         .await?;
 
-        sqlx::query(r#"
+        sqlx::query(
+            r#"
             CREATE INDEX IF NOT EXISTS idx_dbmanager_audit_log_user_id
             ON dbmanager_audit_log(user_id)
-        "#)
+        "#,
+        )
         .execute(&self.pool)
         .await?;
 
@@ -689,7 +708,9 @@ impl CsvParser {
                         // End of row
                         current_row.push(current_field.trim().to_string());
                         if !current_row.iter().all(|s| s.is_empty()) {
-                            rows.push(CsvRow { values: current_row });
+                            rows.push(CsvRow {
+                                values: current_row,
+                            });
                         }
                         current_row = Vec::new();
                         current_field = String::new();
@@ -705,7 +726,9 @@ impl CsvParser {
         if !current_field.is_empty() || !current_row.is_empty() {
             current_row.push(current_field.trim().to_string());
             if !current_row.iter().all(|s| s.is_empty()) {
-                rows.push(CsvRow { values: current_row });
+                rows.push(CsvRow {
+                    values: current_row,
+                });
             }
         }
 
@@ -926,9 +949,7 @@ pub fn trigger_hook(event: DbManagerEvent) {
 // ============================================================================
 
 /// Get database connection status
-pub async fn get_status(
-    State(state): State<Arc<DbManagerState>>,
-) -> impl IntoResponse {
+pub async fn get_status(State(state): State<Arc<DbManagerState>>) -> impl IntoResponse {
     // Get PostgreSQL version and connection info
     let version_result: Result<(String,), _> = sqlx::query_as("SELECT version()")
         .fetch_one(&state.pool)
@@ -944,11 +965,10 @@ pub async fn get_status(
     let idle = state.pool.num_idle();
 
     // Get database name and current user
-    let db_info: Result<(String, String), _> = sqlx::query_as(
-        "SELECT current_database(), current_user"
-    )
-    .fetch_one(&state.pool)
-    .await;
+    let db_info: Result<(String, String), _> =
+        sqlx::query_as("SELECT current_database(), current_user")
+            .fetch_one(&state.pool)
+            .await;
 
     let (database, user) = db_info.unwrap_or(("unknown".to_string(), "unknown".to_string()));
 
@@ -968,7 +988,7 @@ pub async fn get_status(
                 (SELECT setting::int FROM pg_settings WHERE name = 'port'),
                 5432
             ) as port
-        "#
+        "#,
     )
     .fetch_one(&state.pool)
     .await;
@@ -976,27 +996,28 @@ pub async fn get_status(
     let (host, port) = match conn_info {
         Ok((h, p)) => (
             h.unwrap_or_else(|| "localhost".to_string()),
-            p.unwrap_or(5432) as u16
+            p.unwrap_or(5432) as u16,
         ),
-        Err(_) => ("localhost".to_string(), 5432u16)
+        Err(_) => ("localhost".to_string(), 5432u16),
     };
 
     // Get uptime
     let uptime_result: Result<(String,), _> = sqlx::query_as(
-        "SELECT to_char(NOW() - pg_postmaster_start_time(), 'DD \"days\" HH24:MI:SS')"
+        "SELECT to_char(NOW() - pg_postmaster_start_time(), 'DD \"days\" HH24:MI:SS')",
     )
     .fetch_one(&state.pool)
     .await;
 
-    let uptime = uptime_result.map(|(u,)| u).unwrap_or_else(|_| "Unknown".to_string());
+    let uptime = uptime_result
+        .map(|(u,)| u)
+        .unwrap_or_else(|_| "Unknown".to_string());
 
     // Check SSL
-    let ssl_result: Result<(bool,), _> = sqlx::query_as(
-        "SELECT ssl FROM pg_stat_ssl WHERE pid = pg_backend_pid()"
-    )
-    .fetch_optional(&state.pool)
-    .await
-    .map(|opt| opt.unwrap_or((false,)));
+    let ssl_result: Result<(bool,), _> =
+        sqlx::query_as("SELECT ssl FROM pg_stat_ssl WHERE pid = pg_backend_pid()")
+            .fetch_optional(&state.pool)
+            .await
+            .map(|opt| opt.unwrap_or((false,)));
 
     let ssl = ssl_result.unwrap_or((false,)).0;
 
@@ -1023,9 +1044,7 @@ pub async fn get_status(
 }
 
 /// Get database statistics
-pub async fn get_stats(
-    State(state): State<Arc<DbManagerState>>,
-) -> impl IntoResponse {
+pub async fn get_stats(State(state): State<Arc<DbManagerState>>) -> impl IntoResponse {
     // Get table count
     let table_count: Result<(i64,), _> = sqlx::query_as(
         "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'"
@@ -1036,31 +1055,33 @@ pub async fn get_stats(
     let total_tables = table_count.map(|(c,)| c as u32).unwrap_or(0);
 
     // Get total row estimate (faster than COUNT(*) on all tables)
-    let row_estimate: Result<(i64,), _> = sqlx::query_as(
-        "SELECT COALESCE(SUM(n_live_tup), 0) FROM pg_stat_user_tables"
-    )
-    .fetch_one(&state.pool)
-    .await;
+    let row_estimate: Result<(i64,), _> =
+        sqlx::query_as("SELECT COALESCE(SUM(n_live_tup), 0) FROM pg_stat_user_tables")
+            .fetch_one(&state.pool)
+            .await;
 
     let total_rows = row_estimate.map(|(r,)| r as u64).unwrap_or(0);
 
     // Get database size
-    let db_size: Result<(String,), _> = sqlx::query_as(
-        "SELECT pg_size_pretty(pg_database_size(current_database()))"
-    )
-    .fetch_one(&state.pool)
-    .await;
+    let db_size: Result<(String,), _> =
+        sqlx::query_as("SELECT pg_size_pretty(pg_database_size(current_database()))")
+            .fetch_one(&state.pool)
+            .await;
 
-    let database_size = db_size.map(|(s,)| s).unwrap_or_else(|_| "Unknown".to_string());
+    let database_size = db_size
+        .map(|(s,)| s)
+        .unwrap_or_else(|_| "Unknown".to_string());
 
     // Get index size
     let idx_size: Result<(String,), _> = sqlx::query_as(
-        "SELECT pg_size_pretty(SUM(pg_indexes_size(relid))) FROM pg_stat_user_tables"
+        "SELECT pg_size_pretty(SUM(pg_indexes_size(relid))) FROM pg_stat_user_tables",
     )
     .fetch_one(&state.pool)
     .await;
 
-    let index_size = idx_size.map(|(s,)| s).unwrap_or_else(|_| "Unknown".to_string());
+    let index_size = idx_size
+        .map(|(s,)| s)
+        .unwrap_or_else(|_| "Unknown".to_string());
 
     // Get cache hit ratio
     let cache_ratio: Result<(Option<f64>,), _> = sqlx::query_as(
@@ -1069,7 +1090,7 @@ pub async fn get_stats(
             THEN 100.0 * blks_hit / (blks_hit + blks_read)
             ELSE 100.0 END
         FROM pg_stat_database
-        WHERE datname = current_database()"#
+        WHERE datname = current_database()"#,
     )
     .fetch_one(&state.pool)
     .await;
@@ -1094,7 +1115,7 @@ pub async fn get_stats(
             THEN (xact_commit + xact_rollback)::float / EXTRACT(EPOCH FROM (NOW() - stats_reset))
             ELSE 0 END
         FROM pg_stat_database
-        WHERE datname = current_database()"#
+        WHERE datname = current_database()"#,
     )
     .fetch_one(&state.pool)
     .await;
@@ -1146,7 +1167,8 @@ pub async fn list_tables(
         "t.table_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')"
     };
 
-    let query = format!(r#"
+    let query = format!(
+        r#"
         SELECT
             t.table_name,
             t.table_schema,
@@ -1169,33 +1191,38 @@ pub async fn list_tables(
         LEFT JOIN pg_stat_user_tables s ON s.relname = t.table_name AND s.schemaname = t.table_schema
         WHERE {schema_filter}
         ORDER BY t.table_schema, t.table_name
-    "#);
+    "#
+    );
 
-    let rows = sqlx::query(&query)
-        .fetch_all(&state.pool)
-        .await;
+    let rows = sqlx::query(&query).fetch_all(&state.pool).await;
 
     match rows {
         Ok(rows) => {
-            let tables: Vec<TableInfo> = rows.iter().map(|row| {
-                let table_type_raw: String = row.get("table_type");
-                let table_type = match table_type_raw.as_str() {
-                    "BASE TABLE" => "table",
-                    "VIEW" => "view",
-                    _ => "table",
-                }.to_string();
+            let tables: Vec<TableInfo> = rows
+                .iter()
+                .map(|row| {
+                    let table_type_raw: String = row.get("table_type");
+                    let table_type = match table_type_raw.as_str() {
+                        "BASE TABLE" => "table",
+                        "VIEW" => "view",
+                        _ => "table",
+                    }
+                    .to_string();
 
-                TableInfo {
-                    name: row.get("table_name"),
-                    schema: row.get("table_schema"),
-                    rows: row.get::<i64, _>("row_count") as u64,
-                    size: row.get("total_size"),
-                    index_size: row.get("index_size"),
-                    has_relations: row.get("has_relations"),
-                    last_modified: row.get::<Option<String>, _>("last_modified").unwrap_or_default(),
-                    table_type,
-                }
-            }).collect();
+                    TableInfo {
+                        name: row.get("table_name"),
+                        schema: row.get("table_schema"),
+                        rows: row.get::<i64, _>("row_count") as u64,
+                        size: row.get("total_size"),
+                        index_size: row.get("index_size"),
+                        has_relations: row.get("has_relations"),
+                        last_modified: row
+                            .get::<Option<String>, _>("last_modified")
+                            .unwrap_or_default(),
+                        table_type,
+                    }
+                })
+                .collect();
 
             Json(ApiResponse {
                 success: true,
@@ -1203,13 +1230,11 @@ pub async fn list_tables(
                 error: None,
             })
         }
-        Err(e) => {
-            Json(ApiResponse {
-                success: false,
-                data: None,
-                error: Some(format!("Failed to list tables: {}", e)),
-            })
-        }
+        Err(e) => Json(ApiResponse {
+            success: false,
+            data: None,
+            error: Some(format!("Failed to list tables: {}", e)),
+        }),
     }
 }
 
@@ -1248,8 +1273,14 @@ pub async fn get_table(
                 size: row.get("total_size"),
                 index_size: row.get("index_size"),
                 has_relations: false, // Will check below
-                last_modified: row.get::<Option<String>, _>("last_modified").unwrap_or_default(),
-                table_type: if table_type_raw == "BASE TABLE" { "table".to_string() } else { "view".to_string() },
+                last_modified: row
+                    .get::<Option<String>, _>("last_modified")
+                    .unwrap_or_default(),
+                table_type: if table_type_raw == "BASE TABLE" {
+                    "table".to_string()
+                } else {
+                    "view".to_string()
+                },
             }
         }
         Ok(None) => {
@@ -1311,49 +1342,56 @@ pub async fn get_table(
         .await;
 
     let columns: Vec<ColumnInfo> = match column_rows {
-        Ok(rows) => rows.iter().map(|row| {
-            let data_type: String = row.get("data_type");
-            let udt_name: String = row.get("udt_name");
-            let char_len: Option<i32> = row.get("character_maximum_length");
-            let num_prec: Option<i32> = row.get("numeric_precision");
+        Ok(rows) => rows
+            .iter()
+            .map(|row| {
+                let data_type: String = row.get("data_type");
+                let udt_name: String = row.get("udt_name");
+                let char_len: Option<i32> = row.get("character_maximum_length");
+                let num_prec: Option<i32> = row.get("numeric_precision");
 
-            let full_type = if let Some(len) = char_len {
-                format!("{}({})", data_type, len)
-            } else if let Some(prec) = num_prec {
-                let scale: Option<i32> = row.get("numeric_scale");
-                if let Some(s) = scale {
-                    format!("{}({},{})", data_type, prec, s)
+                let full_type = if let Some(len) = char_len {
+                    format!("{}({})", data_type, len)
+                } else if let Some(prec) = num_prec {
+                    let scale: Option<i32> = row.get("numeric_scale");
+                    if let Some(s) = scale {
+                        format!("{}({},{})", data_type, prec, s)
+                    } else {
+                        format!("{}({})", data_type, prec)
+                    }
+                } else if data_type == "ARRAY" {
+                    format!("{}[]", udt_name.trim_start_matches('_'))
+                } else if data_type == "USER-DEFINED" {
+                    udt_name.clone()
                 } else {
-                    format!("{}({})", data_type, prec)
+                    data_type.clone()
+                };
+
+                let is_fk: bool = row.get("is_foreign_key");
+                let references = if is_fk {
+                    Some(ForeignKeyReference {
+                        table: row
+                            .get::<Option<String>, _>("foreign_table_name")
+                            .unwrap_or_default(),
+                        column: row
+                            .get::<Option<String>, _>("foreign_column_name")
+                            .unwrap_or_default(),
+                    })
+                } else {
+                    None
+                };
+
+                ColumnInfo {
+                    name: row.get("column_name"),
+                    data_type: full_type,
+                    nullable: row.get::<String, _>("is_nullable") == "YES",
+                    default_value: row.get("column_default"),
+                    is_primary_key: row.get("is_primary_key"),
+                    is_foreign_key: is_fk,
+                    references,
                 }
-            } else if data_type == "ARRAY" {
-                format!("{}[]", udt_name.trim_start_matches('_'))
-            } else if data_type == "USER-DEFINED" {
-                udt_name.clone()
-            } else {
-                data_type.clone()
-            };
-
-            let is_fk: bool = row.get("is_foreign_key");
-            let references = if is_fk {
-                Some(ForeignKeyReference {
-                    table: row.get::<Option<String>, _>("foreign_table_name").unwrap_or_default(),
-                    column: row.get::<Option<String>, _>("foreign_column_name").unwrap_or_default(),
-                })
-            } else {
-                None
-            };
-
-            ColumnInfo {
-                name: row.get("column_name"),
-                data_type: full_type,
-                nullable: row.get::<String, _>("is_nullable") == "YES",
-                default_value: row.get("column_default"),
-                is_primary_key: row.get("is_primary_key"),
-                is_foreign_key: is_fk,
-                references,
-            }
-        }).collect(),
+            })
+            .collect(),
         Err(_) => vec![],
     };
 
@@ -1380,14 +1418,15 @@ pub async fn get_table(
         .await;
 
     let indexes: Vec<IndexInfo> = match index_rows {
-        Ok(rows) => rows.iter().map(|row| {
-            IndexInfo {
+        Ok(rows) => rows
+            .iter()
+            .map(|row| IndexInfo {
                 name: row.get("index_name"),
                 columns: row.get::<Vec<String>, _>("columns"),
                 unique: row.get("is_unique"),
                 index_type: row.get("index_type"),
-            }
-        }).collect(),
+            })
+            .collect(),
         Err(_) => vec![],
     };
 
@@ -1414,16 +1453,17 @@ pub async fn get_table(
         .await;
 
     let foreign_keys: Vec<ForeignKeyInfo> = match fk_rows {
-        Ok(rows) => rows.iter().map(|row| {
-            ForeignKeyInfo {
+        Ok(rows) => rows
+            .iter()
+            .map(|row| ForeignKeyInfo {
                 name: row.get("constraint_name"),
                 column: row.get("column_name"),
                 referenced_table: row.get("foreign_table_name"),
                 referenced_column: row.get("foreign_column_name"),
                 on_delete: row.get("delete_rule"),
                 on_update: row.get("update_rule"),
-            }
-        }).collect(),
+            })
+            .collect(),
         Err(_) => vec![],
     };
 
@@ -1491,49 +1531,56 @@ pub async fn get_table_columns(
 
     match rows {
         Ok(rows) => {
-            let columns: Vec<ColumnInfo> = rows.iter().map(|row| {
-                let data_type: String = row.get("data_type");
-                let udt_name: String = row.get("udt_name");
-                let char_len: Option<i32> = row.get("character_maximum_length");
-                let num_prec: Option<i32> = row.get("numeric_precision");
+            let columns: Vec<ColumnInfo> = rows
+                .iter()
+                .map(|row| {
+                    let data_type: String = row.get("data_type");
+                    let udt_name: String = row.get("udt_name");
+                    let char_len: Option<i32> = row.get("character_maximum_length");
+                    let num_prec: Option<i32> = row.get("numeric_precision");
 
-                let full_type = if let Some(len) = char_len {
-                    format!("{}({})", data_type, len)
-                } else if let Some(prec) = num_prec {
-                    let scale: Option<i32> = row.get("numeric_scale");
-                    if let Some(s) = scale {
-                        format!("{}({},{})", data_type, prec, s)
+                    let full_type = if let Some(len) = char_len {
+                        format!("{}({})", data_type, len)
+                    } else if let Some(prec) = num_prec {
+                        let scale: Option<i32> = row.get("numeric_scale");
+                        if let Some(s) = scale {
+                            format!("{}({},{})", data_type, prec, s)
+                        } else {
+                            format!("{}({})", data_type, prec)
+                        }
+                    } else if data_type == "ARRAY" {
+                        format!("{}[]", udt_name.trim_start_matches('_'))
+                    } else if data_type == "USER-DEFINED" {
+                        udt_name.clone()
                     } else {
-                        format!("{}({})", data_type, prec)
+                        data_type.clone()
+                    };
+
+                    let is_fk: bool = row.get("is_foreign_key");
+                    let references = if is_fk {
+                        Some(ForeignKeyReference {
+                            table: row
+                                .get::<Option<String>, _>("foreign_table_name")
+                                .unwrap_or_default(),
+                            column: row
+                                .get::<Option<String>, _>("foreign_column_name")
+                                .unwrap_or_default(),
+                        })
+                    } else {
+                        None
+                    };
+
+                    ColumnInfo {
+                        name: row.get("column_name"),
+                        data_type: full_type,
+                        nullable: row.get::<String, _>("is_nullable") == "YES",
+                        default_value: row.get("column_default"),
+                        is_primary_key: row.get("is_primary_key"),
+                        is_foreign_key: is_fk,
+                        references,
                     }
-                } else if data_type == "ARRAY" {
-                    format!("{}[]", udt_name.trim_start_matches('_'))
-                } else if data_type == "USER-DEFINED" {
-                    udt_name.clone()
-                } else {
-                    data_type.clone()
-                };
-
-                let is_fk: bool = row.get("is_foreign_key");
-                let references = if is_fk {
-                    Some(ForeignKeyReference {
-                        table: row.get::<Option<String>, _>("foreign_table_name").unwrap_or_default(),
-                        column: row.get::<Option<String>, _>("foreign_column_name").unwrap_or_default(),
-                    })
-                } else {
-                    None
-                };
-
-                ColumnInfo {
-                    name: row.get("column_name"),
-                    data_type: full_type,
-                    nullable: row.get::<String, _>("is_nullable") == "YES",
-                    default_value: row.get("column_default"),
-                    is_primary_key: row.get("is_primary_key"),
-                    is_foreign_key: is_fk,
-                    references,
-                }
-            }).collect();
+                })
+                .collect();
 
             Json(ApiResponse {
                 success: true,
@@ -1541,13 +1588,11 @@ pub async fn get_table_columns(
                 error: None,
             })
         }
-        Err(e) => {
-            Json(ApiResponse {
-                success: false,
-                data: None,
-                error: Some(format!("Failed to get columns: {}", e)),
-            })
-        }
+        Err(e) => Json(ApiResponse {
+            success: false,
+            data: None,
+            error: Some(format!("Failed to get columns: {}", e)),
+        }),
     }
 }
 
@@ -1579,14 +1624,15 @@ pub async fn get_table_indexes(
 
     match rows {
         Ok(rows) => {
-            let indexes: Vec<IndexInfo> = rows.iter().map(|row| {
-                IndexInfo {
+            let indexes: Vec<IndexInfo> = rows
+                .iter()
+                .map(|row| IndexInfo {
                     name: row.get("index_name"),
                     columns: row.get::<Vec<String>, _>("columns"),
                     unique: row.get("is_unique"),
                     index_type: row.get("index_type"),
-                }
-            }).collect();
+                })
+                .collect();
 
             Json(ApiResponse {
                 success: true,
@@ -1594,13 +1640,11 @@ pub async fn get_table_indexes(
                 error: None,
             })
         }
-        Err(e) => {
-            Json(ApiResponse {
-                success: false,
-                data: None,
-                error: Some(format!("Failed to get indexes: {}", e)),
-            })
-        }
+        Err(e) => Json(ApiResponse {
+            success: false,
+            data: None,
+            error: Some(format!("Failed to get indexes: {}", e)),
+        }),
     }
 }
 
@@ -1632,16 +1676,17 @@ pub async fn get_table_foreign_keys(
 
     match rows {
         Ok(rows) => {
-            let foreign_keys: Vec<ForeignKeyInfo> = rows.iter().map(|row| {
-                ForeignKeyInfo {
+            let foreign_keys: Vec<ForeignKeyInfo> = rows
+                .iter()
+                .map(|row| ForeignKeyInfo {
                     name: row.get("constraint_name"),
                     column: row.get("column_name"),
                     referenced_table: row.get("foreign_table_name"),
                     referenced_column: row.get("foreign_column_name"),
                     on_delete: row.get("delete_rule"),
                     on_update: row.get("update_rule"),
-                }
-            }).collect();
+                })
+                .collect();
 
             Json(ApiResponse {
                 success: true,
@@ -1649,13 +1694,11 @@ pub async fn get_table_foreign_keys(
                 error: None,
             })
         }
-        Err(e) => {
-            Json(ApiResponse {
-                success: false,
-                data: None,
-                error: Some(format!("Failed to get foreign keys: {}", e)),
-            })
-        }
+        Err(e) => Json(ApiResponse {
+            success: false,
+            data: None,
+            error: Some(format!("Failed to get foreign keys: {}", e)),
+        }),
     }
 }
 
@@ -1785,14 +1828,20 @@ pub async fn alter_table(
                     error: Some(format!("Invalid column name: {}", col.name)),
                 });
             }
-            statements.push(format!("ALTER COLUMN \"{}\" TYPE {}", col.name, col.data_type));
+            statements.push(format!(
+                "ALTER COLUMN \"{}\" TYPE {}",
+                col.name, col.data_type
+            ));
             if col.nullable {
                 statements.push(format!("ALTER COLUMN \"{}\" DROP NOT NULL", col.name));
             } else {
                 statements.push(format!("ALTER COLUMN \"{}\" SET NOT NULL", col.name));
             }
             if let Some(default) = &col.default_value {
-                statements.push(format!("ALTER COLUMN \"{}\" SET DEFAULT {}", col.name, default));
+                statements.push(format!(
+                    "ALTER COLUMN \"{}\" SET DEFAULT {}",
+                    col.name, default
+                ));
             }
         }
     }
@@ -1811,7 +1860,10 @@ pub async fn alter_table(
             let cols: Vec<String> = idx.columns.iter().map(|c| format!("\"{}\"", c)).collect();
             let create_idx = format!(
                 "CREATE {}INDEX \"{}\" ON \"{}\" ({})",
-                unique, idx.name, table_name, cols.join(", ")
+                unique,
+                idx.name,
+                table_name,
+                cols.join(", ")
             );
             // Execute index creation separately (not part of ALTER TABLE)
             if let Err(e) = sqlx::query(&create_idx).execute(&state.pool).await {
@@ -1969,7 +2021,10 @@ fn is_valid_identifier(name: &str) -> bool {
 }
 
 /// Get the primary key column(s) for a table
-async fn get_primary_key_columns(pool: &sqlx::PgPool, table_name: &str) -> Result<Vec<String>, sqlx::Error> {
+async fn get_primary_key_columns(
+    pool: &sqlx::PgPool,
+    table_name: &str,
+) -> Result<Vec<String>, sqlx::Error> {
     let query = r#"
         SELECT kcu.column_name
         FROM information_schema.table_constraints tc
@@ -2028,7 +2083,10 @@ pub async fn get_table_data(
     // Filter by specific column
     if let (Some(filter_col), Some(filter_val)) = (&params.filter_column, &params.filter_value) {
         if !filter_val.is_empty() && is_valid_identifier(filter_col) {
-            where_clauses.push(format!("CAST(\"{}\" AS TEXT) ILIKE ${}", filter_col, param_idx));
+            where_clauses.push(format!(
+                "CAST(\"{}\" AS TEXT) ILIKE ${}",
+                filter_col, param_idx
+            ));
             param_values.push(format!("%{}%", filter_val));
             param_idx += 1;
         }
@@ -2045,14 +2103,15 @@ pub async fn get_table_data(
                 AND data_type IN ('character varying', 'text', 'char', 'varchar', 'uuid')
             "#;
 
-            let text_columns: Vec<String> = match sqlx::query_as::<_, (String, String)>(columns_query)
-                .bind(&table_name)
-                .fetch_all(&state.pool)
-                .await
-            {
-                Ok(cols) => cols.into_iter().map(|(name, _)| name).collect(),
-                Err(_) => vec!["id".to_string()], // Fallback to id
-            };
+            let text_columns: Vec<String> =
+                match sqlx::query_as::<_, (String, String)>(columns_query)
+                    .bind(&table_name)
+                    .fetch_all(&state.pool)
+                    .await
+                {
+                    Ok(cols) => cols.into_iter().map(|(name, _)| name).collect(),
+                    Err(_) => vec!["id".to_string()], // Fallback to id
+                };
 
             if !text_columns.is_empty() {
                 let search_conditions: Vec<String> = text_columns
@@ -2065,7 +2124,9 @@ pub async fn get_table_data(
                     where_clauses.push(format!("({})", search_conditions.join(" OR ")));
                     param_values.push(format!("%{}%", search));
                     #[allow(unused_assignments)]
-                    { param_idx += 1; }
+                    {
+                        param_idx += 1;
+                    }
                 }
             }
         }
@@ -2078,7 +2139,10 @@ pub async fn get_table_data(
     };
 
     // Get total count with filter
-    let count_sql = format!("SELECT COUNT(*) as count FROM \"{}\"{}", table_name, where_clause);
+    let count_sql = format!(
+        "SELECT COUNT(*) as count FROM \"{}\"{}",
+        table_name, where_clause
+    );
     let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql);
     for value in &param_values {
         count_query = count_query.bind(value);
@@ -2101,7 +2165,11 @@ pub async fn get_table_data(
     if let Some(sort_col) = &params.sort_column {
         if is_valid_identifier(sort_col) {
             let order = params.sort_order.as_deref().unwrap_or("ASC");
-            let order = if order.to_uppercase() == "DESC" { "DESC" } else { "ASC" };
+            let order = if order.to_uppercase() == "DESC" {
+                "DESC"
+            } else {
+                "ASC"
+            };
             sql.push_str(&format!(" ORDER BY \"{}\" {}", sort_col, order));
         }
     }
@@ -2122,15 +2190,18 @@ pub async fn get_table_data(
 
     match rows {
         Ok(rows) => {
-            let data_rows: Vec<HashMap<String, serde_json::Value>> = rows.iter().map(|row| {
-                let mut map = HashMap::new();
-                for col in row.columns() {
-                    let name = col.name();
-                    let value = convert_pg_value_to_json(row, col);
-                    map.insert(name.to_string(), value);
-                }
-                map
-            }).collect();
+            let data_rows: Vec<HashMap<String, serde_json::Value>> = rows
+                .iter()
+                .map(|row| {
+                    let mut map = HashMap::new();
+                    for col in row.columns() {
+                        let name = col.name();
+                        let value = convert_pg_value_to_json(row, col);
+                        map.insert(name.to_string(), value);
+                    }
+                    map
+                })
+                .collect();
 
             Json(ApiResponse {
                 success: true,
@@ -2144,52 +2215,72 @@ pub async fn get_table_data(
                 error: None,
             })
         }
-        Err(e) => {
-            Json(ApiResponse {
-                success: false,
-                data: None,
-                error: Some(format!("Failed to fetch data: {}", e)),
-            })
-        }
+        Err(e) => Json(ApiResponse {
+            success: false,
+            data: None,
+            error: Some(format!("Failed to fetch data: {}", e)),
+        }),
     }
 }
 
 /// Convert PostgreSQL row value to JSON
-fn convert_pg_value_to_json(row: &sqlx::postgres::PgRow, col: &sqlx::postgres::PgColumn) -> serde_json::Value {
+fn convert_pg_value_to_json(
+    row: &sqlx::postgres::PgRow,
+    col: &sqlx::postgres::PgColumn,
+) -> serde_json::Value {
     let type_name = col.type_info().name();
 
     // Try to get value based on type
     match type_name {
-        "BOOL" => row.try_get::<bool, _>(col.name())
+        "BOOL" => row
+            .try_get::<bool, _>(col.name())
             .map(serde_json::Value::Bool)
             .unwrap_or(serde_json::Value::Null),
-        "INT2" => row.try_get::<i16, _>(col.name())
+        "INT2" => row
+            .try_get::<i16, _>(col.name())
             .map(|v| serde_json::Value::Number(v.into()))
             .unwrap_or(serde_json::Value::Null),
-        "INT4" => row.try_get::<i32, _>(col.name())
+        "INT4" => row
+            .try_get::<i32, _>(col.name())
             .map(|v| serde_json::Value::Number(v.into()))
             .unwrap_or(serde_json::Value::Null),
-        "INT8" => row.try_get::<i64, _>(col.name())
+        "INT8" => row
+            .try_get::<i64, _>(col.name())
             .map(|v| serde_json::Value::Number(v.into()))
             .unwrap_or(serde_json::Value::Null),
-        "FLOAT4" => row.try_get::<f32, _>(col.name())
-            .map(|v| serde_json::Number::from_f64(v as f64).map(serde_json::Value::Number).unwrap_or(serde_json::Value::Null))
+        "FLOAT4" => row
+            .try_get::<f32, _>(col.name())
+            .map(|v| {
+                serde_json::Number::from_f64(v as f64)
+                    .map(serde_json::Value::Number)
+                    .unwrap_or(serde_json::Value::Null)
+            })
             .unwrap_or(serde_json::Value::Null),
-        "FLOAT8" => row.try_get::<f64, _>(col.name())
-            .map(|v| serde_json::Number::from_f64(v).map(serde_json::Value::Number).unwrap_or(serde_json::Value::Null))
+        "FLOAT8" => row
+            .try_get::<f64, _>(col.name())
+            .map(|v| {
+                serde_json::Number::from_f64(v)
+                    .map(serde_json::Value::Number)
+                    .unwrap_or(serde_json::Value::Null)
+            })
             .unwrap_or(serde_json::Value::Null),
-        "UUID" => row.try_get::<uuid::Uuid, _>(col.name())
+        "UUID" => row
+            .try_get::<uuid::Uuid, _>(col.name())
             .map(|v| serde_json::Value::String(v.to_string()))
             .unwrap_or(serde_json::Value::Null),
-        "TIMESTAMPTZ" | "TIMESTAMP" => row.try_get::<chrono::DateTime<chrono::Utc>, _>(col.name())
+        "TIMESTAMPTZ" | "TIMESTAMP" => row
+            .try_get::<chrono::DateTime<chrono::Utc>, _>(col.name())
             .map(|v| serde_json::Value::String(v.to_rfc3339()))
             .unwrap_or(serde_json::Value::Null),
-        "DATE" => row.try_get::<chrono::NaiveDate, _>(col.name())
+        "DATE" => row
+            .try_get::<chrono::NaiveDate, _>(col.name())
             .map(|v| serde_json::Value::String(v.to_string()))
             .unwrap_or(serde_json::Value::Null),
-        "JSON" | "JSONB" => row.try_get::<serde_json::Value, _>(col.name())
+        "JSON" | "JSONB" => row
+            .try_get::<serde_json::Value, _>(col.name())
             .unwrap_or(serde_json::Value::Null),
-        _ => row.try_get::<String, _>(col.name())
+        _ => row
+            .try_get::<String, _>(col.name())
             .map(serde_json::Value::String)
             .unwrap_or(serde_json::Value::Null),
     }
@@ -2309,16 +2400,15 @@ fn row_to_json(row: &sqlx::postgres::PgRow) -> HashMap<String, serde_json::Value
 
 /// Get column value as a displayable string
 fn get_column_value_as_string(row: &sqlx::postgres::PgRow, column: &str) -> String {
-    row.try_get::<String, _>(column)
-        .unwrap_or_else(|_| {
-            // Try other types
-            row.try_get::<i64, _>(column)
-                .map(|v| v.to_string())
-                .or_else(|_| row.try_get::<f64, _>(column).map(|v| v.to_string()))
-                .or_else(|_| row.try_get::<bool, _>(column).map(|v| v.to_string()))
-                .or_else(|_| row.try_get::<uuid::Uuid, _>(column).map(|v| v.to_string()))
-                .unwrap_or_else(|_| String::new())
-        })
+    row.try_get::<String, _>(column).unwrap_or_else(|_| {
+        // Try other types
+        row.try_get::<i64, _>(column)
+            .map(|v| v.to_string())
+            .or_else(|_| row.try_get::<f64, _>(column).map(|v| v.to_string()))
+            .or_else(|_| row.try_get::<bool, _>(column).map(|v| v.to_string()))
+            .or_else(|_| row.try_get::<uuid::Uuid, _>(column).map(|v| v.to_string()))
+            .unwrap_or_else(|_| String::new())
+    })
 }
 
 /// Update a row
@@ -2415,12 +2505,11 @@ pub async fn delete_row(
     // Get dynamic primary key column
     let pk_column = get_primary_key_column(&state.pool, &table_name).await;
 
-    let sql = format!("DELETE FROM \"{}\" WHERE \"{}\" = $1", table_name, pk_column);
-    match sqlx::query(&sql)
-        .bind(&row_id)
-        .execute(&state.pool)
-        .await
-    {
+    let sql = format!(
+        "DELETE FROM \"{}\" WHERE \"{}\" = $1",
+        table_name, pk_column
+    );
+    match sqlx::query(&sql).bind(&row_id).execute(&state.pool).await {
         Ok(result) => {
             if result.rows_affected() > 0 {
                 Json(ApiResponse {
@@ -2486,7 +2575,11 @@ pub async fn bulk_delete_rows(
     match query.execute(&state.pool).await {
         Ok(result) => Json(ApiResponse {
             success: true,
-            data: Some(format!("{} rows deleted from '{}'", result.rows_affected(), table_name)),
+            data: Some(format!(
+                "{} rows deleted from '{}'",
+                result.rows_affected(),
+                table_name
+            )),
             error: None,
         }),
         Err(e) => Json(ApiResponse {
@@ -2552,17 +2645,18 @@ pub async fn execute_query(
             data: None,
             error: Some(
                 "This query contains a destructive operation (DROP, TRUNCATE, or DELETE). \
-                Please set confirm=true in the request to proceed.".to_string()
+                Please set confirm=true in the request to proceed."
+                    .to_string(),
             ),
         });
     }
 
     // Detect query type
     let query_upper = query.to_uppercase();
-    let is_select = query_upper.starts_with("SELECT") ||
-                    query_upper.starts_with("WITH") ||
-                    query_upper.starts_with("SHOW") ||
-                    query_upper.starts_with("EXPLAIN");
+    let is_select = query_upper.starts_with("SELECT")
+        || query_upper.starts_with("WITH")
+        || query_upper.starts_with("SHOW")
+        || query_upper.starts_with("EXPLAIN");
 
     // Trigger BeforeQuery hook
     trigger_hook(DbManagerEvent::BeforeQuery {
@@ -2653,7 +2747,10 @@ pub async fn execute_query(
                 row_count: 0,
                 execution_time: start.elapsed().as_secs_f64() * 1000.0,
                 status: "error".to_string(),
-                error: Some(format!("Query timed out after {} seconds. Consider optimizing your query.", timeout_duration.as_secs())),
+                error: Some(format!(
+                    "Query timed out after {} seconds. Consider optimizing your query.",
+                    timeout_duration.as_secs()
+                )),
                 affected_rows: None,
             },
         }
@@ -2673,14 +2770,16 @@ pub async fn execute_query(
     .await;
 
     // Clean up old history entries (keep last 1000)
-    let _ = sqlx::query(r#"
+    let _ = sqlx::query(
+        r#"
         DELETE FROM dbmanager_query_history
         WHERE id NOT IN (
             SELECT id FROM dbmanager_query_history
             ORDER BY executed_at DESC
             LIMIT 1000
         )
-    "#)
+    "#,
+    )
     .execute(&state.pool)
     .await;
 
@@ -2691,7 +2790,11 @@ pub async fn execute_query(
         query: query.to_string(),
         success,
         execution_time_ms: result.execution_time,
-        row_count: if success { Some(result.row_count) } else { None },
+        row_count: if success {
+            Some(result.row_count)
+        } else {
+            None
+        },
         error: result.error.clone(),
         user_id: None,
     });
@@ -2724,7 +2827,8 @@ pub async fn explain_query(
 
     match sqlx::query(&explain_query).fetch_all(&state.pool).await {
         Ok(rows) => {
-            let plan: String = rows.iter()
+            let plan: String = rows
+                .iter()
                 .filter_map(|row| row.try_get::<String, _>(0).ok())
                 .collect::<Vec<_>>()
                 .join("\n");
@@ -2756,29 +2860,43 @@ pub async fn get_query_history(
 ) -> impl IntoResponse {
     let limit = params.limit.unwrap_or(100) as i64;
 
-    let result: Result<Vec<(uuid::Uuid, String, f64, String, Option<i64>, chrono::DateTime<chrono::Utc>)>, _> =
-        sqlx::query_as(r#"
+    let result: Result<
+        Vec<(
+            uuid::Uuid,
+            String,
+            f64,
+            String,
+            Option<i64>,
+            chrono::DateTime<chrono::Utc>,
+        )>,
+        _,
+    > = sqlx::query_as(
+        r#"
             SELECT id, query, execution_time_ms, status, row_count, executed_at
             FROM dbmanager_query_history
             ORDER BY executed_at DESC
             LIMIT $1
-        "#)
-        .bind(limit)
-        .fetch_all(&state.pool)
-        .await;
+        "#,
+    )
+    .bind(limit)
+    .fetch_all(&state.pool)
+    .await;
 
     match result {
         Ok(rows) => {
-            let history: Vec<QueryHistoryItem> = rows.into_iter().map(|(id, query, execution_time, status, row_count, timestamp)| {
-                QueryHistoryItem {
-                    id: id.to_string(),
-                    query,
-                    execution_time,
-                    status,
-                    timestamp: timestamp.to_rfc3339(),
-                    row_count: row_count.map(|c| c as u64),
-                }
-            }).collect();
+            let history: Vec<QueryHistoryItem> = rows
+                .into_iter()
+                .map(
+                    |(id, query, execution_time, status, row_count, timestamp)| QueryHistoryItem {
+                        id: id.to_string(),
+                        query,
+                        execution_time,
+                        status,
+                        timestamp: timestamp.to_rfc3339(),
+                        row_count: row_count.map(|c| c as u64),
+                    },
+                )
+                .collect();
 
             Json(ApiResponse {
                 success: true,
@@ -2790,7 +2908,7 @@ pub async fn get_query_history(
             success: false,
             data: None,
             error: Some(format!("Failed to fetch query history: {}", e)),
-        })
+        }),
     }
 }
 
@@ -2802,10 +2920,12 @@ pub async fn save_query(
     let id = uuid::Uuid::new_v4();
     let now = chrono::Utc::now();
 
-    let result = sqlx::query(r#"
+    let result = sqlx::query(
+        r#"
         INSERT INTO dbmanager_saved_queries (id, name, query, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $4)
-    "#)
+    "#,
+    )
     .bind(id)
     .bind(&request.name)
     .bind(&request.query)
@@ -2831,7 +2951,7 @@ pub async fn save_query(
             success: false,
             data: None,
             error: Some(format!("Failed to save query: {}", e)),
-        })
+        }),
     }
 }
 
@@ -2839,24 +2959,27 @@ pub async fn save_query(
 #[allow(clippy::type_complexity)]
 pub async fn get_saved_queries(State(state): State<Arc<DbManagerState>>) -> impl IntoResponse {
     let result: Result<Vec<(uuid::Uuid, String, String, chrono::DateTime<chrono::Utc>)>, _> =
-        sqlx::query_as(r#"
+        sqlx::query_as(
+            r#"
             SELECT id, name, query, created_at
             FROM dbmanager_saved_queries
             ORDER BY created_at DESC
-        "#)
+        "#,
+        )
         .fetch_all(&state.pool)
         .await;
 
     match result {
         Ok(rows) => {
-            let queries: Vec<SavedQuery> = rows.into_iter().map(|(id, name, query, created_at)| {
-                SavedQuery {
+            let queries: Vec<SavedQuery> = rows
+                .into_iter()
+                .map(|(id, name, query, created_at)| SavedQuery {
                     id: id.to_string(),
                     name,
                     query,
                     created_at: created_at.to_rfc3339(),
-                }
-            }).collect();
+                })
+                .collect();
 
             Json(ApiResponse {
                 success: true,
@@ -2868,7 +2991,7 @@ pub async fn get_saved_queries(State(state): State<Arc<DbManagerState>>) -> impl
             success: false,
             data: None,
             error: Some(format!("Failed to fetch saved queries: {}", e)),
-        })
+        }),
     }
 }
 
@@ -2879,11 +3002,13 @@ pub async fn delete_saved_query(
 ) -> impl IntoResponse {
     let id = match uuid::Uuid::parse_str(&query_id) {
         Ok(id) => id,
-        Err(_) => return Json(ApiResponse::<()> {
-            success: false,
-            data: None,
-            error: Some("Invalid query ID format".to_string()),
-        })
+        Err(_) => {
+            return Json(ApiResponse::<()> {
+                success: false,
+                data: None,
+                error: Some("Invalid query ID format".to_string()),
+            })
+        }
     };
 
     let result = sqlx::query("DELETE FROM dbmanager_saved_queries WHERE id = $1")
@@ -2901,7 +3026,7 @@ pub async fn delete_saved_query(
             success: false,
             data: None,
             error: Some(format!("Failed to delete query: {}", e)),
-        })
+        }),
     }
 }
 
@@ -2943,21 +3068,24 @@ pub async fn export_tables(
                         content.push_str(&format!("DROP TABLE IF EXISTS \"{}\" CASCADE;\n", table));
                         content.push_str(&format!("CREATE TABLE \"{}\" (\n", table));
 
-                        let col_defs: Vec<String> = cols.iter().map(|row| {
-                            let name: String = row.get("column_name");
-                            let dtype: String = row.get("data_type");
-                            let nullable: String = row.get("is_nullable");
-                            let default: Option<String> = row.get("column_default");
+                        let col_defs: Vec<String> = cols
+                            .iter()
+                            .map(|row| {
+                                let name: String = row.get("column_name");
+                                let dtype: String = row.get("data_type");
+                                let nullable: String = row.get("is_nullable");
+                                let default: Option<String> = row.get("column_default");
 
-                            let mut def = format!("    \"{}\" {}", name, dtype);
-                            if nullable == "NO" {
-                                def.push_str(" NOT NULL");
-                            }
-                            if let Some(d) = default {
-                                def.push_str(&format!(" DEFAULT {}", d));
-                            }
-                            def
-                        }).collect();
+                                let mut def = format!("    \"{}\" {}", name, dtype);
+                                if nullable == "NO" {
+                                    def.push_str(" NOT NULL");
+                                }
+                                if let Some(d) = default {
+                                    def.push_str(&format!(" DEFAULT {}", d));
+                                }
+                                def
+                            })
+                            .collect();
 
                         content.push_str(&col_defs.join(",\n"));
                         content.push_str("\n);\n\n");
@@ -2971,21 +3099,31 @@ pub async fn export_tables(
                         if !rows.is_empty() {
                             content.push_str(&format!("-- Data for {}\n", table));
 
-                            let columns: Vec<String> = rows[0].columns().iter()
+                            let columns: Vec<String> = rows[0]
+                                .columns()
+                                .iter()
                                 .map(|c| format!("\"{}\"", c.name()))
                                 .collect();
 
                             for row in &rows {
-                                let values: Vec<String> = row.columns().iter().map(|col| {
-                                    let val = convert_pg_value_to_json(row, col);
-                                    match val {
-                                        serde_json::Value::Null => "NULL".to_string(),
-                                        serde_json::Value::String(s) => format!("'{}'", s.replace('\'', "''")),
-                                        serde_json::Value::Bool(b) => b.to_string(),
-                                        serde_json::Value::Number(n) => n.to_string(),
-                                        _ => format!("'{}'", val.to_string().replace('\'', "''")),
-                                    }
-                                }).collect();
+                                let values: Vec<String> = row
+                                    .columns()
+                                    .iter()
+                                    .map(|col| {
+                                        let val = convert_pg_value_to_json(row, col);
+                                        match val {
+                                            serde_json::Value::Null => "NULL".to_string(),
+                                            serde_json::Value::String(s) => {
+                                                format!("'{}'", s.replace('\'', "''"))
+                                            }
+                                            serde_json::Value::Bool(b) => b.to_string(),
+                                            serde_json::Value::Number(n) => n.to_string(),
+                                            _ => {
+                                                format!("'{}'", val.to_string().replace('\'', "''"))
+                                            }
+                                        }
+                                    })
+                                    .collect();
 
                                 content.push_str(&format!(
                                     "INSERT INTO \"{}\" ({}) VALUES ({});\n",
@@ -3008,14 +3146,17 @@ pub async fn export_tables(
                 }
                 let query = format!("SELECT * FROM \"{}\"", table);
                 if let Ok(rows) = sqlx::query(&query).fetch_all(&state.pool).await {
-                    let table_data: Vec<serde_json::Value> = rows.iter().map(|row| {
-                        let mut obj = serde_json::Map::new();
-                        for col in row.columns() {
-                            let val = convert_pg_value_to_json(row, col);
-                            obj.insert(col.name().to_string(), val);
-                        }
-                        serde_json::Value::Object(obj)
-                    }).collect();
+                    let table_data: Vec<serde_json::Value> = rows
+                        .iter()
+                        .map(|row| {
+                            let mut obj = serde_json::Map::new();
+                            for col in row.columns() {
+                                let val = convert_pg_value_to_json(row, col);
+                                obj.insert(col.name().to_string(), val);
+                            }
+                            serde_json::Value::Object(obj)
+                        })
+                        .collect();
                     all_data.insert(table.clone(), serde_json::Value::Array(table_data));
                 }
             }
@@ -3030,7 +3171,9 @@ pub async fn export_tables(
                     if let Ok(rows) = sqlx::query(&query).fetch_all(&state.pool).await {
                         if !rows.is_empty() {
                             // Header
-                            let headers: Vec<String> = rows[0].columns().iter()
+                            let headers: Vec<String> = rows[0]
+                                .columns()
+                                .iter()
                                 .map(|c| c.name().to_string())
                                 .collect();
                             content.push_str(&headers.join(","));
@@ -3038,20 +3181,27 @@ pub async fn export_tables(
 
                             // Data rows
                             for row in &rows {
-                                let values: Vec<String> = row.columns().iter().map(|col| {
-                                    let val = convert_pg_value_to_json(row, col);
-                                    match val {
-                                        serde_json::Value::Null => "".to_string(),
-                                        serde_json::Value::String(s) => {
-                                            if s.contains(',') || s.contains('"') || s.contains('\n') {
-                                                format!("\"{}\"", s.replace('"', "\"\""))
-                                            } else {
-                                                s
+                                let values: Vec<String> = row
+                                    .columns()
+                                    .iter()
+                                    .map(|col| {
+                                        let val = convert_pg_value_to_json(row, col);
+                                        match val {
+                                            serde_json::Value::Null => "".to_string(),
+                                            serde_json::Value::String(s) => {
+                                                if s.contains(',')
+                                                    || s.contains('"')
+                                                    || s.contains('\n')
+                                                {
+                                                    format!("\"{}\"", s.replace('"', "\"\""))
+                                                } else {
+                                                    s
+                                                }
                                             }
+                                            _ => val.to_string(),
                                         }
-                                        _ => val.to_string(),
-                                    }
-                                }).collect();
+                                    })
+                                    .collect();
                                 content.push_str(&values.join(","));
                                 content.push('\n');
                             }
@@ -3095,27 +3245,33 @@ pub async fn export_query_result(
         "csv" => {
             let mut output = String::new();
             if !rows.is_empty() {
-                let headers: Vec<String> = rows[0].columns().iter()
+                let headers: Vec<String> = rows[0]
+                    .columns()
+                    .iter()
                     .map(|c| c.name().to_string())
                     .collect();
                 output.push_str(&headers.join(","));
                 output.push('\n');
 
                 for row in &rows {
-                    let values: Vec<String> = row.columns().iter().map(|col| {
-                        let val = convert_pg_value_to_json(row, col);
-                        match val {
-                            serde_json::Value::Null => "".to_string(),
-                            serde_json::Value::String(s) => {
-                                if s.contains(',') || s.contains('"') || s.contains('\n') {
-                                    format!("\"{}\"", s.replace('"', "\"\""))
-                                } else {
-                                    s
+                    let values: Vec<String> = row
+                        .columns()
+                        .iter()
+                        .map(|col| {
+                            let val = convert_pg_value_to_json(row, col);
+                            match val {
+                                serde_json::Value::Null => "".to_string(),
+                                serde_json::Value::String(s) => {
+                                    if s.contains(',') || s.contains('"') || s.contains('\n') {
+                                        format!("\"{}\"", s.replace('"', "\"\""))
+                                    } else {
+                                        s
+                                    }
                                 }
+                                _ => val.to_string(),
                             }
-                            _ => val.to_string(),
-                        }
-                    }).collect();
+                        })
+                        .collect();
                     output.push_str(&values.join(","));
                     output.push('\n');
                 }
@@ -3123,34 +3279,45 @@ pub async fn export_query_result(
             output
         }
         "json" => {
-            let data: Vec<serde_json::Value> = rows.iter().map(|row| {
-                let mut obj = serde_json::Map::new();
-                for col in row.columns() {
-                    let val = convert_pg_value_to_json(row, col);
-                    obj.insert(col.name().to_string(), val);
-                }
-                serde_json::Value::Object(obj)
-            }).collect();
+            let data: Vec<serde_json::Value> = rows
+                .iter()
+                .map(|row| {
+                    let mut obj = serde_json::Map::new();
+                    for col in row.columns() {
+                        let val = convert_pg_value_to_json(row, col);
+                        obj.insert(col.name().to_string(), val);
+                    }
+                    serde_json::Value::Object(obj)
+                })
+                .collect();
             serde_json::to_string_pretty(&data).unwrap_or_default()
         }
         "sql" => {
             let mut output = String::new();
             if !rows.is_empty() {
-                let columns: Vec<String> = rows[0].columns().iter()
+                let columns: Vec<String> = rows[0]
+                    .columns()
+                    .iter()
                     .map(|c| format!("\"{}\"", c.name()))
                     .collect();
 
                 for row in &rows {
-                    let values: Vec<String> = row.columns().iter().map(|col| {
-                        let val = convert_pg_value_to_json(row, col);
-                        match val {
-                            serde_json::Value::Null => "NULL".to_string(),
-                            serde_json::Value::String(s) => format!("'{}'", s.replace('\'', "''")),
-                            serde_json::Value::Bool(b) => b.to_string(),
-                            serde_json::Value::Number(n) => n.to_string(),
-                            _ => format!("'{}'", val.to_string().replace('\'', "''")),
-                        }
-                    }).collect();
+                    let values: Vec<String> = row
+                        .columns()
+                        .iter()
+                        .map(|col| {
+                            let val = convert_pg_value_to_json(row, col);
+                            match val {
+                                serde_json::Value::Null => "NULL".to_string(),
+                                serde_json::Value::String(s) => {
+                                    format!("'{}'", s.replace('\'', "''"))
+                                }
+                                serde_json::Value::Bool(b) => b.to_string(),
+                                serde_json::Value::Number(n) => n.to_string(),
+                                _ => format!("'{}'", val.to_string().replace('\'', "''")),
+                            }
+                        })
+                        .collect();
 
                     output.push_str(&format!(
                         "INSERT INTO table_name ({}) VALUES ({});\n",
@@ -3250,17 +3417,15 @@ pub async fn import_csv(
 
     while let Ok(Some(field)) = multipart.next_field().await {
         match field.name() {
-            Some("file") => {
-                match field.bytes().await {
-                    Ok(data) => {
-                        csv_content = data.to_vec();
-                    }
-                    Err(_) => {
-                        result.success = false;
-                        errors.push("Failed to read CSV file".to_string());
-                    }
+            Some("file") => match field.bytes().await {
+                Ok(data) => {
+                    csv_content = data.to_vec();
                 }
-            }
+                Err(_) => {
+                    result.success = false;
+                    errors.push("Failed to read CSV file".to_string());
+                }
+            },
             Some("table") => {
                 if let Ok(text) = field.text().await {
                     table_name = text;
@@ -3308,8 +3473,10 @@ pub async fn import_csv(
                 }
 
                 if errors.is_empty() {
-                    let columns: Vec<String> = headers.iter().map(|h| format!("\"{}\"", h)).collect();
-                    let placeholders: Vec<String> = (1..=headers.len()).map(|i| format!("${}", i)).collect();
+                    let columns: Vec<String> =
+                        headers.iter().map(|h| format!("\"{}\"", h)).collect();
+                    let placeholders: Vec<String> =
+                        (1..=headers.len()).map(|i| format!("${}", i)).collect();
 
                     let sql = format!(
                         "INSERT INTO \"{}\" ({}) VALUES ({})",
@@ -3413,7 +3580,9 @@ pub async fn get_audit_log(
     if params.end_date.is_some() {
         conditions.push(format!("created_at <= ${}::timestamptz", bind_idx));
         #[allow(unused_assignments)]
-        { bind_idx += 1; }
+        {
+            bind_idx += 1;
+        }
     }
 
     let where_clause = conditions.join(" AND ");
@@ -3468,17 +3637,20 @@ pub async fn get_audit_log(
 
     match data_q.fetch_all(&state.pool).await {
         Ok(rows) => {
-            let entries: Vec<AuditLogEntry> = rows.iter().map(|row| {
-                AuditLogEntry {
+            let entries: Vec<AuditLogEntry> = rows
+                .iter()
+                .map(|row| AuditLogEntry {
                     id: row.get::<uuid::Uuid, _>("id").to_string(),
                     event_type: row.get("event_type"),
                     event_data: row.get("event_data"),
                     user_id: row.get("user_id"),
                     ip_address: row.get("ip_address"),
                     user_agent: row.get("user_agent"),
-                    created_at: row.get::<chrono::DateTime<chrono::Utc>, _>("created_at").to_rfc3339(),
-                }
-            }).collect();
+                    created_at: row
+                        .get::<chrono::DateTime<chrono::Utc>, _>("created_at")
+                        .to_rfc3339(),
+                })
+                .collect();
 
             Json(ApiResponse {
                 success: true,
@@ -3491,13 +3663,11 @@ pub async fn get_audit_log(
                 error: None,
             })
         }
-        Err(e) => {
-            Json(ApiResponse {
-                success: false,
-                data: None,
-                error: Some(format!("Failed to fetch audit log: {}", e)),
-            })
-        }
+        Err(e) => Json(ApiResponse {
+            success: false,
+            data: None,
+            error: Some(format!("Failed to fetch audit log: {}", e)),
+        }),
     }
 }
 
@@ -3506,35 +3676,34 @@ pub async fn clear_audit_log(
     State(state): State<Arc<DbManagerState>>,
     Query(params): Query<HashMap<String, String>>,
 ) -> impl IntoResponse {
-    let days = params.get("days")
+    let days = params
+        .get("days")
         .and_then(|d| d.parse::<i32>().ok())
         .unwrap_or(30);
 
-    match sqlx::query(r#"
+    match sqlx::query(
+        r#"
         DELETE FROM dbmanager_audit_log
         WHERE created_at < NOW() - INTERVAL '1 day' * $1
-    "#)
+    "#,
+    )
     .bind(days)
     .execute(&state.pool)
     .await
     {
-        Ok(result) => {
-            Json(ApiResponse {
-                success: true,
-                data: Some(serde_json::json!({
-                    "deleted": result.rows_affected(),
-                    "message": format!("Deleted entries older than {} days", days)
-                })),
-                error: None,
-            })
-        }
-        Err(e) => {
-            Json(ApiResponse {
-                success: false,
-                data: None,
-                error: Some(format!("Failed to clear audit log: {}", e)),
-            })
-        }
+        Ok(result) => Json(ApiResponse {
+            success: true,
+            data: Some(serde_json::json!({
+                "deleted": result.rows_affected(),
+                "message": format!("Deleted entries older than {} days", days)
+            })),
+            error: None,
+        }),
+        Err(e) => Json(ApiResponse {
+            success: false,
+            data: None,
+            error: Some(format!("Failed to clear audit log: {}", e)),
+        }),
     }
 }
 
@@ -3791,14 +3960,17 @@ pub async fn save_query_snippet(
     State(state): State<Arc<DbManagerState>>,
     Json(request): Json<SaveSnippetRequest>,
 ) -> impl IntoResponse {
-    let params_json = serde_json::to_value(request.parameters.unwrap_or_default()).unwrap_or(serde_json::json!([]));
+    let params_json = serde_json::to_value(request.parameters.unwrap_or_default())
+        .unwrap_or(serde_json::json!([]));
     let tags = request.tags.unwrap_or_default();
 
-    match sqlx::query(r#"
+    match sqlx::query(
+        r#"
         INSERT INTO dbmanager_query_snippets (name, description, query, category, parameters, tags)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id, name, description, query, category, parameters, tags, usage_count, created_at
-    "#)
+    "#,
+    )
     .bind(&request.name)
     .bind(&request.description)
     .bind(&request.query)
@@ -4044,14 +4216,16 @@ pub async fn execute_parameterized_query(
             let row_count = rows.len();
 
             // Convert rows to JSON
-            let data: Vec<HashMap<String, serde_json::Value>> = rows
-                .iter()
-                .map(row_to_json)
-                .collect();
+            let data: Vec<HashMap<String, serde_json::Value>> =
+                rows.iter().map(row_to_json).collect();
 
             // Get columns
             let columns: Vec<String> = if !rows.is_empty() {
-                rows[0].columns().iter().map(|c| c.name().to_string()).collect()
+                rows[0]
+                    .columns()
+                    .iter()
+                    .map(|c| c.name().to_string())
+                    .collect()
             } else {
                 vec![]
             };
@@ -4113,7 +4287,8 @@ pub async fn execute_multi_statement(
     State(state): State<Arc<DbManagerState>>,
     Json(request): Json<MultiStatementRequest>,
 ) -> impl IntoResponse {
-    let statements: Vec<&str> = request.statements
+    let statements: Vec<&str> = request
+        .statements
         .split(';')
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
@@ -4143,16 +4318,24 @@ pub async fn execute_multi_statement(
         let query_upper = statement.to_uppercase();
 
         // Execute as query or command based on statement type
-        if query_upper.starts_with("SELECT") || query_upper.starts_with("WITH") || query_upper.contains("RETURNING") {
+        if query_upper.starts_with("SELECT")
+            || query_upper.starts_with("WITH")
+            || query_upper.contains("RETURNING")
+        {
             match sqlx::query(statement).fetch_all(&state.pool).await {
                 Ok(rows) => {
                     let execution_time = start.elapsed().as_secs_f64() * 1000.0;
                     let columns: Vec<String> = if !rows.is_empty() {
-                        rows[0].columns().iter().map(|c| c.name().to_string()).collect()
+                        rows[0]
+                            .columns()
+                            .iter()
+                            .map(|c| c.name().to_string())
+                            .collect()
                     } else {
                         vec![]
                     };
-                    let data: Vec<HashMap<String, serde_json::Value>> = rows.iter().map(row_to_json).collect();
+                    let data: Vec<HashMap<String, serde_json::Value>> =
+                        rows.iter().map(row_to_json).collect();
 
                     results.push(StatementResult {
                         statement: statement.to_string(),
@@ -4255,23 +4438,28 @@ pub async fn execute_query_with_timeout(
     }
 
     let start = std::time::Instant::now();
-    let result = tokio::time::timeout(
-        timeout,
-        sqlx::query(&request.query).fetch_all(&state.pool)
-    ).await;
+    let result =
+        tokio::time::timeout(timeout, sqlx::query(&request.query).fetch_all(&state.pool)).await;
 
     // Reset timeout
-    let _ = sqlx::query("SET statement_timeout = 0").execute(&state.pool).await;
+    let _ = sqlx::query("SET statement_timeout = 0")
+        .execute(&state.pool)
+        .await;
 
     match result {
         Ok(Ok(rows)) => {
             let execution_time = start.elapsed().as_secs_f64() * 1000.0;
             let columns: Vec<String> = if !rows.is_empty() {
-                rows[0].columns().iter().map(|c| c.name().to_string()).collect()
+                rows[0]
+                    .columns()
+                    .iter()
+                    .map(|c| c.name().to_string())
+                    .collect()
             } else {
                 vec![]
             };
-            let data: Vec<HashMap<String, serde_json::Value>> = rows.iter().map(row_to_json).collect();
+            let data: Vec<HashMap<String, serde_json::Value>> =
+                rows.iter().map(row_to_json).collect();
 
             Json(ApiResponse {
                 success: true,
@@ -4331,7 +4519,10 @@ pub async fn estimate_query_cost(
                 let total_cost = plan_node["Total Cost"].as_f64().unwrap_or(0.0);
                 let estimated_rows = plan_node["Plan Rows"].as_u64().unwrap_or(0);
                 let estimated_width = plan_node["Plan Width"].as_u64().unwrap_or(0) as u32;
-                let plan_type = plan_node["Node Type"].as_str().unwrap_or("Unknown").to_string();
+                let plan_type = plan_node["Node Type"]
+                    .as_str()
+                    .unwrap_or("Unknown")
+                    .to_string();
 
                 // Generate warnings based on plan analysis
                 let mut warnings = Vec::new();
@@ -4343,7 +4534,8 @@ pub async fn estimate_query_cost(
                     warnings.push("Large result set expected - consider adding LIMIT".to_string());
                 }
                 if plan_type == "Seq Scan" && estimated_rows > 1000 {
-                    warnings.push("Sequential scan detected - consider adding an index".to_string());
+                    warnings
+                        .push("Sequential scan detected - consider adding an index".to_string());
                 }
 
                 // Check for nested loops with high row counts
@@ -4352,7 +4544,9 @@ pub async fn estimate_query_cost(
                         if node_type == "Nested Loop" {
                             if let Some(rows) = node["Plan Rows"].as_u64() {
                                 if rows > 10000 {
-                                    warnings.push("Nested loop with high row count - may be slow".to_string());
+                                    warnings.push(
+                                        "Nested loop with high row count - may be slow".to_string(),
+                                    );
                                 }
                             }
                         }
@@ -4412,27 +4606,41 @@ pub async fn export_to_excel(
 ) -> impl IntoResponse {
     match sqlx::query(&request.query).fetch_all(&state.pool).await {
         Ok(rows) => {
-            let sheet_name = request.sheet_name.unwrap_or_else(|| "Query Results".to_string());
+            let sheet_name = request
+                .sheet_name
+                .unwrap_or_else(|| "Query Results".to_string());
             let include_headers = request.include_headers.unwrap_or(true);
 
             // Get columns
             let columns: Vec<String> = if !rows.is_empty() {
-                rows[0].columns().iter().map(|c| c.name().to_string()).collect()
+                rows[0]
+                    .columns()
+                    .iter()
+                    .map(|c| c.name().to_string())
+                    .collect()
             } else {
                 return Response::builder()
                     .status(StatusCode::OK)
-                    .header(header::CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                    .header(header::CONTENT_DISPOSITION, "attachment; filename=\"export.xlsx\"")
+                    .header(
+                        header::CONTENT_TYPE,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
+                    .header(
+                        header::CONTENT_DISPOSITION,
+                        "attachment; filename=\"export.xlsx\"",
+                    )
                     .body(Body::empty())
                     .unwrap();
             };
 
             // Build simple XML spreadsheet format
-            let mut xml = String::from(r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            let mut xml = String::from(
+                r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-<Worksheet ss:Name=""#);
+<Worksheet ss:Name=""#,
+            );
             xml.push_str(&sheet_name);
             xml.push_str(r#""><Table>"#);
 
@@ -4440,8 +4648,10 @@ pub async fn export_to_excel(
             if include_headers {
                 xml.push_str("<Row>");
                 for col in &columns {
-                    xml.push_str(&format!(r#"<Cell><Data ss:Type="String">{}</Data></Cell>"#,
-                        escape_xml(col)));
+                    xml.push_str(&format!(
+                        r#"<Cell><Data ss:Type="String">{}</Data></Cell>"#,
+                        escape_xml(col)
+                    ));
                 }
                 xml.push_str("</Row>");
             }
@@ -4451,9 +4661,16 @@ pub async fn export_to_excel(
                 xml.push_str("<Row>");
                 for col in &columns {
                     let value = get_column_value_as_string(row, col);
-                    let data_type = if value.parse::<f64>().is_ok() { "Number" } else { "String" };
-                    xml.push_str(&format!(r#"<Cell><Data ss:Type="{}">{}</Data></Cell>"#,
-                        data_type, escape_xml(&value)));
+                    let data_type = if value.parse::<f64>().is_ok() {
+                        "Number"
+                    } else {
+                        "String"
+                    };
+                    xml.push_str(&format!(
+                        r#"<Cell><Data ss:Type="{}">{}</Data></Cell>"#,
+                        data_type,
+                        escape_xml(&value)
+                    ));
                 }
                 xml.push_str("</Row>");
             }
@@ -4463,14 +4680,17 @@ pub async fn export_to_excel(
             Response::builder()
                 .status(StatusCode::OK)
                 .header(header::CONTENT_TYPE, "application/vnd.ms-excel")
-                .header(header::CONTENT_DISPOSITION, "attachment; filename=\"export.xls\"")
+                .header(
+                    header::CONTENT_DISPOSITION,
+                    "attachment; filename=\"export.xls\"",
+                )
                 .body(Body::from(xml))
                 .unwrap()
         }
         Err(e) => Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .body(Body::from(format!("Query failed: {}", e)))
-            .unwrap()
+            .unwrap(),
     }
 }
 
@@ -4508,29 +4728,41 @@ pub async fn export_as_insert(
                     .unwrap();
             }
 
-            let columns: Vec<String> = rows[0].columns().iter()
+            let columns: Vec<String> = rows[0]
+                .columns()
+                .iter()
                 .map(|c| c.name().to_string())
                 .collect();
 
             let include_columns = request.include_columns.unwrap_or(true);
             let mut output = String::new();
 
-            output.push_str(&format!("-- Generated INSERT statements for table: {}\n", request.target_table));
+            output.push_str(&format!(
+                "-- Generated INSERT statements for table: {}\n",
+                request.target_table
+            ));
             output.push_str(&format!("-- Total rows: {}\n\n", rows.len()));
 
             for row in &rows {
                 if include_columns {
                     output.push_str(&format!("INSERT INTO \"{}\" (", request.target_table));
-                    output.push_str(&columns.iter()
-                        .map(|c| format!("\"{}\"", c))
-                        .collect::<Vec<_>>()
-                        .join(", "));
+                    output.push_str(
+                        &columns
+                            .iter()
+                            .map(|c| format!("\"{}\"", c))
+                            .collect::<Vec<_>>()
+                            .join(", "),
+                    );
                     output.push_str(") VALUES (");
                 } else {
-                    output.push_str(&format!("INSERT INTO \"{}\" VALUES (", request.target_table));
+                    output.push_str(&format!(
+                        "INSERT INTO \"{}\" VALUES (",
+                        request.target_table
+                    ));
                 }
 
-                let values: Vec<String> = columns.iter()
+                let values: Vec<String> = columns
+                    .iter()
                     .map(|col| format_value_for_insert(row, col))
                     .collect();
 
@@ -4541,14 +4773,17 @@ pub async fn export_as_insert(
             Response::builder()
                 .status(StatusCode::OK)
                 .header(header::CONTENT_TYPE, "text/plain; charset=utf-8")
-                .header(header::CONTENT_DISPOSITION, "attachment; filename=\"insert_statements.sql\"")
+                .header(
+                    header::CONTENT_DISPOSITION,
+                    "attachment; filename=\"insert_statements.sql\"",
+                )
                 .body(Body::from(output))
                 .unwrap()
         }
         Err(e) => Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .body(Body::from(format!("Query failed: {}", e)))
-            .unwrap()
+            .unwrap(),
     }
 }
 
@@ -4595,7 +4830,8 @@ pub async fn clone_table(
     }
 
     // Check if source table exists
-    let check_query = "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = $1)";
+    let check_query =
+        "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = $1)";
     let exists: bool = sqlx::query_scalar(check_query)
         .bind(&request.source_table)
         .fetch_one(&state.pool)
@@ -4647,13 +4883,15 @@ pub async fn clone_table(
             .await
         {
             for indexdef in indexes {
-                let new_indexdef = indexdef.replace(
-                    &format!("ON \"{}\"", request.source_table),
-                    &format!("ON \"{}\"", request.target_table)
-                ).replace(
-                    &request.source_table,
-                    &format!("{}_clone", request.target_table)
-                );
+                let new_indexdef = indexdef
+                    .replace(
+                        &format!("ON \"{}\"", request.source_table),
+                        &format!("ON \"{}\"", request.target_table),
+                    )
+                    .replace(
+                        &request.source_table,
+                        &format!("{}_clone", request.target_table),
+                    );
 
                 if let Err(e) = sqlx::query(&new_indexdef).execute(&state.pool).await {
                     messages.push(format!("Warning: Failed to create index: {}", e));
@@ -4681,7 +4919,11 @@ pub async fn clone_table(
                 let pk_sql = format!(
                     "ALTER TABLE \"{}\" ADD PRIMARY KEY ({})",
                     request.target_table,
-                    pk_columns.iter().map(|c| format!("\"{}\"", c)).collect::<Vec<_>>().join(", ")
+                    pk_columns
+                        .iter()
+                        .map(|c| format!("\"{}\"", c))
+                        .collect::<Vec<_>>()
+                        .join(", ")
                 );
 
                 if let Err(e) = sqlx::query(&pk_sql).execute(&state.pool).await {
@@ -4769,16 +5011,23 @@ pub async fn get_table_partitions(
         .await
     {
         Ok(rows) => {
-            let partitions: Vec<PartitionInfo> = rows.iter().map(|row| {
-                PartitionInfo {
+            let partitions: Vec<PartitionInfo> = rows
+                .iter()
+                .map(|row| PartitionInfo {
                     partition_name: row.get("partition_name"),
                     parent_table: row.get("parent_table"),
-                    partition_expression: row.get::<Option<String>, _>("partition_expression").unwrap_or_default(),
-                    partition_bounds: row.get::<Option<String>, _>("partition_bounds").unwrap_or_default(),
+                    partition_expression: row
+                        .get::<Option<String>, _>("partition_expression")
+                        .unwrap_or_default(),
+                    partition_bounds: row
+                        .get::<Option<String>, _>("partition_bounds")
+                        .unwrap_or_default(),
                     row_count: row.get::<Option<i64>, _>("row_count").unwrap_or(0),
-                    size: row.get::<Option<String>, _>("size").unwrap_or_else(|| "0 bytes".to_string()),
-                }
-            }).collect();
+                    size: row
+                        .get::<Option<String>, _>("size")
+                        .unwrap_or_else(|| "0 bytes".to_string()),
+                })
+                .collect();
 
             Json(ApiResponse {
                 success: true,
@@ -4810,7 +5059,10 @@ pub async fn create_partitions(
                         partition.name, request.table_name, from, to
                     )
                 } else {
-                    results.push(format!("Skipped {}: missing FROM/TO values", partition.name));
+                    results.push(format!(
+                        "Skipped {}: missing FROM/TO values",
+                        partition.name
+                    ));
                     continue;
                 }
             }
@@ -4818,7 +5070,9 @@ pub async fn create_partitions(
                 if let Some(values) = &partition.values {
                     format!(
                         "CREATE TABLE \"{}\" PARTITION OF \"{}\" FOR VALUES IN ({})",
-                        partition.name, request.table_name, values.join(", ")
+                        partition.name,
+                        request.table_name,
+                        values.join(", ")
                     )
                 } else {
                     results.push(format!("Skipped {}: missing values", partition.name));
@@ -4832,12 +5086,18 @@ pub async fn create_partitions(
                         partition.name, request.table_name, modulus, remainder
                     )
                 } else {
-                    results.push(format!("Skipped {}: missing modulus/remainder", partition.name));
+                    results.push(format!(
+                        "Skipped {}: missing modulus/remainder",
+                        partition.name
+                    ));
                     continue;
                 }
             }
             _ => {
-                results.push(format!("Unknown partition type: {}", request.partition_type));
+                results.push(format!(
+                    "Unknown partition type: {}",
+                    request.partition_type
+                ));
                 continue;
             }
         };
@@ -5018,10 +5278,12 @@ pub async fn get_index_recommendations(
                 recommendation: "General".to_string(),
                 reason: format!(
                     "High sequential scan count ({}) vs index scans ({}) on large table",
-                    seq_scan, idx_scan.unwrap_or(0)
+                    seq_scan,
+                    idx_scan.unwrap_or(0)
                 ),
                 estimated_improvement: "Significant".to_string(),
-                create_statement: "-- Analyze query patterns to determine which columns to index".to_string(),
+                create_statement: "-- Analyze query patterns to determine which columns to index"
+                    .to_string(),
             });
         }
     }
@@ -5068,7 +5330,10 @@ pub async fn get_index_recommendations(
                     table_name: table_name.clone(),
                     column_name: column.clone(),
                     recommendation: "Foreign Key Index".to_string(),
-                    reason: format!("Foreign key to {} lacks index - will slow JOINs", foreign_table),
+                    reason: format!(
+                        "Foreign key to {} lacks index - will slow JOINs",
+                        foreign_table
+                    ),
                     estimated_improvement: "High".to_string(),
                     create_statement: format!(
                         "CREATE INDEX idx_{}_{} ON \"{}\"(\"{}\");",
@@ -5121,7 +5386,11 @@ pub async fn get_index_recommendations(
                         .await
                         .unwrap_or(1);
 
-                    if has_index == 0 && !column.contains("id") && column != "created_at" && column != "updated_at" {
+                    if has_index == 0
+                        && !column.contains("id")
+                        && column != "created_at"
+                        && column != "updated_at"
+                    {
                         recommendations.push(IndexRecommendation {
                             table_name: table_name.clone(),
                             column_name: column.clone(),
@@ -5266,15 +5535,16 @@ pub async fn get_foreign_key_graph(
             }
 
             // Build edges
-            let edges: Vec<GraphEdge> = relationships.iter().map(|r| {
-                GraphEdge {
+            let edges: Vec<GraphEdge> = relationships
+                .iter()
+                .map(|r| GraphEdge {
                     source: r.source_table.clone(),
                     target: r.target_table.clone(),
                     source_column: r.source_column.clone(),
                     target_column: r.target_column.clone(),
                     label: r.constraint_name.clone(),
-                }
-            }).collect();
+                })
+                .collect();
 
             let graph = RelationshipGraph { nodes, edges };
 
@@ -5351,11 +5621,13 @@ pub async fn compare_schemas(
     let first_set: std::collections::HashSet<_> = first_tables.iter().collect();
     let second_set: std::collections::HashSet<_> = second_tables.iter().collect();
 
-    let tables_only_in_first: Vec<String> = first_set.difference(&second_set)
+    let tables_only_in_first: Vec<String> = first_set
+        .difference(&second_set)
         .map(|s| (*s).clone())
         .collect();
 
-    let tables_only_in_second: Vec<String> = second_set.difference(&first_set)
+    let tables_only_in_second: Vec<String> = second_set
+        .difference(&first_set)
         .map(|s| (*s).clone())
         .collect();
 
@@ -5391,21 +5663,22 @@ pub async fn compare_schemas(
             })
             .collect();
 
-        let second_cols: HashMap<String, (String, String, Option<String>)> = sqlx::query(cols_query)
-            .bind(&request.second_schema)
-            .bind(*table)
-            .fetch_all(&state.pool)
-            .await
-            .unwrap_or_default()
-            .into_iter()
-            .map(|r| {
-                let name: String = r.get("column_name");
-                let dtype: String = r.get("data_type");
-                let nullable: String = r.get("is_nullable");
-                let default: Option<String> = r.get("column_default");
-                (name, (dtype, nullable, default))
-            })
-            .collect();
+        let second_cols: HashMap<String, (String, String, Option<String>)> =
+            sqlx::query(cols_query)
+                .bind(&request.second_schema)
+                .bind(*table)
+                .fetch_all(&state.pool)
+                .await
+                .unwrap_or_default()
+                .into_iter()
+                .map(|r| {
+                    let name: String = r.get("column_name");
+                    let dtype: String = r.get("data_type");
+                    let nullable: String = r.get("is_nullable");
+                    let default: Option<String> = r.get("column_default");
+                    (name, (dtype, nullable, default))
+                })
+                .collect();
 
         // Find columns only in first
         for (col, (dtype, nullable, _)) in &first_cols {
@@ -5476,7 +5749,10 @@ pub async fn compare_schemas(
             index_differences.push(format!("Index '{}' only in {}", idx, request.second_schema));
         }
 
-        if !column_differences.is_empty() || !index_differences.is_empty() || !constraint_differences.is_empty() {
+        if !column_differences.is_empty()
+            || !index_differences.is_empty()
+            || !constraint_differences.is_empty()
+        {
             tables_with_differences.push(TableDifference {
                 table_name: (*table).clone(),
                 column_differences,
@@ -5512,9 +5788,7 @@ pub struct SchemaVersion {
 }
 
 /// Get schema version history
-pub async fn get_schema_versions(
-    State(state): State<Arc<DbManagerState>>,
-) -> impl IntoResponse {
+pub async fn get_schema_versions(State(state): State<Arc<DbManagerState>>) -> impl IntoResponse {
     let query = r#"
         SELECT id, version, description, changes, created_at, created_by
         FROM dbmanager_schema_versions
@@ -5524,16 +5798,19 @@ pub async fn get_schema_versions(
 
     match sqlx::query(query).fetch_all(&state.pool).await {
         Ok(rows) => {
-            let versions: Vec<SchemaVersion> = rows.iter().map(|row| {
-                SchemaVersion {
+            let versions: Vec<SchemaVersion> = rows
+                .iter()
+                .map(|row| SchemaVersion {
                     id: row.get::<uuid::Uuid, _>("id").to_string(),
                     version: row.get("version"),
                     description: row.get("description"),
                     changes: row.get("changes"),
-                    created_at: row.get::<chrono::DateTime<chrono::Utc>, _>("created_at").to_rfc3339(),
+                    created_at: row
+                        .get::<chrono::DateTime<chrono::Utc>, _>("created_at")
+                        .to_rfc3339(),
                     created_by: row.get("created_by"),
-                }
-            }).collect();
+                })
+                .collect();
 
             Json(ApiResponse {
                 success: true,
@@ -5596,18 +5873,21 @@ pub async fn create_schema_version(
             }
             serde_json::Value::Object(state_map)
         }
-        Err(e) => return Json(ApiResponse {
-            success: false,
-            data: None,
-            error: Some(format!("Failed to capture schema: {}", e)),
-        }),
+        Err(e) => {
+            return Json(ApiResponse {
+                success: false,
+                data: None,
+                error: Some(format!("Failed to capture schema: {}", e)),
+            })
+        }
     };
 
     // Get next version number
-    let version: i32 = sqlx::query_scalar("SELECT COALESCE(MAX(version), 0) + 1 FROM dbmanager_schema_versions")
-        .fetch_one(&state.pool)
-        .await
-        .unwrap_or(1);
+    let version: i32 =
+        sqlx::query_scalar("SELECT COALESCE(MAX(version), 0) + 1 FROM dbmanager_schema_versions")
+            .fetch_one(&state.pool)
+            .await
+            .unwrap_or(1);
 
     // Insert version
     let insert_query = r#"
@@ -5779,7 +6059,8 @@ pub async fn generate_er_diagram(
             .collect();
 
         // Get primary key columns
-        let pk_cols: Vec<String> = columns.iter()
+        let pk_cols: Vec<String> = columns
+            .iter()
             .filter(|c| c.is_primary_key)
             .map(|c| c.name.clone())
             .collect();
@@ -5789,21 +6070,30 @@ pub async fn generate_er_diagram(
         for col in &columns {
             let pk_marker = if col.is_primary_key { " PK" } else { "" };
             let fk_marker = if col.is_foreign_key { " FK" } else { "" };
-            mermaid.push_str(&format!("    {} {}{}{}\n",
-                col.data_type.replace(' ', "_"), col.name, pk_marker, fk_marker));
+            mermaid.push_str(&format!(
+                "    {} {}{}{}\n",
+                col.data_type.replace(' ', "_"),
+                col.name,
+                pk_marker,
+                fk_marker
+            ));
         }
         mermaid.push_str("  }\n");
 
         // Add relationships to Mermaid
         for fk in &foreign_keys {
-            mermaid.push_str(&format!("  {} ||--o{{ {} : \"{}\"\n",
-                fk.references_table, table_name, fk.column));
+            mermaid.push_str(&format!(
+                "  {} ||--o{{ {} : \"{}\"\n",
+                fk.references_table, table_name, fk.column
+            ));
         }
 
         // Build DOT diagram
-        let col_labels: String = columns.iter()
+        let col_labels: String = columns
+            .iter()
             .map(|c| {
-                let markers = format!("{}{}",
+                let markers = format!(
+                    "{}{}",
                     if c.is_primary_key { "🔑" } else { "" },
                     if c.is_foreign_key { "🔗" } else { "" }
                 );
@@ -5812,8 +6102,10 @@ pub async fn generate_er_diagram(
             .collect::<Vec<_>>()
             .join("\\l");
 
-        dot.push_str(&format!("  {} [label=\"{{{}|{}\\l}}\"];\n",
-            table_name, table_name, col_labels));
+        dot.push_str(&format!(
+            "  {} [label=\"{{{}|{}\\l}}\"];\n",
+            table_name, table_name, col_labels
+        ));
 
         er_tables.push(ERTable {
             name: table_name.clone(),
@@ -5826,8 +6118,10 @@ pub async fn generate_er_diagram(
     // Add DOT edges
     for table in &er_tables {
         for fk in &table.foreign_keys {
-            dot.push_str(&format!("  {} -> {} [label=\"{}\"];\n",
-                table.name, fk.references_table, fk.column));
+            dot.push_str(&format!(
+                "  {} -> {} [label=\"{}\"];\n",
+                table.name, fk.references_table, fk.column
+            ));
         }
     }
 
@@ -5885,7 +6179,11 @@ pub async fn search_schema(
             LIMIT 50
         "#;
 
-        if let Ok(rows) = sqlx::query(query).bind(&search_pattern).fetch_all(&state.pool).await {
+        if let Ok(rows) = sqlx::query(query)
+            .bind(&search_pattern)
+            .fetch_all(&state.pool)
+            .await
+        {
             for row in rows {
                 results.push(SchemaSearchResult {
                     object_type: "table".to_string(),
@@ -5908,7 +6206,11 @@ pub async fn search_schema(
             LIMIT 100
         "#;
 
-        if let Ok(rows) = sqlx::query(query).bind(&search_pattern).fetch_all(&state.pool).await {
+        if let Ok(rows) = sqlx::query(query)
+            .bind(&search_pattern)
+            .fetch_all(&state.pool)
+            .await
+        {
             for row in rows {
                 let data_type: String = row.get("data_type");
                 results.push(SchemaSearchResult {
@@ -5932,7 +6234,11 @@ pub async fn search_schema(
             LIMIT 50
         "#;
 
-        if let Ok(rows) = sqlx::query(query).bind(&search_pattern).fetch_all(&state.pool).await {
+        if let Ok(rows) = sqlx::query(query)
+            .bind(&search_pattern)
+            .fetch_all(&state.pool)
+            .await
+        {
             for row in rows {
                 results.push(SchemaSearchResult {
                     object_type: "index".to_string(),
@@ -5955,7 +6261,11 @@ pub async fn search_schema(
             LIMIT 50
         "#;
 
-        if let Ok(rows) = sqlx::query(query).bind(&search_pattern).fetch_all(&state.pool).await {
+        if let Ok(rows) = sqlx::query(query)
+            .bind(&search_pattern)
+            .fetch_all(&state.pool)
+            .await
+        {
             for row in rows {
                 let constraint_type: String = row.get("constraint_type");
                 results.push(SchemaSearchResult {
@@ -5981,7 +6291,11 @@ pub async fn search_schema(
             LIMIT 50
         "#;
 
-        if let Ok(rows) = sqlx::query(query).bind(&search_pattern).fetch_all(&state.pool).await {
+        if let Ok(rows) = sqlx::query(query)
+            .bind(&search_pattern)
+            .fetch_all(&state.pool)
+            .await
+        {
             for row in rows {
                 let args: String = row.get("arguments");
                 results.push(SchemaSearchResult {
@@ -6026,9 +6340,16 @@ pub async fn generate_ddl(
     let schema = request.schema_name.as_deref().unwrap_or("public");
 
     let ddl = match request.object_type.to_lowercase().as_str() {
-        "table" => generate_table_ddl(&state.pool, schema, &request.object_name,
-            request.include_indexes.unwrap_or(true),
-            request.include_constraints.unwrap_or(true)).await,
+        "table" => {
+            generate_table_ddl(
+                &state.pool,
+                schema,
+                &request.object_name,
+                request.include_indexes.unwrap_or(true),
+                request.include_constraints.unwrap_or(true),
+            )
+            .await
+        }
         "index" => generate_index_ddl(&state.pool, schema, &request.object_name).await,
         "view" => generate_view_ddl(&state.pool, schema, &request.object_name).await,
         "function" => generate_function_ddl(&state.pool, schema, &request.object_name).await,
@@ -6053,7 +6374,13 @@ pub async fn generate_ddl(
     }
 }
 
-async fn generate_table_ddl(pool: &PgPool, schema: &str, table: &str, include_indexes: bool, include_constraints: bool) -> Result<String, String> {
+async fn generate_table_ddl(
+    pool: &PgPool,
+    schema: &str,
+    table: &str,
+    include_indexes: bool,
+    include_constraints: bool,
+) -> Result<String, String> {
     let mut ddl = String::new();
 
     // Get columns
@@ -6077,24 +6404,32 @@ async fn generate_table_ddl(pool: &PgPool, schema: &str, table: &str, include_in
 
     ddl.push_str(&format!("CREATE TABLE \"{}\".\"{}\" (\n", schema, table));
 
-    let col_defs: Vec<String> = columns.iter().map(|row| {
-        let name: String = row.get("column_name");
-        let dtype: String = row.get("data_type");
-        let max_len: Option<i32> = row.get("character_maximum_length");
-        let nullable: String = row.get("is_nullable");
-        let default: Option<String> = row.get("column_default");
+    let col_defs: Vec<String> = columns
+        .iter()
+        .map(|row| {
+            let name: String = row.get("column_name");
+            let dtype: String = row.get("data_type");
+            let max_len: Option<i32> = row.get("character_maximum_length");
+            let nullable: String = row.get("is_nullable");
+            let default: Option<String> = row.get("column_default");
 
-        let type_with_len = if let Some(len) = max_len {
-            format!("{}({})", dtype, len)
-        } else {
-            dtype
-        };
+            let type_with_len = if let Some(len) = max_len {
+                format!("{}({})", dtype, len)
+            } else {
+                dtype
+            };
 
-        let nullable_str = if nullable == "NO" { " NOT NULL" } else { "" };
-        let default_str = default.map(|d| format!(" DEFAULT {}", d)).unwrap_or_default();
+            let nullable_str = if nullable == "NO" { " NOT NULL" } else { "" };
+            let default_str = default
+                .map(|d| format!(" DEFAULT {}", d))
+                .unwrap_or_default();
 
-        format!("  \"{}\" {}{}{}", name, type_with_len, nullable_str, default_str)
-    }).collect();
+            format!(
+                "  \"{}\" {}{}{}",
+                name, type_with_len, nullable_str, default_str
+            )
+        })
+        .collect();
 
     ddl.push_str(&col_defs.join(",\n"));
 
@@ -6115,7 +6450,13 @@ async fn generate_table_ddl(pool: &PgPool, schema: &str, table: &str, include_in
 
     if !pk_cols.is_empty() {
         ddl.push_str(",\n  PRIMARY KEY (");
-        ddl.push_str(&pk_cols.iter().map(|c| format!("\"{}\"", c)).collect::<Vec<_>>().join(", "));
+        ddl.push_str(
+            &pk_cols
+                .iter()
+                .map(|c| format!("\"{}\"", c))
+                .collect::<Vec<_>>()
+                .join(", "),
+        );
         ddl.push(')');
     }
 
@@ -6136,7 +6477,12 @@ async fn generate_table_ddl(pool: &PgPool, schema: &str, table: &str, include_in
             WHERE tc.table_schema = $1 AND tc.table_name = $2 AND tc.constraint_type = 'FOREIGN KEY'
         "#;
 
-        if let Ok(fks) = sqlx::query(fk_query).bind(schema).bind(table).fetch_all(pool).await {
+        if let Ok(fks) = sqlx::query(fk_query)
+            .bind(schema)
+            .bind(table)
+            .fetch_all(pool)
+            .await
+        {
             for fk in fks {
                 let col: String = fk.get("column_name");
                 let ref_table: String = fk.get("ref_table");
@@ -6173,7 +6519,11 @@ async fn generate_table_ddl(pool: &PgPool, schema: &str, table: &str, include_in
     Ok(ddl)
 }
 
-async fn generate_index_ddl(pool: &PgPool, schema: &str, index_name: &str) -> Result<String, String> {
+async fn generate_index_ddl(
+    pool: &PgPool,
+    schema: &str,
+    index_name: &str,
+) -> Result<String, String> {
     let query = "SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND indexname = $2";
 
     sqlx::query_scalar::<_, String>(query)
@@ -6195,11 +6545,20 @@ async fn generate_view_ddl(pool: &PgPool, schema: &str, view_name: &str) -> Resu
         .fetch_optional(pool)
         .await
         .map_err(|e| e.to_string())?
-        .map(|def| format!("CREATE OR REPLACE VIEW \"{}\".\"{}\" AS\n{};\n", schema, view_name, def))
+        .map(|def| {
+            format!(
+                "CREATE OR REPLACE VIEW \"{}\".\"{}\" AS\n{};\n",
+                schema, view_name, def
+            )
+        })
         .ok_or_else(|| "View not found".to_string())
 }
 
-async fn generate_function_ddl(pool: &PgPool, schema: &str, func_name: &str) -> Result<String, String> {
+async fn generate_function_ddl(
+    pool: &PgPool,
+    schema: &str,
+    func_name: &str,
+) -> Result<String, String> {
     let query = r#"
         SELECT pg_get_functiondef(p.oid) as definition
         FROM pg_proc p
@@ -6341,11 +6700,13 @@ pub async fn get_slow_queries(
     State(state): State<Arc<DbManagerState>>,
     Query(params): Query<HashMap<String, String>>,
 ) -> impl IntoResponse {
-    let threshold_ms: f64 = params.get("threshold_ms")
+    let threshold_ms: f64 = params
+        .get("threshold_ms")
         .and_then(|s| s.parse().ok())
         .unwrap_or(1000.0);
 
-    let limit: i64 = params.get("limit")
+    let limit: i64 = params
+        .get("limit")
         .and_then(|s| s.parse().ok())
         .unwrap_or(100);
 
@@ -6365,17 +6726,20 @@ pub async fn get_slow_queries(
         .await
     {
         Ok(rows) => {
-            let slow_queries: Vec<SlowQueryEntry> = rows.iter().map(|row| {
-                SlowQueryEntry {
+            let slow_queries: Vec<SlowQueryEntry> = rows
+                .iter()
+                .map(|row| SlowQueryEntry {
                     id: row.get::<uuid::Uuid, _>("id").to_string(),
                     query: row.get("query"),
                     execution_time_ms: row.get("execution_time_ms"),
                     rows_affected: row.get("row_count"),
                     user_name: None,
                     application_name: None,
-                    recorded_at: row.get::<chrono::DateTime<chrono::Utc>, _>("executed_at").to_rfc3339(),
-                }
-            }).collect();
+                    recorded_at: row
+                        .get::<chrono::DateTime<chrono::Utc>, _>("executed_at")
+                        .to_rfc3339(),
+                })
+                .collect();
 
             // Also try to get from pg_stat_statements if available
             let pg_stats_query = r#"
@@ -6441,9 +6805,7 @@ pub struct LockInfo {
 }
 
 /// Get current database locks
-pub async fn get_locks(
-    State(state): State<Arc<DbManagerState>>,
-) -> impl IntoResponse {
+pub async fn get_locks(State(state): State<Arc<DbManagerState>>) -> impl IntoResponse {
     let query = r#"
         SELECT
             l.pid,
@@ -6466,8 +6828,9 @@ pub async fn get_locks(
 
     match sqlx::query(query).fetch_all(&state.pool).await {
         Ok(rows) => {
-            let locks: Vec<LockInfo> = rows.iter().map(|row| {
-                LockInfo {
+            let locks: Vec<LockInfo> = rows
+                .iter()
+                .map(|row| LockInfo {
                     pid: row.get("pid"),
                     lock_type: row.get("locktype"),
                     database: row.get::<Option<String>, _>("database").unwrap_or_default(),
@@ -6478,8 +6841,8 @@ pub async fn get_locks(
                     query_start: row.get("query_start"),
                     wait_duration_seconds: row.get("wait_seconds"),
                     blocking_pid: row.get("blocking_pid"),
-                }
-            }).collect();
+                })
+                .collect();
 
             // Get blocking relationships
             let blocked_query = r#"
@@ -6718,7 +7081,9 @@ fn extract_tables_from_query(query: &str, keyword: &str) -> Option<Vec<String>> 
 
         // Get the first word/identifier
         let end_chars = [' ', '\n', '\t', '(', ')'];
-        let end_pos = trimmed.find(|c: char| end_chars.contains(&c)).unwrap_or(trimmed.len());
+        let end_pos = trimmed
+            .find(|c: char| end_chars.contains(&c))
+            .unwrap_or(trimmed.len());
         let table_part = &trimmed[..end_pos];
 
         // Clean up the table name
@@ -6773,9 +7138,7 @@ pub struct AuditEvent {
 }
 
 /// Get audit log dashboard with analytics
-pub async fn get_audit_dashboard(
-    State(state): State<Arc<DbManagerState>>,
-) -> impl IntoResponse {
+pub async fn get_audit_dashboard(State(state): State<Arc<DbManagerState>>) -> impl IntoResponse {
     // Total events
     let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM dbmanager_audit_log")
         .fetch_one(&state.pool)
@@ -6784,11 +7147,11 @@ pub async fn get_audit_dashboard(
 
     // Events today
     let today: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM dbmanager_audit_log WHERE created_at >= CURRENT_DATE"
+        "SELECT COUNT(*) FROM dbmanager_audit_log WHERE created_at >= CURRENT_DATE",
     )
-        .fetch_one(&state.pool)
-        .await
-        .unwrap_or(0);
+    .fetch_one(&state.pool)
+    .await
+    .unwrap_or(0);
 
     // Events this week
     let this_week: i64 = sqlx::query_scalar(
@@ -6870,7 +7233,9 @@ pub async fn get_audit_dashboard(
             table_name: r.get("table_name"),
             query: r.get::<String, _>("query").chars().take(200).collect(),
             user_id: r.get("user_id"),
-            created_at: r.get::<chrono::DateTime<chrono::Utc>, _>("created_at").to_rfc3339(),
+            created_at: r
+                .get::<chrono::DateTime<chrono::Utc>, _>("created_at")
+                .to_rfc3339(),
             metadata: r.get("metadata"),
         })
         .collect();
@@ -6945,14 +7310,20 @@ pub fn dbmanager_router(pool: PgPool) -> Router {
         .route("/tables/:table_name", delete(drop_table))
         .route("/tables/:table_name/columns", get(get_table_columns))
         .route("/tables/:table_name/indexes", get(get_table_indexes))
-        .route("/tables/:table_name/foreign-keys", get(get_table_foreign_keys))
+        .route(
+            "/tables/:table_name/foreign-keys",
+            get(get_table_foreign_keys),
+        )
         .route("/tables/:table_name/truncate", post(truncate_table))
         // Table Advanced Operations
         .route("/tables/:table_name/clone", post(clone_table))
         .route("/tables/:table_name/partitions", get(get_table_partitions))
         .route("/tables/:table_name/partitions", post(create_partitions))
         .route("/tables/:table_name/statistics", get(get_table_statistics))
-        .route("/tables/:table_name/index-recommendations", get(get_index_recommendations))
+        .route(
+            "/tables/:table_name/index-recommendations",
+            get(get_index_recommendations),
+        )
         // Data operations
         .route("/tables/:table_name/data", get(get_table_data))
         .route("/tables/:table_name/data", post(insert_row))
@@ -7006,7 +7377,8 @@ pub fn dbmanager_router(pool: PgPool) -> Router {
 /// Call this function once at application startup
 pub async fn init_dbmanager_tables(pool: &PgPool) -> Result<(), sqlx::Error> {
     // Create saved queries table
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE TABLE IF NOT EXISTS dbmanager_saved_queries (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             name VARCHAR(255) NOT NULL,
@@ -7015,12 +7387,14 @@ pub async fn init_dbmanager_tables(pool: &PgPool) -> Result<(), sqlx::Error> {
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
-    "#)
+    "#,
+    )
     .execute(pool)
     .await?;
 
     // Create query history table
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE TABLE IF NOT EXISTS dbmanager_query_history (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             query TEXT NOT NULL,
@@ -7030,20 +7404,24 @@ pub async fn init_dbmanager_tables(pool: &PgPool) -> Result<(), sqlx::Error> {
             error_message TEXT,
             executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
-    "#)
+    "#,
+    )
     .execute(pool)
     .await?;
 
     // Create index for faster history retrieval
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE INDEX IF NOT EXISTS idx_dbmanager_query_history_executed_at
         ON dbmanager_query_history(executed_at DESC)
-    "#)
+    "#,
+    )
     .execute(pool)
     .await?;
 
     // Create query snippets table
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE TABLE IF NOT EXISTS dbmanager_query_snippets (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             name VARCHAR(255) NOT NULL,
@@ -7056,27 +7434,33 @@ pub async fn init_dbmanager_tables(pool: &PgPool) -> Result<(), sqlx::Error> {
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
-    "#)
+    "#,
+    )
     .execute(pool)
     .await?;
 
     // Create index for snippet search
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE INDEX IF NOT EXISTS idx_dbmanager_query_snippets_category
         ON dbmanager_query_snippets(category)
-    "#)
+    "#,
+    )
     .execute(pool)
     .await?;
 
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE INDEX IF NOT EXISTS idx_dbmanager_query_snippets_tags
         ON dbmanager_query_snippets USING GIN(tags)
-    "#)
+    "#,
+    )
     .execute(pool)
     .await?;
 
     // Create schema versions table
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE TABLE IF NOT EXISTS dbmanager_schema_versions (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             version VARCHAR(100) NOT NULL,
@@ -7086,20 +7470,24 @@ pub async fn init_dbmanager_tables(pool: &PgPool) -> Result<(), sqlx::Error> {
             created_by VARCHAR(255),
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
-    "#)
+    "#,
+    )
     .execute(pool)
     .await?;
 
     // Create index for schema version retrieval
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE INDEX IF NOT EXISTS idx_dbmanager_schema_versions_created_at
         ON dbmanager_schema_versions(created_at DESC)
-    "#)
+    "#,
+    )
     .execute(pool)
     .await?;
 
     // Create slow query log table
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE TABLE IF NOT EXISTS dbmanager_slow_queries (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             query TEXT NOT NULL,
@@ -7108,22 +7496,27 @@ pub async fn init_dbmanager_tables(pool: &PgPool) -> Result<(), sqlx::Error> {
             plan JSONB,
             logged_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
-    "#)
+    "#,
+    )
     .execute(pool)
     .await?;
 
     // Create index for slow query retrieval
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE INDEX IF NOT EXISTS idx_dbmanager_slow_queries_logged_at
         ON dbmanager_slow_queries(logged_at DESC)
-    "#)
+    "#,
+    )
     .execute(pool)
     .await?;
 
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE INDEX IF NOT EXISTS idx_dbmanager_slow_queries_execution_time
         ON dbmanager_slow_queries(execution_time_ms DESC)
-    "#)
+    "#,
+    )
     .execute(pool)
     .await?;
 

@@ -4,13 +4,13 @@
 //! cron jobs, and capabilities.
 
 use crate::manifest::{
-    BlockDefinition, CliCommandDefinition, CronJobDefinition, CronSchedule,
-    ShortcodeDefinition, WidgetDefinition,
+    BlockDefinition, CliCommandDefinition, CronJobDefinition, CronSchedule, ShortcodeDefinition,
+    WidgetDefinition,
 };
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use parking_lot::RwLock;
 use tracing::debug;
 
 // ============================================================================
@@ -71,7 +71,9 @@ impl ShortcodeRegistry {
             supports_content: shortcode.supports_content,
         };
 
-        self.shortcodes.write().insert(shortcode.tag.clone(), registered);
+        self.shortcodes
+            .write()
+            .insert(shortcode.tag.clone(), registered);
     }
 
     /// Register shortcode programmatically
@@ -109,7 +111,9 @@ impl ShortcodeRegistry {
 
     /// Unregister all for plugin
     pub fn unregister_plugin(&self, plugin_id: &str) {
-        self.shortcodes.write().retain(|_, s| s.plugin_id != plugin_id);
+        self.shortcodes
+            .write()
+            .retain(|_, s| s.plugin_id != plugin_id);
     }
 
     /// Parse shortcode from content
@@ -275,7 +279,9 @@ impl BlockRegistry {
             },
         };
 
-        self.blocks.write().insert(registered.name.clone(), registered);
+        self.blocks
+            .write()
+            .insert(registered.name.clone(), registered);
     }
 
     /// Get block by name
@@ -511,7 +517,9 @@ impl CliRegistry {
                 .collect(),
         };
 
-        self.commands.write().insert(command.name.clone(), registered);
+        self.commands
+            .write()
+            .insert(command.name.clone(), registered);
     }
 
     /// Get command by name
@@ -531,7 +539,9 @@ impl CliRegistry {
 
     /// Unregister all for plugin
     pub fn unregister_plugin(&self, plugin_id: &str) {
-        self.commands.write().retain(|_, c| c.plugin_id != plugin_id);
+        self.commands
+            .write()
+            .retain(|_, c| c.plugin_id != plugin_id);
     }
 }
 
@@ -724,7 +734,13 @@ impl CapabilityRegistry {
     }
 
     /// Register capability
-    pub fn register(&self, plugin_id: &str, name: &str, description: Option<&str>, default_roles: Vec<&str>) {
+    pub fn register(
+        &self,
+        plugin_id: &str,
+        name: &str,
+        description: Option<&str>,
+        default_roles: Vec<&str>,
+    ) {
         let cap = RegisteredCapability {
             plugin_id: plugin_id.to_string(),
             name: name.to_string(),
@@ -732,7 +748,9 @@ impl CapabilityRegistry {
             default_roles: default_roles.iter().map(|s| s.to_string()).collect(),
         };
 
-        self.capabilities.write().insert(name.to_string(), cap.clone());
+        self.capabilities
+            .write()
+            .insert(name.to_string(), cap.clone());
 
         // Add to default roles
         let mut roles = self.role_capabilities.write();
@@ -839,10 +857,17 @@ mod tests {
     #[test]
     fn test_capability_registry() {
         let registry = CapabilityRegistry::new();
-        registry.register("test-plugin", "manage_test", Some("Manage test"), vec!["administrator"]);
+        registry.register(
+            "test-plugin",
+            "manage_test",
+            Some("Manage test"),
+            vec!["administrator"],
+        );
 
         assert!(registry.exists("manage_test"));
-        assert!(registry.get_for_role("administrator").contains(&"manage_test".to_string()));
+        assert!(registry
+            .get_for_role("administrator")
+            .contains(&"manage_test".to_string()));
     }
 
     #[test]

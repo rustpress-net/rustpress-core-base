@@ -63,7 +63,9 @@ where
             .map_err(|_| HttpError::unauthorized("Invalid user ID in token"))?;
 
         // Get email from custom claims if present
-        let email = claims.custom.get("email")
+        let email = claims
+            .custom
+            .get("email")
             .and_then(|v| v.as_str())
             .map(|s| s.to_string());
 
@@ -210,10 +212,9 @@ where
     type Rejection = HttpError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let Query(params): Query<PaginationParams> =
-            Query::from_request_parts(parts, state)
-                .await
-                .map_err(|e| HttpError::bad_request(format!("Invalid pagination params: {}", e)))?;
+        let Query(params): Query<PaginationParams> = Query::from_request_parts(parts, state)
+            .await
+            .map_err(|e| HttpError::bad_request(format!("Invalid pagination params: {}", e)))?;
 
         Ok(PaginatedQuery(params))
     }

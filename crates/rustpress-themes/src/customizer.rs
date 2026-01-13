@@ -3,10 +3,10 @@
 //! Provides real-time theme customization with live preview capabilities.
 
 use crate::manifest::ThemeManifest;
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use parking_lot::RwLock;
 use thiserror::Error;
 use tokio::sync::broadcast;
 use uuid::Uuid;
@@ -250,7 +250,11 @@ impl ThemeCustomizer {
 
         // Register custom settings sections
         for section in &manifest.settings.sections {
-            self.register_settings_section(&manifest.theme.id, section, &manifest.settings.settings);
+            self.register_settings_section(
+                &manifest.theme.id,
+                section,
+                &manifest.settings.settings,
+            );
         }
     }
 
@@ -383,7 +387,11 @@ impl ThemeCustomizer {
             },
             priority: 10,
             capability: "edit_theme_options".to_string(),
-            default: manifest.layout.content_width.clone().map(|s| serde_json::Value::String(s)),
+            default: manifest
+                .layout
+                .content_width
+                .clone()
+                .map(|s| serde_json::Value::String(s)),
             transport: Transport::PostMessage,
             sanitize_callback: None,
             validate_callback: None,
@@ -404,7 +412,11 @@ impl ThemeCustomizer {
             },
             priority: 20,
             capability: "edit_theme_options".to_string(),
-            default: manifest.layout.wide_width.clone().map(|s| serde_json::Value::String(s)),
+            default: manifest
+                .layout
+                .wide_width
+                .clone()
+                .map(|s| serde_json::Value::String(s)),
             transport: Transport::PostMessage,
             sanitize_callback: None,
             validate_callback: None,
@@ -434,7 +446,8 @@ impl ThemeCustomizer {
         self.add_section(customizer_section);
 
         // Find settings that belong to this section
-        let section_settings: Vec<_> = all_settings.iter()
+        let section_settings: Vec<_> = all_settings
+            .iter()
             .filter(|s| s.section.as_ref() == Some(&section.id))
             .collect();
 
@@ -449,26 +462,38 @@ impl ThemeCustomizer {
                 crate::manifest::SettingType::Checkbox => ControlType::Checkbox,
                 crate::manifest::SettingType::Color => ControlType::Color { show_opacity: true },
                 crate::manifest::SettingType::Image => ControlType::Image {
-                    extensions: vec!["jpg".to_string(), "jpeg".to_string(), "png".to_string(), "gif".to_string()],
+                    extensions: vec![
+                        "jpg".to_string(),
+                        "jpeg".to_string(),
+                        "png".to_string(),
+                        "gif".to_string(),
+                    ],
                 },
                 crate::manifest::SettingType::Select | crate::manifest::SettingType::Dropdown => {
                     ControlType::Select {
-                        choices: setting.choices.as_ref().map(|choices| {
-                            choices.iter().map(|o| ControlChoice {
-                                value: o.value.clone(),
-                                label: o.label.clone(),
-                                description: None,
-                            }).collect()
-                        }).unwrap_or_default(),
+                        choices: setting
+                            .choices
+                            .as_ref()
+                            .map(|choices| {
+                                choices
+                                    .iter()
+                                    .map(|o| ControlChoice {
+                                        value: o.value.clone(),
+                                        label: o.label.clone(),
+                                        description: None,
+                                    })
+                                    .collect()
+                            })
+                            .unwrap_or_default(),
                     }
-                },
+                }
                 crate::manifest::SettingType::Range | crate::manifest::SettingType::Number => {
                     ControlType::Range {
                         min: 0.0,
                         max: 100.0,
                         step: 1.0,
                     }
-                },
+                }
                 _ => ControlType::Text {
                     placeholder: None,
                     input_attrs: HashMap::new(),
@@ -504,7 +529,9 @@ impl ThemeCustomizer {
     /// Add a control
     pub fn add_control(&self, control: CustomizerControl) {
         if let Some(default) = &control.default {
-            self.defaults.write().insert(control.id.clone(), default.clone());
+            self.defaults
+                .write()
+                .insert(control.id.clone(), default.clone());
         }
         self.controls.write().insert(control.id.clone(), control);
     }
@@ -518,7 +545,8 @@ impl ThemeCustomizer {
 
     /// Get controls for a section
     pub fn get_controls_for_section(&self, section_id: &str) -> Vec<CustomizerControl> {
-        let mut controls: Vec<_> = self.controls
+        let mut controls: Vec<_> = self
+            .controls
             .read()
             .values()
             .filter(|c| c.section == section_id)
@@ -559,7 +587,8 @@ impl ThemeCustomizer {
             .get_mut(session_id)
             .ok_or_else(|| CustomizerError::SessionNotFound(session_id.to_string()))?;
 
-        let control = self.controls
+        let control = self
+            .controls
             .read()
             .get(control_id)
             .cloned()
@@ -569,7 +598,9 @@ impl ThemeCustomizer {
         self.validate_value(&control, &value)?;
 
         let old_value = session.changeset.get(control_id).cloned();
-        session.changeset.insert(control_id.to_string(), value.clone());
+        session
+            .changeset
+            .insert(control_id.to_string(), value.clone());
 
         // Generate CSS rules for live preview
         let css_rules = self.generate_css_rules(&control, &value);
@@ -588,7 +619,11 @@ impl ThemeCustomizer {
         Ok(())
     }
 
-    fn validate_value(&self, control: &CustomizerControl, value: &serde_json::Value) -> Result<(), CustomizerError> {
+    fn validate_value(
+        &self,
+        control: &CustomizerControl,
+        value: &serde_json::Value,
+    ) -> Result<(), CustomizerError> {
         match &control.control_type {
             ControlType::Range { min, max, .. } => {
                 if let Some(num) = value.as_f64() {
@@ -666,7 +701,11 @@ impl ThemeCustomizer {
         Ok(())
     }
 
-    fn generate_css_rules(&self, control: &CustomizerControl, value: &serde_json::Value) -> Vec<CssRule> {
+    fn generate_css_rules(
+        &self,
+        control: &CustomizerControl,
+        value: &serde_json::Value,
+    ) -> Vec<CssRule> {
         let mut rules = Vec::new();
 
         if let (Some(selector), Some(property)) = (&control.css_selector, &control.css_property) {
@@ -691,7 +730,10 @@ impl ThemeCustomizer {
     }
 
     /// Get the current changeset for a session
-    pub fn get_changeset(&self, session_id: &str) -> Result<HashMap<String, serde_json::Value>, CustomizerError> {
+    pub fn get_changeset(
+        &self,
+        session_id: &str,
+    ) -> Result<HashMap<String, serde_json::Value>, CustomizerError> {
         self.sessions
             .read()
             .get(session_id)
@@ -753,7 +795,10 @@ impl ThemeCustomizer {
                     if rule.selector == ":root" {
                         root_vars.push(format!("  {}: {};", rule.property, rule.value));
                     } else {
-                        css_parts.push(format!("{} {{ {}: {}; }}", rule.selector, rule.property, rule.value));
+                        css_parts.push(format!(
+                            "{} {{ {}: {}; }}",
+                            rule.selector, rule.property, rule.value
+                        ));
                     }
                 }
             }
@@ -780,9 +825,9 @@ impl ThemeCustomizer {
     /// Clean expired sessions
     pub fn clean_expired_sessions(&self) {
         let now = chrono::Utc::now();
-        self.sessions.write().retain(|_, s| {
-            s.status == SessionStatus::Scheduled || s.expires_at > now
-        });
+        self.sessions
+            .write()
+            .retain(|_, s| s.status == SessionStatus::Scheduled || s.expires_at > now);
     }
 }
 
@@ -813,9 +858,29 @@ fn is_valid_color(color: &str) -> bool {
 
     // Check named colors (basic set)
     let named_colors = [
-        "black", "white", "red", "green", "blue", "yellow", "cyan", "magenta",
-        "gray", "grey", "silver", "maroon", "olive", "navy", "purple", "teal",
-        "aqua", "fuchsia", "lime", "orange", "pink", "transparent", "inherit",
+        "black",
+        "white",
+        "red",
+        "green",
+        "blue",
+        "yellow",
+        "cyan",
+        "magenta",
+        "gray",
+        "grey",
+        "silver",
+        "maroon",
+        "olive",
+        "navy",
+        "purple",
+        "teal",
+        "aqua",
+        "fuchsia",
+        "lime",
+        "orange",
+        "pink",
+        "transparent",
+        "inherit",
         "currentColor",
     ];
 

@@ -108,7 +108,7 @@ impl Default for JwtConfig {
         Self {
             secret: "change-me-in-production".to_string(),
             issuer: "rustpress".to_string(),
-            access_expiry_secs: 900, // 15 minutes
+            access_expiry_secs: 900,     // 15 minutes
             refresh_expiry_secs: 604800, // 7 days
         }
     }
@@ -141,7 +141,12 @@ impl JwtManager {
     }
 
     /// Generate a token pair for a user
-    pub fn generate_tokens(&self, user_id: &str, role: Option<&str>, tenant_id: Option<&str>) -> Result<TokenPair> {
+    pub fn generate_tokens(
+        &self,
+        user_id: &str,
+        role: Option<&str>,
+        tenant_id: Option<&str>,
+    ) -> Result<TokenPair> {
         let access_token = self.generate_access_token(user_id, role, tenant_id)?;
         let refresh_token = self.generate_refresh_token(user_id)?;
 
@@ -170,11 +175,9 @@ impl JwtManager {
             claims = claims.with_tenant(tenant);
         }
 
-        encode(&Header::default(), &claims, &self.encoding_key).map_err(|e| {
-            Error::Internal {
-                message: format!("Failed to generate access token: {}", e),
-                request_id: None,
-            }
+        encode(&Header::default(), &claims, &self.encoding_key).map_err(|e| Error::Internal {
+            message: format!("Failed to generate access token: {}", e),
+            request_id: None,
         })
     }
 
@@ -183,30 +186,29 @@ impl JwtManager {
         let mut claims = Claims::new(user_id, &self.config.issuer, TokenType::Refresh);
         claims.exp = (Utc::now() + Duration::seconds(self.config.refresh_expiry_secs)).timestamp();
 
-        encode(&Header::default(), &claims, &self.encoding_key).map_err(|e| {
-            Error::Internal {
-                message: format!("Failed to generate refresh token: {}", e),
-                request_id: None,
-            }
+        encode(&Header::default(), &claims, &self.encoding_key).map_err(|e| Error::Internal {
+            message: format!("Failed to generate refresh token: {}", e),
+            request_id: None,
         })
     }
 
     /// Validate and decode a token
     pub fn validate(&self, token: &str) -> Result<Claims> {
-        let token_data = decode::<Claims>(token, &self.decoding_key, &self.validation).map_err(
-            |e| match e.kind() {
-                jsonwebtoken::errors::ErrorKind::ExpiredSignature => Error::TokenExpired,
-                jsonwebtoken::errors::ErrorKind::InvalidToken => Error::InvalidToken {
-                    reason: "Invalid token format".to_string(),
-                },
-                jsonwebtoken::errors::ErrorKind::InvalidSignature => Error::InvalidToken {
-                    reason: "Invalid signature".to_string(),
-                },
-                _ => Error::InvalidToken {
-                    reason: e.to_string(),
-                },
-            },
-        )?;
+        let token_data =
+            decode::<Claims>(token, &self.decoding_key, &self.validation).map_err(|e| {
+                match e.kind() {
+                    jsonwebtoken::errors::ErrorKind::ExpiredSignature => Error::TokenExpired,
+                    jsonwebtoken::errors::ErrorKind::InvalidToken => Error::InvalidToken {
+                        reason: "Invalid token format".to_string(),
+                    },
+                    jsonwebtoken::errors::ErrorKind::InvalidSignature => Error::InvalidToken {
+                        reason: "Invalid signature".to_string(),
+                    },
+                    _ => Error::InvalidToken {
+                        reason: e.to_string(),
+                    },
+                }
+            })?;
 
         Ok(token_data.claims)
     }
@@ -250,11 +252,11 @@ impl JwtManager {
         validation.insecure_disable_signature_validation();
         validation.validate_exp = false;
 
-        let token_data = decode::<Claims>(token, &self.decoding_key, &validation).map_err(
-            |e| Error::InvalidToken {
+        let token_data = decode::<Claims>(token, &self.decoding_key, &validation).map_err(|e| {
+            Error::InvalidToken {
                 reason: e.to_string(),
-            },
-        )?;
+            }
+        })?;
 
         Ok(token_data.claims.sub)
     }
@@ -317,7 +319,9 @@ mod tests {
             .refresh_tokens(&refresh_token, Some("user"), None)
             .unwrap();
 
-        let claims = manager.validate_access_token(&new_tokens.access_token).unwrap();
+        let claims = manager
+            .validate_access_token(&new_tokens.access_token)
+            .unwrap();
         assert_eq!(claims.sub, "user-123");
     }
 

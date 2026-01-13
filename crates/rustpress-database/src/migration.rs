@@ -160,10 +160,7 @@ impl Migrator {
             .execute(pool)
             .await
             .map_err(|e| {
-                Error::database_with_source(
-                    format!("Migration {} failed", migration.version),
-                    e,
-                )
+                Error::database_with_source(format!("Migration {} failed", migration.version), e)
             })?;
 
         // Record the migration

@@ -46,11 +46,7 @@ pub trait CacheBackend: Send + Sync {
     }
 
     /// Set multiple values
-    async fn set_many(
-        &self,
-        entries: &[(CacheKey, Vec<u8>)],
-        ttl: Option<Duration>,
-    ) -> Result<()> {
+    async fn set_many(&self, entries: &[(CacheKey, Vec<u8>)], ttl: Option<Duration>) -> Result<()> {
         for (key, value) in entries {
             self.set(key, value.clone(), ttl).await?;
         }
@@ -179,9 +175,7 @@ impl RedisBackend {
         Ok(Self { pool })
     }
 
-    async fn get_connection(
-        &self,
-    ) -> Result<deadpool_redis::Connection> {
+    async fn get_connection(&self) -> Result<deadpool_redis::Connection> {
         self.pool.get().await.map_err(|e| Error::Cache {
             message: format!("Failed to get Redis connection: {}", e),
         })
@@ -376,10 +370,7 @@ mod tests {
 
         // Test set and get
         let key = CacheKey::new("test");
-        backend
-            .set(&key, b"hello".to_vec(), None)
-            .await
-            .unwrap();
+        backend.set(&key, b"hello".to_vec(), None).await.unwrap();
         let value = backend.get(&key).await.unwrap();
         assert_eq!(value, Some(b"hello".to_vec()));
 

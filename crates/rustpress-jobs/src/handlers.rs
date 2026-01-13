@@ -85,7 +85,10 @@ impl JobHandler for PublishScheduledPostsHandler {
         };
 
         let result = query.execute(&self.pool).await.map_err(|e| {
-            rustpress_core::error::Error::database(format!("Failed to publish scheduled posts: {}", e))
+            rustpress_core::error::Error::database(format!(
+                "Failed to publish scheduled posts: {}",
+                e
+            ))
         })?;
 
         let published_count = result.rows_affected();
@@ -202,7 +205,10 @@ mod tests {
 
     #[test]
     fn test_publish_scheduled_posts_job_type() {
-        assert_eq!(PublishScheduledPostsJob::job_type(), "publish_scheduled_posts");
+        assert_eq!(
+            PublishScheduledPostsJob::job_type(),
+            "publish_scheduled_posts"
+        );
         assert_eq!(PublishScheduledPostsJob::queue(), "content");
     }
 

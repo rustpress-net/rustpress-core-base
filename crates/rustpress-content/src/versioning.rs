@@ -364,12 +364,11 @@ impl VersioningService {
 
     /// Get revision count for content
     pub async fn count_revisions(&self, content_id: Uuid) -> ContentResult<i64> {
-        let count: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM content_revisions WHERE content_id = $1",
-        )
-        .bind(content_id)
-        .fetch_one(&self.pool)
-        .await?;
+        let count: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM content_revisions WHERE content_id = $1")
+                .bind(content_id)
+                .fetch_one(&self.pool)
+                .await?;
 
         Ok(count.0)
     }

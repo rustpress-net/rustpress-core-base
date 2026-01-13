@@ -3,11 +3,11 @@
 //! WordPress-compatible template hierarchy with Tera template engine.
 
 use crate::manifest::TemplateSection;
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use parking_lot::RwLock;
 use tera::{Context, Tera};
 use tracing::{debug, error, info};
 
@@ -102,7 +102,11 @@ impl TemplateHierarchy {
     }
 
     /// Scan directory for templates
-    pub fn scan_directory(&self, dir: &Path, extension: &str) -> Result<Vec<TemplateInfo>, TemplateError> {
+    pub fn scan_directory(
+        &self,
+        dir: &Path,
+        extension: &str,
+    ) -> Result<Vec<TemplateInfo>, TemplateError> {
         let mut templates = Vec::new();
 
         if !dir.exists() {
@@ -354,8 +358,8 @@ impl TemplateEngine {
     /// Create new template engine
     pub fn new(theme_dir: PathBuf, extension: &str) -> Result<Self, TemplateError> {
         let template_glob = format!("{}/**/*.{}", theme_dir.display(), extension);
-        let tera = Tera::new(&template_glob)
-            .map_err(|e| TemplateError::InitError(e.to_string()))?;
+        let tera =
+            Tera::new(&template_glob).map_err(|e| TemplateError::InitError(e.to_string()))?;
 
         Ok(Self {
             tera: Arc::new(RwLock::new(tera)),
@@ -383,7 +387,8 @@ impl TemplateEngine {
     /// Initialize templates
     pub fn init(&self) -> Result<(), TemplateError> {
         let templates_dir = self.theme_dir.join("templates");
-        self.hierarchy.scan_directory(&templates_dir, &self.extension)?;
+        self.hierarchy
+            .scan_directory(&templates_dir, &self.extension)?;
 
         let parts_dir = self.theme_dir.join("parts");
         if parts_dir.exists() {
@@ -402,58 +407,70 @@ impl TemplateEngine {
         let mut tera = self.tera.write();
 
         // Truncate filter
-        tera.register_filter("truncate_words", |value: &tera::Value, args: &HashMap<String, tera::Value>| {
-            let s = tera::try_get_value!("truncate_words", "value", String, value);
-            let length = match args.get("length") {
-                Some(val) => tera::try_get_value!("truncate_words", "length", usize, val),
-                None => 20,
-            };
-            let words: Vec<&str> = s.split_whitespace().take(length).collect();
-            Ok(tera::Value::String(words.join(" ")))
-        });
+        tera.register_filter(
+            "truncate_words",
+            |value: &tera::Value, args: &HashMap<String, tera::Value>| {
+                let s = tera::try_get_value!("truncate_words", "value", String, value);
+                let length = match args.get("length") {
+                    Some(val) => tera::try_get_value!("truncate_words", "length", usize, val),
+                    None => 20,
+                };
+                let words: Vec<&str> = s.split_whitespace().take(length).collect();
+                Ok(tera::Value::String(words.join(" ")))
+            },
+        );
 
         // Excerpt filter
-        tera.register_filter("excerpt", |value: &tera::Value, args: &HashMap<String, tera::Value>| {
-            let s = tera::try_get_value!("excerpt", "value", String, value);
-            let length = match args.get("length") {
-                Some(val) => tera::try_get_value!("excerpt", "length", usize, val),
-                None => 55,
-            };
-            // Strip HTML tags
-            let text = regex::Regex::new(r"<[^>]*>")
-                .unwrap()
-                .replace_all(&s, "")
-                .to_string();
-            let words: Vec<&str> = text.split_whitespace().take(length).collect();
-            let mut result = words.join(" ");
-            if text.split_whitespace().count() > length {
-                result.push_str("...");
-            }
-            Ok(tera::Value::String(result))
-        });
+        tera.register_filter(
+            "excerpt",
+            |value: &tera::Value, args: &HashMap<String, tera::Value>| {
+                let s = tera::try_get_value!("excerpt", "value", String, value);
+                let length = match args.get("length") {
+                    Some(val) => tera::try_get_value!("excerpt", "length", usize, val),
+                    None => 55,
+                };
+                // Strip HTML tags
+                let text = regex::Regex::new(r"<[^>]*>")
+                    .unwrap()
+                    .replace_all(&s, "")
+                    .to_string();
+                let words: Vec<&str> = text.split_whitespace().take(length).collect();
+                let mut result = words.join(" ");
+                if text.split_whitespace().count() > length {
+                    result.push_str("...");
+                }
+                Ok(tera::Value::String(result))
+            },
+        );
 
         // Date format filter
-        tera.register_filter("wp_date", |value: &tera::Value, args: &HashMap<String, tera::Value>| {
-            let date_str = tera::try_get_value!("wp_date", "value", String, value);
-            let _format = match args.get("format") {
-                Some(val) => tera::try_get_value!("wp_date", "format", String, val),
-                None => "%B %d, %Y".to_string(),
-            };
-            // In real implementation, would parse and reformat date
-            Ok(tera::Value::String(date_str))
-        });
+        tera.register_filter(
+            "wp_date",
+            |value: &tera::Value, args: &HashMap<String, tera::Value>| {
+                let date_str = tera::try_get_value!("wp_date", "value", String, value);
+                let _format = match args.get("format") {
+                    Some(val) => tera::try_get_value!("wp_date", "format", String, val),
+                    None => "%B %d, %Y".to_string(),
+                };
+                // In real implementation, would parse and reformat date
+                Ok(tera::Value::String(date_str))
+            },
+        );
 
         // Sanitize HTML
-        tera.register_filter("sanitize_html", |value: &tera::Value, _args: &HashMap<String, tera::Value>| {
-            let s = tera::try_get_value!("sanitize_html", "value", String, value);
-            let escaped = s
-                .replace('&', "&amp;")
-                .replace('<', "&lt;")
-                .replace('>', "&gt;")
-                .replace('"', "&quot;")
-                .replace('\'', "&#x27;");
-            Ok(tera::Value::String(escaped))
-        });
+        tera.register_filter(
+            "sanitize_html",
+            |value: &tera::Value, _args: &HashMap<String, tera::Value>| {
+                let s = tera::try_get_value!("sanitize_html", "value", String, value);
+                let escaped = s
+                    .replace('&', "&amp;")
+                    .replace('<', "&lt;")
+                    .replace('>', "&gt;")
+                    .replace('"', "&quot;")
+                    .replace('\'', "&#x27;");
+                Ok(tera::Value::String(escaped))
+            },
+        );
 
         Ok(())
     }
@@ -463,21 +480,28 @@ impl TemplateEngine {
         let mut tera = self.tera.write();
 
         // Get template part
-        tera.register_function("get_template_part", |args: &HashMap<String, tera::Value>| {
-            let slug = args.get("slug")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| tera::Error::msg("Missing 'slug' argument"))?;
-            let name = args.get("name").and_then(|v| v.as_str());
+        tera.register_function(
+            "get_template_part",
+            |args: &HashMap<String, tera::Value>| {
+                let slug = args
+                    .get("slug")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| tera::Error::msg("Missing 'slug' argument"))?;
+                let name = args.get("name").and_then(|v| v.as_str());
 
-            let part_name = if let Some(n) = name {
-                format!("parts/{}-{}", slug, n)
-            } else {
-                format!("parts/{}", slug)
-            };
+                let part_name = if let Some(n) = name {
+                    format!("parts/{}-{}", slug, n)
+                } else {
+                    format!("parts/{}", slug)
+                };
 
-            // Return marker for later processing
-            Ok(tera::Value::String(format!("{{{{ include \"{}\" }}}}", part_name)))
-        });
+                // Return marker for later processing
+                Ok(tera::Value::String(format!(
+                    "{{{{ include \"{}\" }}}}",
+                    part_name
+                )))
+            },
+        );
 
         // Check if is_single, etc
         tera.register_function("is_single", |_args: &HashMap<String, tera::Value>| {
@@ -541,11 +565,13 @@ impl TemplateEngine {
         // Templates from hierarchy are stored as "home", "single", etc. but Tera registers them
         // with their relative path from theme_dir, so we need "templates/home.html", etc.
         let template_file = format!("templates/{}.{}", template_name, self.extension);
-        let result = tera.render(&template_file, &merged)
-            .map_err(|e| {
-                error!("Tera render error for template '{}': {:?}", template_file, e);
-                TemplateError::RenderError(format!("{:?}", e))
-            })?;
+        let result = tera.render(&template_file, &merged).map_err(|e| {
+            error!(
+                "Tera render error for template '{}': {:?}",
+                template_file, e
+            );
+            TemplateError::RenderError(format!("{:?}", e))
+        })?;
 
         // Cache result
         if self.cache_enabled {
@@ -556,15 +582,25 @@ impl TemplateEngine {
     }
 
     /// Render template for query
-    pub fn render_for_query(&self, query: &QueryContext, context: &Context) -> Result<String, TemplateError> {
-        let template = self.hierarchy.find_template(query)
+    pub fn render_for_query(
+        &self,
+        query: &QueryContext,
+        context: &Context,
+    ) -> Result<String, TemplateError> {
+        let template = self
+            .hierarchy
+            .find_template(query)
             .ok_or_else(|| TemplateError::NotFound("No matching template".to_string()))?;
 
         self.render(&template.name, context)
     }
 
     /// Render string template
-    pub fn render_string(&self, template: &str, context: &Context) -> Result<String, TemplateError> {
+    pub fn render_string(
+        &self,
+        template: &str,
+        context: &Context,
+    ) -> Result<String, TemplateError> {
         let mut merged = self.global_context.read().clone();
         for (key, value) in context.clone().into_json().as_object().unwrap() {
             merged.insert(key, value);
@@ -661,7 +697,9 @@ impl TemplatePartManager {
                             .unwrap_or(path)
                             .with_extension("");
 
-                        let slug = relative.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/");
+                        let slug = relative
+                            .to_string_lossy()
+                            .replace(std::path::MAIN_SEPARATOR, "/");
 
                         // Detect area from path
                         let area = if slug.starts_with("header") {

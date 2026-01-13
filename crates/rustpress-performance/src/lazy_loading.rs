@@ -2,10 +2,10 @@
 //!
 //! Implements lazy loading patterns for admin UI components to improve initial load time.
 
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 /// Component metadata for lazy loading
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -81,7 +81,9 @@ impl LazyLoadingRegistry {
         }
 
         // Store component
-        self.components.write().insert(component.id.clone(), component);
+        self.components
+            .write()
+            .insert(component.id.clone(), component);
     }
 
     /// Register a chunk
@@ -293,7 +295,8 @@ impl PreloadHint {
             ResourceType::Image => "image",
         };
 
-        let crossorigin = self.crossorigin
+        let crossorigin = self
+            .crossorigin
             .as_ref()
             .map(|c| format!(" crossorigin=\"{}\"", c))
             .unwrap_or_default();
@@ -472,9 +475,10 @@ fn route_matches(route: &str, pattern: &str) -> bool {
         return false;
     }
 
-    route_parts.iter().zip(pattern_parts.iter()).all(|(r, p)| {
-        p.starts_with(':') || *r == *p
-    })
+    route_parts
+        .iter()
+        .zip(pattern_parts.iter())
+        .all(|(r, p)| p.starts_with(':') || *r == *p)
 }
 
 /// Predict likely next routes based on navigation patterns
@@ -634,7 +638,10 @@ mod tests {
     fn test_route_matching() {
         assert!(route_matches("/admin/posts", "/admin/posts"));
         assert!(route_matches("/admin/posts/123", "/admin/posts/:id"));
-        assert!(route_matches("/admin/settings/general", "/admin/settings/*"));
+        assert!(route_matches(
+            "/admin/settings/general",
+            "/admin/settings/*"
+        ));
         assert!(!route_matches("/admin/posts", "/admin/pages"));
     }
 

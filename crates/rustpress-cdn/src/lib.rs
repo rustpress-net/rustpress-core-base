@@ -26,12 +26,12 @@
 //! cdn.auto_configure().await?;
 //! ```
 
-pub mod cloudflare;
 pub mod bunnycdn;
+pub mod cloudflare;
 pub mod manager;
 
-pub use cloudflare::{CloudflareClient, CloudflareConfig};
 pub use bunnycdn::{BunnyCdnClient, BunnyCdnConfig};
+pub use cloudflare::{CloudflareClient, CloudflareConfig};
 pub use manager::{CdnManager, CdnProvider};
 
 use async_trait::async_trait;
@@ -138,8 +138,8 @@ pub struct CacheSettings {
 impl Default for CacheSettings {
     fn default() -> Self {
         Self {
-            default_ttl: 86400,      // 1 day
-            browser_ttl: 14400,       // 4 hours
+            default_ttl: 86400, // 1 day
+            browser_ttl: 14400, // 4 hours
             cache_level: "standard".to_string(),
             minify: MinifySettings::default(),
             cache_static: true,
@@ -246,7 +246,7 @@ pub fn default_cache_rules() -> Vec<CacheRule> {
             pattern: "*.{css,js,woff,woff2,ttf,eot,ico,svg}".to_string(),
             ttl: 31536000, // 1 year
             cache_level: Some("aggressive".to_string()),
-            edge_ttl: Some(2592000), // 30 days
+            edge_ttl: Some(2592000),   // 30 days
             browser_ttl: Some(604800), // 7 days
             priority: 1,
         },
@@ -256,7 +256,7 @@ pub fn default_cache_rules() -> Vec<CacheRule> {
             pattern: "*.{jpg,jpeg,png,gif,webp,avif}".to_string(),
             ttl: 2592000, // 30 days
             cache_level: Some("aggressive".to_string()),
-            edge_ttl: Some(604800), // 7 days
+            edge_ttl: Some(604800),   // 7 days
             browser_ttl: Some(86400), // 1 day
             priority: 2,
         },
@@ -266,7 +266,7 @@ pub fn default_cache_rules() -> Vec<CacheRule> {
             pattern: "/uploads/*".to_string(),
             ttl: 604800, // 7 days
             cache_level: Some("standard".to_string()),
-            edge_ttl: Some(86400), // 1 day
+            edge_ttl: Some(86400),   // 1 day
             browser_ttl: Some(3600), // 1 hour
             priority: 3,
         },

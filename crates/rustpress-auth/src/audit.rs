@@ -78,30 +78,51 @@ pub enum AuthEventType {
 impl AuthEventType {
     pub fn category(&self) -> EventCategory {
         match self {
-            Self::LoginAttempt | Self::LoginSuccess | Self::LoginFailure
-            | Self::Logout | Self::LogoutAll => EventCategory::Authentication,
+            Self::LoginAttempt
+            | Self::LoginSuccess
+            | Self::LoginFailure
+            | Self::Logout
+            | Self::LogoutAll => EventCategory::Authentication,
 
-            Self::SessionCreated | Self::SessionExtended | Self::SessionExpired
+            Self::SessionCreated
+            | Self::SessionExtended
+            | Self::SessionExpired
             | Self::SessionRevoked => EventCategory::Session,
 
-            Self::TokenIssued | Self::TokenRefreshed | Self::TokenRevoked
-            | Self::TokenExpired => EventCategory::Token,
+            Self::TokenIssued | Self::TokenRefreshed | Self::TokenRevoked | Self::TokenExpired => {
+                EventCategory::Token
+            }
 
-            Self::PasswordChanged | Self::PasswordResetRequested
-            | Self::PasswordResetCompleted | Self::PasswordResetFailed => EventCategory::Password,
+            Self::PasswordChanged
+            | Self::PasswordResetRequested
+            | Self::PasswordResetCompleted
+            | Self::PasswordResetFailed => EventCategory::Password,
 
-            Self::TwoFactorEnabled | Self::TwoFactorDisabled | Self::TwoFactorSuccess
-            | Self::TwoFactorFailure | Self::RecoveryCodeUsed => EventCategory::TwoFactor,
+            Self::TwoFactorEnabled
+            | Self::TwoFactorDisabled
+            | Self::TwoFactorSuccess
+            | Self::TwoFactorFailure
+            | Self::RecoveryCodeUsed => EventCategory::TwoFactor,
 
-            Self::AccountCreated | Self::AccountLocked | Self::AccountUnlocked
-            | Self::AccountDeleted | Self::AccountSuspended | Self::EmailVerified
+            Self::AccountCreated
+            | Self::AccountLocked
+            | Self::AccountUnlocked
+            | Self::AccountDeleted
+            | Self::AccountSuspended
+            | Self::EmailVerified
             | Self::EmailChanged => EventCategory::Account,
 
-            Self::PermissionGranted | Self::PermissionRevoked | Self::RoleAssigned
-            | Self::RoleRemoved | Self::AccessDenied => EventCategory::Authorization,
+            Self::PermissionGranted
+            | Self::PermissionRevoked
+            | Self::RoleAssigned
+            | Self::RoleRemoved
+            | Self::AccessDenied => EventCategory::Authorization,
 
-            Self::SuspiciousActivity | Self::BruteForceDetected | Self::IpBlocked
-            | Self::ApiKeyCreated | Self::ApiKeyRevoked => EventCategory::Security,
+            Self::SuspiciousActivity
+            | Self::BruteForceDetected
+            | Self::IpBlocked
+            | Self::ApiKeyCreated
+            | Self::ApiKeyRevoked => EventCategory::Security,
 
             Self::ImpersonationStarted | Self::ImpersonationEnded => EventCategory::Impersonation,
         }
@@ -109,11 +130,16 @@ impl AuthEventType {
 
     pub fn severity(&self) -> EventSeverity {
         match self {
-            Self::LoginFailure | Self::TwoFactorFailure | Self::PasswordResetFailed
+            Self::LoginFailure
+            | Self::TwoFactorFailure
+            | Self::PasswordResetFailed
             | Self::AccessDenied => EventSeverity::Warning,
 
-            Self::SuspiciousActivity | Self::BruteForceDetected | Self::AccountLocked
-            | Self::IpBlocked | Self::AccountSuspended => EventSeverity::High,
+            Self::SuspiciousActivity
+            | Self::BruteForceDetected
+            | Self::AccountLocked
+            | Self::IpBlocked
+            | Self::AccountSuspended => EventSeverity::High,
 
             Self::AccountDeleted | Self::ImpersonationStarted => EventSeverity::Critical,
 
@@ -193,7 +219,11 @@ pub struct AuthAuditEvent {
 }
 
 impl AuthAuditEvent {
-    pub fn new(event_type: AuthEventType, outcome: EventOutcome, ip_address: impl Into<String>) -> Self {
+    pub fn new(
+        event_type: AuthEventType,
+        outcome: EventOutcome,
+        ip_address: impl Into<String>,
+    ) -> Self {
         Self {
             id: Uuid::now_v7(),
             event_type,
@@ -243,7 +273,12 @@ impl AuthAuditEvent {
         self
     }
 
-    pub fn with_request(mut self, request_id: impl Into<String>, path: impl Into<String>, method: impl Into<String>) -> Self {
+    pub fn with_request(
+        mut self,
+        request_id: impl Into<String>,
+        path: impl Into<String>,
+        method: impl Into<String>,
+    ) -> Self {
         self.request_id = Some(request_id.into());
         self.request_path = Some(path.into());
         self.request_method = Some(method.into());
@@ -284,7 +319,11 @@ impl AuthEventBuilder {
             .with_description("User logged in successfully")
     }
 
-    pub fn login_failure(username: &str, ip: impl Into<String>, reason: impl Into<String>) -> AuthAuditEvent {
+    pub fn login_failure(
+        username: &str,
+        ip: impl Into<String>,
+        reason: impl Into<String>,
+    ) -> AuthAuditEvent {
         AuthAuditEvent::new(AuthEventType::LoginFailure, EventOutcome::Failure, ip)
             .with_description(format!("Login failed for '{}'", username))
             .with_failure_reason(reason)
@@ -304,9 +343,13 @@ impl AuthEventBuilder {
     }
 
     pub fn password_reset_requested(email: &str, ip: impl Into<String>) -> AuthAuditEvent {
-        AuthAuditEvent::new(AuthEventType::PasswordResetRequested, EventOutcome::Success, ip)
-            .with_description(format!("Password reset requested for {}", email))
-            .with_detail("email", email)
+        AuthAuditEvent::new(
+            AuthEventType::PasswordResetRequested,
+            EventOutcome::Success,
+            ip,
+        )
+        .with_description(format!("Password reset requested for {}", email))
+        .with_detail("email", email)
     }
 
     pub fn two_factor_enabled(user_id: Uuid, ip: impl Into<String>) -> AuthAuditEvent {
@@ -315,7 +358,11 @@ impl AuthEventBuilder {
             .with_description("Two-factor authentication enabled")
     }
 
-    pub fn access_denied(user_id: Option<Uuid>, resource: &str, ip: impl Into<String>) -> AuthAuditEvent {
+    pub fn access_denied(
+        user_id: Option<Uuid>,
+        resource: &str,
+        ip: impl Into<String>,
+    ) -> AuthAuditEvent {
         let mut event = AuthAuditEvent::new(AuthEventType::AccessDenied, EventOutcome::Denied, ip)
             .with_description(format!("Access denied to resource: {}", resource))
             .with_detail("resource", resource);
@@ -326,18 +373,30 @@ impl AuthEventBuilder {
         event
     }
 
-    pub fn brute_force_detected(identifier: &str, ip: impl Into<String>, attempt_count: u32) -> AuthAuditEvent {
+    pub fn brute_force_detected(
+        identifier: &str,
+        ip: impl Into<String>,
+        attempt_count: u32,
+    ) -> AuthAuditEvent {
         AuthAuditEvent::new(AuthEventType::BruteForceDetected, EventOutcome::Blocked, ip)
             .with_description(format!("Brute force attack detected for '{}'", identifier))
             .with_detail("identifier", identifier)
             .with_detail("attempt_count", attempt_count)
     }
 
-    pub fn impersonation_started(admin_id: Uuid, target_id: Uuid, ip: impl Into<String>) -> AuthAuditEvent {
-        AuthAuditEvent::new(AuthEventType::ImpersonationStarted, EventOutcome::Success, ip)
-            .with_user(admin_id)
-            .with_target_user(target_id)
-            .with_description(format!("Admin started impersonating user"))
+    pub fn impersonation_started(
+        admin_id: Uuid,
+        target_id: Uuid,
+        ip: impl Into<String>,
+    ) -> AuthAuditEvent {
+        AuthAuditEvent::new(
+            AuthEventType::ImpersonationStarted,
+            EventOutcome::Success,
+            ip,
+        )
+        .with_user(admin_id)
+        .with_target_user(target_id)
+        .with_description(format!("Admin started impersonating user"))
     }
 }
 
@@ -363,7 +422,12 @@ pub trait AuditLogStore: Send + Sync {
     async fn log(&self, event: &AuthAuditEvent) -> Result<()>;
 
     /// Query events
-    async fn query(&self, filter: &AuditLogFilter, limit: usize, offset: usize) -> Result<Vec<AuthAuditEvent>>;
+    async fn query(
+        &self,
+        filter: &AuditLogFilter,
+        limit: usize,
+        offset: usize,
+    ) -> Result<Vec<AuthAuditEvent>>;
 
     /// Count events matching filter
     async fn count(&self, filter: &AuditLogFilter) -> Result<u64>;
@@ -417,12 +481,21 @@ impl<S: AuditLogStore> AuditLogger<S> {
     }
 
     /// Query events
-    pub async fn query(&self, filter: &AuditLogFilter, limit: usize, offset: usize) -> Result<Vec<AuthAuditEvent>> {
+    pub async fn query(
+        &self,
+        filter: &AuditLogFilter,
+        limit: usize,
+        offset: usize,
+    ) -> Result<Vec<AuthAuditEvent>> {
         self.store.query(filter, limit, offset).await
     }
 
     /// Get user's recent auth activity
-    pub async fn get_user_activity(&self, user_id: Uuid, limit: usize) -> Result<Vec<AuthAuditEvent>> {
+    pub async fn get_user_activity(
+        &self,
+        user_id: Uuid,
+        limit: usize,
+    ) -> Result<Vec<AuthAuditEvent>> {
         self.store.get_user_events(user_id, limit).await
     }
 
@@ -444,7 +517,10 @@ impl<S: AuditLogStore> AuditLogger<S> {
                 severity: EventSeverity::Warning,
                 description: format!("{} failed login attempts detected", recent_failures.len()),
                 user_id: Some(user_id),
-                ip_addresses: recent_failures.iter().map(|e| e.ip_address.clone()).collect(),
+                ip_addresses: recent_failures
+                    .iter()
+                    .map(|e| e.ip_address.clone())
+                    .collect(),
                 detected_at: Utc::now(),
             });
         }
@@ -456,7 +532,8 @@ impl<S: AuditLogStore> AuditLogger<S> {
             .take(20)
             .collect();
 
-        let unique_ips: std::collections::HashSet<_> = recent_logins.iter().map(|e| &e.ip_address).collect();
+        let unique_ips: std::collections::HashSet<_> =
+            recent_logins.iter().map(|e| &e.ip_address).collect();
         if unique_ips.len() > 5 {
             alerts.push(SecurityAlert {
                 alert_type: AlertType::MultipleLocations,
@@ -538,7 +615,12 @@ impl AuditLogStore for InMemoryAuditLogStore {
         Ok(())
     }
 
-    async fn query(&self, filter: &AuditLogFilter, limit: usize, offset: usize) -> Result<Vec<AuthAuditEvent>> {
+    async fn query(
+        &self,
+        filter: &AuditLogFilter,
+        limit: usize,
+        offset: usize,
+    ) -> Result<Vec<AuthAuditEvent>> {
         let events = self.events.read().map_err(|_| Error::Internal {
             message: "Lock poisoned".to_string(),
             request_id: None,
@@ -591,7 +673,15 @@ impl AuditLogStore for InMemoryAuditLogStore {
     }
 
     async fn get_user_events(&self, user_id: Uuid, limit: usize) -> Result<Vec<AuthAuditEvent>> {
-        self.query(&AuditLogFilter { user_id: Some(user_id), ..Default::default() }, limit, 0).await
+        self.query(
+            &AuditLogFilter {
+                user_id: Some(user_id),
+                ..Default::default()
+            },
+            limit,
+            0,
+        )
+        .await
     }
 
     async fn cleanup(&self, older_than: DateTime<Utc>) -> Result<u64> {
@@ -617,7 +707,10 @@ mod tests {
         let event = AuthEventBuilder::login_success(Uuid::now_v7(), "192.168.1.1");
         logger.log(event).await.unwrap();
 
-        let events = logger.query(&AuditLogFilter::default(), 10, 0).await.unwrap();
+        let events = logger
+            .query(&AuditLogFilter::default(), 10, 0)
+            .await
+            .unwrap();
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].event_type, AuthEventType::LoginSuccess);
     }
@@ -630,9 +723,18 @@ mod tests {
         let user1 = Uuid::now_v7();
         let user2 = Uuid::now_v7();
 
-        logger.log(AuthEventBuilder::login_success(user1, "1.1.1.1")).await.unwrap();
-        logger.log(AuthEventBuilder::login_success(user2, "2.2.2.2")).await.unwrap();
-        logger.log(AuthEventBuilder::logout(user1, "1.1.1.1")).await.unwrap();
+        logger
+            .log(AuthEventBuilder::login_success(user1, "1.1.1.1"))
+            .await
+            .unwrap();
+        logger
+            .log(AuthEventBuilder::login_success(user2, "2.2.2.2"))
+            .await
+            .unwrap();
+        logger
+            .log(AuthEventBuilder::logout(user1, "1.1.1.1"))
+            .await
+            .unwrap();
 
         let events = logger.get_user_activity(user1, 10).await.unwrap();
         assert_eq!(events.len(), 2);
@@ -641,9 +743,18 @@ mod tests {
     #[test]
     fn test_event_severity() {
         assert_eq!(AuthEventType::LoginSuccess.severity(), EventSeverity::Info);
-        assert_eq!(AuthEventType::LoginFailure.severity(), EventSeverity::Warning);
-        assert_eq!(AuthEventType::BruteForceDetected.severity(), EventSeverity::High);
-        assert_eq!(AuthEventType::AccountDeleted.severity(), EventSeverity::Critical);
+        assert_eq!(
+            AuthEventType::LoginFailure.severity(),
+            EventSeverity::Warning
+        );
+        assert_eq!(
+            AuthEventType::BruteForceDetected.severity(),
+            EventSeverity::High
+        );
+        assert_eq!(
+            AuthEventType::AccountDeleted.severity(),
+            EventSeverity::Critical
+        );
     }
 
     #[test]

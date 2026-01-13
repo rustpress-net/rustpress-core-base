@@ -2,11 +2,11 @@
 //!
 //! Implements ISR for static page generation with background regeneration.
 
+use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use parking_lot::RwLock;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio::sync::broadcast;
 
@@ -156,7 +156,8 @@ impl IsrStore {
 
     /// Check if a path is being regenerated
     pub fn is_regenerating(&self, path: &str) -> bool {
-        self.regenerating.read()
+        self.regenerating
+            .read()
             .get(path)
             .map(|s| s.in_progress)
             .unwrap_or(false)
@@ -179,10 +180,13 @@ impl IsrStore {
             }
         }
 
-        regenerating.insert(path.to_string(), RegenerationState {
-            started_at: Instant::now(),
-            in_progress: true,
-        });
+        regenerating.insert(
+            path.to_string(),
+            RegenerationState {
+                started_at: Instant::now(),
+                in_progress: true,
+            },
+        );
 
         true
     }
@@ -221,9 +225,8 @@ impl IsrStore {
 
     /// Invalidate paths matching a pattern
     pub fn invalidate_pattern(&self, pattern: &str) -> usize {
-        let re = regex::Regex::new(pattern).unwrap_or_else(|_| {
-            regex::Regex::new(&regex::escape(pattern)).unwrap()
-        });
+        let re = regex::Regex::new(pattern)
+            .unwrap_or_else(|_| regex::Regex::new(&regex::escape(pattern)).unwrap());
 
         let mut pages = self.pages.write();
         let to_remove: Vec<String> = pages
@@ -250,9 +253,7 @@ impl IsrStore {
         let pages = self.pages.read();
         let regenerating = self.regenerating.read();
 
-        let stale_count = pages.values()
-            .filter(|p| p.needs_revalidation())
-            .count();
+        let stale_count = pages.values().filter(|p| p.needs_revalidation()).count();
 
         IsrStats {
             total_pages: pages.len(),
@@ -323,9 +324,7 @@ impl IsrHandler {
                 self.trigger_regeneration(path, generate_fn);
                 Err(IsrError::NotFound(path.to_string()))
             }
-            FallbackMode::None => {
-                Err(IsrError::NotFound(path.to_string()))
-            }
+            FallbackMode::None => Err(IsrError::NotFound(path.to_string())),
         }
     }
 
@@ -414,7 +413,9 @@ struct PathPattern {
 
 impl PathMatcher {
     pub fn new() -> Self {
-        Self { patterns: Vec::new() }
+        Self {
+            patterns: Vec::new(),
+        }
     }
 
     /// Add a path pattern with revalidation period
@@ -467,7 +468,7 @@ fn pattern_to_regex(pattern: &str) -> (String, Vec<String>) {
 
         if segment.starts_with('[') && segment.ends_with(']') {
             // Dynamic segment
-            let param = &segment[1..segment.len()-1];
+            let param = &segment[1..segment.len() - 1];
 
             if param.starts_with("...") {
                 // Catch-all segment

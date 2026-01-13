@@ -68,7 +68,10 @@ impl IpPattern {
     }
 
     pub fn cidr(network: IpAddr, prefix_len: u8) -> Self {
-        Self::Cidr { network, prefix_len }
+        Self::Cidr {
+            network,
+            prefix_len,
+        }
     }
 
     pub fn range(start: IpAddr, end: IpAddr) -> Self {
@@ -93,13 +96,19 @@ impl IpPattern {
             return None;
         }
 
-        Some(Self::Cidr { network, prefix_len })
+        Some(Self::Cidr {
+            network,
+            prefix_len,
+        })
     }
 
     pub fn matches(&self, ip: &IpAddr) -> bool {
         match self {
             Self::Single(pattern_ip) => ip == pattern_ip,
-            Self::Cidr { network, prefix_len } => self.matches_cidr(ip, network, *prefix_len),
+            Self::Cidr {
+                network,
+                prefix_len,
+            } => self.matches_cidr(ip, network, *prefix_len),
             Self::Range { start, end } => self.matches_range(ip, start, end),
             Self::Wildcard(pattern) => self.matches_wildcard(ip, pattern),
             Self::Country(_) | Self::Asn(_) => false, // Requires external lookup
@@ -111,13 +120,21 @@ impl IpPattern {
             (IpAddr::V4(ip), IpAddr::V4(net)) => {
                 let ip_bits = u32::from(*ip);
                 let net_bits = u32::from(*net);
-                let mask = if prefix_len == 0 { 0 } else { !0u32 << (32 - prefix_len) };
+                let mask = if prefix_len == 0 {
+                    0
+                } else {
+                    !0u32 << (32 - prefix_len)
+                };
                 (ip_bits & mask) == (net_bits & mask)
             }
             (IpAddr::V6(ip), IpAddr::V6(net)) => {
                 let ip_bits = u128::from(*ip);
                 let net_bits = u128::from(*net);
-                let mask = if prefix_len == 0 { 0 } else { !0u128 << (128 - prefix_len) };
+                let mask = if prefix_len == 0 {
+                    0
+                } else {
+                    !0u128 << (128 - prefix_len)
+                };
                 (ip_bits & mask) == (net_bits & mask)
             }
             _ => false,
@@ -214,10 +231,7 @@ impl Default for IpFilterConfig {
             auto_block_threshold: 100,
             auto_block_window_secs: 60,
             auto_block_duration_secs: 3600,
-            trusted_proxy_headers: vec![
-                "X-Forwarded-For".to_string(),
-                "X-Real-IP".to_string(),
-            ],
+            trusted_proxy_headers: vec!["X-Forwarded-For".to_string(), "X-Real-IP".to_string()],
             max_proxy_depth: 1,
         }
     }
@@ -308,7 +322,8 @@ impl<S: IpFilterStore> IpFilter<S> {
             })?;
 
             if let Some((rules, cached_at)) = &*cache {
-                if Utc::now().signed_duration_since(*cached_at).num_seconds() < self.cache_ttl_secs {
+                if Utc::now().signed_duration_since(*cached_at).num_seconds() < self.cache_ttl_secs
+                {
                     return Ok(rules.clone());
                 }
             }
@@ -401,7 +416,8 @@ impl<S: IpFilterStore> IpFilter<S> {
         })?;
 
         let expires_at = Utc::now() + chrono::Duration::seconds(duration_secs as i64);
-        self.block(IpPattern::Single(parsed_ip), reason, Some(expires_at), None).await
+        self.block(IpPattern::Single(parsed_ip), reason, Some(expires_at), None)
+            .await
     }
 
     /// Block a CIDR range
@@ -441,7 +457,11 @@ impl<S: IpFilterStore> IpFilter<S> {
     }
 
     /// Extract client IP from headers
-    pub fn extract_client_ip(&self, headers: &HashMap<String, String>, remote_addr: &str) -> String {
+    pub fn extract_client_ip(
+        &self,
+        headers: &HashMap<String, String>,
+        remote_addr: &str,
+    ) -> String {
         for header_name in &self.config.trusted_proxy_headers {
             if let Some(value) = headers.get(header_name) {
                 let ips: Vec<&str> = value.split(',').map(|s| s.trim()).collect();
@@ -513,7 +533,11 @@ impl IpFilterStore for InMemoryIpFilterStore {
             message: "Lock poisoned".to_string(),
             request_id: None,
         })?;
-        Ok(rules.values().filter(|r| r.rule_type == rule_type).cloned().collect())
+        Ok(rules
+            .values()
+            .filter(|r| r.rule_type == rule_type)
+            .cloned()
+            .collect())
     }
 
     async fn update_rule(&self, rule: &IpRule) -> Result<()> {
@@ -553,11 +577,9 @@ impl IpFilterStore for InMemoryIpFilterStore {
         })?;
         let now = Utc::now();
         let before = rules.len();
-        rules.retain(|_, r| {
-            match r.expires_at {
-                Some(expires) => expires > now,
-                None => true,
-            }
+        rules.retain(|_, r| match r.expires_at {
+            Some(expires) => expires > now,
+            None => true,
         });
         Ok((before - rules.len()) as u64)
     }
@@ -611,12 +633,15 @@ mod tests {
         let filter = IpFilter::new(store, IpFilterConfig::default());
 
         // Block a specific IP
-        filter.block(
-            IpPattern::Single("1.2.3.4".parse().unwrap()),
-            Some("Test block".to_string()),
-            None,
-            None,
-        ).await.unwrap();
+        filter
+            .block(
+                IpPattern::Single("1.2.3.4".parse().unwrap()),
+                Some("Test block".to_string()),
+                None,
+                None,
+            )
+            .await
+            .unwrap();
 
         // Check blocked IP
         let result = filter.check("1.2.3.4").await.unwrap();
@@ -632,7 +657,8 @@ mod tests {
         let store = InMemoryIpFilterStore::new();
         let filter = IpFilter::new(store, IpFilterConfig::default());
 
-        filter.block_cidr("10.0.0.0/8", Some("Private range".to_string()), None)
+        filter
+            .block_cidr("10.0.0.0/8", Some("Private range".to_string()), None)
             .await
             .unwrap();
 

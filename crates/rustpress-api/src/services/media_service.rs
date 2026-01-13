@@ -233,7 +233,10 @@ impl MediaService {
         conditions.push("deleted_at IS NULL".to_string());
 
         if let Some(ref mime_type) = params.mime_type {
-            conditions.push(format!("mime_type LIKE '{}%'", mime_type.replace('\'', "''")));
+            conditions.push(format!(
+                "mime_type LIKE '{}%'",
+                mime_type.replace('\'', "''")
+            ));
         }
 
         if let Some(uploader_id) = params.uploader_id {
@@ -250,13 +253,14 @@ impl MediaService {
 
         let where_clause = conditions.join(" AND ");
         let order_by = params.sort_by.as_deref().unwrap_or("created_at");
-        let order_dir = if sort_order == SortOrder::Desc { "DESC" } else { "ASC" };
+        let order_dir = if sort_order == SortOrder::Desc {
+            "DESC"
+        } else {
+            "ASC"
+        };
 
         // Count query
-        let count_query = format!(
-            "SELECT COUNT(*) as count FROM media WHERE {}",
-            where_clause
-        );
+        let count_query = format!("SELECT COUNT(*) as count FROM media WHERE {}", where_clause);
         let total: (i64,) = sqlx::query_as(&count_query)
             .fetch_one(&self.pool)
             .await
@@ -293,8 +297,14 @@ impl MediaService {
     }
 
     /// Update media metadata
-    pub async fn update_media(&self, id: Uuid, request: UpdateMediaRequest) -> Result<MediaResponse> {
-        let existing = self.find_by_id(id).await?
+    pub async fn update_media(
+        &self,
+        id: Uuid,
+        request: UpdateMediaRequest,
+    ) -> Result<MediaResponse> {
+        let existing = self
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| Error::not_found("Media", id.to_string()))?;
 
         let query = r#"
@@ -321,7 +331,9 @@ impl MediaService {
 
     /// Delete a media item (soft delete)
     pub async fn delete_media(&self, id: Uuid) -> Result<bool> {
-        let _ = self.find_by_id(id).await?
+        let _ = self
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| Error::not_found("Media", id.to_string()))?;
 
         sqlx::query("UPDATE media SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1")
@@ -395,11 +407,14 @@ impl MediaService {
         Ok(StorageStats {
             total_files: stats.0 as u64,
             total_size: stats.1 as u64,
-            breakdown: breakdown.into_iter().map(|(t, c, s)| MediaTypeStats {
-                media_type: t,
-                count: c as u64,
-                size: s as u64,
-            }).collect(),
+            breakdown: breakdown
+                .into_iter()
+                .map(|(t, c, s)| MediaTypeStats {
+                    media_type: t,
+                    count: c as u64,
+                    size: s as u64,
+                })
+                .collect(),
         })
     }
 
@@ -478,14 +493,10 @@ impl Default for MediaService {
 pub fn get_allowed_extensions() -> Vec<&'static str> {
     vec![
         // Images
-        "jpg", "jpeg", "png", "gif", "webp", "svg", "ico", "bmp",
-        // Videos
-        "mp4", "webm", "ogg", "avi", "mov", "wmv",
-        // Audio
-        "mp3", "wav", "ogg", "flac", "aac",
-        // Documents
-        "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv",
-        // Archives
+        "jpg", "jpeg", "png", "gif", "webp", "svg", "ico", "bmp", // Videos
+        "mp4", "webm", "ogg", "avi", "mov", "wmv", // Audio
+        "mp3", "wav", "ogg", "flac", "aac", // Documents
+        "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", // Archives
         "zip", "rar", "tar", "gz", "7z",
     ]
 }
@@ -522,7 +533,10 @@ mod tests {
         assert_eq!(MediaType::from_mime("audio/mpeg"), MediaType::Audio);
         assert_eq!(MediaType::from_mime("application/pdf"), MediaType::Document);
         assert_eq!(MediaType::from_mime("application/zip"), MediaType::Archive);
-        assert_eq!(MediaType::from_mime("application/octet-stream"), MediaType::Other);
+        assert_eq!(
+            MediaType::from_mime("application/octet-stream"),
+            MediaType::Other
+        );
     }
 
     #[test]

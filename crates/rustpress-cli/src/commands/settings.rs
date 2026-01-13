@@ -159,7 +159,11 @@ async fn set_setting(ctx: &CliContext, key: &str, value: &str) -> CliResult<()> 
         )));
     }
 
-    println!("{}", ctx.output_format.success(&format!("Set {} = {}", key, value)));
+    println!(
+        "{}",
+        ctx.output_format
+            .success(&format!("Set {} = {}", key, value))
+    );
     Ok(())
 }
 
@@ -199,7 +203,11 @@ async fn export_settings(ctx: &CliContext, output: Option<String>) -> CliResult<
     let json = serde_json::to_string_pretty(&export_data)?;
     std::fs::write(&output_file, json)?;
 
-    println!("{}", ctx.output_format.success(&format!("Exported to {}", output_file)));
+    println!(
+        "{}",
+        ctx.output_format
+            .success(&format!("Exported to {}", output_file))
+    );
     Ok(())
 }
 
@@ -240,11 +248,17 @@ async fn import_settings(ctx: &CliContext, file: &str) -> CliResult<()> {
             ctx.output_format.success(&format!(
                 "Imported {} settings{}",
                 success,
-                if failed > 0 { format!(", {} failed", failed) } else { String::new() }
+                if failed > 0 {
+                    format!(", {} failed", failed)
+                } else {
+                    String::new()
+                }
             ))
         );
     } else {
-        return Err(CliError::InvalidInput("Settings file must be a JSON object".to_string()));
+        return Err(CliError::InvalidInput(
+            "Settings file must be a JSON object".to_string(),
+        ));
     }
 
     Ok(())

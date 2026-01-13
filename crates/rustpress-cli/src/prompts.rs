@@ -21,7 +21,10 @@ pub fn confirm_action(message: &str) -> CliResult<bool> {
 /// Ask for confirmation with a warning about destructive action
 pub fn confirm_destructive(action: &str, target: &str) -> CliResult<bool> {
     println!();
-    println!("{} This action cannot be undone!", "⚠ Warning:".yellow().bold());
+    println!(
+        "{} This action cannot be undone!",
+        "⚠ Warning:".yellow().bold()
+    );
     println!();
 
     let message = format!("Are you sure you want to {} '{}'?", action, target);
@@ -30,12 +33,18 @@ pub fn confirm_destructive(action: &str, target: &str) -> CliResult<bool> {
 
 /// Ask for confirmation with item count
 pub fn confirm_bulk_action(action: &str, count: usize, item_type: &str) -> CliResult<bool> {
+    let item_label = if count == 1 {
+        item_type.to_string()
+    } else {
+        format!("{}s", item_type)
+    };
     println!();
-    println!("{} This will {} {} {}.",
+    println!(
+        "{} This will {} {} {}.",
         "⚠ Warning:".yellow().bold(),
         action,
         count.to_string().cyan(),
-        if count == 1 { item_type } else { &format!("{}s", item_type) }
+        item_label
     );
     println!();
 

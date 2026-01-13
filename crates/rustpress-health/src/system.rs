@@ -1,8 +1,8 @@
 //! System health and metrics collection
 
 use crate::status::SystemMetrics;
-use sysinfo::{CpuRefreshKind, Disks, MemoryRefreshKind, RefreshKind, System};
 use std::sync::{Arc, Mutex};
+use sysinfo::{CpuRefreshKind, Disks, MemoryRefreshKind, RefreshKind, System};
 
 /// System health monitor
 pub struct SystemHealth {

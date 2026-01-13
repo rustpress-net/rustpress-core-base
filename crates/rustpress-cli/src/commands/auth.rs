@@ -75,7 +75,11 @@ struct UserInfo {
 
 pub async fn execute(ctx: &CliContext, cmd: AuthCommand) -> CliResult<()> {
     match cmd.command {
-        AuthSubcommand::Login { email, password, server } => login(ctx, email, password, server).await,
+        AuthSubcommand::Login {
+            email,
+            password,
+            server,
+        } => login(ctx, email, password, server).await,
         AuthSubcommand::Logout => logout(ctx).await,
         AuthSubcommand::Whoami => whoami(ctx).await,
         AuthSubcommand::Token { show, refresh } => manage_token(ctx, show, refresh).await,
@@ -83,11 +87,17 @@ pub async fn execute(ctx: &CliContext, cmd: AuthCommand) -> CliResult<()> {
     }
 }
 
-async fn login(ctx: &CliContext, email: Option<String>, password: Option<String>, server: Option<String>) -> CliResult<()> {
+async fn login(
+    ctx: &CliContext,
+    email: Option<String>,
+    password: Option<String>,
+    server: Option<String>,
+) -> CliResult<()> {
     print_header("Login to RustPress");
 
     let server_url = server.unwrap_or_else(|| {
-        std::env::var("RUSTPRESS_SERVER_URL").unwrap_or_else(|_| "http://localhost:3080".to_string())
+        std::env::var("RUSTPRESS_SERVER_URL")
+            .unwrap_or_else(|_| "http://localhost:3080".to_string())
     });
 
     // Get email - from arg, env, or prompt
@@ -116,7 +126,9 @@ async fn login(ctx: &CliContext, email: Option<String>, password: Option<String>
     };
 
     if email.is_empty() || password.is_empty() {
-        return Err(CliError::InvalidInput("Email and password are required".to_string()));
+        return Err(CliError::InvalidInput(
+            "Email and password are required".to_string(),
+        ));
     }
 
     // Make login request
@@ -125,7 +137,10 @@ async fn login(ctx: &CliContext, email: Option<String>, password: Option<String>
 
     let response = client
         .post(&login_url)
-        .json(&LoginRequest { email: email.clone(), password })
+        .json(&LoginRequest {
+            email: email.clone(),
+            password,
+        })
         .send()
         .await
         .map_err(|e| CliError::Network(format!("Failed to connect to server: {}", e)))?;
@@ -133,7 +148,10 @@ async fn login(ctx: &CliContext, email: Option<String>, password: Option<String>
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
-        return Err(CliError::Auth(format!("Login failed ({}): {}", status, body)));
+        return Err(CliError::Auth(format!(
+            "Login failed ({}): {}",
+            status, body
+        )));
     }
 
     let login_response: LoginResponse = response
@@ -150,7 +168,11 @@ async fn login(ctx: &CliContext, email: Option<String>, password: Option<String>
     };
     creds.save()?;
 
-    println!("{}", ctx.output_format.success(&format!("Logged in as {} on {}", email, server_url)));
+    println!(
+        "{}",
+        ctx.output_format
+            .success(&format!("Logged in as {} on {}", email, server_url))
+    );
     Ok(())
 }
 
@@ -198,16 +220,29 @@ async fn whoami(ctx: &CliContext) -> CliResult<()> {
                 }
                 Ok(response) if response.status() == reqwest::StatusCode::UNAUTHORIZED => {
                     println!();
-                    println!("{}", ctx.output_format.warning("Token may be expired. Run 'rustpress auth login' to re-authenticate."));
+                    println!(
+                        "{}",
+                        ctx.output_format.warning(
+                            "Token may be expired. Run 'rustpress auth login' to re-authenticate."
+                        )
+                    );
                 }
                 _ => {
                     println!();
-                    println!("{}", ctx.output_format.warning("Could not fetch user details from server"));
+                    println!(
+                        "{}",
+                        ctx.output_format
+                            .warning("Could not fetch user details from server")
+                    );
                 }
             }
         }
         _ => {
-            println!("{}", ctx.output_format.info("Not logged in. Run 'rustpress auth login' to authenticate."));
+            println!(
+                "{}",
+                ctx.output_format
+                    .info("Not logged in. Run 'rustpress auth login' to authenticate.")
+            );
         }
     }
 
@@ -238,13 +273,14 @@ async fn manage_token(ctx: &CliContext, show: bool, refresh: bool) -> CliResult<
             .map_err(|e| CliError::Network(format!("Failed to refresh token: {}", e)))?;
 
         if !response.status().is_success() {
-            return Err(CliError::Auth("Token refresh failed. Please login again.".to_string()));
+            return Err(CliError::Auth(
+                "Token refresh failed. Please login again.".to_string(),
+            ));
         }
 
-        let login_response: LoginResponse = response
-            .json()
-            .await
-            .map_err(|e| CliError::Serialization(format!("Failed to parse refresh response: {}", e)))?;
+        let login_response: LoginResponse = response.json().await.map_err(|e| {
+            CliError::Serialization(format!("Failed to parse refresh response: {}", e))
+        })?;
 
         creds.access_token = Some(login_response.access_token);
         if let Some(new_refresh) = login_response.refresh_token {
@@ -252,7 +288,10 @@ async fn manage_token(ctx: &CliContext, show: bool, refresh: bool) -> CliResult<
         }
         creds.save()?;
 
-        println!("{}", ctx.output_format.success("Token refreshed successfully"));
+        println!(
+            "{}",
+            ctx.output_format.success("Token refreshed successfully")
+        );
         return Ok(());
     }
 
@@ -262,7 +301,7 @@ async fn manage_token(ctx: &CliContext, show: bool, refresh: bool) -> CliResult<
             Some(token) => {
                 // Show truncated token for security
                 let display_token = if token.len() > 20 {
-                    format!("{}...{}", &token[..10], &token[token.len()-10..])
+                    format!("{}...{}", &token[..10], &token[token.len() - 10..])
                 } else {
                     token.clone()
                 };
@@ -270,7 +309,11 @@ async fn manage_token(ctx: &CliContext, show: bool, refresh: bool) -> CliResult<
                 print_kv("Server", &creds.server_url);
             }
             None => {
-                println!("{}", ctx.output_format.info("No token stored. Run 'rustpress auth login' to authenticate."));
+                println!(
+                    "{}",
+                    ctx.output_format
+                        .info("No token stored. Run 'rustpress auth login' to authenticate.")
+                );
             }
         }
     }
@@ -284,15 +327,33 @@ async fn configure(ctx: &CliContext, server: Option<String>, _show: bool) -> Cli
     if let Some(server_url) = server {
         creds.server_url = server_url.clone();
         creds.save()?;
-        println!("{}", ctx.output_format.success(&format!("Server URL set to: {}", server_url)));
+        println!(
+            "{}",
+            ctx.output_format
+                .success(&format!("Server URL set to: {}", server_url))
+        );
         return Ok(());
     }
 
     // Default to showing config if no server option is provided
     // This also handles the explicit --show flag
     print_header("Authentication Configuration");
-    print_kv("Server URL", if creds.server_url.is_empty() { "(not set)" } else { &creds.server_url });
-    print_kv("Logged In", if creds.access_token.is_some() { "Yes" } else { "No" });
+    print_kv(
+        "Server URL",
+        if creds.server_url.is_empty() {
+            "(not set)"
+        } else {
+            &creds.server_url
+        },
+    );
+    print_kv(
+        "Logged In",
+        if creds.access_token.is_some() {
+            "Yes"
+        } else {
+            "No"
+        },
+    );
     if let Some(email) = &creds.email {
         print_kv("Email", email);
     }

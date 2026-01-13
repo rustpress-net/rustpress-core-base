@@ -1,11 +1,11 @@
 //! Settings API handlers
 
+use crate::error::CloudflareResult;
+use crate::services::settings::ExtendedPluginSettings;
+use crate::services::CloudflareServices;
 use axum::{extract::State, Json};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use crate::error::CloudflareResult;
-use crate::services::CloudflareServices;
-use crate::services::settings::ExtendedPluginSettings;
 
 /// API response wrapper
 #[derive(Serialize)]
@@ -127,19 +127,44 @@ pub async fn update_auto_purge_settings(
     let mut settings = services.settings.get_extended_settings().await?;
 
     // Apply updates
-    if let Some(v) = req.auto_purge_enabled { settings.auto_purge_enabled = v; }
-    if let Some(v) = req.auto_purge_on_post_update { settings.auto_purge_on_post_update = v; }
-    if let Some(v) = req.auto_purge_on_page_update { settings.auto_purge_on_page_update = v; }
-    if let Some(v) = req.auto_purge_on_media_upload { settings.auto_purge_on_media_upload = v; }
-    if let Some(v) = req.auto_purge_on_theme_change { settings.auto_purge_on_theme_change = v; }
-    if let Some(v) = req.auto_purge_on_menu_update { settings.auto_purge_on_menu_update = v; }
-    if let Some(v) = req.auto_purge_entire_site { settings.auto_purge_entire_site = v; }
-    if let Some(v) = req.auto_purge_homepage { settings.auto_purge_homepage = v; }
-    if let Some(v) = req.auto_purge_archives { settings.auto_purge_archives = v; }
-    if req.auto_purge_custom_urls.is_some() { settings.auto_purge_custom_urls = req.auto_purge_custom_urls; }
-    if let Some(v) = req.auto_purge_delay_ms { settings.auto_purge_delay_ms = v; }
+    if let Some(v) = req.auto_purge_enabled {
+        settings.auto_purge_enabled = v;
+    }
+    if let Some(v) = req.auto_purge_on_post_update {
+        settings.auto_purge_on_post_update = v;
+    }
+    if let Some(v) = req.auto_purge_on_page_update {
+        settings.auto_purge_on_page_update = v;
+    }
+    if let Some(v) = req.auto_purge_on_media_upload {
+        settings.auto_purge_on_media_upload = v;
+    }
+    if let Some(v) = req.auto_purge_on_theme_change {
+        settings.auto_purge_on_theme_change = v;
+    }
+    if let Some(v) = req.auto_purge_on_menu_update {
+        settings.auto_purge_on_menu_update = v;
+    }
+    if let Some(v) = req.auto_purge_entire_site {
+        settings.auto_purge_entire_site = v;
+    }
+    if let Some(v) = req.auto_purge_homepage {
+        settings.auto_purge_homepage = v;
+    }
+    if let Some(v) = req.auto_purge_archives {
+        settings.auto_purge_archives = v;
+    }
+    if req.auto_purge_custom_urls.is_some() {
+        settings.auto_purge_custom_urls = req.auto_purge_custom_urls;
+    }
+    if let Some(v) = req.auto_purge_delay_ms {
+        settings.auto_purge_delay_ms = v;
+    }
 
-    services.settings.update_extended_settings(&settings).await?;
+    services
+        .settings
+        .update_extended_settings(&settings)
+        .await?;
 
     Ok(Json(serde_json::json!({
         "success": true,
@@ -167,10 +192,17 @@ pub async fn update_cache_warming_settings(
 ) -> CloudflareResult<Json<serde_json::Value>> {
     let mut settings = services.settings.get_extended_settings().await?;
 
-    if let Some(v) = req.cache_warming_enabled { settings.cache_warming_enabled = v; }
-    if let Some(v) = req.cache_warming_schedule { settings.cache_warming_schedule = v; }
+    if let Some(v) = req.cache_warming_enabled {
+        settings.cache_warming_enabled = v;
+    }
+    if let Some(v) = req.cache_warming_schedule {
+        settings.cache_warming_schedule = v;
+    }
 
-    services.settings.update_extended_settings(&settings).await?;
+    services
+        .settings
+        .update_extended_settings(&settings)
+        .await?;
 
     Ok(Json(serde_json::json!({
         "success": true,
@@ -189,10 +221,17 @@ pub async fn update_notification_settings(
 ) -> CloudflareResult<Json<serde_json::Value>> {
     let mut settings = services.settings.get_extended_settings().await?;
 
-    if let Some(v) = req.security_email_alerts { settings.security_email_alerts = v; }
-    if req.security_slack_webhook.is_some() { settings.security_slack_webhook = req.security_slack_webhook; }
+    if let Some(v) = req.security_email_alerts {
+        settings.security_email_alerts = v;
+    }
+    if req.security_slack_webhook.is_some() {
+        settings.security_slack_webhook = req.security_slack_webhook;
+    }
 
-    services.settings.update_extended_settings(&settings).await?;
+    services
+        .settings
+        .update_extended_settings(&settings)
+        .await?;
 
     Ok(Json(serde_json::json!({
         "success": true,
@@ -211,12 +250,23 @@ pub async fn update_advanced_settings(
 ) -> CloudflareResult<Json<serde_json::Value>> {
     let mut settings = services.settings.get_extended_settings().await?;
 
-    if let Some(v) = req.development_mode_duration { settings.development_mode_duration = v; }
-    if let Some(v) = req.analytics_retention_days { settings.analytics_retention_days = v; }
-    if req.r2_default_bucket.is_some() { settings.r2_default_bucket = req.r2_default_bucket; }
-    if let Some(v) = req.workers_enabled { settings.workers_enabled = v; }
+    if let Some(v) = req.development_mode_duration {
+        settings.development_mode_duration = v;
+    }
+    if let Some(v) = req.analytics_retention_days {
+        settings.analytics_retention_days = v;
+    }
+    if req.r2_default_bucket.is_some() {
+        settings.r2_default_bucket = req.r2_default_bucket;
+    }
+    if let Some(v) = req.workers_enabled {
+        settings.workers_enabled = v;
+    }
 
-    services.settings.update_extended_settings(&settings).await?;
+    services
+        .settings
+        .update_extended_settings(&settings)
+        .await?;
 
     Ok(Json(serde_json::json!({
         "success": true,
@@ -265,7 +315,10 @@ pub async fn toggle_dev_mode(
     State(services): State<Arc<CloudflareServices>>,
     Json(req): Json<ToggleDevModeRequest>,
 ) -> CloudflareResult<Json<serde_json::Value>> {
-    services.settings.set_setting("development_mode", &serde_json::json!(req.enabled)).await?;
+    services
+        .settings
+        .set_setting("development_mode", &serde_json::json!(req.enabled))
+        .await?;
 
     Ok(Json(serde_json::json!({
         "success": true,

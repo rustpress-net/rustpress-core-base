@@ -14,7 +14,10 @@ pub struct WorkersService {
 
 impl WorkersService {
     pub fn new(client: Arc<CloudflareClient>, db: PgPool) -> Self {
-        Self { client: Some(client), db }
+        Self {
+            client: Some(client),
+            db,
+        }
     }
 
     /// Create without a configured client (for initial setup)
@@ -24,9 +27,11 @@ impl WorkersService {
 
     /// Get the client or return an error if not configured
     fn get_client(&self) -> CloudflareResult<&CloudflareClient> {
-        self.client.as_ref()
-            .map(|c| c.as_ref())
-            .ok_or_else(|| CloudflareError::ConfigError("Cloudflare not configured. Please connect your account.".to_string()))
+        self.client.as_ref().map(|c| c.as_ref()).ok_or_else(|| {
+            CloudflareError::ConfigError(
+                "Cloudflare not configured. Please connect your account.".to_string(),
+            )
+        })
     }
 
     pub async fn list_workers(&self) -> CloudflareResult<Vec<Worker>> {

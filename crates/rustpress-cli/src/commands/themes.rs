@@ -151,7 +151,11 @@ async fn list_themes(ctx: &CliContext, status: &str) -> CliResult<()> {
         .map_err(|e| CliError::Serialization(format!("Failed to parse response: {}", e)))?;
 
     if themes.is_empty() {
-        println!("{}", ctx.output_format.info("No themes found. Run 'themes scan' to discover themes."));
+        println!(
+            "{}",
+            ctx.output_format
+                .info("No themes found. Run 'themes scan' to discover themes.")
+        );
     } else {
         println!("{}", ctx.output_format.format(&themes));
     }
@@ -191,7 +195,14 @@ async fn get_theme(ctx: &CliContext, theme: &str) -> CliResult<()> {
     print_kv("ID", &details.id);
     print_kv("Version", &details.version);
     print_kv("Author", &details.author);
-    print_kv("Status", if details.is_active { "Active" } else { "Inactive" });
+    print_kv(
+        "Status",
+        if details.is_active {
+            "Active"
+        } else {
+            "Inactive"
+        },
+    );
     if let Some(ref desc) = details.description {
         print_kv("Description", desc);
     }
@@ -237,7 +248,11 @@ async fn activate_theme(ctx: &CliContext, theme: &str) -> CliResult<()> {
         )));
     }
 
-    println!("{}", ctx.output_format.success(&format!("Theme '{}' activated", theme)));
+    println!(
+        "{}",
+        ctx.output_format
+            .success(&format!("Theme '{}' activated", theme))
+    );
     Ok(())
 }
 
@@ -283,7 +298,11 @@ async fn install_theme(ctx: &CliContext, source: &str) -> CliResult<()> {
         }
 
         println!();
-        println!("{}", ctx.output_format.success(&format!("Theme '{}' installed", theme_id)));
+        println!(
+            "{}",
+            ctx.output_format
+                .success(&format!("Theme '{}' installed", theme_id))
+        );
     } else {
         // URL-based install
         let client = ctx.http_client();
@@ -371,7 +390,11 @@ async fn delete_theme(ctx: &CliContext, theme: &str, force: bool) -> CliResult<(
         )));
     }
 
-    println!("{}", ctx.output_format.success(&format!("Theme '{}' deleted", theme)));
+    println!(
+        "{}",
+        ctx.output_format
+            .success(&format!("Theme '{}' deleted", theme))
+    );
     Ok(())
 }
 
@@ -397,7 +420,12 @@ async fn export_theme(
     let spinner = ProgressBar::spinner("Exporting theme...");
 
     let client = ctx.http_client();
-    let url = format!("{}/api/v1/themes/{}/export?format={}", ctx.server_url(), theme, format);
+    let url = format!(
+        "{}/api/v1/themes/{}/export?format={}",
+        ctx.server_url(),
+        theme,
+        format
+    );
 
     let response = client
         .get(&url)
@@ -412,7 +440,9 @@ async fn export_theme(
         let status = response.status();
 
         // If API doesn't support export, provide manual instructions
-        if status == reqwest::StatusCode::NOT_FOUND || status == reqwest::StatusCode::NOT_IMPLEMENTED {
+        if status == reqwest::StatusCode::NOT_FOUND
+            || status == reqwest::StatusCode::NOT_IMPLEMENTED
+        {
             println!();
             println!(
                 "{}",
@@ -431,13 +461,19 @@ async fn export_theme(
     }
 
     // Save the response body to file
-    let bytes = response.bytes().await
+    let bytes = response
+        .bytes()
+        .await
         .map_err(|e| CliError::Network(format!("Failed to download theme: {}", e)))?;
 
     std::fs::write(&output_file, &bytes)?;
 
     println!();
-    println!("{}", ctx.output_format.success(&format!("Theme exported to {}", output_file)));
+    println!(
+        "{}",
+        ctx.output_format
+            .success(&format!("Theme exported to {}", output_file))
+    );
 
     Ok(())
 }
@@ -474,7 +510,10 @@ async fn scan_themes(ctx: &CliContext) -> CliResult<()> {
         .unwrap_or(serde_json::json!({"found": 0, "registered": 0}));
 
     let found = result.get("found").and_then(|v| v.as_i64()).unwrap_or(0);
-    let registered = result.get("registered").and_then(|v| v.as_i64()).unwrap_or(0);
+    let registered = result
+        .get("registered")
+        .and_then(|v| v.as_i64())
+        .unwrap_or(0);
 
     println!();
     println!(

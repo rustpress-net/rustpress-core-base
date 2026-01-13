@@ -1,13 +1,13 @@
 //! Cache API handlers
 
+use crate::error::CloudflareResult;
+use crate::services::CloudflareServices;
 use axum::{
     extract::{Query, State},
     Json,
 };
 use serde::Deserialize;
 use std::sync::Arc;
-use crate::error::CloudflareResult;
-use crate::services::CloudflareServices;
 
 #[derive(Debug, Deserialize)]
 pub struct PurgeUrlsRequest {
@@ -88,7 +88,10 @@ pub async fn purge_by_prefix(
     State(services): State<Arc<CloudflareServices>>,
     Json(req): Json<PurgePrefixRequest>,
 ) -> CloudflareResult<Json<serde_json::Value>> {
-    let result = services.cache.purge_prefix(vec![req.prefix.clone()]).await?;
+    let result = services
+        .cache
+        .purge_prefix(vec![req.prefix.clone()])
+        .await?;
 
     Ok(Json(serde_json::json!({
         "success": true,

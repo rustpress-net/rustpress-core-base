@@ -21,8 +21,8 @@ use std::collections::HashMap;
 use tracing::{debug, info, warn};
 
 use crate::{
-    CacheRule, CacheSettings, CdnClient, CdnConfiguration, CdnError, CdnStats,
-    DnsRecord, PurgeResult, Result, default_cache_rules,
+    default_cache_rules, CacheRule, CacheSettings, CdnClient, CdnConfiguration, CdnError, CdnStats,
+    DnsRecord, PurgeResult, Result,
 };
 
 /// BunnyCDN configuration
@@ -106,7 +106,10 @@ impl BunnyCdnClient {
     ) -> Result<T> {
         let url = format!("{}{}", self.config.api_url, endpoint);
 
-        let mut request = self.client.request(method, &url).headers(self.auth_headers());
+        let mut request = self
+            .client
+            .request(method, &url)
+            .headers(self.auth_headers());
 
         if let Some(body) = body {
             request = request.json(&body);
@@ -132,7 +135,8 @@ impl BunnyCdnClient {
 
     /// List pull zones
     pub async fn list_pull_zones(&self) -> Result<Vec<PullZone>> {
-        self.api_request(reqwest::Method::GET, "/pullzone", None).await
+        self.api_request(reqwest::Method::GET, "/pullzone", None)
+            .await
     }
 
     /// Get pull zone
@@ -278,13 +282,15 @@ impl BunnyCdnClient {
         data: Vec<u8>,
         content_type: &str,
     ) -> Result<String> {
-        let storage_zone = self.config.storage_zone.as_ref().ok_or_else(|| {
-            CdnError::Configuration("Storage zone not configured".to_string())
-        })?;
+        let storage_zone =
+            self.config.storage_zone.as_ref().ok_or_else(|| {
+                CdnError::Configuration("Storage zone not configured".to_string())
+            })?;
 
-        let storage_key = self.config.storage_api_key.as_ref().ok_or_else(|| {
-            CdnError::Configuration("Storage API key not configured".to_string())
-        })?;
+        let storage_key =
+            self.config.storage_api_key.as_ref().ok_or_else(|| {
+                CdnError::Configuration("Storage API key not configured".to_string())
+            })?;
 
         let url = format!("{}/{}/{}", self.config.storage_url, storage_zone, path);
 
@@ -303,21 +309,20 @@ impl BunnyCdnClient {
         }
 
         // Return CDN URL
-        Ok(format!(
-            "https://{}.b-cdn.net/{}",
-            storage_zone, path
-        ))
+        Ok(format!("https://{}.b-cdn.net/{}", storage_zone, path))
     }
 
     /// Delete file from storage
     pub async fn delete_file(&self, path: &str) -> Result<()> {
-        let storage_zone = self.config.storage_zone.as_ref().ok_or_else(|| {
-            CdnError::Configuration("Storage zone not configured".to_string())
-        })?;
+        let storage_zone =
+            self.config.storage_zone.as_ref().ok_or_else(|| {
+                CdnError::Configuration("Storage zone not configured".to_string())
+            })?;
 
-        let storage_key = self.config.storage_api_key.as_ref().ok_or_else(|| {
-            CdnError::Configuration("Storage API key not configured".to_string())
-        })?;
+        let storage_key =
+            self.config.storage_api_key.as_ref().ok_or_else(|| {
+                CdnError::Configuration("Storage API key not configured".to_string())
+            })?;
 
         let url = format!("{}/{}/{}", self.config.storage_url, storage_zone, path);
 
@@ -338,12 +343,13 @@ impl BunnyCdnClient {
 
     /// Generate signed URL for private content
     pub fn generate_signed_url(&self, url: &str, expiry_timestamp: u64) -> Result<String> {
-        let security_key = self.config.storage_api_key.as_ref().ok_or_else(|| {
-            CdnError::Configuration("Security key not configured".to_string())
-        })?;
+        let security_key =
+            self.config.storage_api_key.as_ref().ok_or_else(|| {
+                CdnError::Configuration("Security key not configured".to_string())
+            })?;
 
-        let parsed_url = url::Url::parse(url)
-            .map_err(|e| CdnError::Configuration(e.to_string()))?;
+        let parsed_url =
+            url::Url::parse(url).map_err(|e| CdnError::Configuration(e.to_string()))?;
 
         let path = parsed_url.path();
 
@@ -409,7 +415,9 @@ impl CdnClient for BunnyCdnClient {
 
         Ok(CdnConfiguration {
             provider: "bunnycdn".to_string(),
-            cdn_domain: pull_zone.hostnames.first()
+            cdn_domain: pull_zone
+                .hostnames
+                .first()
                 .map(|h| h.value.clone())
                 .unwrap_or_else(|| format!("{}.b-cdn.net", pull_zone.name)),
             origin_domain: domain.to_string(),
@@ -443,9 +451,10 @@ impl CdnClient for BunnyCdnClient {
     }
 
     async fn purge_all(&self) -> Result<PurgeResult> {
-        let zone_id = self.config.pull_zone_id.ok_or_else(|| {
-            CdnError::Configuration("Pull zone ID not configured".to_string())
-        })?;
+        let zone_id = self
+            .config
+            .pull_zone_id
+            .ok_or_else(|| CdnError::Configuration("Pull zone ID not configured".to_string()))?;
 
         self.purge_zone(zone_id).await?;
 
@@ -494,9 +503,10 @@ impl CdnClient for BunnyCdnClient {
     }
 
     async fn configure_rules(&self, rules: Vec<CacheRule>) -> Result<()> {
-        let zone_id = self.config.pull_zone_id.ok_or_else(|| {
-            CdnError::Configuration("Pull zone ID not configured".to_string())
-        })?;
+        let zone_id = self
+            .config
+            .pull_zone_id
+            .ok_or_else(|| CdnError::Configuration("Pull zone ID not configured".to_string()))?;
 
         for rule in rules {
             let edge_rule = EdgeRule::from_cache_rule(&rule);

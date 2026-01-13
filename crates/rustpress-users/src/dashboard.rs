@@ -161,8 +161,16 @@ impl DashboardLayout {
         layout.add_widget(DashboardWidget::new(WidgetType::RecentActivity).order(2));
         layout.add_widget(DashboardWidget::new(WidgetType::QuickDraft).order(3));
         layout.add_widget(DashboardWidget::new(WidgetType::PendingReview).order(4));
-        layout.add_widget(DashboardWidget::new(WidgetType::RecentComments).in_column(DashboardColumn::Side).order(1));
-        layout.add_widget(DashboardWidget::new(WidgetType::ScheduledPosts).in_column(DashboardColumn::Side).order(2));
+        layout.add_widget(
+            DashboardWidget::new(WidgetType::RecentComments)
+                .in_column(DashboardColumn::Side)
+                .order(1),
+        );
+        layout.add_widget(
+            DashboardWidget::new(WidgetType::ScheduledPosts)
+                .in_column(DashboardColumn::Side)
+                .order(2),
+        );
 
         layout
     }
@@ -174,8 +182,16 @@ impl DashboardLayout {
         layout.add_widget(DashboardWidget::new(WidgetType::Welcome).order(1));
         layout.add_widget(DashboardWidget::new(WidgetType::UserStats).order(2));
         layout.add_widget(DashboardWidget::new(WidgetType::RecentPosts).order(3));
-        layout.add_widget(DashboardWidget::new(WidgetType::Notifications).in_column(DashboardColumn::Side).order(1));
-        layout.add_widget(DashboardWidget::new(WidgetType::DraftPosts).in_column(DashboardColumn::Side).order(2));
+        layout.add_widget(
+            DashboardWidget::new(WidgetType::Notifications)
+                .in_column(DashboardColumn::Side)
+                .order(1),
+        );
+        layout.add_widget(
+            DashboardWidget::new(WidgetType::DraftPosts)
+                .in_column(DashboardColumn::Side)
+                .order(2),
+        );
 
         layout
     }
@@ -212,7 +228,12 @@ impl DashboardLayout {
         }
     }
 
-    pub fn reorder(&mut self, widget_id: &str, new_order: i32, new_column: Option<DashboardColumn>) {
+    pub fn reorder(
+        &mut self,
+        widget_id: &str,
+        new_order: i32,
+        new_column: Option<DashboardColumn>,
+    ) {
         if let Some(widget) = self.get_widget_mut(widget_id) {
             widget.order = new_order;
             if let Some(col) = new_column {
@@ -223,7 +244,9 @@ impl DashboardLayout {
     }
 
     pub fn get_column_widgets(&self, column: DashboardColumn) -> Vec<&DashboardWidget> {
-        let mut widgets: Vec<_> = self.widgets.iter()
+        let mut widgets: Vec<_> = self
+            .widgets
+            .iter()
             .filter(|w| w.column == column && w.visible)
             .collect();
         widgets.sort_by_key(|w| w.order);
@@ -495,7 +518,8 @@ impl DashboardManager {
 
     /// Add user notification
     pub fn add_user_notification(&mut self, user_id: i64, notification: DashboardNotification) {
-        self.user_notifications.entry(user_id)
+        self.user_notifications
+            .entry(user_id)
             .or_insert_with(Vec::new)
             .push(notification);
     }
@@ -533,11 +557,11 @@ impl DashboardManager {
 
     /// Get unread count
     pub fn get_unread_count(&self, user_id: i64) -> usize {
-        let global_unread = self.global_notifications.iter()
-            .filter(|n| !n.read)
-            .count();
+        let global_unread = self.global_notifications.iter().filter(|n| !n.read).count();
 
-        let user_unread = self.user_notifications.get(&user_id)
+        let user_unread = self
+            .user_notifications
+            .get(&user_id)
             .map(|notifications| notifications.iter().filter(|n| !n.read).count())
             .unwrap_or(0);
 
@@ -578,13 +602,9 @@ mod tests {
     fn test_notifications() {
         let mut manager = DashboardManager::new();
 
-        manager.add_global_notification(
-            DashboardNotification::info("Test", "Test message")
-        );
+        manager.add_global_notification(DashboardNotification::info("Test", "Test message"));
 
-        manager.add_user_notification(1,
-            DashboardNotification::warning("User", "User message")
-        );
+        manager.add_user_notification(1, DashboardNotification::warning("User", "User message"));
 
         let notifications = manager.get_notifications(1);
         assert_eq!(notifications.len(), 2);

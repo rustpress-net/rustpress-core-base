@@ -4,9 +4,9 @@
 
 use crate::manifest::PluginManifest;
 use async_trait::async_trait;
+use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
-use parking_lot::RwLock;
 use tracing::{debug, error, info, warn};
 
 /// Plugin lifecycle state
@@ -68,9 +68,17 @@ pub enum LifecycleEvent {
     /// Plugin deactivation failed
     DeactivationFailed { plugin_id: String, error: String },
     /// Plugin upgrade started
-    UpgradeStarted { plugin_id: String, from_version: String, to_version: String },
+    UpgradeStarted {
+        plugin_id: String,
+        from_version: String,
+        to_version: String,
+    },
     /// Plugin upgraded successfully
-    Upgraded { plugin_id: String, from_version: String, to_version: String },
+    Upgraded {
+        plugin_id: String,
+        from_version: String,
+        to_version: String,
+    },
     /// Plugin upgrade failed
     UpgradeFailed { plugin_id: String, error: String },
     /// Plugin uninstall started
@@ -655,15 +663,17 @@ impl LifecycleManager {
         F: FnOnce(&mut PluginMetadata),
     {
         let mut metadata = self.metadata.write();
-        let meta = metadata.entry(plugin_id.to_string()).or_insert_with(|| PluginMetadata {
-            plugin_id: plugin_id.to_string(),
-            version: String::new(),
-            activated_at: None,
-            deactivated_at: None,
-            last_error: None,
-            activation_count: 0,
-            error_count: 0,
-        });
+        let meta = metadata
+            .entry(plugin_id.to_string())
+            .or_insert_with(|| PluginMetadata {
+                plugin_id: plugin_id.to_string(),
+                version: String::new(),
+                activated_at: None,
+                deactivated_at: None,
+                last_error: None,
+                activation_count: 0,
+                error_count: 0,
+            });
         updater(meta);
     }
 }
@@ -731,7 +741,9 @@ impl HookRegistry {
     /// Register an action hook
     pub fn add_action(&self, hook_name: &str, registration: ActionHookRegistration) {
         let mut actions = self.actions.write();
-        let hooks = actions.entry(hook_name.to_string()).or_insert_with(Vec::new);
+        let hooks = actions
+            .entry(hook_name.to_string())
+            .or_insert_with(Vec::new);
         hooks.push(registration);
         hooks.sort_by_key(|h| h.priority);
     }
@@ -739,7 +751,9 @@ impl HookRegistry {
     /// Register a filter hook
     pub fn add_filter(&self, hook_name: &str, registration: FilterHookRegistration) {
         let mut filters = self.filters.write();
-        let hooks = filters.entry(hook_name.to_string()).or_insert_with(Vec::new);
+        let hooks = filters
+            .entry(hook_name.to_string())
+            .or_insert_with(Vec::new);
         hooks.push(registration);
         hooks.sort_by_key(|h| h.priority);
     }
@@ -762,22 +776,38 @@ impl HookRegistry {
 
     /// Get action hooks for a hook name
     pub fn get_actions(&self, hook_name: &str) -> Vec<ActionHookRegistration> {
-        self.actions.read().get(hook_name).cloned().unwrap_or_default()
+        self.actions
+            .read()
+            .get(hook_name)
+            .cloned()
+            .unwrap_or_default()
     }
 
     /// Get filter hooks for a hook name
     pub fn get_filters(&self, hook_name: &str) -> Vec<FilterHookRegistration> {
-        self.filters.read().get(hook_name).cloned().unwrap_or_default()
+        self.filters
+            .read()
+            .get(hook_name)
+            .cloned()
+            .unwrap_or_default()
     }
 
     /// Check if hook has any registered callbacks
     pub fn has_action(&self, hook_name: &str) -> bool {
-        self.actions.read().get(hook_name).map(|h| !h.is_empty()).unwrap_or(false)
+        self.actions
+            .read()
+            .get(hook_name)
+            .map(|h| !h.is_empty())
+            .unwrap_or(false)
     }
 
     /// Check if filter has any registered callbacks
     pub fn has_filter(&self, hook_name: &str) -> bool {
-        self.filters.read().get(hook_name).map(|h| !h.is_empty()).unwrap_or(false)
+        self.filters
+            .read()
+            .get(hook_name)
+            .map(|h| !h.is_empty())
+            .unwrap_or(false)
     }
 }
 

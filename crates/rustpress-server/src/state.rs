@@ -5,7 +5,7 @@ use rustpress_cache::Cache;
 use rustpress_core::config::AppConfig;
 use rustpress_core::hook::HookRegistry;
 use rustpress_core::plugin::PluginManager;
-use rustpress_database::{DatabasePool, pool::DatabaseExecutor};
+use rustpress_database::{pool::DatabaseExecutor, DatabasePool};
 use rustpress_events::EventBus;
 use rustpress_jobs::JobQueue;
 use rustpress_storage::Storage;
@@ -13,7 +13,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use crate::services::{ThemeService, RenderService, EmailService, EmailConfig};
+use crate::services::{EmailConfig, EmailService, RenderService, ThemeService};
 
 /// Application state shared across all requests
 #[derive(Clone)]

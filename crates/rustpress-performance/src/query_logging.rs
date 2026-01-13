@@ -2,11 +2,11 @@
 //!
 //! Logs and analyzes database queries for performance optimization opportunities.
 
+use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
-use parking_lot::RwLock;
-use serde::{Deserialize, Serialize};
 
 /// Query log entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -223,8 +223,14 @@ impl QueryLogger {
     /// Update aggregated statistics
     fn update_stats(&self, entry: &QueryLogEntry) {
         let mut stats = self.stats.write();
-        let query_stats = stats.entry(entry.query.clone()).or_insert_with(QueryStats::new);
-        query_stats.record(entry.execution_time_us, entry.rows_affected, entry.timestamp);
+        let query_stats = stats
+            .entry(entry.query.clone())
+            .or_insert_with(QueryStats::new);
+        query_stats.record(
+            entry.execution_time_us,
+            entry.rows_affected,
+            entry.timestamp,
+        );
     }
 
     /// Detect N+1 query patterns
@@ -232,11 +238,13 @@ impl QueryLogger {
         let pattern = self.extract_query_pattern(&entry.query);
         let mut detector = self.nplusone_detector.write();
 
-        let nplusone = detector.entry(pattern.clone()).or_insert_with(|| NplusOnePattern {
-            query_pattern: pattern,
-            occurrences: Vec::new(),
-            tables: entry.tables.clone(),
-        });
+        let nplusone = detector
+            .entry(pattern.clone())
+            .or_insert_with(|| NplusOnePattern {
+                query_pattern: pattern,
+                occurrences: Vec::new(),
+                tables: entry.tables.clone(),
+            });
 
         nplusone.occurrences.push(entry.timestamp);
 
@@ -249,9 +257,9 @@ impl QueryLogger {
             let mut suggestions = self.suggestions.write();
 
             // Check if we already have this suggestion
-            let exists = suggestions.iter().any(|s| {
-                s.suggestion_type == SuggestionType::NplusOne && s.query == entry.query
-            });
+            let exists = suggestions
+                .iter()
+                .any(|s| s.suggestion_type == SuggestionType::NplusOne && s.query == entry.query);
 
             if !exists {
                 suggestions.push(OptimizationSuggestion {
@@ -307,7 +315,8 @@ impl QueryLogger {
             suggestions.push(OptimizationSuggestion {
                 suggestion_type: SuggestionType::SelectStar,
                 description: "Query uses SELECT * which fetches all columns".to_string(),
-                suggested_fix: "Specify only the columns you need to reduce data transfer".to_string(),
+                suggested_fix: "Specify only the columns you need to reduce data transfer"
+                    .to_string(),
                 impact_score: 4,
                 query: entry.query.clone(),
             });
@@ -333,7 +342,8 @@ impl QueryLogger {
                 suggestions.push(OptimizationSuggestion {
                     suggestion_type: SuggestionType::FullTableScan,
                     description: "Query performs a full table scan".to_string(),
-                    suggested_fix: "Consider adding an index on the columns used in WHERE clause".to_string(),
+                    suggested_fix: "Consider adding an index on the columns used in WHERE clause"
+                        .to_string(),
                     impact_score: 7,
                     query: entry.query.clone(),
                 });
@@ -355,10 +365,7 @@ impl QueryLogger {
         if entry.execution_time_us >= self.config.slow_query_threshold_us {
             suggestions.push(OptimizationSuggestion {
                 suggestion_type: SuggestionType::SlowQuery,
-                description: format!(
-                    "Query took {}ms to execute",
-                    entry.execution_time_us / 1000
-                ),
+                description: format!("Query took {}ms to execute", entry.execution_time_us / 1000),
                 suggested_fix: "Review query plan and consider optimization strategies".to_string(),
                 impact_score: 6,
                 query: entry.query.clone(),
@@ -393,9 +400,7 @@ impl QueryLogger {
     /// Get top queries by total time
     pub fn get_top_queries_by_time(&self, limit: usize) -> Vec<(String, QueryStats)> {
         let stats = self.stats.read();
-        let mut queries: Vec<_> = stats.iter()
-            .map(|(q, s)| (q.clone(), s.clone()))
-            .collect();
+        let mut queries: Vec<_> = stats.iter().map(|(q, s)| (q.clone(), s.clone())).collect();
         queries.sort_by(|a, b| b.1.total_time_us.cmp(&a.1.total_time_us));
         queries.truncate(limit);
         queries
@@ -404,9 +409,7 @@ impl QueryLogger {
     /// Get top queries by execution count
     pub fn get_top_queries_by_count(&self, limit: usize) -> Vec<(String, QueryStats)> {
         let stats = self.stats.read();
-        let mut queries: Vec<_> = stats.iter()
-            .map(|(q, s)| (q.clone(), s.clone()))
-            .collect();
+        let mut queries: Vec<_> = stats.iter().map(|(q, s)| (q.clone(), s.clone())).collect();
         queries.sort_by(|a, b| b.1.execution_count.cmp(&a.1.execution_count));
         queries.truncate(limit);
         queries
@@ -444,10 +447,15 @@ impl QueryLogger {
             total_queries,
             unique_queries: stats.len(),
             total_time_us: total_time,
-            avg_time_us: if total_queries > 0 { total_time / total_queries as u64 } else { 0 },
+            avg_time_us: if total_queries > 0 {
+                total_time / total_queries as u64
+            } else {
+                0
+            },
             slow_queries,
             suggestion_count: suggestions.len(),
-            nplusone_detected: suggestions.iter()
+            nplusone_detected: suggestions
+                .iter()
                 .filter(|s| s.suggestion_type == SuggestionType::NplusOne)
                 .count(),
         }
@@ -489,7 +497,12 @@ impl QueryLogMiddleware {
     }
 
     /// Wrap a query execution with logging
-    pub async fn execute<F, T, E>(&self, query: &str, tables: Vec<String>, f: F) -> Result<(T, u64), E>
+    pub async fn execute<F, T, E>(
+        &self,
+        query: &str,
+        tables: Vec<String>,
+        f: F,
+    ) -> Result<(T, u64), E>
     where
         F: std::future::Future<Output = Result<(T, u64), E>>,
     {

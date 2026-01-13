@@ -227,13 +227,13 @@ impl<S: SessionStore> SessionManager<S> {
     /// Validate and get session
     pub async fn validate(&self, token: &str) -> Result<Session> {
         let token_hash = hash_token(token);
-        let session = self
-            .store
-            .get_by_token(&token_hash)
-            .await?
-            .ok_or_else(|| Error::Authentication {
-                message: "Invalid session".to_string(),
-            })?;
+        let session =
+            self.store
+                .get_by_token(&token_hash)
+                .await?
+                .ok_or_else(|| Error::Authentication {
+                    message: "Invalid session".to_string(),
+                })?;
 
         if session.is_expired() {
             self.store.delete(session.id).await?;
@@ -331,11 +331,7 @@ mod tests {
 
     #[test]
     fn test_session_creation() {
-        let session = Session::new(
-            Uuid::now_v7(),
-            "token_hash".to_string(),
-            Duration::hours(1),
-        );
+        let session = Session::new(Uuid::now_v7(), "token_hash".to_string(), Duration::hours(1));
 
         assert!(!session.is_expired());
         assert!(session.is_valid());
@@ -343,11 +339,8 @@ mod tests {
 
     #[test]
     fn test_session_data() {
-        let mut session = Session::new(
-            Uuid::now_v7(),
-            "token_hash".to_string(),
-            Duration::hours(1),
-        );
+        let mut session =
+            Session::new(Uuid::now_v7(), "token_hash".to_string(), Duration::hours(1));
 
         session.set("key", "value");
         assert_eq!(session.get::<String>("key"), Some("value".to_string()));

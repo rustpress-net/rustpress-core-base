@@ -93,15 +93,23 @@ struct WxrAnalysis {
 
 pub async fn execute(ctx: &CliContext, cmd: ImportExportCommand) -> CliResult<()> {
     match cmd.command {
-        ImportExportSubcommand::Import { file, posts, pages, media, users, dry_run } => {
-            import_wxr(ctx, &file, posts, pages, media, users, dry_run).await
-        }
-        ImportExportSubcommand::Export { output, posts, pages, media, users, published_only } => {
-            export_wxr(ctx, output, posts, pages, media, users, published_only).await
-        }
-        ImportExportSubcommand::Analyze { file } => {
-            analyze_wxr(&file).await
-        }
+        ImportExportSubcommand::Import {
+            file,
+            posts,
+            pages,
+            media,
+            users,
+            dry_run,
+        } => import_wxr(ctx, &file, posts, pages, media, users, dry_run).await,
+        ImportExportSubcommand::Export {
+            output,
+            posts,
+            pages,
+            media,
+            users,
+            published_only,
+        } => export_wxr(ctx, output, posts, pages, media, users, published_only).await,
+        ImportExportSubcommand::Analyze { file } => analyze_wxr(&file).await,
     }
 }
 
@@ -204,14 +212,20 @@ async fn import_wxr(
         if status == reqwest::StatusCode::NOT_FOUND {
             // API endpoint doesn't exist, show local import message
             println!();
-            println!("{}", "Note: WordPress import API is not available.".yellow());
+            println!(
+                "{}",
+                "Note: WordPress import API is not available.".yellow()
+            );
             println!("The WXR file has been analyzed. To import the content,");
             println!("consider using the web admin interface or a future CLI version");
             println!("with direct database access.");
             return Ok(());
         }
         let body = response.text().await.unwrap_or_default();
-        return Err(CliError::OperationFailed(format!("Import failed ({}): {}", status, body)));
+        return Err(CliError::OperationFailed(format!(
+            "Import failed ({}): {}",
+            status, body
+        )));
     }
 
     #[derive(Deserialize)]
@@ -222,7 +236,9 @@ async fn import_wxr(
         users_imported: usize,
     }
 
-    let result: ImportResult = response.json().await
+    let result: ImportResult = response
+        .json()
+        .await
         .map_err(|e| CliError::Serialization(format!("Failed to parse response: {}", e)))?;
 
     println!();
@@ -287,15 +303,23 @@ async fn export_wxr(
         let status = response.status();
         if status == reqwest::StatusCode::NOT_FOUND {
             println!();
-            println!("{}", "Note: WordPress export API is not available yet.".yellow());
+            println!(
+                "{}",
+                "Note: WordPress export API is not available yet.".yellow()
+            );
             println!("This feature will be available in a future release.");
             return Ok(());
         }
         let body = response.text().await.unwrap_or_default();
-        return Err(CliError::OperationFailed(format!("Export failed ({}): {}", status, body)));
+        return Err(CliError::OperationFailed(format!(
+            "Export failed ({}): {}",
+            status, body
+        )));
     }
 
-    let content = response.text().await
+    let content = response
+        .text()
+        .await
         .map_err(|e| CliError::Network(format!("Failed to read response: {}", e)))?;
 
     // Write to file
@@ -345,7 +369,11 @@ async fn analyze_wxr(file: &str) -> CliResult<()> {
     println!();
     println!("  {} {}", "Posts:".green().bold(), analysis.posts);
     println!("  {} {}", "Pages:".green().bold(), analysis.pages);
-    println!("  {} {}", "Attachments:".green().bold(), analysis.attachments);
+    println!(
+        "  {} {}",
+        "Attachments:".green().bold(),
+        analysis.attachments
+    );
     println!("  {} {}", "Users/Authors:".green().bold(), analysis.users);
     println!("  {} {}", "Categories:".green().bold(), analysis.categories);
     println!("  {} {}", "Tags:".green().bold(), analysis.tags);

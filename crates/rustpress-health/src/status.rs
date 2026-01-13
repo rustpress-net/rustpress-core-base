@@ -150,7 +150,10 @@ impl HealthReport {
 
 /// Check if a component is critical
 fn is_critical_component(name: &str) -> bool {
-    matches!(name.to_lowercase().as_str(), "database" | "postgres" | "postgresql")
+    matches!(
+        name.to_lowercase().as_str(),
+        "database" | "postgres" | "postgresql"
+    )
 }
 
 /// Service health information
@@ -181,7 +184,8 @@ impl Default for ServiceHealth {
         Self {
             name: "rustpress".to_string(),
             version: env!("CARGO_PKG_VERSION").to_string(),
-            environment: std::env::var("RUSTPRESS_ENV").unwrap_or_else(|_| "development".to_string()),
+            environment: std::env::var("RUSTPRESS_ENV")
+                .unwrap_or_else(|_| "development".to_string()),
             instance_id: std::env::var("HOSTNAME").ok(),
             uptime_seconds: 0,
             started_at: Utc::now(),

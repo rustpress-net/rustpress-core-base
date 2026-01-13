@@ -30,14 +30,14 @@
 //! - Point 54: Redirects table for URL management
 //! - Point 55: Multi-site tables structure for network installations
 
-pub mod pool;
 pub mod migration;
-pub mod repository;
-pub mod transaction;
 pub mod models;
+pub mod pool;
+pub mod repository;
 pub mod schema;
+pub mod transaction;
 
-pub use pool::{DatabasePool, PoolConfig};
 pub use migration::Migrator;
-pub use transaction::Transaction;
+pub use pool::{DatabasePool, PoolConfig};
 pub use schema::*;
+pub use transaction::Transaction;

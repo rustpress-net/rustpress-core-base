@@ -2,9 +2,9 @@
 //!
 //! Color palette (201), typography (202), and layout (203) management.
 
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use parking_lot::RwLock;
 
 /// Color definition with accessibility metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -166,12 +166,14 @@ impl ColorPalette {
             Gradient {
                 slug: "vivid-cyan-blue-to-vivid-purple".to_string(),
                 name: "Vivid cyan blue to vivid purple".to_string(),
-                gradient: "linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%)".to_string(),
+                gradient: "linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%)"
+                    .to_string(),
             },
             Gradient {
                 slug: "light-green-cyan-to-vivid-green-cyan".to_string(),
                 name: "Light green cyan to vivid green cyan".to_string(),
-                gradient: "linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%)".to_string(),
+                gradient: "linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%)"
+                    .to_string(),
             },
         ];
 
@@ -423,10 +425,26 @@ impl TypographySettings {
         ];
 
         self.line_heights = vec![
-            LineHeight { slug: "tight".to_string(), name: "Tight".to_string(), value: "1.1".to_string() },
-            LineHeight { slug: "normal".to_string(), name: "Normal".to_string(), value: "1.5".to_string() },
-            LineHeight { slug: "relaxed".to_string(), name: "Relaxed".to_string(), value: "1.75".to_string() },
-            LineHeight { slug: "loose".to_string(), name: "Loose".to_string(), value: "2".to_string() },
+            LineHeight {
+                slug: "tight".to_string(),
+                name: "Tight".to_string(),
+                value: "1.1".to_string(),
+            },
+            LineHeight {
+                slug: "normal".to_string(),
+                name: "Normal".to_string(),
+                value: "1.5".to_string(),
+            },
+            LineHeight {
+                slug: "relaxed".to_string(),
+                name: "Relaxed".to_string(),
+                value: "1.75".to_string(),
+            },
+            LineHeight {
+                slug: "loose".to_string(),
+                name: "Loose".to_string(),
+                value: "2".to_string(),
+            },
         ];
 
         self.default_font_family = Some("system-font".to_string());
@@ -482,17 +500,21 @@ impl TypographySettings {
                     css.push_str(&format!("  font-style: {};\n", face.font_style));
                     css.push_str(&format!("  font-weight: {};\n", face.font_weight));
 
-                    let src: Vec<String> = face.src.iter().map(|s| {
-                        if s.ends_with(".woff2") {
-                            format!("url('{}') format('woff2')", s)
-                        } else if s.ends_with(".woff") {
-                            format!("url('{}') format('woff')", s)
-                        } else if s.ends_with(".ttf") {
-                            format!("url('{}') format('truetype')", s)
-                        } else {
-                            format!("url('{}')", s)
-                        }
-                    }).collect();
+                    let src: Vec<String> = face
+                        .src
+                        .iter()
+                        .map(|s| {
+                            if s.ends_with(".woff2") {
+                                format!("url('{}') format('woff2')", s)
+                            } else if s.ends_with(".woff") {
+                                format!("url('{}') format('woff')", s)
+                            } else if s.ends_with(".ttf") {
+                                format!("url('{}') format('truetype')", s)
+                            } else {
+                                format!("url('{}')", s)
+                            }
+                        })
+                        .collect();
 
                     css.push_str(&format!("  src: {};\n", src.join(", ")));
                     css.push_str("  font-display: swap;\n");
@@ -564,7 +586,13 @@ impl LayoutSettings {
             wide_size: "1200px".to_string(),
             spacing: Vec::new(),
             custom_spacing: true,
-            spacing_units: vec!["px".to_string(), "em".to_string(), "rem".to_string(), "%".to_string(), "vw".to_string()],
+            spacing_units: vec![
+                "px".to_string(),
+                "em".to_string(),
+                "rem".to_string(),
+                "%".to_string(),
+                "vw".to_string(),
+            ],
             block_gap: Some("2rem".to_string()),
         }
     }
@@ -572,13 +600,41 @@ impl LayoutSettings {
     /// Add default spacing presets
     pub fn with_defaults(mut self) -> Self {
         self.spacing = vec![
-            SpacingPreset { slug: "20".to_string(), name: "1".to_string(), size: "min(1.5rem, 2vw)".to_string() },
-            SpacingPreset { slug: "30".to_string(), name: "2".to_string(), size: "min(2.5rem, 3vw)".to_string() },
-            SpacingPreset { slug: "40".to_string(), name: "3".to_string(), size: "min(4rem, 5vw)".to_string() },
-            SpacingPreset { slug: "50".to_string(), name: "4".to_string(), size: "min(6.5rem, 8vw)".to_string() },
-            SpacingPreset { slug: "60".to_string(), name: "5".to_string(), size: "min(10.5rem, 13vw)".to_string() },
-            SpacingPreset { slug: "70".to_string(), name: "6".to_string(), size: "min(12rem, 15vw)".to_string() },
-            SpacingPreset { slug: "80".to_string(), name: "7".to_string(), size: "min(14rem, 18vw)".to_string() },
+            SpacingPreset {
+                slug: "20".to_string(),
+                name: "1".to_string(),
+                size: "min(1.5rem, 2vw)".to_string(),
+            },
+            SpacingPreset {
+                slug: "30".to_string(),
+                name: "2".to_string(),
+                size: "min(2.5rem, 3vw)".to_string(),
+            },
+            SpacingPreset {
+                slug: "40".to_string(),
+                name: "3".to_string(),
+                size: "min(4rem, 5vw)".to_string(),
+            },
+            SpacingPreset {
+                slug: "50".to_string(),
+                name: "4".to_string(),
+                size: "min(6.5rem, 8vw)".to_string(),
+            },
+            SpacingPreset {
+                slug: "60".to_string(),
+                name: "5".to_string(),
+                size: "min(10.5rem, 13vw)".to_string(),
+            },
+            SpacingPreset {
+                slug: "70".to_string(),
+                name: "6".to_string(),
+                size: "min(12rem, 15vw)".to_string(),
+            },
+            SpacingPreset {
+                slug: "80".to_string(),
+                name: "7".to_string(),
+                size: "min(14rem, 18vw)".to_string(),
+            },
         ];
 
         self

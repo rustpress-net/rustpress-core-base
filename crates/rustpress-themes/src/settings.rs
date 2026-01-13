@@ -2,11 +2,11 @@
 //!
 //! Persistent storage and retrieval of theme settings with validation.
 
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
-use parking_lot::RwLock;
 use thiserror::Error;
 use tokio::fs;
 
@@ -154,7 +154,9 @@ impl ThemeSettings {
 
     /// Load settings from storage
     pub async fn load(&self) -> Result<(), SettingsError> {
-        let settings_file = self.storage_path.join(format!("{}_settings.json", self.theme_id));
+        let settings_file = self
+            .storage_path
+            .join(format!("{}_settings.json", self.theme_id));
 
         if settings_file.exists() {
             let content = fs::read_to_string(&settings_file).await?;
@@ -162,7 +164,9 @@ impl ThemeSettings {
             *self.settings.write() = loaded;
         }
 
-        let mods_file = self.storage_path.join(format!("{}_mods.json", self.theme_id));
+        let mods_file = self
+            .storage_path
+            .join(format!("{}_mods.json", self.theme_id));
 
         if mods_file.exists() {
             let content = fs::read_to_string(&mods_file).await?;
@@ -177,11 +181,15 @@ impl ThemeSettings {
     pub async fn save(&self) -> Result<(), SettingsError> {
         fs::create_dir_all(&self.storage_path).await?;
 
-        let settings_file = self.storage_path.join(format!("{}_settings.json", self.theme_id));
+        let settings_file = self
+            .storage_path
+            .join(format!("{}_settings.json", self.theme_id));
         let content = serde_json::to_string_pretty(&*self.settings.read())?;
         fs::write(&settings_file, content).await?;
 
-        let mods_file = self.storage_path.join(format!("{}_mods.json", self.theme_id));
+        let mods_file = self
+            .storage_path
+            .join(format!("{}_mods.json", self.theme_id));
         let content = serde_json::to_string_pretty(&*self.mods.read())?;
         fs::write(&mods_file, content).await?;
 
@@ -207,10 +215,7 @@ impl ThemeSettings {
 
     /// Get a setting value
     pub fn get(&self, key: &str) -> Option<serde_json::Value> {
-        self.settings
-            .read()
-            .get(key)
-            .map(|v| v.value.clone())
+        self.settings.read().get(key).map(|v| v.value.clone())
     }
 
     /// Get a setting value with default
@@ -220,12 +225,16 @@ impl ThemeSettings {
 
     /// Get typed setting value
     pub fn get_typed<T: for<'de> Deserialize<'de>>(&self, key: &str) -> Option<T> {
-        self.get(key)
-            .and_then(|v| serde_json::from_value(v).ok())
+        self.get(key).and_then(|v| serde_json::from_value(v).ok())
     }
 
     /// Set a setting value
-    pub fn set(&self, key: &str, value: serde_json::Value, user_id: Option<&str>) -> Result<(), SettingsError> {
+    pub fn set(
+        &self,
+        key: &str,
+        value: serde_json::Value,
+        user_id: Option<&str>,
+    ) -> Result<(), SettingsError> {
         // Validate against schema if exists
         if let Some(schema) = self.schema.read().get(key) {
             self.validate_value(&schema.setting_type, &value)?;
@@ -248,7 +257,9 @@ impl ThemeSettings {
                 autoload: true,
             };
 
-            self.settings.write().insert(key.to_string(), setting.clone());
+            self.settings
+                .write()
+                .insert(key.to_string(), setting.clone());
 
             // Notify listeners
             for listener in self.listeners.read().iter() {
@@ -300,9 +311,17 @@ impl ThemeSettings {
         self.mods.read().clone()
     }
 
-    fn validate_value(&self, setting_type: &SettingType, value: &serde_json::Value) -> Result<(), SettingsError> {
+    fn validate_value(
+        &self,
+        setting_type: &SettingType,
+        value: &serde_json::Value,
+    ) -> Result<(), SettingsError> {
         match setting_type {
-            SettingType::String | SettingType::Html | SettingType::Url | SettingType::Color | SettingType::Image => {
+            SettingType::String
+            | SettingType::Html
+            | SettingType::Url
+            | SettingType::Color
+            | SettingType::Image => {
                 if !value.is_string() && !value.is_null() {
                     return Err(SettingsError::InvalidValue("Expected string".to_string()));
                 }
@@ -337,55 +356,66 @@ impl ThemeSettings {
         Ok(())
     }
 
-    fn apply_validation(&self, rule: &ValidationRule, value: &serde_json::Value) -> Result<(), SettingsError> {
+    fn apply_validation(
+        &self,
+        rule: &ValidationRule,
+        value: &serde_json::Value,
+    ) -> Result<(), SettingsError> {
         match rule {
             ValidationRule::Required => {
                 if value.is_null() {
-                    return Err(SettingsError::SchemaValidation("Value is required".to_string()));
+                    return Err(SettingsError::SchemaValidation(
+                        "Value is required".to_string(),
+                    ));
                 }
             }
             ValidationRule::MinLength(min) => {
                 if let Some(s) = value.as_str() {
                     if s.len() < *min {
-                        return Err(SettingsError::SchemaValidation(
-                            format!("Minimum length is {}", min),
-                        ));
+                        return Err(SettingsError::SchemaValidation(format!(
+                            "Minimum length is {}",
+                            min
+                        )));
                     }
                 }
             }
             ValidationRule::MaxLength(max) => {
                 if let Some(s) = value.as_str() {
                     if s.len() > *max {
-                        return Err(SettingsError::SchemaValidation(
-                            format!("Maximum length is {}", max),
-                        ));
+                        return Err(SettingsError::SchemaValidation(format!(
+                            "Maximum length is {}",
+                            max
+                        )));
                     }
                 }
             }
             ValidationRule::Min(min) => {
                 if let Some(n) = value.as_f64() {
                     if n < *min {
-                        return Err(SettingsError::SchemaValidation(
-                            format!("Minimum value is {}", min),
-                        ));
+                        return Err(SettingsError::SchemaValidation(format!(
+                            "Minimum value is {}",
+                            min
+                        )));
                     }
                 }
             }
             ValidationRule::Max(max) => {
                 if let Some(n) = value.as_f64() {
                     if n > *max {
-                        return Err(SettingsError::SchemaValidation(
-                            format!("Maximum value is {}", max),
-                        ));
+                        return Err(SettingsError::SchemaValidation(format!(
+                            "Maximum value is {}",
+                            max
+                        )));
                     }
                 }
             }
             ValidationRule::Range { min, max } => {
                 if let Some(n) = value.as_f64() {
                     if n < *min || n > *max {
-                        return Err(SettingsError::SchemaValidation(
-                            format!("Value must be between {} and {}", min, max),
-                        ));
+                        return Err(SettingsError::SchemaValidation(format!(
+                            "Value must be between {} and {}",
+                            min, max
+                        )));
                     }
                 }
             }
@@ -394,9 +424,10 @@ impl ThemeSettings {
                     let re = regex::Regex::new(pattern)
                         .map_err(|e| SettingsError::SchemaValidation(e.to_string()))?;
                     if !re.is_match(s) {
-                        return Err(SettingsError::SchemaValidation(
-                            format!("Value does not match pattern: {}", pattern),
-                        ));
+                        return Err(SettingsError::SchemaValidation(format!(
+                            "Value does not match pattern: {}",
+                            pattern
+                        )));
                     }
                 }
             }
@@ -434,7 +465,11 @@ impl ThemeSettings {
         Ok(())
     }
 
-    fn sanitize_value(&self, sanitize: &SanitizeType, value: serde_json::Value) -> Result<serde_json::Value, SettingsError> {
+    fn sanitize_value(
+        &self,
+        sanitize: &SanitizeType,
+        value: serde_json::Value,
+    ) -> Result<serde_json::Value, SettingsError> {
         match sanitize {
             SanitizeType::Text => {
                 if let Some(s) = value.as_str() {
@@ -487,9 +522,9 @@ impl ThemeSettings {
             }
             SanitizeType::Integer => {
                 if let Some(n) = value.as_f64() {
-                    Ok(serde_json::Value::Number(
-                        serde_json::Number::from(n as i64),
-                    ))
+                    Ok(serde_json::Value::Number(serde_json::Number::from(
+                        n as i64,
+                    )))
                 } else {
                     Ok(value)
                 }
@@ -501,9 +536,7 @@ impl ThemeSettings {
                     Ok(value)
                 }
             }
-            SanitizeType::Boolean => {
-                Ok(serde_json::Value::Bool(value.as_bool().unwrap_or(false)))
-            }
+            SanitizeType::Boolean => Ok(serde_json::Value::Bool(value.as_bool().unwrap_or(false))),
             _ => Ok(value),
         }
     }
@@ -602,9 +635,9 @@ impl GlobalSettingsRegistry {
     /// Get active theme settings
     pub fn get_active(&self) -> Option<Arc<ThemeSettings>> {
         let active = self.active_theme.read();
-        active.as_ref().and_then(|id| {
-            self.themes.read().get(id).cloned()
-        })
+        active
+            .as_ref()
+            .and_then(|id| self.themes.read().get(id).cloned())
     }
 
     /// Get theme settings by ID
@@ -673,7 +706,10 @@ fn sanitize_html_allowed(s: &str, allowed_tags: &[String]) -> String {
             let normalized_tag = tag_name.to_lowercase();
             let tag_without_slash = normalized_tag.trim_start_matches('/');
 
-            if allowed_tags.iter().any(|t| t.to_lowercase() == tag_without_slash) {
+            if allowed_tags
+                .iter()
+                .any(|t| t.to_lowercase() == tag_without_slash)
+            {
                 result.push_str(&current_tag);
             }
         } else if in_tag {
@@ -743,7 +779,9 @@ mod tests {
         let dir = tempdir().unwrap();
         let settings = ThemeSettings::new("test-theme", dir.path().to_path_buf());
 
-        settings.set("key1", serde_json::json!("value1"), None).unwrap();
+        settings
+            .set("key1", serde_json::json!("value1"), None)
+            .unwrap();
         assert_eq!(settings.get("key1"), Some(serde_json::json!("value1")));
     }
 
@@ -780,7 +818,10 @@ mod tests {
             setting_type: SettingType::Integer,
             default: serde_json::json!(18),
             sanitize: None,
-            validate: Some(ValidationRule::Range { min: 0.0, max: 150.0 }),
+            validate: Some(ValidationRule::Range {
+                min: 0.0,
+                max: 150.0,
+            }),
             capability: "edit_theme_options".to_string(),
             show_in_rest: true,
             transport: SettingTransport::PostMessage,

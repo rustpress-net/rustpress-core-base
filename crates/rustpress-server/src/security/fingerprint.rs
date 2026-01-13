@@ -59,10 +59,16 @@ impl RequestFingerprint {
             if let Some(accept) = headers.get(header::ACCEPT).and_then(|v| v.to_str().ok()) {
                 accept.hash(&mut hasher);
             }
-            if let Some(lang) = headers.get(header::ACCEPT_LANGUAGE).and_then(|v| v.to_str().ok()) {
+            if let Some(lang) = headers
+                .get(header::ACCEPT_LANGUAGE)
+                .and_then(|v| v.to_str().ok())
+            {
                 lang.hash(&mut hasher);
             }
-            if let Some(enc) = headers.get(header::ACCEPT_ENCODING).and_then(|v| v.to_str().ok()) {
+            if let Some(enc) = headers
+                .get(header::ACCEPT_ENCODING)
+                .and_then(|v| v.to_str().ok())
+            {
                 enc.hash(&mut hasher);
             }
             hasher.finish()
@@ -71,7 +77,10 @@ impl RequestFingerprint {
         // Hash User-Agent
         let ua_hash = {
             let mut hasher = DefaultHasher::new();
-            if let Some(ua) = headers.get(header::USER_AGENT).and_then(|v| v.to_str().ok()) {
+            if let Some(ua) = headers
+                .get(header::USER_AGENT)
+                .and_then(|v| v.to_str().ok())
+            {
                 ua.hash(&mut hasher);
             }
             hasher.finish()
@@ -270,7 +279,11 @@ impl FingerprintMiddleware {
     }
 
     /// Process a request and update client profile
-    pub fn process(&self, request: &Request<Body>, client_id: &str) -> (RequestFingerprint, Option<ClientProfile>) {
+    pub fn process(
+        &self,
+        request: &Request<Body>,
+        client_id: &str,
+    ) -> (RequestFingerprint, Option<ClientProfile>) {
         let fingerprint = RequestFingerprint::from_request(request);
         let path = request.uri().path().to_string();
 
@@ -338,14 +351,18 @@ impl FingerprintMiddleware {
         }
         *last_cleanup = now;
 
-        let cutoff = Utc::now() - chrono::Duration::seconds(self.config.profile_expiry_seconds as i64);
+        let cutoff =
+            Utc::now() - chrono::Duration::seconds(self.config.profile_expiry_seconds as i64);
 
         // Remove expired profiles
         profiles.retain(|_, p| p.last_seen > cutoff);
 
         // If still over limit, remove oldest profiles
         if profiles.len() > self.config.max_profiles {
-            let mut entries: Vec<_> = profiles.iter().map(|(k, v)| (k.clone(), v.last_seen)).collect();
+            let mut entries: Vec<_> = profiles
+                .iter()
+                .map(|(k, v)| (k.clone(), v.last_seen))
+                .collect();
             entries.sort_by_key(|(_, ts)| *ts);
 
             let to_remove = profiles.len() - self.config.max_profiles;
@@ -434,15 +451,9 @@ mod tests {
 
     #[test]
     fn test_fingerprint_similarity() {
-        let request1 = create_request(vec![
-            ("user-agent", "Mozilla/5.0"),
-            ("accept", "text/html"),
-        ]);
+        let request1 = create_request(vec![("user-agent", "Mozilla/5.0"), ("accept", "text/html")]);
 
-        let request2 = create_request(vec![
-            ("user-agent", "Mozilla/5.0"),
-            ("accept", "text/html"),
-        ]);
+        let request2 = create_request(vec![("user-agent", "Mozilla/5.0"), ("accept", "text/html")]);
 
         let fp1 = RequestFingerprint::from_request(&request1);
         let fp2 = RequestFingerprint::from_request(&request2);
@@ -454,10 +465,7 @@ mod tests {
     fn test_client_profile() {
         let mut profile = ClientProfile::new("test-client".to_string());
 
-        let request = create_request(vec![
-            ("user-agent", "Mozilla/5.0"),
-            ("accept", "text/html"),
-        ]);
+        let request = create_request(vec![("user-agent", "Mozilla/5.0"), ("accept", "text/html")]);
 
         let fingerprint = RequestFingerprint::from_request(&request);
         profile.add_fingerprint(fingerprint, "/test".to_string());
@@ -471,10 +479,7 @@ mod tests {
         let config = FingerprintConfig::default();
         let middleware = FingerprintMiddleware::new(config);
 
-        let request = create_request(vec![
-            ("user-agent", "Mozilla/5.0"),
-            ("accept", "text/html"),
-        ]);
+        let request = create_request(vec![("user-agent", "Mozilla/5.0"), ("accept", "text/html")]);
 
         let (fingerprint, profile) = middleware.process(&request, "192.168.1.1");
 
@@ -492,10 +497,8 @@ mod tests {
 
         // Add consistent fingerprints
         for _ in 0..5 {
-            let request = create_request(vec![
-                ("user-agent", "Mozilla/5.0"),
-                ("accept", "text/html"),
-            ]);
+            let request =
+                create_request(vec![("user-agent", "Mozilla/5.0"), ("accept", "text/html")]);
             let fp = RequestFingerprint::from_request(&request);
             profile.add_fingerprint(fp, "/test".to_string());
         }
@@ -503,9 +506,7 @@ mod tests {
         assert!(profile.anomaly_score < 0.5);
 
         // Add different fingerprint
-        let different_request = create_request(vec![
-            ("user-agent", "curl/7.0"),
-        ]);
+        let different_request = create_request(vec![("user-agent", "curl/7.0")]);
         let different_fp = RequestFingerprint::from_request(&different_request);
         profile.add_fingerprint(different_fp, "/test".to_string());
 

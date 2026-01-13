@@ -2,12 +2,12 @@
 //!
 //! Extracts above-the-fold CSS for optimal page load performance.
 
+use regex::Regex;
 use scraper::Html;
 use std::collections::HashSet;
 use std::path::Path;
 use thiserror::Error;
 use tokio::fs;
-use regex::Regex;
 
 /// Critical CSS extraction errors
 #[derive(Debug, Error)]
@@ -85,7 +85,11 @@ impl CriticalCssExtractor {
     }
 
     /// Extract critical CSS from HTML and CSS
-    pub async fn extract(&self, html: &str, css: &str) -> Result<CriticalCssResult, CriticalCssError> {
+    pub async fn extract(
+        &self,
+        html: &str,
+        css: &str,
+    ) -> Result<CriticalCssResult, CriticalCssError> {
         // Parse HTML to find used selectors
         let used_selectors = self.extract_selectors_from_html(html)?;
 
@@ -216,9 +220,11 @@ impl CriticalCssExtractor {
                 let rule = format!("{} {{ {} }}", selector, declarations);
 
                 // Check force exclude
-                let exclude = self.config.force_exclude.iter().any(|ex| {
-                    selector.contains(ex)
-                });
+                let exclude = self
+                    .config
+                    .force_exclude
+                    .iter()
+                    .any(|ex| selector.contains(ex));
 
                 let rule_len = rule.len();
                 if !exclude && critical_size + rule_len <= self.config.max_size {
@@ -283,11 +289,13 @@ impl CriticalCssExtractor {
     fn calculate_remaining(&self, original: &str, critical: &str) -> String {
         // Simple approach: return rules not in critical CSS
         // In production, use proper CSS parsing
-        let critical_rules: HashSet<&str> = critical.split('}')
+        let critical_rules: HashSet<&str> = critical
+            .split('}')
             .filter(|s| !s.trim().is_empty())
             .collect();
 
-        original.split('}')
+        original
+            .split('}')
             .filter(|rule| {
                 let trimmed = rule.trim();
                 !trimmed.is_empty() && !critical_rules.contains(trimmed)

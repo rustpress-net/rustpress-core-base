@@ -92,9 +92,7 @@ pub struct PurgeCacheRequest {
     pub keys: Vec<String>,
 }
 
-pub async fn purge_cache_keys(
-    Json(request): Json<PurgeCacheRequest>,
-) -> impl IntoResponse {
+pub async fn purge_cache_keys(Json(request): Json<PurgeCacheRequest>) -> impl IntoResponse {
     // TODO: Implement cache purging
     Json(ApiResponse {
         success: true,
@@ -133,9 +131,7 @@ pub struct PurgeCdnRequest {
     pub urls: Vec<String>,
 }
 
-pub async fn cdn_purge_urls(
-    Json(request): Json<PurgeCdnRequest>,
-) -> impl IntoResponse {
+pub async fn cdn_purge_urls(Json(request): Json<PurgeCdnRequest>) -> impl IntoResponse {
     // TODO: Implement CDN URL purging
     Json(ApiResponse {
         success: true,
@@ -166,9 +162,7 @@ pub struct CreateBackupRequest {
     pub encrypt: bool,
 }
 
-pub async fn create_backup(
-    Json(request): Json<CreateBackupRequest>,
-) -> impl IntoResponse {
+pub async fn create_backup(Json(request): Json<CreateBackupRequest>) -> impl IntoResponse {
     // TODO: Implement backup creation
     Json(ApiResponse {
         success: true,
@@ -259,9 +253,7 @@ pub async fn get_settings() -> impl IntoResponse {
 }
 
 /// Update settings
-pub async fn update_settings(
-    Json(settings): Json<serde_json::Value>,
-) -> impl IntoResponse {
+pub async fn update_settings(Json(settings): Json<serde_json::Value>) -> impl IntoResponse {
     // TODO: Implement settings update
     Json(ApiResponse {
         success: true,

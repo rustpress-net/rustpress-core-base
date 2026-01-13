@@ -72,7 +72,8 @@ impl ContentTemplate {
     /// Create blog post template
     pub fn blog_post() -> Self {
         let mut template = Self::new("Blog Post", "post");
-        template.description = Some("Standard blog post with introduction, body, and conclusion".to_string());
+        template.description =
+            Some("Standard blog post with introduction, body, and conclusion".to_string());
         template.blocks = vec![
             Block::heading("Post Title", 1),
             Block::paragraph("Introduction paragraph - hook your readers here..."),
@@ -89,13 +90,18 @@ impl ContentTemplate {
     /// Create landing page template
     pub fn landing_page() -> Self {
         let mut template = Self::new("Landing Page", "page");
-        template.description = Some("Marketing landing page with hero, features, and CTA".to_string());
+        template.description =
+            Some("Marketing landing page with hero, features, and CTA".to_string());
         template.blocks = vec![
-            Block::cover("/placeholder-hero.jpg", "primary", vec![
-                Block::heading("Welcome to Our Site", 1),
-                Block::paragraph("Your compelling tagline goes here"),
-                Block::button("Get Started", "#cta", Some("is-style-fill")),
-            ]),
+            Block::cover(
+                "/placeholder-hero.jpg",
+                "primary",
+                vec![
+                    Block::heading("Welcome to Our Site", 1),
+                    Block::paragraph("Your compelling tagline goes here"),
+                    Block::button("Get Started", "#cta", Some("is-style-fill")),
+                ],
+            ),
             Block::spacer(60),
             Block::heading("Features", 2),
             Block::columns(vec![
@@ -113,10 +119,13 @@ impl ContentTemplate {
                 ]),
             ]),
             Block::spacer(60),
-            Block::group(vec![
-                Block::heading("Ready to get started?", 2),
-                Block::button("Sign Up Now", "#signup", Some("is-style-fill")),
-            ], Some("constrained")),
+            Block::group(
+                vec![
+                    Block::heading("Ready to get started?", 2),
+                    Block::button("Sign Up Now", "#signup", Some("is-style-fill")),
+                ],
+                Some("constrained"),
+            ),
         ];
         template.is_system = true;
         template
@@ -207,9 +216,7 @@ impl ContentTemplate {
         template.description = Some("E-commerce product listing".to_string());
         template.blocks = vec![
             Block::columns(vec![
-                Block::column(vec![
-                    Block::gallery(vec![], 1),
-                ]),
+                Block::column(vec![Block::gallery(vec![], 1)]),
                 Block::column(vec![
                     Block::heading("Product Name", 1),
                     Block::paragraph("$99.99"),
@@ -307,37 +314,33 @@ impl TemplateService {
 
     /// Get template by ID
     pub async fn get(&self, id: Uuid) -> ContentResult<ContentTemplate> {
-        let row = sqlx::query_as::<_, TemplateRow>(
-            "SELECT * FROM content_templates WHERE id = $1",
-        )
-        .bind(id)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or_else(|| ContentError::NotFound(id.to_string()))?;
+        let row = sqlx::query_as::<_, TemplateRow>("SELECT * FROM content_templates WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&self.pool)
+            .await?
+            .ok_or_else(|| ContentError::NotFound(id.to_string()))?;
 
         row.try_into()
     }
 
     /// Get template by name
     pub async fn get_by_name(&self, name: &str) -> ContentResult<ContentTemplate> {
-        let row = sqlx::query_as::<_, TemplateRow>(
-            "SELECT * FROM content_templates WHERE name = $1",
-        )
-        .bind(name)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or_else(|| ContentError::NotFound(name.to_string()))?;
+        let row =
+            sqlx::query_as::<_, TemplateRow>("SELECT * FROM content_templates WHERE name = $1")
+                .bind(name)
+                .fetch_optional(&self.pool)
+                .await?
+                .ok_or_else(|| ContentError::NotFound(name.to_string()))?;
 
         row.try_into()
     }
 
     /// List all templates
     pub async fn list(&self) -> ContentResult<Vec<ContentTemplate>> {
-        let rows = sqlx::query_as::<_, TemplateRow>(
-            "SELECT * FROM content_templates ORDER BY name",
-        )
-        .fetch_all(&self.pool)
-        .await?;
+        let rows =
+            sqlx::query_as::<_, TemplateRow>("SELECT * FROM content_templates ORDER BY name")
+                .fetch_all(&self.pool)
+                .await?;
 
         rows.into_iter().map(|r| r.try_into()).collect()
     }
@@ -389,12 +392,11 @@ impl TemplateService {
 
     /// Delete template
     pub async fn delete(&self, id: Uuid) -> ContentResult<()> {
-        let result = sqlx::query(
-            "DELETE FROM content_templates WHERE id = $1 AND is_system = false",
-        )
-        .bind(id)
-        .execute(&self.pool)
-        .await?;
+        let result =
+            sqlx::query("DELETE FROM content_templates WHERE id = $1 AND is_system = false")
+                .bind(id)
+                .execute(&self.pool)
+                .await?;
 
         if result.rows_affected() == 0 {
             return Err(ContentError::PermissionDenied(

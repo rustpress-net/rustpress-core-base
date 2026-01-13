@@ -5,11 +5,11 @@
 use crate::context::AppContext;
 use crate::error::Result;
 use async_trait::async_trait;
+use parking_lot::RwLock;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use parking_lot::RwLock;
 
 /// Metadata about a plugin
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -227,11 +227,12 @@ impl PluginManager {
         // Update state to activating
         {
             let mut plugins = self.plugins.write();
-            let registered = plugins.get_mut(plugin_id).ok_or_else(|| {
-                crate::error::Error::PluginNotFound {
-                    plugin_id: plugin_id.to_string(),
-                }
-            })?;
+            let registered =
+                plugins
+                    .get_mut(plugin_id)
+                    .ok_or_else(|| crate::error::Error::PluginNotFound {
+                        plugin_id: plugin_id.to_string(),
+                    })?;
             registered.state = PluginState::Activating;
         }
 
@@ -273,11 +274,12 @@ impl PluginManager {
         // Update state
         {
             let mut plugins = self.plugins.write();
-            let registered = plugins.get_mut(plugin_id).ok_or_else(|| {
-                crate::error::Error::PluginNotFound {
-                    plugin_id: plugin_id.to_string(),
-                }
-            })?;
+            let registered =
+                plugins
+                    .get_mut(plugin_id)
+                    .ok_or_else(|| crate::error::Error::PluginNotFound {
+                        plugin_id: plugin_id.to_string(),
+                    })?;
             registered.state = PluginState::Deactivating;
         }
 
@@ -342,11 +344,12 @@ impl PluginManager {
     /// Check if a plugin's dependencies are satisfied
     fn check_dependencies(&self, plugin_id: &str) -> Result<()> {
         let plugins = self.plugins.read();
-        let registered = plugins.get(plugin_id).ok_or_else(|| {
-            crate::error::Error::PluginNotFound {
-                plugin_id: plugin_id.to_string(),
-            }
-        })?;
+        let registered =
+            plugins
+                .get(plugin_id)
+                .ok_or_else(|| crate::error::Error::PluginNotFound {
+                    plugin_id: plugin_id.to_string(),
+                })?;
 
         for dep in &registered.plugin.info().dependencies {
             if dep.optional {

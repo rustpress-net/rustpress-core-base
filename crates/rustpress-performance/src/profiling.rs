@@ -2,11 +2,11 @@
 //!
 //! Provides profiling endpoints and metrics collection for performance monitoring.
 
+use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use parking_lot::RwLock;
-use serde::{Deserialize, Serialize};
 
 /// Profiling configuration
 #[derive(Debug, Clone)]
@@ -229,7 +229,8 @@ impl Profiler {
             metrics.avg_response_time_ms = sorted.iter().sum::<u64>() as f64 / sorted.len() as f64;
             metrics.p50_response_time_ms = sorted[sorted.len() / 2] as f64;
             metrics.p95_response_time_ms = sorted[(sorted.len() as f64 * 0.95) as usize] as f64;
-            metrics.p99_response_time_ms = sorted[(sorted.len() as f64 * 0.99).min(sorted.len() as f64 - 1.0) as usize] as f64;
+            metrics.p99_response_time_ms =
+                sorted[(sorted.len() as f64 * 0.99).min(sorted.len() as f64 - 1.0) as usize] as f64;
         }
 
         metrics
@@ -350,8 +351,7 @@ impl FlameGraphNode {
             current.value += trace.duration_us;
 
             // Add method node
-            let method_idx = current.children.iter()
-                .position(|c| c.name == trace.method);
+            let method_idx = current.children.iter().position(|c| c.name == trace.method);
 
             let method_node = match method_idx {
                 Some(idx) => &mut current.children[idx],
@@ -364,8 +364,7 @@ impl FlameGraphNode {
 
             // Add timing breakdowns
             for (name, duration) in &trace.timings {
-                let timing_idx = method_node.children.iter()
-                    .position(|c| &c.name == name);
+                let timing_idx = method_node.children.iter().position(|c| &c.name == name);
 
                 match timing_idx {
                     Some(idx) => method_node.children[idx].value += duration,
@@ -425,7 +424,10 @@ impl ProfilingEndpoints {
 
         output.push_str("# HELP http_requests_total Total HTTP requests\n");
         output.push_str("# TYPE http_requests_total counter\n");
-        output.push_str(&format!("http_requests_total {}\n\n", metrics.total_requests));
+        output.push_str(&format!(
+            "http_requests_total {}\n\n",
+            metrics.total_requests
+        ));
 
         output.push_str("# HELP http_request_duration_seconds Request duration\n");
         output.push_str("# TYPE http_request_duration_seconds summary\n");
@@ -444,7 +446,10 @@ impl ProfilingEndpoints {
 
         output.push_str("# HELP http_slow_requests_total Slow HTTP requests\n");
         output.push_str("# TYPE http_slow_requests_total counter\n");
-        output.push_str(&format!("http_slow_requests_total {}\n\n", metrics.slow_requests));
+        output.push_str(&format!(
+            "http_slow_requests_total {}\n\n",
+            metrics.slow_requests
+        ));
 
         output.push_str("# HELP process_resident_memory_bytes Memory usage\n");
         output.push_str("# TYPE process_resident_memory_bytes gauge\n");
@@ -472,9 +477,7 @@ impl ServerTimingHeader {
     pub fn generate(timings: &HashMap<String, u64>) -> String {
         timings
             .iter()
-            .map(|(name, duration)| {
-                format!("{};dur={}", name, *duration as f64 / 1000.0)
-            })
+            .map(|(name, duration)| format!("{};dur={}", name, *duration as f64 / 1000.0))
             .collect::<Vec<_>>()
             .join(", ")
     }
@@ -513,12 +516,7 @@ mod tests {
         std::thread::sleep(Duration::from_millis(10));
         timer.end_span();
 
-        let trace = timer.finish(
-            "test-123".to_string(),
-            "GET",
-            "/api/users",
-            200,
-        );
+        let trace = timer.finish("test-123".to_string(), "GET", "/api/users", 200);
 
         assert_eq!(trace.method, "GET");
         assert!(trace.timings.contains_key("db"));
@@ -562,25 +560,23 @@ mod tests {
 
     #[test]
     fn test_flame_graph() {
-        let traces = vec![
-            RequestTrace {
-                trace_id: "1".to_string(),
-                method: "GET".to_string(),
-                path: "/".to_string(),
-                status_code: 200,
-                duration_us: 100000,
-                timings: {
-                    let mut t = HashMap::new();
-                    t.insert("db".to_string(), 50000u64);
-                    t
-                },
-                queries: Vec::new(),
-                memory: None,
-                timestamp: 0,
-                user_agent: None,
-                client_ip: None,
+        let traces = vec![RequestTrace {
+            trace_id: "1".to_string(),
+            method: "GET".to_string(),
+            path: "/".to_string(),
+            status_code: 200,
+            duration_us: 100000,
+            timings: {
+                let mut t = HashMap::new();
+                t.insert("db".to_string(), 50000u64);
+                t
             },
-        ];
+            queries: Vec::new(),
+            memory: None,
+            timestamp: 0,
+            user_agent: None,
+            client_ip: None,
+        }];
 
         let graph = FlameGraphNode::from_traces(&traces);
         assert_eq!(graph.name, "all");

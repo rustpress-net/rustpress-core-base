@@ -8,12 +8,12 @@ use rustpress_core::error::{Error, Result};
 use rustpress_themes::templates::{QueryContext, TemplateEngine};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgPool};
-use uuid::Uuid;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tera::Context;
 use tokio::sync::RwLock;
+use uuid::Uuid;
 
 use super::ThemeService;
 
@@ -263,11 +263,7 @@ pub struct RenderService {
 
 impl RenderService {
     /// Create a new render service
-    pub fn new(
-        pool: PgPool,
-        theme_service: Arc<ThemeService>,
-        themes_dir: PathBuf,
-    ) -> Self {
+    pub fn new(pool: PgPool, theme_service: Arc<ThemeService>, themes_dir: PathBuf) -> Self {
         Self {
             pool,
             theme_service,
@@ -279,7 +275,8 @@ impl RenderService {
                 url: "http://localhost:3000".to_string(),
                 language: "en-US".to_string(),
                 charset: "UTF-8".to_string(),
-                default_image: "/themes/rustpress-enterprise/assets/images/og-default.jpg".to_string(),
+                default_image: "/themes/rustpress-enterprise/assets/images/og-default.jpg"
+                    .to_string(),
                 author: "RustPress".to_string(),
             })),
         }
@@ -305,7 +302,8 @@ impl RenderService {
         let engine = TemplateEngine::new(theme_dir, "html")
             .map_err(|e| Error::internal(format!("Failed to create template engine: {}", e)))?;
 
-        engine.init()
+        engine
+            .init()
             .map_err(|e| Error::internal(format!("Failed to initialize templates: {}", e)))?;
 
         let engine = Arc::new(engine);
@@ -329,12 +327,15 @@ impl RenderService {
 
         // Theme info
         if let Ok(Some(theme)) = self.theme_service.get_theme(theme_id).await {
-            context.insert("theme", &serde_json::json!({
-                "id": theme.theme_id,
-                "name": theme.name,
-                "version": theme.version,
-                "author": theme.author,
-            }));
+            context.insert(
+                "theme",
+                &serde_json::json!({
+                    "id": theme.theme_id,
+                    "name": theme.name,
+                    "version": theme.version,
+                    "author": theme.author,
+                }),
+            );
         }
 
         // Current year for copyright
@@ -359,12 +360,11 @@ impl RenderService {
         let assignments = self.theme_service.get_menu_assignments(theme_id).await?;
 
         // Load menus from database
-        let menu_rows: Vec<MenuRow> = sqlx::query_as(
-            "SELECT id, name, slug FROM menus WHERE deleted_at IS NULL"
-        )
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| Error::database_with_source("Failed to load menus", e))?;
+        let menu_rows: Vec<MenuRow> =
+            sqlx::query_as("SELECT id, name, slug FROM menus WHERE deleted_at IS NULL")
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| Error::database_with_source("Failed to load menus", e))?;
 
         for menu_row in menu_rows {
             // Load menu items for this menu
@@ -374,7 +374,7 @@ impl RenderService {
                 FROM menu_items
                 WHERE menu_id = $1
                 ORDER BY position ASC
-                "#
+                "#,
             )
             .bind(menu_row.id)
             .fetch_all(&self.pool)
@@ -385,7 +385,8 @@ impl RenderService {
             let items = self.build_menu_hierarchy(&item_rows);
 
             // Check if this menu is assigned to a location in the theme
-            let location = assignments.as_array()
+            let location = assignments
+                .as_array()
                 .and_then(|arr| {
                     arr.iter()
                         .find(|a| {
@@ -400,21 +401,27 @@ impl RenderService {
                 })
                 .unwrap_or_else(|| menu_row.slug.clone());
 
-            menus.insert(location, MenuData {
-                name: menu_row.name,
-                slug: menu_row.slug,
-                items,
-            });
+            menus.insert(
+                location,
+                MenuData {
+                    name: menu_row.name,
+                    slug: menu_row.slug,
+                    items,
+                },
+            );
         }
 
         // Add empty placeholders for common menu locations if not assigned
         for loc in ["primary", "footer", "social"] {
             if !menus.contains_key(loc) {
-                menus.insert(loc.to_string(), MenuData {
-                    name: format!("{} Menu", loc),
-                    slug: loc.to_string(),
-                    items: vec![],
-                });
+                menus.insert(
+                    loc.to_string(),
+                    MenuData {
+                        name: format!("{} Menu", loc),
+                        slug: loc.to_string(),
+                        items: vec![],
+                    },
+                );
             }
         }
 
@@ -433,7 +440,9 @@ impl RenderService {
                 title: item.title.clone(),
                 url: item.url.clone(),
                 target: item.target.clone(),
-                classes: item.css_classes.clone()
+                classes: item
+                    .css_classes
+                    .clone()
                     .map(|s| s.split_whitespace().map(|s| s.to_string()).collect())
                     .unwrap_or_else(|| vec!["menu-item".to_string()]),
                 parent_id: item.parent_id.map(|id| id.to_string()),
@@ -441,14 +450,20 @@ impl RenderService {
             };
 
             if let Some(parent_id) = &item.parent_id {
-                children_map.entry(parent_id.to_string()).or_default().push(menu_item);
+                children_map
+                    .entry(parent_id.to_string())
+                    .or_default()
+                    .push(menu_item);
             } else {
                 root_items.push(menu_item);
             }
         }
 
         // Second pass: attach children to parents
-        fn attach_children(item: &mut MenuItemData, children_map: &HashMap<String, Vec<MenuItemData>>) {
+        fn attach_children(
+            item: &mut MenuItemData,
+            children_map: &HashMap<String, Vec<MenuItemData>>,
+        ) {
             if let Some(children) = children_map.get(&item.id) {
                 item.children = children.clone();
                 for child in &mut item.children {
@@ -470,7 +485,7 @@ impl RenderService {
 
         // Load widget areas from database
         let area_rows: Vec<WidgetAreaRow> = sqlx::query_as(
-            "SELECT id, slug, name FROM widget_areas WHERE is_active = true ORDER BY position"
+            "SELECT id, slug, name FROM widget_areas WHERE is_active = true ORDER BY position",
         )
         .fetch_all(&self.pool)
         .await
@@ -484,29 +499,36 @@ impl RenderService {
                 FROM widgets
                 WHERE sidebar_id = $1 AND is_active = true
                 ORDER BY position ASC
-                "#
+                "#,
             )
             .bind(area_row.id)
             .fetch_all(&self.pool)
             .await
             .map_err(|e| Error::database_with_source("Failed to load widgets", e))?;
 
-            let widgets: Vec<WidgetData> = widget_rows.into_iter().map(|w| {
-                let content = self.render_widget_content(&w.widget_type, &w.content, &w.settings);
-                WidgetData {
-                    id: w.id.to_string(),
-                    widget_type: w.widget_type,
-                    title: w.title,
-                    content,
-                    settings: w.settings,
-                }
-            }).collect();
+            let widgets: Vec<WidgetData> = widget_rows
+                .into_iter()
+                .map(|w| {
+                    let content =
+                        self.render_widget_content(&w.widget_type, &w.content, &w.settings);
+                    WidgetData {
+                        id: w.id.to_string(),
+                        widget_type: w.widget_type,
+                        title: w.title,
+                        content,
+                        settings: w.settings,
+                    }
+                })
+                .collect();
 
-            areas.insert(area_row.slug.clone(), WidgetAreaData {
-                slug: area_row.slug,
-                name: area_row.name,
-                widgets,
-            });
+            areas.insert(
+                area_row.slug.clone(),
+                WidgetAreaData {
+                    slug: area_row.slug,
+                    name: area_row.name,
+                    widgets,
+                },
+            );
         }
 
         // Add default empty areas for common sidebar locations if not present
@@ -517,11 +539,14 @@ impl RenderService {
             ("footer-3", "Footer Column 3"),
         ] {
             if !areas.contains_key(slug) {
-                areas.insert(slug.to_string(), WidgetAreaData {
-                    slug: slug.to_string(),
-                    name: name.to_string(),
-                    widgets: vec![],
-                });
+                areas.insert(
+                    slug.to_string(),
+                    WidgetAreaData {
+                        slug: slug.to_string(),
+                        name: name.to_string(),
+                        widgets: vec![],
+                    },
+                );
             }
         }
 
@@ -529,12 +554,18 @@ impl RenderService {
     }
 
     /// Render widget content based on widget type
-    fn render_widget_content(&self, widget_type: &str, content: &Option<String>, settings: &serde_json::Value) -> String {
+    fn render_widget_content(
+        &self,
+        widget_type: &str,
+        content: &Option<String>,
+        settings: &serde_json::Value,
+    ) -> String {
         match widget_type {
             "search" => r#"<form role="search" method="get" action="/search" class="widget-search">
                 <input type="search" name="q" placeholder="Search..." class="search-input">
                 <button type="submit" class="search-button">Search</button>
-            </form>"#.to_string(),
+            </form>"#
+                .to_string(),
             "text" | "html" => content.clone().unwrap_or_default(),
             "recent_posts" => {
                 // Placeholder - would be populated with actual recent posts
@@ -566,12 +597,15 @@ impl RenderService {
 
         // Add page context for templates that expect it
         let site_info = self.site_info.read().await;
-        context.insert("page", &serde_json::json!({
-            "title": &site_info.name,
-            "description": &site_info.description,
-            "url": &site_info.url,
-            "canonical": &site_info.url,
-        }));
+        context.insert(
+            "page",
+            &serde_json::json!({
+                "title": &site_info.name,
+                "description": &site_info.description,
+                "url": &site_info.url,
+                "canonical": &site_info.url,
+            }),
+        );
         drop(site_info);
 
         // Build query context
@@ -585,14 +619,20 @@ impl RenderService {
     }
 
     /// Render a single post
-    pub async fn render_post(&self, slug: &str, preview_token: Option<&str>) -> Result<RenderedPage> {
+    pub async fn render_post(
+        &self,
+        slug: &str,
+        preview_token: Option<&str>,
+    ) -> Result<RenderedPage> {
         let theme_id = self.get_active_theme_id(preview_token).await?;
         let engine = self.get_engine(&theme_id).await?;
 
         let mut context = self.build_base_context(&theme_id).await;
 
         // Load the post
-        let post = self.load_post_by_slug(slug).await?
+        let post = self
+            .load_post_by_slug(slug)
+            .await?
             .ok_or_else(|| Error::not_found("Post", slug))?;
 
         context.insert("post", &post);
@@ -611,14 +651,20 @@ impl RenderService {
     }
 
     /// Render a page
-    pub async fn render_page(&self, slug: &str, preview_token: Option<&str>) -> Result<RenderedPage> {
+    pub async fn render_page(
+        &self,
+        slug: &str,
+        preview_token: Option<&str>,
+    ) -> Result<RenderedPage> {
         let theme_id = self.get_active_theme_id(preview_token).await?;
         let engine = self.get_engine(&theme_id).await?;
 
         let mut context = self.build_base_context(&theme_id).await;
 
         // Load the page
-        let page = self.load_page_by_slug(slug).await?
+        let page = self
+            .load_page_by_slug(slug)
+            .await?
             .ok_or_else(|| Error::not_found("Page", slug))?;
 
         context.insert("page", &page);
@@ -630,7 +676,9 @@ impl RenderService {
             is_page: true,
             post_slug: Some(slug.to_string()),
             post_id: None, // We use slug for template hierarchy instead
-            page_template: page.meta.get("_wp_page_template")
+            page_template: page
+                .meta
+                .get("_wp_page_template")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string()),
             ..Default::default()
@@ -640,18 +688,27 @@ impl RenderService {
     }
 
     /// Render category archive
-    pub async fn render_category(&self, slug: &str, page: i32, preview_token: Option<&str>) -> Result<RenderedPage> {
+    pub async fn render_category(
+        &self,
+        slug: &str,
+        page: i32,
+        preview_token: Option<&str>,
+    ) -> Result<RenderedPage> {
         let theme_id = self.get_active_theme_id(preview_token).await?;
         let engine = self.get_engine(&theme_id).await?;
 
         let mut context = self.build_base_context(&theme_id).await;
 
         // Load category info
-        let category = self.load_term_by_slug(slug, "category").await?
+        let category = self
+            .load_term_by_slug(slug, "category")
+            .await?
             .ok_or_else(|| Error::not_found("Category", slug))?;
 
         // Load posts in category
-        let (posts, total) = self.load_posts_by_term(&category.id, "category", page, 10).await?;
+        let (posts, total) = self
+            .load_posts_by_term(&category.id, "category", page, 10)
+            .await?;
         let pagination = self.build_pagination(page, total, 10, &format!("/category/{}", slug));
 
         context.insert("term", &category);
@@ -660,16 +717,19 @@ impl RenderService {
         context.insert("pagination", &pagination);
         context.insert("is_category", &true);
         context.insert("is_archive", &true);
-        context.insert("archive", &ArchiveData {
-            title: category.name.clone(),
-            description: category.description.clone(),
-            archive_type: "category".to_string(),
-            term: Some(category.clone()),
-            author: None,
-            year: None,
-            month: None,
-            day: None,
-        });
+        context.insert(
+            "archive",
+            &ArchiveData {
+                title: category.name.clone(),
+                description: category.description.clone(),
+                archive_type: "category".to_string(),
+                term: Some(category.clone()),
+                author: None,
+                year: None,
+                month: None,
+                day: None,
+            },
+        );
 
         let query = QueryContext {
             is_category: true,
@@ -684,14 +744,21 @@ impl RenderService {
     }
 
     /// Render tag archive
-    pub async fn render_tag(&self, slug: &str, page: i32, preview_token: Option<&str>) -> Result<RenderedPage> {
+    pub async fn render_tag(
+        &self,
+        slug: &str,
+        page: i32,
+        preview_token: Option<&str>,
+    ) -> Result<RenderedPage> {
         let theme_id = self.get_active_theme_id(preview_token).await?;
         let engine = self.get_engine(&theme_id).await?;
 
         let mut context = self.build_base_context(&theme_id).await;
 
         // Load tag info
-        let tag = self.load_term_by_slug(slug, "tag").await?
+        let tag = self
+            .load_term_by_slug(slug, "tag")
+            .await?
             .ok_or_else(|| Error::not_found("Tag", slug))?;
 
         // Load posts with tag
@@ -704,16 +771,19 @@ impl RenderService {
         context.insert("pagination", &pagination);
         context.insert("is_tag", &true);
         context.insert("is_archive", &true);
-        context.insert("archive", &ArchiveData {
-            title: tag.name.clone(),
-            description: tag.description.clone(),
-            archive_type: "tag".to_string(),
-            term: Some(tag.clone()),
-            author: None,
-            year: None,
-            month: None,
-            day: None,
-        });
+        context.insert(
+            "archive",
+            &ArchiveData {
+                title: tag.name.clone(),
+                description: tag.description.clone(),
+                archive_type: "tag".to_string(),
+                term: Some(tag.clone()),
+                author: None,
+                year: None,
+                month: None,
+                day: None,
+            },
+        );
 
         let query = QueryContext {
             is_tag: true,
@@ -728,14 +798,21 @@ impl RenderService {
     }
 
     /// Render author archive
-    pub async fn render_author(&self, slug: &str, page: i32, preview_token: Option<&str>) -> Result<RenderedPage> {
+    pub async fn render_author(
+        &self,
+        slug: &str,
+        page: i32,
+        preview_token: Option<&str>,
+    ) -> Result<RenderedPage> {
         let theme_id = self.get_active_theme_id(preview_token).await?;
         let engine = self.get_engine(&theme_id).await?;
 
         let mut context = self.build_base_context(&theme_id).await;
 
         // Load author info
-        let author = self.load_author_by_slug(slug).await?
+        let author = self
+            .load_author_by_slug(slug)
+            .await?
             .ok_or_else(|| Error::not_found("Author", slug))?;
 
         // Load posts by author
@@ -747,16 +824,19 @@ impl RenderService {
         context.insert("pagination", &pagination);
         context.insert("is_author", &true);
         context.insert("is_archive", &true);
-        context.insert("archive", &ArchiveData {
-            title: author.name.clone(),
-            description: author.bio.clone(),
-            archive_type: "author".to_string(),
-            term: None,
-            author: Some(author.clone()),
-            year: None,
-            month: None,
-            day: None,
-        });
+        context.insert(
+            "archive",
+            &ArchiveData {
+                title: author.name.clone(),
+                description: author.bio.clone(),
+                archive_type: "author".to_string(),
+                term: None,
+                author: Some(author.clone()),
+                year: None,
+                month: None,
+                day: None,
+            },
+        );
 
         let query = QueryContext {
             is_author: true,
@@ -770,7 +850,12 @@ impl RenderService {
     }
 
     /// Render search results
-    pub async fn render_search(&self, query_str: &str, page: i32, preview_token: Option<&str>) -> Result<RenderedPage> {
+    pub async fn render_search(
+        &self,
+        query_str: &str,
+        page: i32,
+        preview_token: Option<&str>,
+    ) -> Result<RenderedPage> {
         let theme_id = self.get_active_theme_id(preview_token).await?;
         let engine = self.get_engine(&theme_id).await?;
 
@@ -778,7 +863,12 @@ impl RenderService {
 
         // Search posts
         let (posts, total) = self.search_posts(query_str, page, 10).await?;
-        let pagination = self.build_pagination(page, total, 10, &format!("/search?q={}", urlencoding::encode(query_str)));
+        let pagination = self.build_pagination(
+            page,
+            total,
+            10,
+            &format!("/search?q={}", urlencoding::encode(query_str)),
+        );
 
         context.insert("search_query", query_str);
         context.insert("posts", &posts);
@@ -824,7 +914,7 @@ impl RenderService {
                     FROM theme_previews
                     WHERE preview_token = $1
                     AND expires_at > NOW()
-                    "#
+                    "#,
                 )
                 .bind(token)
                 .fetch_optional(&self.pool)
@@ -841,13 +931,21 @@ impl RenderService {
             }
         }
 
-        self.theme_service.get_active_theme_id().await?
+        self.theme_service
+            .get_active_theme_id()
+            .await?
             .ok_or_else(|| Error::internal("No active theme configured"))
     }
 
     /// Render using template engine
-    async fn render_with_engine(&self, engine: &TemplateEngine, query: &QueryContext, context: &Context) -> Result<RenderedPage> {
-        let html = engine.render_for_query(query, context)
+    async fn render_with_engine(
+        &self,
+        engine: &TemplateEngine,
+        query: &QueryContext,
+        context: &Context,
+    ) -> Result<RenderedPage> {
+        let html = engine
+            .render_for_query(query, context)
             .map_err(|e| Error::internal(format!("Template render error: {}", e)))?;
 
         Ok(RenderedPage {
@@ -859,7 +957,13 @@ impl RenderService {
     }
 
     /// Build pagination data
-    fn build_pagination(&self, current: i32, total: i64, per_page: i32, base_url: &str) -> PaginationData {
+    fn build_pagination(
+        &self,
+        current: i32,
+        total: i64,
+        per_page: i32,
+        base_url: &str,
+    ) -> PaginationData {
         let total_pages = ((total as f64) / (per_page as f64)).ceil() as i32;
         let separator = if base_url.contains('?') { "&" } else { "?" };
 
@@ -870,8 +974,16 @@ impl RenderService {
             per_page,
             has_previous: current > 1,
             has_next: current < total_pages,
-            previous_url: if current > 1 { Some(format!("{}{}page={}", base_url, separator, current - 1)) } else { None },
-            next_url: if current < total_pages { Some(format!("{}{}page={}", base_url, separator, current + 1)) } else { None },
+            previous_url: if current > 1 {
+                Some(format!("{}{}page={}", base_url, separator, current - 1))
+            } else {
+                None
+            },
+            next_url: if current < total_pages {
+                Some(format!("{}{}page={}", base_url, separator, current + 1))
+            } else {
+                None
+            },
         }
     }
 
@@ -965,7 +1077,7 @@ impl RenderService {
             FROM terms t
             JOIN taxonomies tx ON tx.id = t.taxonomy_id
             WHERE t.slug = $1 AND tx.slug = $2
-            "#
+            "#,
         )
         .bind(slug)
         .bind(taxonomy)
@@ -983,7 +1095,13 @@ impl RenderService {
         }))
     }
 
-    async fn load_posts_by_term(&self, term_id_str: &str, _taxonomy: &str, page: i32, per_page: i32) -> Result<(Vec<PostData>, i64)> {
+    async fn load_posts_by_term(
+        &self,
+        term_id_str: &str,
+        _taxonomy: &str,
+        page: i32,
+        per_page: i32,
+    ) -> Result<(Vec<PostData>, i64)> {
         let term_id = Uuid::parse_str(term_id_str)
             .map_err(|e| Error::validation(format!("Invalid term ID: {}", e)))?;
         let offset = (page - 1) * per_page;
@@ -1040,7 +1158,7 @@ impl RenderService {
             SELECT id, display_name as name, username as slug, bio, avatar_url, website as url
             FROM users
             WHERE username = $1 AND deleted_at IS NULL
-            "#
+            "#,
         )
         .bind(slug)
         .fetch_optional(&self.pool)
@@ -1057,7 +1175,12 @@ impl RenderService {
         }))
     }
 
-    async fn load_posts_by_author(&self, author_id_str: &str, page: i32, per_page: i32) -> Result<(Vec<PostData>, i64)> {
+    async fn load_posts_by_author(
+        &self,
+        author_id_str: &str,
+        page: i32,
+        per_page: i32,
+    ) -> Result<(Vec<PostData>, i64)> {
         let author_id = Uuid::parse_str(author_id_str)
             .map_err(|e| Error::validation(format!("Invalid author ID: {}", e)))?;
         let offset = (page - 1) * per_page;
@@ -1106,7 +1229,12 @@ impl RenderService {
         Ok((posts, count.0))
     }
 
-    async fn search_posts(&self, query: &str, page: i32, per_page: i32) -> Result<(Vec<PostData>, i64)> {
+    async fn search_posts(
+        &self,
+        query: &str,
+        page: i32,
+        per_page: i32,
+    ) -> Result<(Vec<PostData>, i64)> {
         let offset = (page - 1) * per_page;
         let search_pattern = format!("%{}%", query);
 
@@ -1117,7 +1245,7 @@ impl RenderService {
             FROM posts
             WHERE (title ILIKE $1 OR content ILIKE $1 OR excerpt ILIKE $1)
               AND status = 'published' AND post_type = 'post' AND deleted_at IS NULL
-            "#
+            "#,
         )
         .bind(&search_pattern)
         .fetch_one(&self.pool)
@@ -1211,7 +1339,7 @@ impl RenderService {
             JOIN taxonomies tx ON tx.id = t.taxonomy_id
             JOIN post_terms pt ON pt.term_id = t.id
             WHERE pt.post_id = $1 AND tx.slug = $2
-            "#
+            "#,
         )
         .bind(post_id)
         .bind(taxonomy)
@@ -1219,14 +1347,17 @@ impl RenderService {
         .await
         .map_err(|e| Error::database_with_source("Failed to load terms", e))?;
 
-        Ok(rows.into_iter().map(|r| TermData {
-            id: r.id.to_string(),
-            name: r.name,
-            slug: r.slug,
-            description: r.description,
-            count: r.count.unwrap_or(0) as i32,
-            taxonomy: r.taxonomy,
-        }).collect())
+        Ok(rows
+            .into_iter()
+            .map(|r| TermData {
+                id: r.id.to_string(),
+                name: r.name,
+                slug: r.slug,
+                description: r.description,
+                count: r.count.unwrap_or(0) as i32,
+                taxonomy: r.taxonomy,
+            })
+            .collect())
     }
 
     /// Load media by ID
@@ -1236,7 +1367,7 @@ impl RenderService {
             SELECT id, url, alt_text as alt, title, width, height, mime_type
             FROM media
             WHERE id = $1 AND deleted_at IS NULL
-            "#
+            "#,
         )
         .bind(media_id)
         .fetch_optional(&self.pool)
@@ -1256,13 +1387,12 @@ impl RenderService {
 
     /// Load post meta
     async fn load_post_meta(&self, post_id: Uuid) -> Result<HashMap<String, serde_json::Value>> {
-        let rows: Vec<(String, serde_json::Value)> = sqlx::query_as(
-            "SELECT meta_key, meta_value FROM post_meta WHERE post_id = $1"
-        )
-        .bind(post_id)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| Error::database_with_source("Failed to load post meta", e))?;
+        let rows: Vec<(String, serde_json::Value)> =
+            sqlx::query_as("SELECT meta_key, meta_value FROM post_meta WHERE post_id = $1")
+                .bind(post_id)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| Error::database_with_source("Failed to load post meta", e))?;
 
         Ok(rows.into_iter().collect())
     }

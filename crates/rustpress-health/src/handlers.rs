@@ -51,7 +51,8 @@ pub async fn liveness_handler(State(state): State<Arc<HealthState>>) -> HealthRe
             body: serde_json::to_value(&result).unwrap_or_default(),
         }
     } else {
-        let result = ProbeResult::failure(ProbeType::Liveness, "Application not alive", duration_ms);
+        let result =
+            ProbeResult::failure(ProbeType::Liveness, "Application not alive", duration_ms);
         HealthResponse {
             status: StatusCode::SERVICE_UNAVAILABLE,
             body: serde_json::to_value(&result).unwrap_or_default(),
@@ -73,7 +74,8 @@ pub async fn readiness_handler(State(state): State<Arc<HealthState>>) -> HealthR
             body: serde_json::to_value(&result).unwrap_or_default(),
         }
     } else {
-        let result = ProbeResult::failure(ProbeType::Readiness, "Application not ready", duration_ms);
+        let result =
+            ProbeResult::failure(ProbeType::Readiness, "Application not ready", duration_ms);
         HealthResponse {
             status: StatusCode::SERVICE_UNAVAILABLE,
             body: serde_json::to_value(&result).unwrap_or_default(),
@@ -95,7 +97,11 @@ pub async fn startup_handler(State(state): State<Arc<HealthState>>) -> HealthRes
             body: serde_json::to_value(&result).unwrap_or_default(),
         }
     } else {
-        let result = ProbeResult::failure(ProbeType::Startup, "Application still starting", duration_ms);
+        let result = ProbeResult::failure(
+            ProbeType::Startup,
+            "Application still starting",
+            duration_ms,
+        );
         HealthResponse {
             status: StatusCode::SERVICE_UNAVAILABLE,
             body: serde_json::to_value(&result).unwrap_or_default(),

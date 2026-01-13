@@ -262,7 +262,8 @@ impl QueryBuilder {
     }
 
     pub fn where_eq(mut self, field: &str, param: &str) -> Self {
-        self.conditions.push(format!("{} = ${}", field, self.params.len() + 1));
+        self.conditions
+            .push(format!("{} = ${}", field, self.params.len() + 1));
         self.params.push(param.to_string());
         self
     }
@@ -271,7 +272,8 @@ impl QueryBuilder {
         let placeholders: Vec<String> = (0..count)
             .map(|i| format!("${}", self.params.len() + i + 1))
             .collect();
-        self.conditions.push(format!("{} IN ({})", field, placeholders.join(", ")));
+        self.conditions
+            .push(format!("{} IN ({})", field, placeholders.join(", ")));
         self
     }
 
@@ -346,9 +348,18 @@ mod tests {
     fn test_specification_and() {
         let spec = IsActive.and(HasIdGreaterThan(5));
 
-        let entity1 = TestEntity { id: 10, active: true };
-        let entity2 = TestEntity { id: 3, active: true };
-        let entity3 = TestEntity { id: 10, active: false };
+        let entity1 = TestEntity {
+            id: 10,
+            active: true,
+        };
+        let entity2 = TestEntity {
+            id: 3,
+            active: true,
+        };
+        let entity3 = TestEntity {
+            id: 10,
+            active: false,
+        };
 
         assert!(spec.is_satisfied_by(&entity1));
         assert!(!spec.is_satisfied_by(&entity2));
@@ -359,9 +370,18 @@ mod tests {
     fn test_specification_or() {
         let spec = IsActive.or(HasIdGreaterThan(5));
 
-        let entity1 = TestEntity { id: 10, active: false };
-        let entity2 = TestEntity { id: 3, active: true };
-        let entity3 = TestEntity { id: 3, active: false };
+        let entity1 = TestEntity {
+            id: 10,
+            active: false,
+        };
+        let entity2 = TestEntity {
+            id: 3,
+            active: true,
+        };
+        let entity3 = TestEntity {
+            id: 3,
+            active: false,
+        };
 
         assert!(spec.is_satisfied_by(&entity1));
         assert!(spec.is_satisfied_by(&entity2));
@@ -372,8 +392,14 @@ mod tests {
     fn test_specification_not() {
         let spec = IsActive.not();
 
-        let entity1 = TestEntity { id: 1, active: true };
-        let entity2 = TestEntity { id: 1, active: false };
+        let entity1 = TestEntity {
+            id: 1,
+            active: true,
+        };
+        let entity2 = TestEntity {
+            id: 1,
+            active: false,
+        };
 
         assert!(!spec.is_satisfied_by(&entity1));
         assert!(spec.is_satisfied_by(&entity2));

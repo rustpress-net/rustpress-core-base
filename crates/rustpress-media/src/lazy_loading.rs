@@ -134,7 +134,11 @@ impl LazyLoadService {
         attrs.push(format!("alt=\"{}\"", escape_html(&image.alt)));
 
         // CSS class
-        attrs.push(format!("class=\"{} {}\"", self.config.lazy_class, image.class.as_deref().unwrap_or("")));
+        attrs.push(format!(
+            "class=\"{} {}\"",
+            self.config.lazy_class,
+            image.class.as_deref().unwrap_or("")
+        ));
 
         // Decoding
         attrs.push("decoding=\"async\"".to_string());
@@ -176,19 +180,20 @@ impl LazyLoadService {
         match self.config.placeholder_type {
             PlaceholderType::None => {
                 // Transparent 1x1 pixel
-                "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7".to_string()
+                "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                    .to_string()
             }
             PlaceholderType::Color => {
                 let color = image.placeholder_color.as_deref().unwrap_or("#f0f0f0");
                 self.generate_color_placeholder(color, image.width, image.height)
             }
-            PlaceholderType::Lqip => {
-                image.lqip_data.clone().unwrap_or_else(|| {
-                    self.generate_color_placeholder("#f0f0f0", image.width, image.height)
-                })
-            }
+            PlaceholderType::Lqip => image.lqip_data.clone().unwrap_or_else(|| {
+                self.generate_color_placeholder("#f0f0f0", image.width, image.height)
+            }),
             PlaceholderType::BlurHash => {
-                image.blurhash.as_ref()
+                image
+                    .blurhash
+                    .as_ref()
                     .map(|_| {
                         // BlurHash would be decoded client-side or server-side
                         // For now, return a placeholder
@@ -225,7 +230,12 @@ impl LazyLoadService {
     }
 
     /// Generate color placeholder
-    fn generate_color_placeholder(&self, color: &str, width: Option<u32>, height: Option<u32>) -> String {
+    fn generate_color_placeholder(
+        &self,
+        color: &str,
+        width: Option<u32>,
+        height: Option<u32>,
+    ) -> String {
         let w = width.unwrap_or(100);
         let h = height.unwrap_or(100);
 
@@ -424,7 +434,8 @@ fn escape_html(s: &str) -> String {
 /// Simple base64 encoding
 fn base64_encode(s: &str) -> String {
     use std::io::Write;
-    let mut encoder = base64::write::EncoderStringWriter::new(&base64::engine::general_purpose::STANDARD);
+    let mut encoder =
+        base64::write::EncoderStringWriter::new(&base64::engine::general_purpose::STANDARD);
     encoder.write_all(s.as_bytes()).unwrap();
     encoder.into_inner()
 }
@@ -451,15 +462,24 @@ mod base64 {
 
             pub fn into_inner(self) -> String {
                 // Simple base64 encoding
-                const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+                const ALPHABET: &[u8] =
+                    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
                 let mut result = String::new();
                 let mut i = 0;
 
                 while i < self.data.len() {
                     let b0 = self.data[i];
-                    let b1 = if i + 1 < self.data.len() { self.data[i + 1] } else { 0 };
-                    let b2 = if i + 2 < self.data.len() { self.data[i + 2] } else { 0 };
+                    let b1 = if i + 1 < self.data.len() {
+                        self.data[i + 1]
+                    } else {
+                        0
+                    };
+                    let b2 = if i + 2 < self.data.len() {
+                        self.data[i + 2]
+                    } else {
+                        0
+                    };
 
                     result.push(ALPHABET[(b0 >> 2) as usize] as char);
                     result.push(ALPHABET[(((b0 & 0x03) << 4) | (b1 >> 4)) as usize] as char);

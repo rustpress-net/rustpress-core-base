@@ -3,9 +3,9 @@
 use crate::client::CloudflareClient;
 use crate::error::{CloudflareError, CloudflareResult};
 use crate::models::Analytics;
+use chrono::{Duration, Utc};
 use sqlx::PgPool;
 use std::sync::Arc;
-use chrono::{Duration, Utc};
 
 pub struct AnalyticsService {
     client: Option<Arc<CloudflareClient>>,
@@ -15,7 +15,10 @@ pub struct AnalyticsService {
 
 impl AnalyticsService {
     pub fn new(client: Arc<CloudflareClient>, db: PgPool) -> Self {
-        Self { client: Some(client), db }
+        Self {
+            client: Some(client),
+            db,
+        }
     }
 
     /// Create without a configured client (for initial setup)
@@ -25,9 +28,11 @@ impl AnalyticsService {
 
     /// Get the client or return an error if not configured
     fn get_client(&self) -> CloudflareResult<&CloudflareClient> {
-        self.client.as_ref()
-            .map(|c| c.as_ref())
-            .ok_or_else(|| CloudflareError::ConfigError("Cloudflare not configured. Please connect your account.".to_string()))
+        self.client.as_ref().map(|c| c.as_ref()).ok_or_else(|| {
+            CloudflareError::ConfigError(
+                "Cloudflare not configured. Please connect your account.".to_string(),
+            )
+        })
     }
 
     pub async fn get_dashboard(&self, hours: i32) -> CloudflareResult<Analytics> {
@@ -35,10 +40,12 @@ impl AnalyticsService {
         let since = Utc::now() - Duration::hours(hours as i64);
         let until = Utc::now();
 
-        client.get_analytics(
-            &since.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
-            &until.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
-        ).await
+        client
+            .get_analytics(
+                &since.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+                &until.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+            )
+            .await
     }
 
     pub async fn get_traffic_summary(&self) -> CloudflareResult<TrafficSummary> {

@@ -12,8 +12,8 @@ use tracing::{info, warn};
 use crate::error::HttpError;
 use crate::metrics::Metrics;
 use crate::middleware::{
-    api_version, body_limit, compression_layer, cors_layer, rate_limit,
-    request_id, request_logging, security_headers, tenant_identification,
+    api_version, body_limit, compression_layer, cors_layer, rate_limit, request_id,
+    request_logging, security_headers, tenant_identification,
 };
 use crate::routes::create_router;
 use crate::security::{
@@ -94,7 +94,7 @@ impl App {
                     // Compression
                     .layer(compression_layer())
                     // Tracing
-                    .layer(TraceLayer::new_for_http())
+                    .layer(TraceLayer::new_for_http()),
             )
             // Request ID (first, so all subsequent middleware can use it)
             .layer(axum_middleware::from_fn(request_id))

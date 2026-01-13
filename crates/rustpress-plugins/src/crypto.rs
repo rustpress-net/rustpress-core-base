@@ -56,11 +56,9 @@ impl EncryptionKey {
 
     /// Create from a hex-encoded string
     pub fn from_hex(hex_str: &str) -> CryptoResult<Self> {
-        let bytes = hex::decode(hex_str).map_err(|e| {
-            CryptoError::InvalidKeyLength {
-                expected: KEY_SIZE,
-                actual: 0,
-            }
+        let bytes = hex::decode(hex_str).map_err(|e| CryptoError::InvalidKeyLength {
+            expected: KEY_SIZE,
+            actual: 0,
         })?;
 
         Self::from_bytes(&bytes)

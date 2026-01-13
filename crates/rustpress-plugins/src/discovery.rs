@@ -3,14 +3,14 @@
 //! Discovers plugins from configured directories and loads them.
 
 use crate::manifest::{ManifestError, PluginManifest, PluginType};
+use notify::{Event, EventKind, RecursiveMode, Watcher};
+use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use parking_lot::RwLock;
+use tokio::sync::mpsc;
 use tracing::{debug, error, info, warn};
 use walkdir::WalkDir;
-use notify::{Watcher, RecursiveMode, Event, EventKind};
-use tokio::sync::mpsc;
 
 /// Plugin discovery configuration
 #[derive(Debug, Clone)]
@@ -194,7 +194,10 @@ impl PluginDiscovery {
             {
                 match self.load_plugin(entry.path(), source) {
                     Ok(plugin) => {
-                        debug!("Found plugin: {} at {:?}", plugin.manifest.plugin.id, plugin.path);
+                        debug!(
+                            "Found plugin: {} at {:?}",
+                            plugin.manifest.plugin.id, plugin.path
+                        );
                         plugins.push(plugin);
                     }
                     Err(e) => {
@@ -213,13 +216,16 @@ impl PluginDiscovery {
         manifest_path: &Path,
         source: PluginSource,
     ) -> Result<DiscoveredPlugin, DiscoveryError> {
-        let manifest = PluginManifest::from_file(manifest_path)
-            .map_err(|e| DiscoveryError::Manifest(e))?;
+        let manifest =
+            PluginManifest::from_file(manifest_path).map_err(|e| DiscoveryError::Manifest(e))?;
 
         // Validate manifest
         if let Err(errors) = manifest.validate() {
             return Err(DiscoveryError::Validation(
-                errors.into_iter().map(|e| format!("{}: {}", e.field, e.message)).collect(),
+                errors
+                    .into_iter()
+                    .map(|e| format!("{}: {}", e.field, e.message))
+                    .collect(),
             ));
         }
 
@@ -243,8 +249,7 @@ impl PluginDiscovery {
 
     /// Calculate file checksum
     fn calculate_checksum(&self, path: &Path) -> Result<String, DiscoveryError> {
-        let content = std::fs::read(path)
-            .map_err(|e| DiscoveryError::Io(e.to_string()))?;
+        let content = std::fs::read(path).map_err(|e| DiscoveryError::Io(e.to_string()))?;
         let hash = blake3::hash(&content);
         Ok(hash.to_hex().to_string())
     }
@@ -295,7 +300,11 @@ impl PluginDiscovery {
                         match event.kind {
                             EventKind::Create(_) | EventKind::Modify(_) => {
                                 for path in event.paths {
-                                    if path.file_name().map(|n| n == "plugin.toml").unwrap_or(false) {
+                                    if path
+                                        .file_name()
+                                        .map(|n| n == "plugin.toml")
+                                        .unwrap_or(false)
+                                    {
                                         // Check if this is a known plugin
                                         let plugins_guard = plugins.read();
                                         let plugin_id = plugins_guard
@@ -305,11 +314,13 @@ impl PluginDiscovery {
                                         drop(plugins_guard);
 
                                         if let Some(id) = plugin_id {
-                                            let _ = tx.blocking_send(DiscoveryEvent::Changed(id, path));
+                                            let _ =
+                                                tx.blocking_send(DiscoveryEvent::Changed(id, path));
                                         } else {
                                             let _ = tx.blocking_send(DiscoveryEvent::Discovered(
                                                 DiscoveredPlugin {
-                                                    manifest: PluginManifest::from_file(&path).unwrap(),
+                                                    manifest: PluginManifest::from_file(&path)
+                                                        .unwrap(),
                                                     path: path.parent().unwrap().to_path_buf(),
                                                     manifest_path: path.clone(),
                                                     source: PluginSource::Standard,
@@ -343,19 +354,22 @@ impl PluginDiscovery {
                     error!("File watch error: {}", e);
                 }
             }
-        }).map_err(|e| DiscoveryError::Watch(e.to_string()))?;
+        })
+        .map_err(|e| DiscoveryError::Watch(e.to_string()))?;
 
         // Watch all plugin directories
         for dir in &self.config.plugin_dirs {
             if dir.exists() {
-                watcher.watch(dir, RecursiveMode::Recursive)
+                watcher
+                    .watch(dir, RecursiveMode::Recursive)
                     .map_err(|e| DiscoveryError::Watch(e.to_string()))?;
             }
         }
 
         if let Some(ref mu_dir) = self.config.must_use_dir {
             if mu_dir.exists() {
-                watcher.watch(mu_dir, RecursiveMode::Recursive)
+                watcher
+                    .watch(mu_dir, RecursiveMode::Recursive)
                     .map_err(|e| DiscoveryError::Watch(e.to_string()))?;
             }
         }
@@ -394,7 +408,9 @@ impl PluginDiscovery {
 
         if let Some(current) = current {
             let updated = self.load_plugin(&current.manifest_path, current.source)?;
-            self.plugins.write().insert(plugin_id.to_string(), updated.clone());
+            self.plugins
+                .write()
+                .insert(plugin_id.to_string(), updated.clone());
             Ok(updated)
         } else {
             Err(DiscoveryError::NotFound(plugin_id.to_string()))
@@ -439,8 +455,7 @@ impl PluginLoader {
             return Err(LoadError::EntryNotFound(wasm_path));
         }
 
-        let wasm_bytes = std::fs::read(&wasm_path)
-            .map_err(|e| LoadError::Io(e.to_string()))?;
+        let wasm_bytes = std::fs::read(&wasm_path).map_err(|e| LoadError::Io(e.to_string()))?;
 
         Ok(LoadedPlugin {
             id: plugin.manifest.plugin.id.clone(),
@@ -452,11 +467,30 @@ impl PluginLoader {
     /// Load a native (dynamic library) plugin
     fn load_native(&mut self, plugin: &DiscoveredPlugin) -> Result<LoadedPlugin, LoadError> {
         let lib_name = if cfg!(windows) {
-            format!("{}.dll", plugin.manifest.plugin.entry.trim_end_matches(".dll"))
+            format!(
+                "{}.dll",
+                plugin.manifest.plugin.entry.trim_end_matches(".dll")
+            )
         } else if cfg!(target_os = "macos") {
-            format!("lib{}.dylib", plugin.manifest.plugin.entry.trim_start_matches("lib").trim_end_matches(".dylib"))
+            format!(
+                "lib{}.dylib",
+                plugin
+                    .manifest
+                    .plugin
+                    .entry
+                    .trim_start_matches("lib")
+                    .trim_end_matches(".dylib")
+            )
         } else {
-            format!("lib{}.so", plugin.manifest.plugin.entry.trim_start_matches("lib").trim_end_matches(".so"))
+            format!(
+                "lib{}.so",
+                plugin
+                    .manifest
+                    .plugin
+                    .entry
+                    .trim_start_matches("lib")
+                    .trim_end_matches(".so")
+            )
         };
 
         let lib_path = plugin.path.join(&lib_name);
@@ -467,11 +501,11 @@ impl PluginLoader {
 
         // Load the library
         let lib = unsafe {
-            libloading::Library::new(&lib_path)
-                .map_err(|e| LoadError::NativeLoad(e.to_string()))?
+            libloading::Library::new(&lib_path).map_err(|e| LoadError::NativeLoad(e.to_string()))?
         };
 
-        self.native_libs.insert(plugin.manifest.plugin.id.clone(), lib);
+        self.native_libs
+            .insert(plugin.manifest.plugin.id.clone(), lib);
 
         Ok(LoadedPlugin {
             id: plugin.manifest.plugin.id.clone(),
@@ -488,8 +522,8 @@ impl PluginLoader {
             return Err(LoadError::EntryNotFound(script_path));
         }
 
-        let script_content = std::fs::read_to_string(&script_path)
-            .map_err(|e| LoadError::Io(e.to_string()))?;
+        let script_content =
+            std::fs::read_to_string(&script_path).map_err(|e| LoadError::Io(e.to_string()))?;
 
         Ok(LoadedPlugin {
             id: plugin.manifest.plugin.id.clone(),
@@ -509,7 +543,9 @@ impl PluginLoader {
         plugin_id: &str,
         name: &str,
     ) -> Result<libloading::Symbol<T>, LoadError> {
-        let lib = self.native_libs.get(plugin_id)
+        let lib = self
+            .native_libs
+            .get(plugin_id)
             .ok_or_else(|| LoadError::NotLoaded(plugin_id.to_string()))?;
 
         lib.get(name.as_bytes())

@@ -3,11 +3,11 @@
 //! Handles CSS, JavaScript, and static file assets for plugins.
 
 use crate::manifest::{AssetFile, AssetLocation, AssetsSection};
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use parking_lot::RwLock;
 use tracing::{debug, info, warn};
 
 /// Asset manager for plugins
@@ -160,12 +160,7 @@ impl AssetManager {
             )
         });
 
-        let url = format!(
-            "{}/plugins/{}/{}",
-            self.url_prefix,
-            plugin_id,
-            asset.path
-        );
+        let url = format!("{}/plugins/{}/{}", self.url_prefix, plugin_id, asset.path);
 
         let condition = asset.condition.as_ref().map(|c| AssetCondition {
             condition_type: ConditionType::Custom(c.clone()),
@@ -406,10 +401,7 @@ impl AssetManager {
 
         format!(
             r#"<link rel="stylesheet" id="{}-css" href="{}"{}>{}"#,
-            asset.handle,
-            url,
-            attrs,
-            "\n"
+            asset.handle, url, attrs, "\n"
         )
     }
 

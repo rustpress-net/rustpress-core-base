@@ -3,10 +3,10 @@
 //! Allows plugins to add pages to the admin dashboard.
 
 use crate::manifest::{AdminMenuItem, AdminPage, AdminSection, DashboardWidget};
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use parking_lot::RwLock;
 use tracing::debug;
 
 /// Admin registry for plugin pages and menus
@@ -148,7 +148,10 @@ impl AdminRegistry {
             label: item.label.clone(),
             icon: item.icon.clone(),
             position: item.position.unwrap_or(100),
-            capability: item.capability.clone().unwrap_or_else(|| "manage_options".to_string()),
+            capability: item
+                .capability
+                .clone()
+                .unwrap_or_else(|| "manage_options".to_string()),
             parent: item.parent.clone(),
             page_id: item.page.clone(),
             badge_count: None,
@@ -165,7 +168,10 @@ impl AdminRegistry {
             title: page.title.clone(),
             handler: page.handler.clone(),
             template: page.template.clone(),
-            capability: page.capability.clone().unwrap_or_else(|| "manage_options".to_string()),
+            capability: page
+                .capability
+                .clone()
+                .unwrap_or_else(|| "manage_options".to_string()),
             scripts: Vec::new(),
             styles: Vec::new(),
             help_tabs: Vec::new(),
@@ -202,12 +208,17 @@ impl AdminRegistry {
         let config = SettingsPageConfig {
             plugin_id: plugin_id.to_string(),
             title: settings.title.clone(),
-            capability: settings.capability.clone().unwrap_or_else(|| "manage_options".to_string()),
+            capability: settings
+                .capability
+                .clone()
+                .unwrap_or_else(|| "manage_options".to_string()),
             icon: settings.icon.clone(),
             sections: Vec::new(),
         };
 
-        self.settings_pages.write().insert(plugin_id.to_string(), config);
+        self.settings_pages
+            .write()
+            .insert(plugin_id.to_string(), config);
     }
 
     /// Add a top-level menu
@@ -300,10 +311,8 @@ impl AdminRegistry {
         }
 
         // Sort and return top-level items
-        let mut result: Vec<MenuNode> = top_level
-            .iter()
-            .filter_map(|id| nodes.remove(id))
-            .collect();
+        let mut result: Vec<MenuNode> =
+            top_level.iter().filter_map(|id| nodes.remove(id)).collect();
 
         result.sort_by_key(|n| n.position);
 
@@ -320,7 +329,10 @@ impl AdminRegistry {
     }
 
     /// Get all dashboard widgets
-    pub fn get_dashboard_widgets(&self, user_capabilities: &[String]) -> Vec<RegisteredDashboardWidget> {
+    pub fn get_dashboard_widgets(
+        &self,
+        user_capabilities: &[String],
+    ) -> Vec<RegisteredDashboardWidget> {
         self.widgets
             .read()
             .iter()

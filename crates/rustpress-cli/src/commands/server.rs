@@ -132,18 +132,30 @@ async fn show_status(ctx: &CliContext) -> CliResult<()> {
     let client = reqwest::Client::new();
     let url = "http://127.0.0.1:3080/health";
 
-    match client.get(url).timeout(std::time::Duration::from_secs(5)).send().await {
+    match client
+        .get(url)
+        .timeout(std::time::Duration::from_secs(5))
+        .send()
+        .await
+    {
         Ok(response) if response.status().is_success() => {
             println!("{}", ctx.output_format.success("Server is running"));
             print_kv("URL", "http://127.0.0.1:3080");
             print_kv("Status", "Healthy");
         }
         Ok(response) => {
-            println!("{}", ctx.output_format.warning("Server responding but unhealthy"));
+            println!(
+                "{}",
+                ctx.output_format.warning("Server responding but unhealthy")
+            );
             print_kv("Status Code", &response.status().to_string());
         }
         Err(_) => {
-            println!("{}", ctx.output_format.error("Server is not running or not reachable"));
+            println!(
+                "{}",
+                ctx.output_format
+                    .error("Server is not running or not reachable")
+            );
             print_kv("Checked URL", url);
         }
     }
@@ -177,10 +189,8 @@ async fn check_health(ctx: &CliContext, url: &str) -> CliResult<()> {
             } else {
                 println!(
                     "{}",
-                    ctx.output_format.error(&format!(
-                        "Server returned status: {}",
-                        response.status()
-                    ))
+                    ctx.output_format
+                        .error(&format!("Server returned status: {}", response.status()))
                 );
             }
         }
@@ -188,7 +198,8 @@ async fn check_health(ctx: &CliContext, url: &str) -> CliResult<()> {
             spinner.finish_and_clear();
             println!(
                 "{}",
-                ctx.output_format.error(&format!("Failed to connect: {}", e))
+                ctx.output_format
+                    .error(&format!("Failed to connect: {}", e))
             );
         }
     }

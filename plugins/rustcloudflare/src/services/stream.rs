@@ -4,7 +4,7 @@
 
 use crate::client::CloudflareClient;
 use crate::error::{CloudflareError, CloudflareResult};
-use crate::models::{StreamVideo, LiveInput, CreateLiveInput, StreamStats};
+use crate::models::{CreateLiveInput, LiveInput, StreamStats, StreamVideo};
 use sqlx::PgPool;
 use std::sync::Arc;
 use tracing::{debug, info};
@@ -67,10 +67,7 @@ impl StreamService {
 
     /// Get embed URL for a video
     pub fn get_embed_url(&self, video_id: &str) -> String {
-        format!(
-            "https://iframe.cloudflarestream.com/{}",
-            video_id
-        )
+        format!("https://iframe.cloudflarestream.com/{}", video_id)
     }
 
     /// Get HLS URL for a video
@@ -109,7 +106,9 @@ impl StreamService {
         let end_time = end.unwrap_or(5);
         format!(
             "https://cloudflarestream.com/{}/thumbnails/thumbnail.gif?time={}s&duration={}s",
-            video_id, start_time, end_time - start_time
+            video_id,
+            start_time,
+            end_time - start_time
         )
     }
 
@@ -130,7 +129,10 @@ impl StreamService {
             params.push("controls=false".to_string());
         }
         if let Some(poster) = options.poster_time {
-            params.push(format!("poster=https://cloudflarestream.com/{}/thumbnails/thumbnail.jpg?time={}s", video_id, poster));
+            params.push(format!(
+                "poster=https://cloudflarestream.com/{}/thumbnails/thumbnail.jpg?time={}s",
+                video_id, poster
+            ));
         }
         if let Some(start) = options.start_time {
             params.push(format!("startTime={}", start));
@@ -179,37 +181,31 @@ impl StreamService {
 
     /// Get RTMPS URL for a live input
     pub fn get_rtmps_url(&self, live_input: &LiveInput) -> Option<String> {
-        live_input
-            .rtmps
-            .as_ref()
-            .and_then(|r| {
-                r.stream_key.as_ref().map(|key| {
-                    format!("rtmps://{}:443/{}", r.url, key)
-                })
-            })
+        live_input.rtmps.as_ref().and_then(|r| {
+            r.stream_key
+                .as_ref()
+                .map(|key| format!("rtmps://{}:443/{}", r.url, key))
+        })
     }
 
     /// Get SRT URL for a live input
     pub fn get_srt_url(&self, live_input: &LiveInput) -> Option<String> {
-        live_input
-            .srt
-            .as_ref()
-            .map(|s| {
-                // SRT URL format: srt://host?streamid=xxx&passphrase=yyy
-                let mut url = format!("srt://{}", s.url);
-                let mut params = vec![];
-                if let Some(ref stream_id) = s.stream_id {
-                    params.push(format!("streamid={}", stream_id));
-                }
-                if let Some(ref passphrase) = s.passphrase {
-                    params.push(format!("passphrase={}", passphrase));
-                }
-                if !params.is_empty() {
-                    url.push_str("?");
-                    url.push_str(&params.join("&"));
-                }
-                url
-            })
+        live_input.srt.as_ref().map(|s| {
+            // SRT URL format: srt://host?streamid=xxx&passphrase=yyy
+            let mut url = format!("srt://{}", s.url);
+            let mut params = vec![];
+            if let Some(ref stream_id) = s.stream_id {
+                params.push(format!("streamid={}", stream_id));
+            }
+            if let Some(ref passphrase) = s.passphrase {
+                params.push(format!("passphrase={}", passphrase));
+            }
+            if !params.is_empty() {
+                url.push_str("?");
+                url.push_str(&params.join("&"));
+            }
+            url
+        })
     }
 
     /// Get WebRTC URL for a live input
@@ -247,14 +243,20 @@ impl StreamService {
             ready_videos: ready_count,
             processing_videos: videos.len() - ready_count,
             live_inputs: live_inputs.len(),
-            active_live_streams: live_inputs.iter().filter(|l| l.status.as_deref() == Some("connected")).count(),
+            active_live_streams: live_inputs
+                .iter()
+                .filter(|l| l.status.as_deref() == Some("connected"))
+                .count(),
         })
     }
 
     /// Get videos by status
     pub async fn get_videos_by_status(&self, ready: bool) -> CloudflareResult<Vec<StreamVideo>> {
         let videos = self.list_videos().await?;
-        Ok(videos.into_iter().filter(|v| v.ready_to_stream == ready).collect())
+        Ok(videos
+            .into_iter()
+            .filter(|v| v.ready_to_stream == ready)
+            .collect())
     }
 
     /// Search videos by name

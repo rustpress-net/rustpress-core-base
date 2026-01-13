@@ -83,7 +83,8 @@ impl HealthChecker {
         report.service = ServiceHealth {
             name: "rustpress".to_string(),
             version: env!("CARGO_PKG_VERSION").to_string(),
-            environment: std::env::var("RUSTPRESS_ENV").unwrap_or_else(|_| "development".to_string()),
+            environment: std::env::var("RUSTPRESS_ENV")
+                .unwrap_or_else(|_| "development".to_string()),
             instance_id: std::env::var("HOSTNAME").ok(),
             uptime_seconds: Utc::now()
                 .signed_duration_since(self.started_at)
@@ -133,9 +134,7 @@ impl HealthChecker {
         let start = Instant::now();
 
         let result = tokio::time::timeout(self.timeout, async {
-            sqlx::query("SELECT 1")
-                .execute(pool)
-                .await
+            sqlx::query("SELECT 1").execute(pool).await
         })
         .await;
 
@@ -173,8 +172,7 @@ impl HealthChecker {
             }
             Err(_) => {
                 warn!("Database health check timed out");
-                ComponentHealth::unhealthy("Connection timeout")
-                    .with_type("postgresql")
+                ComponentHealth::unhealthy("Connection timeout").with_type("postgresql")
             }
         }
     }
@@ -185,9 +183,7 @@ impl HealthChecker {
         let mut conn = redis.clone();
 
         let result = tokio::time::timeout(self.timeout, async {
-            redis::cmd("PING")
-                .query_async::<_, String>(&mut conn)
-                .await
+            redis::cmd("PING").query_async::<_, String>(&mut conn).await
         })
         .await;
 
@@ -221,11 +217,9 @@ impl HealthChecker {
 
                 health
             }
-            Ok(Ok(_)) => {
-                ComponentHealth::degraded("Unexpected PING response")
-                    .with_type("redis")
-                    .with_response_time(response_time)
-            }
+            Ok(Ok(_)) => ComponentHealth::degraded("Unexpected PING response")
+                .with_type("redis")
+                .with_response_time(response_time),
             Ok(Err(e)) => {
                 warn!("Redis health check failed: {}", e);
                 ComponentHealth::unhealthy(format!("Command failed: {}", e))
@@ -234,8 +228,7 @@ impl HealthChecker {
             }
             Err(_) => {
                 warn!("Redis health check timed out");
-                ComponentHealth::unhealthy("Connection timeout")
-                    .with_type("redis")
+                ComponentHealth::unhealthy("Connection timeout").with_type("redis")
             }
         }
     }
@@ -273,8 +266,7 @@ impl HealthChecker {
             }
             Err(e) => {
                 warn!("External service check failed for {}: {}", service.name, e);
-                ComponentHealth::unhealthy(format!("Request failed: {}", e))
-                    .with_type("external")
+                ComponentHealth::unhealthy(format!("Request failed: {}", e)).with_type("external")
             }
         }
     }
@@ -304,9 +296,7 @@ impl HealthChecker {
         if let Some(ref redis) = self.redis {
             let mut conn = redis.clone();
             let result = tokio::time::timeout(Duration::from_secs(3), async {
-                redis::cmd("PING")
-                    .query_async::<_, String>(&mut conn)
-                    .await
+                redis::cmd("PING").query_async::<_, String>(&mut conn).await
             })
             .await;
 

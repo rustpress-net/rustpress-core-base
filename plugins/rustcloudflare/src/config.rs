@@ -305,10 +305,7 @@ impl CloudflareConfig {
 
     /// Get the R2 endpoint URL
     pub fn r2_endpoint(&self) -> String {
-        format!(
-            "https://{}.r2.cloudflarestorage.com",
-            self.account_id
-        )
+        format!("https://{}.r2.cloudflarestorage.com", self.account_id)
     }
 }
 

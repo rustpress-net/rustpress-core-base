@@ -2,13 +2,13 @@
 //!
 //! Provides secure, isolated execution environment for plugins.
 
-use rustpress_core::error::{Error, Result};
 use crate::manifest::WasmSection;
+use parking_lot::RwLock;
+use rustpress_core::error::{Error, Result};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use parking_lot::RwLock;
 use tracing::{debug, error, info, warn};
 
 /// Plugin sandbox configuration
@@ -116,9 +116,10 @@ impl PluginSandbox {
         }
 
         // Check if path is in allowed paths
-        self.config.allowed_paths.iter().any(|allowed| {
-            path.starts_with(allowed)
-        })
+        self.config
+            .allowed_paths
+            .iter()
+            .any(|allowed| path.starts_with(allowed))
     }
 
     /// Check if a host is allowed
@@ -371,7 +372,10 @@ impl WasmPluginSandbox {
     }
 
     /// Compile a WASM module
-    fn compile_module(&self, wasm_bytes: &[u8]) -> std::result::Result<CompiledModule, SandboxError> {
+    fn compile_module(
+        &self,
+        wasm_bytes: &[u8],
+    ) -> std::result::Result<CompiledModule, SandboxError> {
         self.validate_module(wasm_bytes)?;
 
         Ok(CompiledModule {
@@ -418,7 +422,10 @@ impl WasmPluginSandbox {
     /// Register a host function
     pub fn register_host_function<F>(&self, name: &str, func: F)
     where
-        F: Fn(&HostContext, Vec<WasmValue>) -> std::result::Result<Vec<WasmValue>, String> + Send + Sync + 'static,
+        F: Fn(&HostContext, Vec<WasmValue>) -> std::result::Result<Vec<WasmValue>, String>
+            + Send
+            + Sync
+            + 'static,
     {
         let mut host_funcs = self.host_functions.write();
         host_funcs.register(name, Box::new(func));
@@ -531,7 +538,10 @@ impl HostFunctions {
 
     pub fn register<F>(&mut self, name: &str, _func: Box<F>)
     where
-        F: Fn(&HostContext, Vec<WasmValue>) -> std::result::Result<Vec<WasmValue>, String> + Send + Sync + 'static,
+        F: Fn(&HostContext, Vec<WasmValue>) -> std::result::Result<Vec<WasmValue>, String>
+            + Send
+            + Sync
+            + 'static,
     {
         self.functions.insert(
             name.to_string(),
@@ -708,7 +718,10 @@ pub struct StandardHostFunctions;
 
 impl StandardHostFunctions {
     /// Log a message
-    pub fn log(ctx: &HostContext, args: Vec<WasmValue>) -> std::result::Result<Vec<WasmValue>, String> {
+    pub fn log(
+        ctx: &HostContext,
+        args: Vec<WasmValue>,
+    ) -> std::result::Result<Vec<WasmValue>, String> {
         let level = args.get(0).and_then(|v| v.as_i32()).unwrap_or(0);
         let message = args.get(1).and_then(|v| v.as_string()).unwrap_or("");
 
@@ -724,27 +737,51 @@ impl StandardHostFunctions {
     }
 
     /// Get an option value
-    pub fn get_option(_ctx: &HostContext, args: Vec<WasmValue>) -> std::result::Result<Vec<WasmValue>, String> {
-        let _key = args.get(0).and_then(|v| v.as_string()).ok_or("Missing key")?;
+    pub fn get_option(
+        _ctx: &HostContext,
+        args: Vec<WasmValue>,
+    ) -> std::result::Result<Vec<WasmValue>, String> {
+        let _key = args
+            .get(0)
+            .and_then(|v| v.as_string())
+            .ok_or("Missing key")?;
         Ok(vec![WasmValue::Null])
     }
 
     /// Set an option value
-    pub fn set_option(_ctx: &HostContext, args: Vec<WasmValue>) -> std::result::Result<Vec<WasmValue>, String> {
-        let _key = args.get(0).and_then(|v| v.as_string()).ok_or("Missing key")?;
+    pub fn set_option(
+        _ctx: &HostContext,
+        args: Vec<WasmValue>,
+    ) -> std::result::Result<Vec<WasmValue>, String> {
+        let _key = args
+            .get(0)
+            .and_then(|v| v.as_string())
+            .ok_or("Missing key")?;
         let _value = args.get(1).ok_or("Missing value")?;
         Ok(vec![WasmValue::I32(1)])
     }
 
     /// Execute a database query
-    pub fn db_query(_ctx: &HostContext, args: Vec<WasmValue>) -> std::result::Result<Vec<WasmValue>, String> {
-        let _query = args.get(0).and_then(|v| v.as_string()).ok_or("Missing query")?;
+    pub fn db_query(
+        _ctx: &HostContext,
+        args: Vec<WasmValue>,
+    ) -> std::result::Result<Vec<WasmValue>, String> {
+        let _query = args
+            .get(0)
+            .and_then(|v| v.as_string())
+            .ok_or("Missing query")?;
         Ok(vec![WasmValue::Json(serde_json::json!([]))])
     }
 
     /// Make an HTTP request
-    pub fn http_request(_ctx: &HostContext, args: Vec<WasmValue>) -> std::result::Result<Vec<WasmValue>, String> {
-        let _url = args.get(0).and_then(|v| v.as_string()).ok_or("Missing URL")?;
+    pub fn http_request(
+        _ctx: &HostContext,
+        args: Vec<WasmValue>,
+    ) -> std::result::Result<Vec<WasmValue>, String> {
+        let _url = args
+            .get(0)
+            .and_then(|v| v.as_string())
+            .ok_or("Missing URL")?;
         let _method = args.get(1).and_then(|v| v.as_string()).unwrap_or("GET");
         Ok(vec![WasmValue::Json(serde_json::json!({
             "status": 200,
@@ -753,14 +790,23 @@ impl StandardHostFunctions {
     }
 
     /// Emit an event
-    pub fn emit_event(_ctx: &HostContext, args: Vec<WasmValue>) -> std::result::Result<Vec<WasmValue>, String> {
-        let _event_name = args.get(0).and_then(|v| v.as_string()).ok_or("Missing event name")?;
+    pub fn emit_event(
+        _ctx: &HostContext,
+        args: Vec<WasmValue>,
+    ) -> std::result::Result<Vec<WasmValue>, String> {
+        let _event_name = args
+            .get(0)
+            .and_then(|v| v.as_string())
+            .ok_or("Missing event name")?;
         let _data = args.get(1);
         Ok(Vec::new())
     }
 
     /// Get current user info
-    pub fn get_current_user(ctx: &HostContext, _args: Vec<WasmValue>) -> std::result::Result<Vec<WasmValue>, String> {
+    pub fn get_current_user(
+        ctx: &HostContext,
+        _args: Vec<WasmValue>,
+    ) -> std::result::Result<Vec<WasmValue>, String> {
         Ok(vec![WasmValue::Json(serde_json::json!({
             "id": ctx.user_id,
             "site_id": ctx.site_id
@@ -768,8 +814,14 @@ impl StandardHostFunctions {
     }
 
     /// Check if user has capability
-    pub fn user_can(_ctx: &HostContext, args: Vec<WasmValue>) -> std::result::Result<Vec<WasmValue>, String> {
-        let _capability = args.get(0).and_then(|v| v.as_string()).ok_or("Missing capability")?;
+    pub fn user_can(
+        _ctx: &HostContext,
+        args: Vec<WasmValue>,
+    ) -> std::result::Result<Vec<WasmValue>, String> {
+        let _capability = args
+            .get(0)
+            .and_then(|v| v.as_string())
+            .ok_or("Missing capability")?;
         Ok(vec![WasmValue::I32(0)])
     }
 
@@ -822,7 +874,8 @@ mod tests {
     fn test_operation_validation() {
         let sandbox = PluginSandbox::restrictive();
 
-        let result = sandbox.validate_operation(&SandboxOperation::FileRead("/etc/passwd".to_string()));
+        let result =
+            sandbox.validate_operation(&SandboxOperation::FileRead("/etc/passwd".to_string()));
         assert!(result.is_err());
 
         let result = sandbox.validate_operation(&SandboxOperation::Execute("rm -rf /".to_string()));

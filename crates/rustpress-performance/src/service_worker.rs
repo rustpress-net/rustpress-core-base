@@ -2,8 +2,8 @@
 //!
 //! Generates service worker scripts and manages offline caching strategies.
 
-use std::collections::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 
 /// Service worker configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,10 +31,7 @@ impl Default for ServiceWorkerConfig {
         Self {
             version: "1.0.0".to_string(),
             cache_name_prefix: "rustpress".to_string(),
-            precache_urls: vec![
-                "/".to_string(),
-                "/offline".to_string(),
-            ],
+            precache_urls: vec!["/".to_string(), "/offline".to_string()],
             runtime_caching: vec![
                 RuntimeCachingRule {
                     url_pattern: "^/api/".to_string(),
@@ -187,7 +184,9 @@ const RUNTIME_CACHE_NAME = `${{CACHE_PREFIX}}-runtime-${{CACHE_VERSION}}`;
     }
 
     fn generate_precache_manifest(&self) -> String {
-        let urls_json: Vec<String> = self.config.precache_urls
+        let urls_json: Vec<String> = self
+            .config
+            .precache_urls
             .iter()
             .map(|u| format!("  '{}'", u))
             .collect();
@@ -275,7 +274,9 @@ self.addEventListener('activate', (event) => {{
 
         for rule in &self.config.runtime_caching {
             let strategy = rule.strategy.as_str();
-            let cache_name = rule.options.cache_name
+            let cache_name = rule
+                .options
+                .cache_name
                 .as_ref()
                 .map(|n| format!("'{}'", n))
                 .unwrap_or_else(|| "RUNTIME_CACHE_NAME".to_string());
@@ -296,10 +297,13 @@ self.addEventListener('activate', (event) => {{
             ));
         }
 
-        let offline_fallback = self.config.offline_page
+        let offline_fallback = self
+            .config
+            .offline_page
             .as_ref()
-            .map(|page| format!(
-                r#"
+            .map(|page| {
+                format!(
+                    r#"
   // Handle navigation requests with offline fallback
   if (event.request.mode === 'navigate') {{
     event.respondWith(
@@ -319,8 +323,9 @@ self.addEventListener('activate', (event) => {{
     return;
   }}
 "#,
-                page
-            ))
+                    page
+                )
+            })
             .unwrap_or_default();
 
         format!(
@@ -602,10 +607,7 @@ impl Default for AppShellConfig {
     fn default() -> Self {
         Self {
             shell_html: "/shell.html".to_string(),
-            includes: vec![
-                "/css/app.css".to_string(),
-                "/js/app.js".to_string(),
-            ],
+            includes: vec!["/css/app.css".to_string(), "/js/app.js".to_string()],
             shell_routes: vec![
                 "/".to_string(),
                 "/posts/*".to_string(),
@@ -644,6 +646,9 @@ mod tests {
     fn test_caching_strategy() {
         assert_eq!(CachingStrategy::NetworkFirst.as_str(), "NetworkFirst");
         assert_eq!(CachingStrategy::CacheFirst.as_str(), "CacheFirst");
-        assert_eq!(CachingStrategy::StaleWhileRevalidate.as_str(), "StaleWhileRevalidate");
+        assert_eq!(
+            CachingStrategy::StaleWhileRevalidate.as_str(),
+            "StaleWhileRevalidate"
+        );
     }
 }

@@ -14,7 +14,7 @@
 use chrono::{DateTime, Duration, Utc};
 use rustpress_core::error::{Error, Result};
 use rustpress_database::repository::themes::{ThemeRepository, ThemeRow};
-use rustpress_themes::manager::{ThemeManager, RegisteredTheme};
+use rustpress_themes::manager::{RegisteredTheme, ThemeManager};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::io::{Read, Write};
@@ -168,7 +168,10 @@ impl ThemeService {
         };
 
         // Scan file system for themes
-        let scanned_ids = self.file_manager.scan_themes().await
+        let scanned_ids = self
+            .file_manager
+            .scan_themes()
+            .await
             .map_err(|e| Error::internal(format!("Failed to scan themes: {}", e)))?;
 
         result.scanned = scanned_ids.len();
@@ -194,7 +197,9 @@ impl ThemeService {
 
     /// Sync a single theme from file system to database
     async fn sync_theme_to_db(&self, theme_id: &str) -> Result<bool> {
-        let registered = self.file_manager.get_theme(theme_id)
+        let registered = self
+            .file_manager
+            .get_theme(theme_id)
             .ok_or_else(|| Error::not_found("Theme", theme_id))?;
 
         let existing = self.repo().find_by_theme_id(theme_id).await?;
@@ -231,48 +236,64 @@ impl ThemeService {
             is_active: existing.as_ref().map(|e| e.is_active).unwrap_or(false),
             is_installed: true,
             parent_theme_id: registered.parent_id.clone(),
-            screenshot_url: registered.screenshot.as_ref().map(|p| {
-                format!("/themes/{}/screenshot.png", theme_id)
-            }),
+            screenshot_url: registered
+                .screenshot
+                .as_ref()
+                .map(|p| format!("/themes/{}/screenshot.png", theme_id)),
             homepage_url: None,
-            tags: extra_meta.as_ref()
+            tags: extra_meta
+                .as_ref()
                 .and_then(|m| m.get("tags"))
                 .and_then(|t| serde_json::from_value(t.clone()).ok()),
-            supports: extra_meta.as_ref()
+            supports: extra_meta
+                .as_ref()
                 .and_then(|m| m.get("supports"))
                 .cloned()
-                .unwrap_or_else(|| serde_json::json!({
-                    "post_thumbnails": true,
-                    "custom_logo": true,
-                    "menus": true,
-                    "widgets": true
-                })),
-            menu_locations: extra_meta.as_ref()
+                .unwrap_or_else(|| {
+                    serde_json::json!({
+                        "post_thumbnails": true,
+                        "custom_logo": true,
+                        "menus": true,
+                        "widgets": true
+                    })
+                }),
+            menu_locations: extra_meta
+                .as_ref()
                 .and_then(|m| m.get("menu_locations"))
                 .cloned()
-                .unwrap_or_else(|| serde_json::json!({
-                    "primary": "Primary Navigation",
-                    "footer": "Footer Navigation"
-                })),
-            widget_areas: extra_meta.as_ref()
+                .unwrap_or_else(|| {
+                    serde_json::json!({
+                        "primary": "Primary Navigation",
+                        "footer": "Footer Navigation"
+                    })
+                }),
+            widget_areas: extra_meta
+                .as_ref()
                 .and_then(|m| m.get("widget_areas"))
                 .cloned()
-                .unwrap_or_else(|| serde_json::json!({
-                    "sidebar": "Main Sidebar",
-                    "footer-1": "Footer Column 1",
-                    "footer-2": "Footer Column 2"
-                })),
-            customizer_schema: extra_meta.as_ref()
+                .unwrap_or_else(|| {
+                    serde_json::json!({
+                        "sidebar": "Main Sidebar",
+                        "footer-1": "Footer Column 1",
+                        "footer-2": "Footer Column 2"
+                    })
+                }),
+            customizer_schema: extra_meta
+                .as_ref()
                 .and_then(|m| m.get("customizer"))
                 .cloned()
                 .unwrap_or_else(|| serde_json::json!({})),
-            settings: existing.as_ref()
+            settings: existing
+                .as_ref()
                 .map(|e| e.settings.clone())
                 .unwrap_or_else(|| serde_json::json!({})),
             template_count: Some(template_count),
             activated_at: existing.as_ref().and_then(|e| e.activated_at),
             installed_at: existing.as_ref().and_then(|e| e.installed_at),
-            created_at: existing.as_ref().map(|e| e.created_at).unwrap_or_else(Utc::now),
+            created_at: existing
+                .as_ref()
+                .map(|e| e.created_at)
+                .unwrap_or_else(Utc::now),
             updated_at: Utc::now(),
         };
 
@@ -313,7 +334,9 @@ impl ThemeService {
         }
 
         // Activate in file system
-        self.file_manager.activate(theme_id).await
+        self.file_manager
+            .activate(theme_id)
+            .await
             .map_err(|e| Error::internal(format!("Failed to activate theme: {}", e)))?;
 
         // Activate in database (trigger will deactivate others)
@@ -325,7 +348,9 @@ impl ThemeService {
     /// Delete a theme
     pub async fn delete_theme(&self, theme_id: &str) -> Result<()> {
         // Delete from file system
-        self.file_manager.delete_theme(theme_id).await
+        self.file_manager
+            .delete_theme(theme_id)
+            .await
             .map_err(|e| Error::internal(format!("Failed to delete theme: {}", e)))?;
 
         // Delete from database
@@ -336,7 +361,10 @@ impl ThemeService {
 
     /// Get theme settings
     pub async fn get_theme_settings(&self, theme_id: &str) -> Result<ThemeSettingsInfo> {
-        let row = self.repo().find_by_theme_id(theme_id).await?
+        let row = self
+            .repo()
+            .find_by_theme_id(theme_id)
+            .await?
             .ok_or_else(|| Error::not_found("Theme", theme_id))?;
 
         Ok(ThemeSettingsInfo {
@@ -347,7 +375,11 @@ impl ThemeService {
     }
 
     /// Update theme settings
-    pub async fn update_theme_settings(&self, theme_id: &str, settings: serde_json::Value) -> Result<serde_json::Value> {
+    pub async fn update_theme_settings(
+        &self,
+        theme_id: &str,
+        settings: serde_json::Value,
+    ) -> Result<serde_json::Value> {
         let row = self.repo().update_settings(theme_id, settings).await?;
         Ok(row.settings)
     }
@@ -356,27 +388,36 @@ impl ThemeService {
     pub async fn get_menu_assignments(&self, theme_id: &str) -> Result<serde_json::Value> {
         let assignments = self.repo().get_menu_assignments(theme_id).await?;
 
-        let result: Vec<serde_json::Value> = assignments.into_iter().map(|a| {
-            serde_json::json!({
-                "location_slug": a.location_slug,
-                "menu_id": a.menu_id
+        let result: Vec<serde_json::Value> = assignments
+            .into_iter()
+            .map(|a| {
+                serde_json::json!({
+                    "location_slug": a.location_slug,
+                    "menu_id": a.menu_id
+                })
             })
-        }).collect();
+            .collect();
 
         Ok(serde_json::json!(result))
     }
 
     /// Update menu assignments
-    pub async fn update_menu_assignments(&self, theme_id: &str, assignments: serde_json::Value) -> Result<()> {
+    pub async fn update_menu_assignments(
+        &self,
+        theme_id: &str,
+        assignments: serde_json::Value,
+    ) -> Result<()> {
         if let Some(arr) = assignments.as_array() {
             for item in arr {
                 if let (Some(location), Some(menu_id)) = (
                     item.get("location_slug").and_then(|v| v.as_str()),
-                    item.get("menu_id").and_then(|v| v.as_str())
+                    item.get("menu_id").and_then(|v| v.as_str()),
                 ) {
                     let menu_uuid = Uuid::parse_str(menu_id)
                         .map_err(|_| Error::validation("Invalid menu_id UUID"))?;
-                    self.repo().assign_menu(theme_id, location, menu_uuid).await?;
+                    self.repo()
+                        .assign_menu(theme_id, location, menu_uuid)
+                        .await?;
                 }
             }
         }
@@ -387,30 +428,39 @@ impl ThemeService {
     pub async fn get_widget_assignments(&self, theme_id: &str) -> Result<serde_json::Value> {
         let assignments = self.repo().get_widget_assignments(theme_id, None).await?;
 
-        let result: Vec<serde_json::Value> = assignments.into_iter().map(|a| {
-            serde_json::json!({
-                "area_slug": a.area_slug,
-                "widget_id": a.widget_id,
-                "position": a.position,
-                "is_active": a.is_active
+        let result: Vec<serde_json::Value> = assignments
+            .into_iter()
+            .map(|a| {
+                serde_json::json!({
+                    "area_slug": a.area_slug,
+                    "widget_id": a.widget_id,
+                    "position": a.position,
+                    "is_active": a.is_active
+                })
             })
-        }).collect();
+            .collect();
 
         Ok(serde_json::json!(result))
     }
 
     /// Update widget assignments
-    pub async fn update_widget_assignments(&self, theme_id: &str, assignments: serde_json::Value) -> Result<()> {
+    pub async fn update_widget_assignments(
+        &self,
+        theme_id: &str,
+        assignments: serde_json::Value,
+    ) -> Result<()> {
         if let Some(arr) = assignments.as_array() {
             for item in arr {
                 if let (Some(area), Some(widget_id), Some(position)) = (
                     item.get("area_slug").and_then(|v| v.as_str()),
                     item.get("widget_id").and_then(|v| v.as_str()),
-                    item.get("position").and_then(|v| v.as_i64())
+                    item.get("position").and_then(|v| v.as_i64()),
                 ) {
                     let widget_uuid = Uuid::parse_str(widget_id)
                         .map_err(|_| Error::validation("Invalid widget_id UUID"))?;
-                    self.repo().assign_widget(theme_id, area, widget_uuid, position as i32).await?;
+                    self.repo()
+                        .assign_widget(theme_id, area, widget_uuid, position as i32)
+                        .await?;
                 }
             }
         }
@@ -418,13 +468,20 @@ impl ThemeService {
     }
 
     /// Create a preview session
-    pub async fn create_preview(&self, user_id: Uuid, theme_id: &str, _settings: serde_json::Value) -> Result<ThemePreviewResult> {
+    pub async fn create_preview(
+        &self,
+        user_id: Uuid,
+        theme_id: &str,
+        _settings: serde_json::Value,
+    ) -> Result<ThemePreviewResult> {
         // Generate token
         let token = format!("preview_{}", Uuid::new_v4());
         let expires_at = Utc::now() + Duration::minutes(30);
 
         // Store in database
-        self.repo().create_preview(user_id, theme_id, &token, expires_at).await?;
+        self.repo()
+            .create_preview(user_id, theme_id, &token, expires_at)
+            .await?;
 
         Ok(ThemePreviewResult { token, expires_at })
     }
@@ -439,7 +496,11 @@ impl ThemeService {
     // ============================================================================
 
     /// Install a theme from a ZIP file
-    pub async fn install_from_zip(&self, zip_data: &[u8], activate_after: bool) -> Result<ThemeInstallResult> {
+    pub async fn install_from_zip(
+        &self,
+        zip_data: &[u8],
+        activate_after: bool,
+    ) -> Result<ThemeInstallResult> {
         let mut warnings = Vec::new();
 
         // Validate the ZIP first
@@ -521,7 +582,8 @@ impl ThemeService {
         // Remove old files and extract new
         let theme_path = self.themes_dir.join(&theme_id);
         if theme_path.exists() {
-            tokio::fs::remove_dir_all(&theme_path).await
+            tokio::fs::remove_dir_all(&theme_path)
+                .await
                 .map_err(|e| Error::internal(format!("Failed to remove old theme: {}", e)))?;
         }
 
@@ -531,7 +593,9 @@ impl ThemeService {
         self.sync_theme_to_db(&theme_id).await?;
 
         // Restore settings
-        self.repo().update_settings(&theme_id, current_settings).await?;
+        self.repo()
+            .update_settings(&theme_id, current_settings)
+            .await?;
 
         // Re-activate if it was active
         if was_active {
@@ -578,7 +642,9 @@ impl ThemeService {
         for i in 0..archive.len() {
             // First pass: get name and detect root folder
             let (name, is_manifest) = {
-                let file = archive.by_index(i).map_err(|e| Error::internal(e.to_string()))?;
+                let file = archive
+                    .by_index(i)
+                    .map_err(|e| Error::internal(e.to_string()))?;
                 let name = file.name().to_string();
                 let is_manifest = name.ends_with("theme.json") || name.ends_with("theme.toml");
 
@@ -597,13 +663,18 @@ impl ThemeService {
             if is_manifest {
                 has_manifest = true;
 
-                let mut file = archive.by_index(i).map_err(|e| Error::internal(e.to_string()))?;
+                let mut file = archive
+                    .by_index(i)
+                    .map_err(|e| Error::internal(e.to_string()))?;
                 let mut content = String::new();
                 file.read_to_string(&mut content).ok();
 
                 if name.ends_with("theme.json") {
                     if let Ok(manifest) = serde_json::from_str::<serde_json::Value>(&content) {
-                        theme_name = manifest.get("name").and_then(|v| v.as_str()).map(|s| s.to_string());
+                        theme_name = manifest
+                            .get("name")
+                            .and_then(|v| v.as_str())
+                            .map(|s| s.to_string());
                         // Theme ID is typically the folder name
                         if let Some(ref folder) = root_folder {
                             theme_id = Some(folder.clone());
@@ -611,11 +682,13 @@ impl ThemeService {
                     }
                 } else if name.ends_with("theme.toml") {
                     if let Ok(manifest) = toml::from_str::<toml::Value>(&content) {
-                        theme_name = manifest.get("theme")
+                        theme_name = manifest
+                            .get("theme")
                             .and_then(|t| t.get("name"))
                             .and_then(|v| v.as_str())
                             .map(|s| s.to_string());
-                        theme_id = manifest.get("theme")
+                        theme_id = manifest
+                            .get("theme")
                             .and_then(|t| t.get("id"))
                             .and_then(|v| v.as_str())
                             .map(|s| s.to_string());
@@ -645,7 +718,9 @@ impl ThemeService {
         let mut has_assets = false;
 
         for i in 0..archive.len() {
-            let file = archive.by_index(i).map_err(|e| Error::internal(e.to_string()))?;
+            let file = archive
+                .by_index(i)
+                .map_err(|e| Error::internal(e.to_string()))?;
             let name = file.name();
 
             if name.contains("templates/") {
@@ -665,7 +740,10 @@ impl ThemeService {
 
         // Validate theme_id format
         if let Some(ref id) = theme_id {
-            if !id.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+            if !id
+                .chars()
+                .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
+            {
                 errors.push(format!(
                     "Invalid theme ID '{}': must contain only letters, numbers, hyphens, and underscores",
                     id
@@ -699,7 +777,8 @@ impl ThemeService {
 
         // Extract files
         for i in 0..archive.len() {
-            let mut file = archive.by_index(i)
+            let mut file = archive
+                .by_index(i)
                 .map_err(|e| Error::internal(format!("Failed to read ZIP entry: {}", e)))?;
 
             let mut outpath = dest.to_path_buf();
@@ -725,7 +804,9 @@ impl ThemeService {
 
             // Security: prevent path traversal
             if !outpath.starts_with(dest) {
-                return Err(Error::validation("ZIP contains invalid path (possible path traversal)"));
+                return Err(Error::validation(
+                    "ZIP contains invalid path (possible path traversal)",
+                ));
             }
 
             if file.is_dir() {
@@ -734,8 +815,9 @@ impl ThemeService {
             } else {
                 // Create parent directories
                 if let Some(parent) = outpath.parent() {
-                    std::fs::create_dir_all(parent)
-                        .map_err(|e| Error::internal(format!("Failed to create parent directory: {}", e)))?;
+                    std::fs::create_dir_all(parent).map_err(|e| {
+                        Error::internal(format!("Failed to create parent directory: {}", e))
+                    })?;
                 }
 
                 // Extract file
@@ -760,7 +842,10 @@ impl ThemeService {
     }
 
     /// Detect if ZIP has a single root folder
-    fn detect_zip_root_folder<R: Read + std::io::Seek>(&self, archive: &mut ZipArchive<R>) -> Option<String> {
+    fn detect_zip_root_folder<R: Read + std::io::Seek>(
+        &self,
+        archive: &mut ZipArchive<R>,
+    ) -> Option<String> {
         if archive.is_empty() {
             return None;
         }
@@ -807,13 +892,14 @@ impl ThemeService {
 
         {
             let mut zip = zip::ZipWriter::new(&mut zip_buffer);
-            let options = FileOptions::default()
-                .compression_method(zip::CompressionMethod::Deflated);
+            let options =
+                FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
             // Add all files from theme directory
             self.add_dir_to_zip(&mut zip, &theme_path, theme_id, options)?;
 
-            zip.finish().map_err(|e| Error::internal(format!("Failed to finalize ZIP: {}", e)))?;
+            zip.finish()
+                .map_err(|e| Error::internal(format!("Failed to finalize ZIP: {}", e)))?;
         }
 
         Ok(zip_buffer.into_inner())
@@ -836,8 +922,9 @@ impl ThemeService {
             let name = format!("{}/{}", prefix, entry.file_name().to_string_lossy());
 
             if path.is_dir() {
-                zip.add_directory(&name, options)
-                    .map_err(|e| Error::internal(format!("Failed to add directory to ZIP: {}", e)))?;
+                zip.add_directory(&name, options).map_err(|e| {
+                    Error::internal(format!("Failed to add directory to ZIP: {}", e))
+                })?;
                 self.add_dir_to_zip(zip, &path, &name, options)?;
             } else {
                 zip.start_file(&name, options)
@@ -907,12 +994,15 @@ pub struct DefaultThemeInfo {
 /// Count template files in a directory
 async fn count_templates(dir: &std::path::Path) -> Result<i32> {
     let mut count = 0;
-    let mut entries = tokio::fs::read_dir(dir).await
+    let mut entries = tokio::fs::read_dir(dir)
+        .await
         .map_err(|e| Error::internal(format!("Failed to read directory: {}", e)))?;
 
-    while let Some(entry) = entries.next_entry().await
-        .map_err(|e| Error::internal(format!("Failed to read entry: {}", e)))? {
-
+    while let Some(entry) = entries
+        .next_entry()
+        .await
+        .map_err(|e| Error::internal(format!("Failed to read entry: {}", e)))?
+    {
         let path = entry.path();
         if path.is_file() {
             if let Some(ext) = path.extension() {

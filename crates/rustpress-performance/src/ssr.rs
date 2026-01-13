@@ -2,11 +2,11 @@
 //!
 //! Optimizes SSR performance with streaming, caching, and hydration strategies.
 
+use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use parking_lot::RwLock;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// SSR errors
@@ -169,12 +169,15 @@ impl ComponentCache {
             self.evict_lru(&mut cache);
         }
 
-        cache.insert(key, CachedComponent {
-            html: result.html.clone(),
-            state: result.state.clone(),
-            created: Instant::now(),
-            hits: 0,
-        });
+        cache.insert(
+            key,
+            CachedComponent {
+                html: result.html.clone(),
+                state: result.state.clone(),
+                created: Instant::now(),
+                hits: 0,
+            },
+        );
     }
 
     fn evict_lru(&self, cache: &mut HashMap<String, CachedComponent>) {
@@ -281,7 +284,9 @@ impl SsrRenderer {
 
     /// Check if component is critical
     pub fn is_critical(&self, component: &str) -> bool {
-        self.config.critical_components.contains(&component.to_string())
+        self.config
+            .critical_components
+            .contains(&component.to_string())
     }
 
     /// Get cache statistics
@@ -336,10 +341,12 @@ impl StreamingRenderer {
     /// Resolve a suspense boundary
     pub fn resolve_suspense(&self, id: &str, content: &str, state: Option<&str>) {
         let state_script = state
-            .map(|s| format!(
-                r#"<script>window.__COMPONENT_STATE__["{}"] = {};</script>"#,
-                id, s
-            ))
+            .map(|s| {
+                format!(
+                    r#"<script>window.__COMPONENT_STATE__["{}"] = {};</script>"#,
+                    id, s
+                )
+            })
             .unwrap_or_default();
 
         let chunk = format!(
@@ -516,7 +523,11 @@ impl HydrationScriptGenerator {
 
         format!(
             r#"<div id="{}" data-component="{}" data-hydrate="{}"{}>{}</div>"#,
-            id, component_name, priority.as_str(), state_attr, html
+            id,
+            component_name,
+            priority.as_str(),
+            state_attr,
+            html
         )
     }
 }
@@ -573,7 +584,9 @@ pub struct IslandRenderer {
 
 impl IslandRenderer {
     pub fn new() -> Self {
-        Self { islands: Vec::new() }
+        Self {
+            islands: Vec::new(),
+        }
     }
 
     /// Register an island
@@ -658,7 +671,8 @@ impl IslandRenderer {
     }
   });
 })();
-"#.to_string()
+"#
+        .to_string()
     }
 }
 

@@ -2,13 +2,13 @@
 //!
 //! CSS/JS bundling, SCSS compilation, and asset optimization.
 
+use blake3::Hasher;
+use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use parking_lot::RwLock;
 use thiserror::Error;
 use tokio::fs;
-use blake3::Hasher;
 
 /// Asset compilation errors
 #[derive(Debug, Error)]
@@ -133,7 +133,11 @@ impl AssetCompiler {
         Ok(results)
     }
 
-    async fn find_files(&self, dir: &Path, extensions: &[&str]) -> Result<Vec<PathBuf>, AssetError> {
+    async fn find_files(
+        &self,
+        dir: &Path,
+        extensions: &[&str],
+    ) -> Result<Vec<PathBuf>, AssetError> {
         let mut files = Vec::new();
 
         if !dir.exists() {
@@ -187,10 +191,9 @@ impl AssetCompiler {
         };
 
         // Add to cache
-        self.cache.write().insert(
-            path.to_string_lossy().to_string(),
-            asset.clone(),
-        );
+        self.cache
+            .write()
+            .insert(path.to_string_lossy().to_string(), asset.clone());
 
         Ok(asset)
     }
@@ -208,19 +211,21 @@ impl AssetCompiler {
         let mut stylesheet = stylesheet;
 
         if self.config.minify {
-            stylesheet.minify(MinifyOptions {
-                targets: targets.clone(),
+            stylesheet
+                .minify(MinifyOptions {
+                    targets: targets.clone(),
+                    ..Default::default()
+                })
+                .map_err(|e| AssetError::CssCompilation(format!("{:?}", e)))?;
+        }
+
+        let result = stylesheet
+            .to_css(PrinterOptions {
+                targets,
+                minify: self.config.minify,
                 ..Default::default()
             })
             .map_err(|e| AssetError::CssCompilation(format!("{:?}", e)))?;
-        }
-
-        let result = stylesheet.to_css(PrinterOptions {
-            targets,
-            minify: self.config.minify,
-            ..Default::default()
-        })
-        .map_err(|e| AssetError::CssCompilation(format!("{:?}", e)))?;
 
         Ok(result.code)
     }
@@ -230,12 +235,11 @@ impl AssetCompiler {
         let content = fs::read_to_string(path).await?;
 
         // Use grass for SCSS compilation
-        let options = grass::Options::default()
-            .style(if self.config.minify {
-                grass::OutputStyle::Compressed
-            } else {
-                grass::OutputStyle::Expanded
-            });
+        let options = grass::Options::default().style(if self.config.minify {
+            grass::OutputStyle::Compressed
+        } else {
+            grass::OutputStyle::Expanded
+        });
 
         let css = grass::from_string(content, &options)
             .map_err(|e| AssetError::ScssCompilation(e.to_string()))?;
@@ -259,10 +263,9 @@ impl AssetCompiler {
             dependencies: self.extract_scss_imports(path).await?,
         };
 
-        self.cache.write().insert(
-            path.to_string_lossy().to_string(),
-            asset.clone(),
-        );
+        self.cache
+            .write()
+            .insert(path.to_string_lossy().to_string(), asset.clone());
 
         Ok(asset)
     }
@@ -313,10 +316,9 @@ impl AssetCompiler {
             dependencies: Vec::new(),
         };
 
-        self.cache.write().insert(
-            path.to_string_lossy().to_string(),
-            asset.clone(),
-        );
+        self.cache
+            .write()
+            .insert(path.to_string_lossy().to_string(), asset.clone());
 
         Ok(asset)
     }
@@ -382,9 +384,15 @@ impl AssetCompiler {
                 }
                 ' ' | '\t' | '\n' | '\r' => {
                     // Collapse whitespace
-                    if !result.is_empty() && !result.ends_with(' ') && !result.ends_with('{')
-                        && !result.ends_with('}') && !result.ends_with(';') && !result.ends_with(',')
-                        && !result.ends_with('(') && !result.ends_with(')') {
+                    if !result.is_empty()
+                        && !result.ends_with(' ')
+                        && !result.ends_with('{')
+                        && !result.ends_with('}')
+                        && !result.ends_with(';')
+                        && !result.ends_with(',')
+                        && !result.ends_with('(')
+                        && !result.ends_with(')')
+                    {
                         // Check next non-whitespace
                         let next = chars.clone().find(|c| !c.is_whitespace());
                         if let Some(next_c) = next {
@@ -415,7 +423,9 @@ impl AssetCompiler {
         let stem = original.file_stem().unwrap().to_string_lossy();
 
         if self.config.cache_bust {
-            self.config.output_dir.join(format!("{}.{}.{}", stem, hash, ext))
+            self.config
+                .output_dir
+                .join(format!("{}.{}.{}", stem, hash, ext))
         } else {
             self.config.output_dir.join(format!("{}.{}", stem, ext))
         }
@@ -426,17 +436,22 @@ impl AssetCompiler {
 
         for asset in assets {
             let key = asset.original_path.to_string_lossy().to_string();
-            let file = asset.output_path.file_name()
+            let file = asset
+                .output_path
+                .file_name()
                 .unwrap()
                 .to_string_lossy()
                 .to_string();
 
-            manifest.entries.insert(key, ManifestEntry {
-                file,
-                hash: asset.hash.clone(),
-                integrity: format!("sha256-{}", asset.hash),
-                size: asset.size,
-            });
+            manifest.entries.insert(
+                key,
+                ManifestEntry {
+                    file,
+                    hash: asset.hash.clone(),
+                    integrity: format!("sha256-{}", asset.hash),
+                    size: asset.size,
+                },
+            );
         }
 
         manifest.generated_at = Some(chrono::Utc::now());
@@ -452,23 +467,33 @@ impl AssetCompiler {
 
     /// Get asset URL for template
     pub fn get_asset_url(&self, original_path: &str) -> Option<String> {
-        self.manifest.read().entries.get(original_path).map(|entry| {
-            format!("{}/{}", self.config.public_url, entry.file)
-        })
+        self.manifest
+            .read()
+            .entries
+            .get(original_path)
+            .map(|entry| format!("{}/{}", self.config.public_url, entry.file))
     }
 
     /// Get asset with integrity hash
     pub fn get_asset_with_integrity(&self, original_path: &str) -> Option<(String, String)> {
-        self.manifest.read().entries.get(original_path).map(|entry| {
-            (
-                format!("{}/{}", self.config.public_url, entry.file),
-                entry.integrity.clone(),
-            )
-        })
+        self.manifest
+            .read()
+            .entries
+            .get(original_path)
+            .map(|entry| {
+                (
+                    format!("{}/{}", self.config.public_url, entry.file),
+                    entry.integrity.clone(),
+                )
+            })
     }
 
     /// Bundle multiple CSS files
-    pub async fn bundle_css(&self, files: &[PathBuf], output_name: &str) -> Result<CompiledAsset, AssetError> {
+    pub async fn bundle_css(
+        &self,
+        files: &[PathBuf],
+        output_name: &str,
+    ) -> Result<CompiledAsset, AssetError> {
         let mut combined = String::new();
 
         for file in files {
@@ -496,12 +521,19 @@ impl AssetCompiler {
             size: processed.len() as u64,
             mime_type: "text/css".to_string(),
             compiled_at: chrono::Utc::now(),
-            dependencies: files.iter().map(|f| f.to_string_lossy().to_string()).collect(),
+            dependencies: files
+                .iter()
+                .map(|f| f.to_string_lossy().to_string())
+                .collect(),
         })
     }
 
     /// Bundle multiple JS files
-    pub async fn bundle_js(&self, files: &[PathBuf], output_name: &str) -> Result<CompiledAsset, AssetError> {
+    pub async fn bundle_js(
+        &self,
+        files: &[PathBuf],
+        output_name: &str,
+    ) -> Result<CompiledAsset, AssetError> {
         let mut combined = String::new();
 
         for file in files {
@@ -534,7 +566,10 @@ impl AssetCompiler {
             size: processed.len() as u64,
             mime_type: "application/javascript".to_string(),
             compiled_at: chrono::Utc::now(),
-            dependencies: files.iter().map(|f| f.to_string_lossy().to_string()).collect(),
+            dependencies: files
+                .iter()
+                .map(|f| f.to_string_lossy().to_string())
+                .collect(),
         })
     }
 
@@ -586,7 +621,8 @@ impl AssetWatcher {
         .map_err(|e| AssetError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
 
         for path in &self.watch_paths {
-            watcher.watch(path, RecursiveMode::Recursive)
+            watcher
+                .watch(path, RecursiveMode::Recursive)
                 .map_err(|e| AssetError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
         }
 
@@ -633,10 +669,7 @@ impl CriticalCssInliner {
             return html.to_string();
         }
 
-        let style_tag = format!(
-            "<style id=\"critical-css\">{}</style>",
-            critical_css
-        );
+        let style_tag = format!("<style id=\"critical-css\">{}</style>", critical_css);
 
         // Insert before </head>
         if let Some(pos) = html.to_lowercase().find("</head>") {

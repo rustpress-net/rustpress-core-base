@@ -289,12 +289,17 @@ impl AutoPurgeHooks {
             ContentType::Menu => config.on_menu_update,
             ContentType::Widget => config.on_widget_update,
             ContentType::Settings => config.on_settings_change,
-            ContentType::Comment | ContentType::Category | ContentType::Tag => config.on_post_update,
+            ContentType::Comment | ContentType::Category | ContentType::Tag => {
+                config.on_post_update
+            }
             _ => false,
         };
 
         if !should_purge {
-            debug!("Auto-purge not configured for content type: {}", event.content_type);
+            debug!(
+                "Auto-purge not configured for content type: {}",
+                event.content_type
+            );
             return Ok(());
         }
 
@@ -312,12 +317,18 @@ impl AutoPurgeHooks {
 
         // Apply delay if configured
         if config.purge_delay_ms > 0 {
-            tokio::time::sleep(tokio::time::Duration::from_millis(config.purge_delay_ms as u64)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(
+                config.purge_delay_ms as u64,
+            ))
+            .await;
         }
 
         // Purge entire site or specific URLs
         if config.purge_entire_site {
-            info!("Auto-purging entire site cache due to {} {}", event.content_type, event.action);
+            info!(
+                "Auto-purging entire site cache due to {} {}",
+                event.content_type, event.action
+            );
             services.cache.purge_all().await?;
         } else {
             // Collect URLs to purge
@@ -349,7 +360,11 @@ impl AutoPurgeHooks {
     }
 
     /// Collect URLs to purge based on the event
-    async fn collect_urls_to_purge(&self, event: &ContentChangeEvent, config: &AutoPurgeConfig) -> Vec<String> {
+    async fn collect_urls_to_purge(
+        &self,
+        event: &ContentChangeEvent,
+        config: &AutoPurgeConfig,
+    ) -> Vec<String> {
         let mut urls = Vec::new();
         let site_url = self.site_url.trim_end_matches('/');
 
@@ -424,8 +439,8 @@ impl AutoPurgeHooks {
 
     /// Log a purge event to the database
     async fn log_event(&self, event: &ContentChangeEvent) -> CloudflareResult<()> {
-        let details = serde_json::to_value(event)
-            .map_err(|e| CloudflareError::ConfigError(e.to_string()))?;
+        let details =
+            serde_json::to_value(event).map_err(|e| CloudflareError::ConfigError(e.to_string()))?;
 
         sqlx::query(
             r#"
@@ -478,14 +493,12 @@ impl ContentChangeEvent {
 
     /// Create a media deleted event
     pub fn media_deleted(id: &str) -> Self {
-        Self::new(ContentType::Media, EventAction::Deleted)
-            .with_id(id)
+        Self::new(ContentType::Media, EventAction::Deleted).with_id(id)
     }
 
     /// Create a theme changed event
     pub fn theme_changed(theme_name: &str) -> Self {
-        Self::new(ContentType::Theme, EventAction::Updated)
-            .with_title(theme_name)
+        Self::new(ContentType::Theme, EventAction::Updated).with_title(theme_name)
     }
 
     /// Create a menu updated event
@@ -510,7 +523,8 @@ mod tests {
 
     #[test]
     fn test_content_change_event_builder() {
-        let event = ContentChangeEvent::post_published("123", "https://example.com/post/123", "Test Post");
+        let event =
+            ContentChangeEvent::post_published("123", "https://example.com/post/123", "Test Post");
         assert_eq!(event.content_type, ContentType::Post);
         assert_eq!(event.action, EventAction::Published);
         assert_eq!(event.content_id, Some("123".to_string()));

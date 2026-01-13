@@ -15,7 +15,10 @@ pub struct CacheService {
 
 impl CacheService {
     pub fn new(client: Arc<CloudflareClient>, db: PgPool) -> Self {
-        Self { client: Some(client), db }
+        Self {
+            client: Some(client),
+            db,
+        }
     }
 
     /// Create without a configured client (for initial setup)
@@ -25,9 +28,11 @@ impl CacheService {
 
     /// Get the client or return an error if not configured
     fn get_client(&self) -> CloudflareResult<&CloudflareClient> {
-        self.client.as_ref()
-            .map(|c| c.as_ref())
-            .ok_or_else(|| CloudflareError::ConfigError("Cloudflare not configured. Please connect your account.".to_string()))
+        self.client.as_ref().map(|c| c.as_ref()).ok_or_else(|| {
+            CloudflareError::ConfigError(
+                "Cloudflare not configured. Please connect your account.".to_string(),
+            )
+        })
     }
 
     /// Purge entire cache
@@ -64,8 +69,11 @@ impl CacheService {
         let client = self.get_client()?;
         info!("Purging cache by prefixes: {:?}", prefixes);
         let result = client.purge_cache_by_prefix(prefixes.clone()).await?;
-        self.log_purge_event("purge_prefix", Some(serde_json::json!({ "prefixes": prefixes })))
-            .await?;
+        self.log_purge_event(
+            "purge_prefix",
+            Some(serde_json::json!({ "prefixes": prefixes })),
+        )
+        .await?;
         Ok(result)
     }
 
@@ -107,10 +115,12 @@ impl CacheService {
     pub async fn get_cache_stats(&self, hours: i32) -> CloudflareResult<CacheStats> {
         let client = self.get_client()?;
         let since = chrono::Utc::now() - chrono::Duration::hours(hours as i64);
-        let analytics = client.get_analytics(
-            &since.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
-            &chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string(),
-        ).await?;
+        let analytics = client
+            .get_analytics(
+                &since.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+                &chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+            )
+            .await?;
 
         let totals = analytics.totals.unwrap_or_default();
         let requests = totals.requests.unwrap_or_default();

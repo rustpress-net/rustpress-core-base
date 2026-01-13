@@ -54,7 +54,7 @@ impl Default for ContentSecurityConfig {
             ],
             route_body_limits: vec![
                 ("/api/media/upload".to_string(), 100 * 1024 * 1024), // 100MB for uploads
-                ("/api/".to_string(), 10 * 1024 * 1024),             // 10MB for API
+                ("/api/".to_string(), 10 * 1024 * 1024),              // 10MB for API
             ],
             default_max_body_size: 10 * 1024 * 1024, // 10MB
             allowed_upload_types: vec![
@@ -116,8 +116,15 @@ impl ContentSecurityMiddleware {
     }
 
     /// Validate JSON depth
-    pub fn validate_json_depth(&self, json: &serde_json::Value) -> Result<(), ContentSecurityError> {
-        fn check_depth(value: &serde_json::Value, current: usize, max: usize) -> Result<usize, usize> {
+    pub fn validate_json_depth(
+        &self,
+        json: &serde_json::Value,
+    ) -> Result<(), ContentSecurityError> {
+        fn check_depth(
+            value: &serde_json::Value,
+            current: usize,
+            max: usize,
+        ) -> Result<usize, usize> {
             if current > max {
                 return Err(current);
             }
@@ -173,11 +180,11 @@ impl ContentSecurityMiddleware {
     }
 
     /// Validate JSON string lengths
-    pub fn validate_json_strings(&self, json: &serde_json::Value) -> Result<(), ContentSecurityError> {
-        fn check_strings(
-            value: &serde_json::Value,
-            max_len: usize,
-        ) -> Result<(), (usize, String)> {
+    pub fn validate_json_strings(
+        &self,
+        json: &serde_json::Value,
+    ) -> Result<(), ContentSecurityError> {
+        fn check_strings(value: &serde_json::Value, max_len: usize) -> Result<(), (usize, String)> {
             match value {
                 serde_json::Value::String(s) => {
                     if s.len() > max_len {
@@ -231,9 +238,7 @@ impl ContentSecurityMiddleware {
             "image/png" => bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
             "image/gif" => bytes.starts_with(b"GIF87a") || bytes.starts_with(b"GIF89a"),
             "image/webp" => {
-                bytes.len() >= 12
-                    && bytes.starts_with(b"RIFF")
-                    && &bytes[8..12] == b"WEBP"
+                bytes.len() >= 12 && bytes.starts_with(b"RIFF") && &bytes[8..12] == b"WEBP"
             }
             "application/pdf" => bytes.starts_with(b"%PDF"),
             "video/mp4" => {
@@ -243,9 +248,12 @@ impl ContentSecurityMiddleware {
             "video/webm" => bytes.starts_with(&[0x1A, 0x45, 0xDF, 0xA3]),
             "audio/mpeg" => {
                 // MP3 starts with ID3 or sync bits
-                bytes.starts_with(b"ID3") || (bytes.len() >= 2 && bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0)
+                bytes.starts_with(b"ID3")
+                    || (bytes.len() >= 2 && bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0)
             }
-            "audio/wav" => bytes.starts_with(b"RIFF") && bytes.len() >= 12 && &bytes[8..12] == b"WAVE",
+            "audio/wav" => {
+                bytes.starts_with(b"RIFF") && bytes.len() >= 12 && &bytes[8..12] == b"WAVE"
+            }
             "image/svg+xml" => {
                 // SVG is XML, check for opening tag
                 let s = String::from_utf8_lossy(bytes);
@@ -259,13 +267,32 @@ impl ContentSecurityMiddleware {
 /// Content security errors
 #[derive(Debug, Clone)]
 pub enum ContentSecurityError {
-    JsonDepthExceeded { max: usize, actual: usize },
-    JsonKeyCountExceeded { max: usize, actual: usize },
-    JsonStringTooLong { max: usize, actual: usize, preview: String },
-    InvalidContentType { received: String },
-    BodyTooLarge { max: usize, actual: usize },
-    InvalidUploadType { received: String },
-    MagicByteMismatch { claimed: String },
+    JsonDepthExceeded {
+        max: usize,
+        actual: usize,
+    },
+    JsonKeyCountExceeded {
+        max: usize,
+        actual: usize,
+    },
+    JsonStringTooLong {
+        max: usize,
+        actual: usize,
+        preview: String,
+    },
+    InvalidContentType {
+        received: String,
+    },
+    BodyTooLarge {
+        max: usize,
+        actual: usize,
+    },
+    InvalidUploadType {
+        received: String,
+    },
+    MagicByteMismatch {
+        claimed: String,
+    },
 }
 
 impl std::fmt::Display for ContentSecurityError {
@@ -277,7 +304,11 @@ impl std::fmt::Display for ContentSecurityError {
             ContentSecurityError::JsonKeyCountExceeded { max, actual } => {
                 write!(f, "JSON key count {} exceeds maximum {}", actual, max)
             }
-            ContentSecurityError::JsonStringTooLong { max, actual, preview } => {
+            ContentSecurityError::JsonStringTooLong {
+                max,
+                actual,
+                preview,
+            } => {
                 write!(
                     f,
                     "JSON string length {} exceeds maximum {} (preview: {}...)",
@@ -459,7 +490,10 @@ mod tests {
         };
         let middleware = ContentSecurityMiddleware::new(config);
 
-        assert_eq!(middleware.get_body_limit("/api/upload/image"), 100 * 1024 * 1024);
+        assert_eq!(
+            middleware.get_body_limit("/api/upload/image"),
+            100 * 1024 * 1024
+        );
         assert_eq!(middleware.get_body_limit("/api/users"), 1024 * 1024);
         assert_eq!(middleware.get_body_limit("/other"), 512 * 1024);
     }

@@ -1,14 +1,14 @@
 //! DNS API handlers
 
+use crate::error::CloudflareResult;
+use crate::models::{CreateDnsRecord, DnsListParams, UpdateDnsRecord};
+use crate::services::CloudflareServices;
 use axum::{
     extract::{Path, Query, State},
     Json,
 };
 use serde::Deserialize;
 use std::sync::Arc;
-use crate::error::CloudflareResult;
-use crate::models::{CreateDnsRecord, DnsListParams, UpdateDnsRecord};
-use crate::services::CloudflareServices;
 
 /// Query parameters for listing DNS records
 #[derive(Debug, Deserialize)]

@@ -71,7 +71,10 @@ pub struct SettingsService {
 impl SettingsService {
     /// Create a new settings service
     pub fn new(pool: PgPool) -> Self {
-        Self { pool, site_id: None }
+        Self {
+            pool,
+            site_id: None,
+        }
     }
 
     /// Set the site ID for multi-site support
@@ -123,7 +126,9 @@ impl SettingsService {
             })
             .collect();
 
-        Ok(AllSettingsResponse { groups: response_groups })
+        Ok(AllSettingsResponse {
+            groups: response_groups,
+        })
     }
 
     /// Get all settings as a flat list
@@ -234,7 +239,8 @@ impl SettingsService {
 
     /// Get site title
     pub async fn get_site_title(&self) -> Result<Option<String>> {
-        Ok(self.get_value("site_title")
+        Ok(self
+            .get_value("site_title")
             .await?
             .and_then(|v| v.as_str().map(String::from)))
     }
@@ -266,7 +272,8 @@ impl SettingsService {
 
     /// Get permalink structure
     pub async fn get_permalink_structure(&self) -> Result<String> {
-        Ok(self.get_value("permalink_structure")
+        Ok(self
+            .get_value("permalink_structure")
             .await?
             .and_then(|v| v.as_str().map(String::from))
             .unwrap_or_else(|| "/%postname%/".to_string()))
@@ -285,8 +292,17 @@ mod tests {
 
     #[test]
     fn test_group_display_name() {
-        assert_eq!(SettingsService::group_display_name("general"), "General Settings");
-        assert_eq!(SettingsService::group_display_name("reading"), "Reading Settings");
-        assert_eq!(SettingsService::group_display_name("custom"), "Custom Settings");
+        assert_eq!(
+            SettingsService::group_display_name("general"),
+            "General Settings"
+        );
+        assert_eq!(
+            SettingsService::group_display_name("reading"),
+            "Reading Settings"
+        );
+        assert_eq!(
+            SettingsService::group_display_name("custom"),
+            "Custom Settings"
+        );
     }
 }

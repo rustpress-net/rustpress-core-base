@@ -2,11 +2,11 @@
 //!
 //! Tracks plugin performance and isolates errors.
 
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use parking_lot::RwLock;
 use tracing::{debug, error, warn};
 
 // ============================================================================
@@ -137,20 +137,28 @@ impl PerformanceMonitor {
     }
 
     /// Record execution
-    fn record_execution(&self, plugin_id: &str, hook_name: Option<&str>, duration: Duration, error: Option<&str>) {
+    fn record_execution(
+        &self,
+        plugin_id: &str,
+        hook_name: Option<&str>,
+        duration: Duration,
+        error: Option<&str>,
+    ) {
         let mut metrics = self.metrics.write();
-        let plugin_metrics = metrics.entry(plugin_id.to_string()).or_insert_with(|| {
-            PluginMetrics {
-                plugin_id: plugin_id.to_string(),
-                min_execution_time: Duration::MAX,
-                ..Default::default()
-            }
-        });
+        let plugin_metrics =
+            metrics
+                .entry(plugin_id.to_string())
+                .or_insert_with(|| PluginMetrics {
+                    plugin_id: plugin_id.to_string(),
+                    min_execution_time: Duration::MAX,
+                    ..Default::default()
+                });
 
         plugin_metrics.execution_count += 1;
         plugin_metrics.total_execution_time += duration;
-        plugin_metrics.avg_execution_time_ms =
-            plugin_metrics.total_execution_time.as_millis() as f64 / plugin_metrics.execution_count as f64;
+        plugin_metrics.avg_execution_time_ms = plugin_metrics.total_execution_time.as_millis()
+            as f64
+            / plugin_metrics.execution_count as f64;
 
         if duration > plugin_metrics.max_execution_time {
             plugin_metrics.max_execution_time = duration;
@@ -178,7 +186,8 @@ impl PerformanceMonitor {
 
             hook_metrics.call_count += 1;
             hook_metrics.total_time += duration;
-            hook_metrics.avg_time_ms = hook_metrics.total_time.as_millis() as f64 / hook_metrics.call_count as f64;
+            hook_metrics.avg_time_ms =
+                hook_metrics.total_time.as_millis() as f64 / hook_metrics.call_count as f64;
 
             if duration > hook_metrics.max_time {
                 hook_metrics.max_time = duration;
@@ -200,7 +209,10 @@ impl PerformanceMonitor {
             self.add_alert(PerformanceAlert {
                 plugin_id: plugin_id.to_string(),
                 alert_type: AlertType::SlowExecution,
-                message: format!("Plugin execution exceeded {}ms threshold", self.thresholds.max_hook_time_ms),
+                message: format!(
+                    "Plugin execution exceeded {}ms threshold",
+                    self.thresholds.max_hook_time_ms
+                ),
                 value: duration.as_millis() as f64,
                 threshold: self.thresholds.max_hook_time_ms as f64,
                 timestamp: chrono::Utc::now(),
@@ -219,7 +231,10 @@ impl PerformanceMonitor {
                 self.add_alert(PerformanceAlert {
                     plugin_id: plugin_id.to_string(),
                     alert_type: AlertType::HighErrorRate,
-                    message: format!("Plugin error rate exceeded {}%", self.thresholds.error_rate_threshold),
+                    message: format!(
+                        "Plugin error rate exceeded {}%",
+                        self.thresholds.error_rate_threshold
+                    ),
                     value: error_rate,
                     threshold: self.thresholds.error_rate_threshold as f64,
                     timestamp: chrono::Utc::now(),
@@ -288,7 +303,10 @@ impl PerformanceMonitor {
             self.add_alert(PerformanceAlert {
                 plugin_id: plugin_id.to_string(),
                 alert_type: AlertType::HighMemory,
-                message: format!("Plugin memory exceeded {} bytes", self.thresholds.max_memory_bytes),
+                message: format!(
+                    "Plugin memory exceeded {} bytes",
+                    self.thresholds.max_memory_bytes
+                ),
                 value: bytes as f64,
                 threshold: self.thresholds.max_memory_bytes as f64,
                 timestamp: chrono::Utc::now(),
@@ -318,12 +336,18 @@ pub struct ExecutionTimer<'a> {
 impl<'a> ExecutionTimer<'a> {
     pub fn finish(self) {
         let duration = self.start.elapsed();
-        self.monitor.record_execution(&self.plugin_id, self.hook_name.as_deref(), duration, None);
+        self.monitor
+            .record_execution(&self.plugin_id, self.hook_name.as_deref(), duration, None);
     }
 
     pub fn finish_with_error(self, error: &str) {
         let duration = self.start.elapsed();
-        self.monitor.record_execution(&self.plugin_id, self.hook_name.as_deref(), duration, Some(error));
+        self.monitor.record_execution(
+            &self.plugin_id,
+            self.hook_name.as_deref(),
+            duration,
+            Some(error),
+        );
     }
 }
 
@@ -460,11 +484,13 @@ impl ErrorIsolator {
         // Check error count in window
         let error_count = self.get_recent_error_count(plugin_id);
         if error_count >= self.config.max_errors {
-            self.disable_plugin(plugin_id, &format!(
-                "Too many errors ({} in {} minutes)",
-                error_count,
-                self.config.error_window_minutes
-            ));
+            self.disable_plugin(
+                plugin_id,
+                &format!(
+                    "Too many errors ({} in {} minutes)",
+                    error_count, self.config.error_window_minutes
+                ),
+            );
         }
     }
 
@@ -477,7 +503,10 @@ impl ErrorIsolator {
     /// Disable a plugin
     pub fn disable_plugin(&self, plugin_id: &str, reason: &str) {
         let retry_at = if self.config.retry_after_minutes > 0 {
-            Some(chrono::Utc::now() + chrono::Duration::minutes(self.config.retry_after_minutes as i64))
+            Some(
+                chrono::Utc::now()
+                    + chrono::Duration::minutes(self.config.retry_after_minutes as i64),
+            )
         } else {
             None
         };
@@ -490,7 +519,9 @@ impl ErrorIsolator {
         };
 
         warn!(plugin = %plugin_id, "Disabling plugin: {}", reason);
-        self.disabled.write().insert(plugin_id.to_string(), disabled_reason);
+        self.disabled
+            .write()
+            .insert(plugin_id.to_string(), disabled_reason);
     }
 
     /// Enable a plugin
@@ -530,7 +561,11 @@ impl ErrorIsolator {
 
     /// Get errors for plugin
     pub fn get_errors(&self, plugin_id: &str) -> Vec<PluginError> {
-        self.errors.read().get(plugin_id).cloned().unwrap_or_default()
+        self.errors
+            .read()
+            .get(plugin_id)
+            .cloned()
+            .unwrap_or_default()
     }
 
     /// Clear errors for plugin

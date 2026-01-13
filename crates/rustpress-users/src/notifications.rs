@@ -105,26 +105,33 @@ impl NotificationType {
 
     pub fn category(&self) -> &str {
         match self {
-            Self::NewComment | Self::CommentReply | Self::CommentApproved |
-            Self::CommentMention => "Comments",
+            Self::NewComment
+            | Self::CommentReply
+            | Self::CommentApproved
+            | Self::CommentMention => "Comments",
             Self::PostPublished | Self::PostPending | Self::PostUpdated => "Posts",
             Self::NewFollower | Self::ProfileMention | Self::DirectMessage => "Social",
-            Self::PasswordChanged | Self::LoginFromNewDevice |
-            Self::AccountActivity | Self::SecurityAlert => "Security",
-            Self::NewUserRegistration | Self::ContentFlagged |
-            Self::PluginUpdate | Self::CoreUpdate => "Admin",
+            Self::PasswordChanged
+            | Self::LoginFromNewDevice
+            | Self::AccountActivity
+            | Self::SecurityAlert => "Security",
+            Self::NewUserRegistration
+            | Self::ContentFlagged
+            | Self::PluginUpdate
+            | Self::CoreUpdate => "Admin",
             Self::Newsletter | Self::ProductUpdates | Self::Tips => "Marketing",
         }
     }
 
     pub fn default_enabled(&self) -> bool {
         // Security notifications are always on by default
-        matches!(self,
-            Self::PasswordChanged |
-            Self::LoginFromNewDevice |
-            Self::SecurityAlert |
-            Self::DirectMessage |
-            Self::CommentReply
+        matches!(
+            self,
+            Self::PasswordChanged
+                | Self::LoginFromNewDevice
+                | Self::SecurityAlert
+                | Self::DirectMessage
+                | Self::CommentReply
         )
     }
 
@@ -167,7 +174,10 @@ pub struct NotificationPreference {
 impl NotificationPreference {
     pub fn new(notification_type: NotificationType) -> Self {
         let mut channels = HashMap::new();
-        channels.insert(NotificationChannel::Email, notification_type.default_enabled());
+        channels.insert(
+            NotificationChannel::Email,
+            notification_type.default_enabled(),
+        );
         channels.insert(NotificationChannel::InApp, true);
 
         Self {
@@ -231,7 +241,10 @@ impl UserNotificationPreferences {
             NotificationType::ProductUpdates,
             NotificationType::Tips,
         ] {
-            preferences.insert(notification_type, NotificationPreference::new(notification_type));
+            preferences.insert(
+                notification_type,
+                NotificationPreference::new(notification_type),
+            );
         }
 
         Self {
@@ -252,7 +265,11 @@ impl UserNotificationPreferences {
     }
 
     /// Check if notification should be sent
-    pub fn should_notify(&self, notification_type: NotificationType, channel: NotificationChannel) -> bool {
+    pub fn should_notify(
+        &self,
+        notification_type: NotificationType,
+        channel: NotificationChannel,
+    ) -> bool {
         let is_security_notification = matches!(
             notification_type,
             NotificationType::PasswordChanged | NotificationType::SecurityAlert
@@ -272,20 +289,27 @@ impl UserNotificationPreferences {
             }
         }
 
-        self.preferences.get(&notification_type)
+        self.preferences
+            .get(&notification_type)
             .map(|p| p.is_enabled(channel))
             .unwrap_or(false)
     }
 
     /// Get notification frequency
     pub fn get_frequency(&self, notification_type: NotificationType) -> NotificationFrequency {
-        self.preferences.get(&notification_type)
+        self.preferences
+            .get(&notification_type)
             .map(|p| p.frequency)
             .unwrap_or(NotificationFrequency::Never)
     }
 
     /// Update preference
-    pub fn update_preference(&mut self, notification_type: NotificationType, channel: NotificationChannel, enabled: bool) {
+    pub fn update_preference(
+        &mut self,
+        notification_type: NotificationType,
+        channel: NotificationChannel,
+        enabled: bool,
+    ) {
         if let Some(pref) = self.preferences.get_mut(&notification_type) {
             pref.set_channel(channel, enabled);
             self.updated_at = Utc::now();
@@ -293,7 +317,11 @@ impl UserNotificationPreferences {
     }
 
     /// Set frequency for notification type
-    pub fn set_frequency(&mut self, notification_type: NotificationType, frequency: NotificationFrequency) {
+    pub fn set_frequency(
+        &mut self,
+        notification_type: NotificationType,
+        frequency: NotificationFrequency,
+    ) {
         if let Some(pref) = self.preferences.get_mut(&notification_type) {
             pref.frequency = frequency;
             self.updated_at = Utc::now();
@@ -312,7 +340,8 @@ impl UserNotificationPreferences {
 
     /// Get preferences by category
     pub fn get_by_category(&self, category: &str) -> Vec<&NotificationPreference> {
-        self.preferences.values()
+        self.preferences
+            .values()
             .filter(|p| p.notification_type.category() == category)
             .collect()
     }
@@ -355,7 +384,8 @@ impl NotificationPreferencesManager {
 
     /// Get or create preferences for user
     pub fn get_or_create(&mut self, user_id: i64) -> &mut UserNotificationPreferences {
-        self.preferences.entry(user_id)
+        self.preferences
+            .entry(user_id)
             .or_insert_with(|| UserNotificationPreferences::new(user_id))
     }
 
@@ -375,8 +405,13 @@ impl NotificationPreferencesManager {
     }
 
     /// Get users who should receive notification
-    pub fn get_recipients(&self, notification_type: NotificationType, channel: NotificationChannel) -> Vec<i64> {
-        self.preferences.iter()
+    pub fn get_recipients(
+        &self,
+        notification_type: NotificationType,
+        channel: NotificationChannel,
+    ) -> Vec<i64> {
+        self.preferences
+            .iter()
             .filter(|(_, prefs)| prefs.should_notify(notification_type, channel))
             .map(|(user_id, _)| *user_id)
             .collect()
@@ -384,7 +419,8 @@ impl NotificationPreferencesManager {
 
     /// Get users needing digest
     pub fn get_digest_recipients(&self, frequency: NotificationFrequency) -> Vec<i64> {
-        self.preferences.iter()
+        self.preferences
+            .iter()
             .filter(|(_, prefs)| prefs.email_frequency == frequency)
             .map(|(user_id, _)| *user_id)
             .collect()
@@ -437,7 +473,11 @@ mod tests {
     #[test]
     fn test_cannot_disable_security() {
         let mut prefs = UserNotificationPreferences::new(1);
-        prefs.update_preference(NotificationType::SecurityAlert, NotificationChannel::Email, false);
+        prefs.update_preference(
+            NotificationType::SecurityAlert,
+            NotificationChannel::Email,
+            false,
+        );
 
         // Should still be enabled
         assert!(prefs.should_notify(NotificationType::SecurityAlert, NotificationChannel::Email));

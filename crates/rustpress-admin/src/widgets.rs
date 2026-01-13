@@ -127,7 +127,6 @@ pub fn default_dashboard_widgets() -> Vec<Widget> {
             }),
             ..Default::default()
         },
-
         // Row 2: System resources and status
         Widget {
             id: "system_resources".to_string(),
@@ -151,7 +150,6 @@ pub fn default_dashboard_widgets() -> Vec<Widget> {
             }),
             ..Default::default()
         },
-
         // Row 3: Charts
         Widget {
             id: "traffic_chart".to_string(),
@@ -177,7 +175,6 @@ pub fn default_dashboard_widgets() -> Vec<Widget> {
             }),
             ..Default::default()
         },
-
         // Row 4: Activity and actions
         Widget {
             id: "recent_activity".to_string(),
@@ -231,11 +228,20 @@ impl WidgetRenderer for DefaultWidgetRenderer {
 }
 
 fn render_stats_card(widget: &Widget, data: &serde_json::Value) -> String {
-    let icon = widget.config.get("icon").and_then(|v| v.as_str()).unwrap_or("📊");
-    let color = widget.config.get("color").and_then(|v| v.as_str()).unwrap_or("blue");
+    let icon = widget
+        .config
+        .get("icon")
+        .and_then(|v| v.as_str())
+        .unwrap_or("📊");
+    let color = widget
+        .config
+        .get("color")
+        .and_then(|v| v.as_str())
+        .unwrap_or("blue");
     let value = data.get("value").and_then(|v| v.as_u64()).unwrap_or(0);
 
-    format!(r#"
+    format!(
+        r#"
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <div class="flex items-center">
                 <div class="p-3 bg-{}-100 dark:bg-{}-900 rounded-full">
@@ -247,15 +253,20 @@ fn render_stats_card(widget: &Widget, data: &serde_json::Value) -> String {
                 </div>
             </div>
         </div>
-    "#, color, color, icon, widget.title, value)
+    "#,
+        color, color, icon, widget.title, value
+    )
 }
 
 fn render_progress_bar(widget: &Widget, data: &serde_json::Value) -> String {
-    let mut html = format!(r#"
+    let mut html = format!(
+        r#"
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">{}</h3>
             <div class="space-y-4">
-    "#, widget.title);
+    "#,
+        widget.title
+    );
 
     if let Some(metrics) = data.as_object() {
         for (name, value) in metrics {
@@ -287,27 +298,39 @@ fn render_progress_bar(widget: &Widget, data: &serde_json::Value) -> String {
 }
 
 fn render_status_list(widget: &Widget, data: &serde_json::Value) -> String {
-    let mut html = format!(r#"
+    let mut html = format!(
+        r#"
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">{}</h3>
             <div class="space-y-3">
-    "#, widget.title);
+    "#,
+        widget.title
+    );
 
     if let Some(services) = data.as_object() {
         for (name, status) in services {
             let is_healthy = status.as_bool().unwrap_or(false);
             let (badge_class, badge_text) = if is_healthy {
-                ("bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300", "Online")
+                (
+                    "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+                    "Online",
+                )
             } else {
-                ("bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300", "Offline")
+                (
+                    "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+                    "Offline",
+                )
             };
 
-            html.push_str(&format!(r#"
+            html.push_str(&format!(
+                r#"
                 <div class="flex items-center justify-between">
                     <span class="text-gray-600 dark:text-gray-400">{}</span>
                     <span class="px-2 py-1 text-xs rounded-full {}">{}</span>
                 </div>
-            "#, name, badge_class, badge_text));
+            "#,
+                name, badge_class, badge_text
+            ));
         }
     }
 
@@ -316,25 +339,37 @@ fn render_status_list(widget: &Widget, data: &serde_json::Value) -> String {
 }
 
 fn render_activity_feed(widget: &Widget, data: &serde_json::Value) -> String {
-    let mut html = format!(r#"
+    let mut html = format!(
+        r#"
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">{}</h3>
             <div class="space-y-4">
-    "#, widget.title);
+    "#,
+        widget.title
+    );
 
     if let Some(activities) = data.as_array() {
         for activity in activities.iter().take(10) {
-            let description = activity.get("description").and_then(|v| v.as_str()).unwrap_or("");
-            let timestamp = activity.get("timestamp").and_then(|v| v.as_str()).unwrap_or("");
+            let description = activity
+                .get("description")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let timestamp = activity
+                .get("timestamp")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
 
-            html.push_str(&format!(r#"
+            html.push_str(&format!(
+                r#"
                 <div class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div class="flex-1">
                         <p class="text-sm text-gray-800 dark:text-white">{}</p>
                         <p class="text-xs text-gray-500 dark:text-gray-400">{}</p>
                     </div>
                 </div>
-            "#, description, timestamp));
+            "#,
+                description, timestamp
+            ));
         }
     }
 
@@ -343,11 +378,14 @@ fn render_activity_feed(widget: &Widget, data: &serde_json::Value) -> String {
 }
 
 fn render_quick_actions(widget: &Widget, _data: &serde_json::Value) -> String {
-    let mut html = format!(r#"
+    let mut html = format!(
+        r#"
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">{}</h3>
             <div class="space-y-2">
-    "#, widget.title);
+    "#,
+        widget.title
+    );
 
     if let Some(actions) = widget.config.get("actions").and_then(|v| v.as_array()) {
         for action in actions {

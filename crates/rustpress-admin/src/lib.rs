@@ -15,12 +15,12 @@
 
 pub mod dashboard;
 pub mod dbmanager;
+pub mod functions;
 pub mod handlers;
 pub mod middleware;
 pub mod routes;
 pub mod templates;
 pub mod widgets;
-pub mod functions;
 
 pub use dashboard::*;
 pub use routes::admin_router;

@@ -244,43 +244,72 @@ impl AuditAction {
 
     pub fn category(&self) -> AuditCategory {
         match self {
-            AuditAction::LoginSuccess | AuditAction::LoginFailed | AuditAction::Logout |
-            AuditAction::PasswordChanged | AuditAction::PasswordResetRequested |
-            AuditAction::PasswordResetCompleted | AuditAction::TwoFactorEnabled |
-            AuditAction::TwoFactorDisabled | AuditAction::TwoFactorVerified |
-            AuditAction::TwoFactorFailed | AuditAction::SessionCreated |
-            AuditAction::SessionRevoked => AuditCategory::Authentication,
+            AuditAction::LoginSuccess
+            | AuditAction::LoginFailed
+            | AuditAction::Logout
+            | AuditAction::PasswordChanged
+            | AuditAction::PasswordResetRequested
+            | AuditAction::PasswordResetCompleted
+            | AuditAction::TwoFactorEnabled
+            | AuditAction::TwoFactorDisabled
+            | AuditAction::TwoFactorVerified
+            | AuditAction::TwoFactorFailed
+            | AuditAction::SessionCreated
+            | AuditAction::SessionRevoked => AuditCategory::Authentication,
 
-            AuditAction::UserCreated | AuditAction::UserUpdated | AuditAction::UserDeleted |
-            AuditAction::UserActivated | AuditAction::UserDeactivated |
-            AuditAction::UserLocked | AuditAction::UserUnlocked |
-            AuditAction::RoleChanged | AuditAction::ProfileUpdated |
-            AuditAction::EmailChanged | AuditAction::AvatarUpdated => AuditCategory::UserAccount,
+            AuditAction::UserCreated
+            | AuditAction::UserUpdated
+            | AuditAction::UserDeleted
+            | AuditAction::UserActivated
+            | AuditAction::UserDeactivated
+            | AuditAction::UserLocked
+            | AuditAction::UserUnlocked
+            | AuditAction::RoleChanged
+            | AuditAction::ProfileUpdated
+            | AuditAction::EmailChanged
+            | AuditAction::AvatarUpdated => AuditCategory::UserAccount,
 
-            AuditAction::PostCreated | AuditAction::PostUpdated | AuditAction::PostDeleted |
-            AuditAction::PostPublished | AuditAction::PostUnpublished |
-            AuditAction::PageCreated | AuditAction::PageUpdated | AuditAction::PageDeleted |
-            AuditAction::CommentCreated | AuditAction::CommentApproved |
-            AuditAction::CommentDeleted | AuditAction::CommentSpammed => AuditCategory::Content,
+            AuditAction::PostCreated
+            | AuditAction::PostUpdated
+            | AuditAction::PostDeleted
+            | AuditAction::PostPublished
+            | AuditAction::PostUnpublished
+            | AuditAction::PageCreated
+            | AuditAction::PageUpdated
+            | AuditAction::PageDeleted
+            | AuditAction::CommentCreated
+            | AuditAction::CommentApproved
+            | AuditAction::CommentDeleted
+            | AuditAction::CommentSpammed => AuditCategory::Content,
 
             AuditAction::SettingChanged | AuditAction::OptionUpdated => AuditCategory::Settings,
 
-            AuditAction::SuspiciousActivity | AuditAction::BruteForceAttempt |
-            AuditAction::UnauthorizedAccess | AuditAction::PermissionDenied => AuditCategory::Security,
+            AuditAction::SuspiciousActivity
+            | AuditAction::BruteForceAttempt
+            | AuditAction::UnauthorizedAccess
+            | AuditAction::PermissionDenied => AuditCategory::Security,
 
-            AuditAction::SystemStarted | AuditAction::SystemStopped |
-            AuditAction::CacheCleared | AuditAction::DatabaseMigrated |
-            AuditAction::BackupCreated | AuditAction::BackupRestored => AuditCategory::System,
+            AuditAction::SystemStarted
+            | AuditAction::SystemStopped
+            | AuditAction::CacheCleared
+            | AuditAction::DatabaseMigrated
+            | AuditAction::BackupCreated
+            | AuditAction::BackupRestored => AuditCategory::System,
 
-            AuditAction::PluginInstalled | AuditAction::PluginActivated |
-            AuditAction::PluginDeactivated | AuditAction::PluginDeleted |
-            AuditAction::PluginUpdated => AuditCategory::Plugin,
+            AuditAction::PluginInstalled
+            | AuditAction::PluginActivated
+            | AuditAction::PluginDeactivated
+            | AuditAction::PluginDeleted
+            | AuditAction::PluginUpdated => AuditCategory::Plugin,
 
-            AuditAction::ThemeActivated | AuditAction::ThemeInstalled |
-            AuditAction::ThemeDeleted | AuditAction::ThemeUpdated => AuditCategory::Theme,
+            AuditAction::ThemeActivated
+            | AuditAction::ThemeInstalled
+            | AuditAction::ThemeDeleted
+            | AuditAction::ThemeUpdated => AuditCategory::Theme,
 
-            AuditAction::MediaUploaded | AuditAction::MediaDeleted |
-            AuditAction::MediaUpdated => AuditCategory::Media,
+            AuditAction::MediaUploaded | AuditAction::MediaDeleted | AuditAction::MediaUpdated => {
+                AuditCategory::Media
+            }
 
             AuditAction::Custom(_) => AuditCategory::System,
         }
@@ -289,10 +318,16 @@ impl AuditAction {
     pub fn severity(&self) -> AuditSeverity {
         match self {
             AuditAction::LoginFailed | AuditAction::TwoFactorFailed => AuditSeverity::Warning,
-            AuditAction::SuspiciousActivity | AuditAction::BruteForceAttempt => AuditSeverity::Error,
-            AuditAction::UnauthorizedAccess | AuditAction::PermissionDenied => AuditSeverity::Warning,
-            AuditAction::UserDeleted | AuditAction::PostDeleted |
-            AuditAction::PageDeleted | AuditAction::MediaDeleted => AuditSeverity::Notice,
+            AuditAction::SuspiciousActivity | AuditAction::BruteForceAttempt => {
+                AuditSeverity::Error
+            }
+            AuditAction::UnauthorizedAccess | AuditAction::PermissionDenied => {
+                AuditSeverity::Warning
+            }
+            AuditAction::UserDeleted
+            | AuditAction::PostDeleted
+            | AuditAction::PageDeleted
+            | AuditAction::MediaDeleted => AuditSeverity::Notice,
             _ => AuditSeverity::Info,
         }
     }
@@ -589,10 +624,14 @@ impl AuditManager {
     pub fn log(&mut self, entry: AuditEntry) {
         // Update stats
         self.stats.total_entries += 1;
-        *self.stats.entries_by_category
+        *self
+            .stats
+            .entries_by_category
             .entry(entry.category.name().to_string())
             .or_insert(0) += 1;
-        *self.stats.entries_by_severity
+        *self
+            .stats
+            .entries_by_severity
             .entry(entry.severity.name().to_string())
             .or_insert(0) += 1;
 
@@ -616,7 +655,9 @@ impl AuditManager {
         self.entries.push(entry);
 
         // Apply retention if needed
-        if self.retention_policy.max_entries > 0 && self.entries.len() > self.retention_policy.max_entries {
+        if self.retention_policy.max_entries > 0
+            && self.entries.len() > self.retention_policy.max_entries
+        {
             self.apply_retention();
         }
     }
@@ -633,7 +674,9 @@ impl AuditManager {
 
     /// Query audit logs
     pub fn query(&self, query: &AuditQuery) -> Vec<&AuditEntry> {
-        let mut results: Vec<&AuditEntry> = self.entries.iter()
+        let mut results: Vec<&AuditEntry> = self
+            .entries
+            .iter()
             .filter(|entry| {
                 // Filter by user
                 if let Some(user_id) = query.user_id {
@@ -705,10 +748,7 @@ impl AuditManager {
         let offset = query.offset.unwrap_or(0);
         let limit = query.limit.unwrap_or(100);
 
-        results.into_iter()
-            .skip(offset)
-            .take(limit)
-            .collect()
+        results.into_iter().skip(offset).take(limit).collect()
     }
 
     /// Get entry by ID
@@ -730,10 +770,12 @@ impl AuditManager {
 
     /// Get security events
     pub fn security_events(&self, days: i64) -> Vec<&AuditEntry> {
-        self.query(&AuditQuery::new()
-            .category(AuditCategory::Security)
-            .last_days(days)
-            .paginate(1000, 0))
+        self.query(
+            &AuditQuery::new()
+                .category(AuditCategory::Security)
+                .last_days(days)
+                .paginate(1000, 0),
+        )
     }
 
     /// Get statistics
@@ -762,7 +804,9 @@ impl AuditManager {
         });
 
         // Trim to max entries
-        if self.retention_policy.max_entries > 0 && self.entries.len() > self.retention_policy.max_entries {
+        if self.retention_policy.max_entries > 0
+            && self.entries.len() > self.retention_policy.max_entries
+        {
             self.entries.sort_by_key(|e| std::cmp::Reverse(e.timestamp));
             self.entries.truncate(self.retention_policy.max_entries);
         }
@@ -781,10 +825,14 @@ impl AuditManager {
         self.stats.total_entries = self.entries.len();
 
         for entry in &self.entries {
-            *self.stats.entries_by_category
+            *self
+                .stats
+                .entries_by_category
                 .entry(entry.category.name().to_string())
                 .or_insert(0) += 1;
-            *self.stats.entries_by_severity
+            *self
+                .stats
+                .entries_by_severity
                 .entry(entry.severity.name().to_string())
                 .or_insert(0) += 1;
 

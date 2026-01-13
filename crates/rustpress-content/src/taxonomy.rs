@@ -181,9 +181,7 @@ impl Term {
 
         let slug_regex = regex::Regex::new(r"^[a-z0-9]+(?:-[a-z0-9]+)*$").unwrap();
         if !slug_regex.is_match(&self.slug) {
-            return Err(ContentError::Validation(
-                "Invalid slug format".to_string(),
-            ));
+            return Err(ContentError::Validation("Invalid slug format".to_string()));
         }
 
         Ok(())
@@ -264,24 +262,20 @@ impl TaxonomyService {
 
     /// Get taxonomy by slug
     pub async fn get_taxonomy(&self, slug: &str) -> ContentResult<Taxonomy> {
-        let row = sqlx::query_as::<_, TaxonomyRow>(
-            "SELECT * FROM taxonomies WHERE slug = $1",
-        )
-        .bind(slug)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or_else(|| ContentError::NotFound(slug.to_string()))?;
+        let row = sqlx::query_as::<_, TaxonomyRow>("SELECT * FROM taxonomies WHERE slug = $1")
+            .bind(slug)
+            .fetch_optional(&self.pool)
+            .await?
+            .ok_or_else(|| ContentError::NotFound(slug.to_string()))?;
 
         row.try_into()
     }
 
     /// List all taxonomies
     pub async fn list_taxonomies(&self) -> ContentResult<Vec<Taxonomy>> {
-        let rows = sqlx::query_as::<_, TaxonomyRow>(
-            "SELECT * FROM taxonomies ORDER BY name",
-        )
-        .fetch_all(&self.pool)
-        .await?;
+        let rows = sqlx::query_as::<_, TaxonomyRow>("SELECT * FROM taxonomies ORDER BY name")
+            .fetch_all(&self.pool)
+            .await?;
 
         rows.into_iter().map(|r| r.try_into()).collect()
     }
@@ -328,39 +322,35 @@ impl TaxonomyService {
 
     /// Get term by ID
     pub async fn get_term(&self, id: Uuid) -> ContentResult<Term> {
-        let row = sqlx::query_as::<_, TermRow>(
-            "SELECT * FROM terms WHERE id = $1",
-        )
-        .bind(id)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or_else(|| ContentError::NotFound(id.to_string()))?;
+        let row = sqlx::query_as::<_, TermRow>("SELECT * FROM terms WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&self.pool)
+            .await?
+            .ok_or_else(|| ContentError::NotFound(id.to_string()))?;
 
         row.try_into()
     }
 
     /// Get term by slug and taxonomy
     pub async fn get_term_by_slug(&self, taxonomy: &str, slug: &str) -> ContentResult<Term> {
-        let row = sqlx::query_as::<_, TermRow>(
-            "SELECT * FROM terms WHERE taxonomy = $1 AND slug = $2",
-        )
-        .bind(taxonomy)
-        .bind(slug)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or_else(|| ContentError::NotFound(format!("{}:{}", taxonomy, slug)))?;
+        let row =
+            sqlx::query_as::<_, TermRow>("SELECT * FROM terms WHERE taxonomy = $1 AND slug = $2")
+                .bind(taxonomy)
+                .bind(slug)
+                .fetch_optional(&self.pool)
+                .await?
+                .ok_or_else(|| ContentError::NotFound(format!("{}:{}", taxonomy, slug)))?;
 
         row.try_into()
     }
 
     /// List terms for a taxonomy
     pub async fn list_terms(&self, taxonomy: &str) -> ContentResult<Vec<Term>> {
-        let rows = sqlx::query_as::<_, TermRow>(
-            "SELECT * FROM terms WHERE taxonomy = $1 ORDER BY name",
-        )
-        .bind(taxonomy)
-        .fetch_all(&self.pool)
-        .await?;
+        let rows =
+            sqlx::query_as::<_, TermRow>("SELECT * FROM terms WHERE taxonomy = $1 ORDER BY name")
+                .bind(taxonomy)
+                .fetch_all(&self.pool)
+                .await?;
 
         rows.into_iter().map(|r| r.try_into()).collect()
     }
@@ -418,7 +408,11 @@ impl TaxonomyService {
     }
 
     /// Assign terms to content
-    pub async fn set_content_terms(&self, content_id: Uuid, term_ids: &[Uuid]) -> ContentResult<()> {
+    pub async fn set_content_terms(
+        &self,
+        content_id: Uuid,
+        term_ids: &[Uuid],
+    ) -> ContentResult<()> {
         // Remove existing associations
         sqlx::query("DELETE FROM content_terms WHERE content_id = $1")
             .bind(content_id)
@@ -427,13 +421,11 @@ impl TaxonomyService {
 
         // Add new associations
         for term_id in term_ids {
-            sqlx::query(
-                "INSERT INTO content_terms (content_id, term_id) VALUES ($1, $2)",
-            )
-            .bind(content_id)
-            .bind(term_id)
-            .execute(&self.pool)
-            .await?;
+            sqlx::query("INSERT INTO content_terms (content_id, term_id) VALUES ($1, $2)")
+                .bind(content_id)
+                .bind(term_id)
+                .execute(&self.pool)
+                .await?;
         }
 
         // Update term counts

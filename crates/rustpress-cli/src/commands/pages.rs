@@ -270,12 +270,16 @@ async fn create_page(
         .await
         .map_err(|e| CliError::Serialization(format!("Failed to parse response: {}", e)))?;
 
-    let id = created.get("id").and_then(|v| v.as_str()).unwrap_or("unknown");
+    let id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unknown");
 
     println!();
     println!(
         "{}",
-        ctx.output_format.success(&format!("Page created with ID: {}", id))
+        ctx.output_format
+            .success(&format!("Page created with ID: {}", id))
     );
 
     Ok(())
@@ -372,7 +376,10 @@ async fn update_page(
         )));
     }
 
-    println!("{}", ctx.output_format.success(&format!("Page {} updated", page)));
+    println!(
+        "{}",
+        ctx.output_format.success(&format!("Page {} updated", page))
+    );
     Ok(())
 }
 
@@ -382,7 +389,11 @@ async fn delete_page(ctx: &CliContext, page: &str, force: bool) -> CliResult<()>
         println!("Run with --force to permanently delete.");
     }
 
-    let spinner = ProgressBar::spinner(if force { "Deleting page..." } else { "Moving to trash..." });
+    let spinner = ProgressBar::spinner(if force {
+        "Deleting page..."
+    } else {
+        "Moving to trash..."
+    });
 
     let client = ctx.http_client();
     let url = if force {
@@ -411,7 +422,11 @@ async fn delete_page(ctx: &CliContext, page: &str, force: bool) -> CliResult<()>
 
     println!(
         "{}",
-        ctx.output_format.success(if force { "Page deleted" } else { "Page moved to trash" })
+        ctx.output_format.success(if force {
+            "Page deleted"
+        } else {
+            "Page moved to trash"
+        })
     );
     Ok(())
 }

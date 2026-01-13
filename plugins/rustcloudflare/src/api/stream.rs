@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use crate::error::CloudflareResult;
-use crate::models::{StreamVideo, LiveInput, CreateLiveInput, StreamStats, LiveRecording};
+use crate::models::{CreateLiveInput, LiveInput, LiveRecording, StreamStats, StreamVideo};
 use crate::services::{CloudflareServices, EmbedOptions};
 
 /// List videos response

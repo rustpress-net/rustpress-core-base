@@ -10,14 +10,14 @@
 //! - Video transcoding
 //! - Audio player support
 
+pub mod audio;
+pub mod editor;
 pub mod image_optimizer;
 pub mod lazy_loading;
-pub mod srcset;
 pub mod library;
+pub mod srcset;
 pub mod upload;
-pub mod editor;
 pub mod video;
-pub mod audio;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -26,14 +26,14 @@ use thiserror::Error;
 use uuid::Uuid;
 
 // Re-exports
+pub use audio::*;
+pub use editor::*;
 pub use image_optimizer::*;
 pub use lazy_loading::*;
-pub use srcset::*;
 pub use library::*;
+pub use srcset::*;
 pub use upload::*;
-pub use editor::*;
 pub use video::*;
-pub use audio::*;
 
 /// Media errors
 #[derive(Error, Debug)]
@@ -214,8 +214,7 @@ impl MediaItem {
 
     /// Get aspect ratio
     pub fn aspect_ratio(&self) -> Option<f64> {
-        self.dimensions()
-            .map(|(w, h)| w as f64 / h as f64)
+        self.dimensions().map(|(w, h)| w as f64 / h as f64)
     }
 
     /// Get human-readable file size
@@ -346,7 +345,7 @@ impl MediaService {
                 metadata, uploaded_by, created_at, updated_at
             FROM media_items
             WHERE id = $1
-            "#
+            "#,
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -375,7 +374,7 @@ impl MediaService {
             AND ($2::text IS NULL OR media_type::text = $2)
             ORDER BY created_at DESC
             LIMIT $3 OFFSET $4
-            "#
+            "#,
         )
         .bind(folder_id)
         .bind(media_type.map(|t| t.to_string()))
@@ -405,7 +404,7 @@ impl MediaService {
             OR caption ILIKE $1
             ORDER BY created_at DESC
             LIMIT $2
-            "#
+            "#,
         )
         .bind(&search_pattern)
         .bind(limit)
@@ -416,7 +415,14 @@ impl MediaService {
     }
 
     /// Update media item metadata
-    pub async fn update(&self, id: Uuid, title: &str, alt_text: &str, caption: &str, description: &str) -> MediaResult<MediaItem> {
+    pub async fn update(
+        &self,
+        id: Uuid,
+        title: &str,
+        alt_text: &str,
+        caption: &str,
+        description: &str,
+    ) -> MediaResult<MediaItem> {
         let media: Option<MediaItem> = sqlx::query_as(
             r#"
             UPDATE media_items
@@ -427,7 +433,7 @@ impl MediaService {
                 media_type, mime_type, file_size, path, url, thumbnail_url,
                 width, height, duration, file_hash, folder_id,
                 metadata, uploaded_by, created_at, updated_at
-            "#
+            "#,
         )
         .bind(id)
         .bind(title)
@@ -591,7 +597,10 @@ mod tests {
         assert_eq!(MediaType::from_mime("audio/mpeg"), MediaType::Audio);
         assert_eq!(MediaType::from_mime("application/pdf"), MediaType::Document);
         assert_eq!(MediaType::from_mime("application/zip"), MediaType::Archive);
-        assert_eq!(MediaType::from_mime("application/octet-stream"), MediaType::Other);
+        assert_eq!(
+            MediaType::from_mime("application/octet-stream"),
+            MediaType::Other
+        );
     }
 
     #[test]

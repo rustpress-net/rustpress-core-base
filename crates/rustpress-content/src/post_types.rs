@@ -224,11 +224,18 @@ impl PostType {
         }
 
         // Reserved slugs
-        let reserved = ["attachment", "revision", "nav_menu_item", "custom_css", "customize_changeset"];
+        let reserved = [
+            "attachment",
+            "revision",
+            "nav_menu_item",
+            "custom_css",
+            "customize_changeset",
+        ];
         if reserved.contains(&self.slug.as_str()) {
-            return Err(ContentError::Validation(
-                format!("Post type slug '{}' is reserved", self.slug),
-            ));
+            return Err(ContentError::Validation(format!(
+                "Post type slug '{}' is reserved",
+                self.slug
+            )));
         }
 
         Ok(())
@@ -236,7 +243,9 @@ impl PostType {
 
     /// Get URL path for this post type
     pub fn get_url_path(&self) -> String {
-        self.rewrite_slug.clone().unwrap_or_else(|| self.slug.clone())
+        self.rewrite_slug
+            .clone()
+            .unwrap_or_else(|| self.slug.clone())
     }
 
     /// Check if post type supports a feature
@@ -327,13 +336,11 @@ impl PostTypeService {
 
     /// Get post type by slug
     pub async fn get(&self, slug: &str) -> ContentResult<PostType> {
-        let row = sqlx::query_as::<_, PostTypeRow>(
-            "SELECT * FROM post_types WHERE slug = $1",
-        )
-        .bind(slug)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or_else(|| ContentError::NotFound(slug.to_string()))?;
+        let row = sqlx::query_as::<_, PostTypeRow>("SELECT * FROM post_types WHERE slug = $1")
+            .bind(slug)
+            .fetch_optional(&self.pool)
+            .await?
+            .ok_or_else(|| ContentError::NotFound(slug.to_string()))?;
 
         row.try_into()
     }
@@ -399,12 +406,10 @@ impl PostTypeService {
 
     /// Unregister (delete) post type
     pub async fn unregister(&self, slug: &str) -> ContentResult<()> {
-        let result = sqlx::query(
-            "DELETE FROM post_types WHERE slug = $1 AND is_system = false",
-        )
-        .bind(slug)
-        .execute(&self.pool)
-        .await?;
+        let result = sqlx::query("DELETE FROM post_types WHERE slug = $1 AND is_system = false")
+            .bind(slug)
+            .execute(&self.pool)
+            .await?;
 
         if result.rows_affected() == 0 {
             return Err(ContentError::PermissionDenied(
@@ -417,12 +422,11 @@ impl PostTypeService {
 
     /// Check if post type exists
     pub async fn exists(&self, slug: &str) -> ContentResult<bool> {
-        let result: (bool,) = sqlx::query_as(
-            "SELECT EXISTS(SELECT 1 FROM post_types WHERE slug = $1)",
-        )
-        .bind(slug)
-        .fetch_one(&self.pool)
-        .await?;
+        let result: (bool,) =
+            sqlx::query_as("SELECT EXISTS(SELECT 1 FROM post_types WHERE slug = $1)")
+                .bind(slug)
+                .fetch_one(&self.pool)
+                .await?;
 
         Ok(result.0)
     }

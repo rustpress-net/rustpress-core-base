@@ -69,10 +69,9 @@ impl Response {
     }
 
     pub fn json<T: serde::Serialize>(data: &T) -> Result<Self> {
-        let body = serde_json::to_vec(data)
-            .map_err(|e| crate::error::Error::Serialization {
-                message: e.to_string(),
-            })?;
+        let body = serde_json::to_vec(data).map_err(|e| crate::error::Error::Serialization {
+            message: e.to_string(),
+        })?;
 
         Ok(Self::ok()
             .with_body(body)
@@ -87,7 +86,11 @@ impl Default for Response {
 }
 
 /// Next function in the middleware chain
-pub type Next = Arc<dyn Fn(Request) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Response>> + Send>> + Send + Sync>;
+pub type Next = Arc<
+    dyn Fn(Request) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Response>> + Send>>
+        + Send
+        + Sync,
+>;
 
 /// Middleware trait for request/response processing
 #[async_trait]
@@ -253,7 +256,9 @@ impl Middleware for RequestIdMiddleware {
         let request_id = request.context.request_id.to_string();
 
         let mut response = next(request).await?;
-        response.headers.insert("x-request-id".to_string(), request_id);
+        response
+            .headers
+            .insert("x-request-id".to_string(), request_id);
 
         Ok(response)
     }

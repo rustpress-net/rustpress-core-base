@@ -356,9 +356,21 @@ pub struct CriticalCssConfig {
 
 fn default_viewports() -> Vec<ViewportConfig> {
     vec![
-        ViewportConfig { width: 375, height: 667, name: "mobile".to_string() },
-        ViewportConfig { width: 1024, height: 768, name: "tablet".to_string() },
-        ViewportConfig { width: 1440, height: 900, name: "desktop".to_string() },
+        ViewportConfig {
+            width: 375,
+            height: 667,
+            name: "mobile".to_string(),
+        },
+        ViewportConfig {
+            width: 1024,
+            height: 768,
+            name: "tablet".to_string(),
+        },
+        ViewportConfig {
+            width: 1440,
+            height: 900,
+            name: "desktop".to_string(),
+        },
     ]
 }
 
@@ -1071,62 +1083,81 @@ impl ThemeManifest {
         }
 
         // Otherwise parse as simple JSON and convert
-        let json: serde_json::Value = serde_json::from_str(content)
-            .map_err(|e| ManifestError::ParseError(e.to_string()))?;
+        let json: serde_json::Value =
+            serde_json::from_str(content).map_err(|e| ManifestError::ParseError(e.to_string()))?;
 
         // Build ThemeMeta from flat JSON
         let theme = ThemeMeta {
-            id: json.get("id")
+            id: json
+                .get("id")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| theme_id.to_string()),
-            name: json.get("name")
+            name: json
+                .get("name")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| theme_id.to_string()),
-            version: json.get("version")
+            version: json
+                .get("version")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| "1.0.0".to_string()),
-            description: json.get("description")
+            description: json
+                .get("description")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string())
                 .unwrap_or_default(),
-            author: json.get("author")
+            author: json
+                .get("author")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| "Unknown".to_string()),
-            author_url: json.get("author_url")
+            author_url: json
+                .get("author_url")
                 .or_else(|| json.get("authorUrl"))
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string()),
-            homepage: json.get("homepage")
+            homepage: json
+                .get("homepage")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string()),
-            license: json.get("license")
+            license: json
+                .get("license")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| "MIT".to_string()),
-            license_url: json.get("license_url")
+            license_url: json
+                .get("license_url")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string()),
-            tags: json.get("tags")
+            tags: json
+                .get("tags")
                 .and_then(|v| v.as_array())
-                .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                        .collect()
+                })
                 .unwrap_or_default(),
-            screenshot: json.get("screenshot")
+            screenshot: json
+                .get("screenshot")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string()),
-            requires_rustpress: json.get("requires_rustpress")
+            requires_rustpress: json
+                .get("requires_rustpress")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string()),
-            tested_up_to: json.get("tested_up_to")
+            tested_up_to: json
+                .get("tested_up_to")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string()),
-            text_domain: json.get("text_domain")
+            text_domain: json
+                .get("text_domain")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string()),
-            domain_path: json.get("domain_path")
+            domain_path: json
+                .get("domain_path")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string()),
             theme_type: ThemeType::Classic,
@@ -1134,7 +1165,8 @@ impl ThemeManifest {
 
         // Parse colors from simple map format: {"primary": "#6366F1", ...}
         let colors = if let Some(colors_obj) = json.get("colors").and_then(|v| v.as_object()) {
-            let palette: Vec<ColorDefinition> = colors_obj.iter()
+            let palette: Vec<ColorDefinition> = colors_obj
+                .iter()
                 .filter_map(|(key, value)| {
                     value.as_str().map(|color| ColorDefinition {
                         slug: key.clone(),
@@ -1153,7 +1185,8 @@ impl ThemeManifest {
 
         // Parse fonts from simple map format: {"heading": "Space Grotesk", ...}
         let typography = if let Some(fonts_obj) = json.get("fonts").and_then(|v| v.as_object()) {
-            let font_families: Vec<FontFamily> = fonts_obj.iter()
+            let font_families: Vec<FontFamily> = fonts_obj
+                .iter()
                 .filter_map(|(key, value)| {
                     value.as_str().map(|font| FontFamily {
                         slug: key.clone(),
@@ -1172,13 +1205,12 @@ impl ThemeManifest {
         };
 
         // Parse features from map format: {"darkMode": true, ...}
-        let features: HashMap<String, bool> = json.get("features")
+        let features: HashMap<String, bool> = json
+            .get("features")
             .and_then(|v| v.as_object())
             .map(|obj| {
                 obj.iter()
-                    .filter_map(|(key, value)| {
-                        value.as_bool().map(|b| (key.clone(), b))
-                    })
+                    .filter_map(|(key, value)| value.as_bool().map(|b| (key.clone(), b)))
                     .collect()
             })
             .unwrap_or_default();
@@ -1186,11 +1218,13 @@ impl ThemeManifest {
         // Parse layout settings
         let layout = if let Some(layout_obj) = json.get("layout").and_then(|v| v.as_object()) {
             LayoutSection {
-                content_width: layout_obj.get("contentWidth")
+                content_width: layout_obj
+                    .get("contentWidth")
                     .or_else(|| layout_obj.get("content_width"))
                     .and_then(|v| v.as_str())
                     .map(|s| s.to_string()),
-                wide_width: layout_obj.get("wideWidth")
+                wide_width: layout_obj
+                    .get("wideWidth")
                     .or_else(|| layout_obj.get("wide_width"))
                     .and_then(|v| v.as_str())
                     .map(|s| s.to_string()),
@@ -1201,23 +1235,33 @@ impl ThemeManifest {
         };
 
         // Parse menu locations
-        let menu_locations = if let Some(menus) = json.get("menuLocations").or_else(|| json.get("menu_locations")) {
+        let menu_locations = if let Some(menus) = json
+            .get("menuLocations")
+            .or_else(|| json.get("menu_locations"))
+        {
             if let Some(arr) = menus.as_array() {
-                arr.iter().filter_map(|v| {
-                    let id = v.get("id").and_then(|v| v.as_str())?;
-                    let name = v.get("name").and_then(|v| v.as_str()).unwrap_or(id);
-                    Some(MenuLocation {
-                        id: id.to_string(),
-                        name: name.to_string(),
-                        description: v.get("description").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                arr.iter()
+                    .filter_map(|v| {
+                        let id = v.get("id").and_then(|v| v.as_str())?;
+                        let name = v.get("name").and_then(|v| v.as_str()).unwrap_or(id);
+                        Some(MenuLocation {
+                            id: id.to_string(),
+                            name: name.to_string(),
+                            description: v
+                                .get("description")
+                                .and_then(|v| v.as_str())
+                                .map(|s| s.to_string()),
+                        })
                     })
-                }).collect()
+                    .collect()
             } else if let Some(obj) = menus.as_object() {
-                obj.iter().map(|(id, name)| MenuLocation {
-                    id: id.clone(),
-                    name: name.as_str().unwrap_or(id).to_string(),
-                    description: None,
-                }).collect()
+                obj.iter()
+                    .map(|(id, name)| MenuLocation {
+                        id: id.clone(),
+                        name: name.as_str().unwrap_or(id).to_string(),
+                        description: None,
+                    })
+                    .collect()
             } else {
                 vec![]
             }
@@ -1226,37 +1270,45 @@ impl ThemeManifest {
         };
 
         // Parse widget areas
-        let widget_areas = if let Some(widgets) = json.get("widgetAreas").or_else(|| json.get("widget_areas")) {
-            if let Some(arr) = widgets.as_array() {
-                arr.iter().filter_map(|v| {
-                    let id = v.get("id").and_then(|v| v.as_str())?;
-                    let name = v.get("name").and_then(|v| v.as_str()).unwrap_or(id);
-                    Some(WidgetArea {
-                        id: id.to_string(),
-                        name: name.to_string(),
-                        description: v.get("description").and_then(|v| v.as_str()).map(|s| s.to_string()),
-                        before_widget: None,
-                        after_widget: None,
-                        before_title: None,
-                        after_title: None,
-                    })
-                }).collect()
-            } else if let Some(obj) = widgets.as_object() {
-                obj.iter().map(|(id, name)| WidgetArea {
-                    id: id.clone(),
-                    name: name.as_str().unwrap_or(id).to_string(),
-                    description: None,
-                    before_widget: None,
-                    after_widget: None,
-                    before_title: None,
-                    after_title: None,
-                }).collect()
+        let widget_areas =
+            if let Some(widgets) = json.get("widgetAreas").or_else(|| json.get("widget_areas")) {
+                if let Some(arr) = widgets.as_array() {
+                    arr.iter()
+                        .filter_map(|v| {
+                            let id = v.get("id").and_then(|v| v.as_str())?;
+                            let name = v.get("name").and_then(|v| v.as_str()).unwrap_or(id);
+                            Some(WidgetArea {
+                                id: id.to_string(),
+                                name: name.to_string(),
+                                description: v
+                                    .get("description")
+                                    .and_then(|v| v.as_str())
+                                    .map(|s| s.to_string()),
+                                before_widget: None,
+                                after_widget: None,
+                                before_title: None,
+                                after_title: None,
+                            })
+                        })
+                        .collect()
+                } else if let Some(obj) = widgets.as_object() {
+                    obj.iter()
+                        .map(|(id, name)| WidgetArea {
+                            id: id.clone(),
+                            name: name.as_str().unwrap_or(id).to_string(),
+                            description: None,
+                            before_widget: None,
+                            after_widget: None,
+                            before_title: None,
+                            after_title: None,
+                        })
+                        .collect()
+                } else {
+                    vec![]
+                }
             } else {
                 vec![]
-            }
-        } else {
-            vec![]
-        };
+            };
 
         let layout_with_locations = LayoutSection {
             menu_locations,
@@ -1266,9 +1318,21 @@ impl ThemeManifest {
 
         // Build supports from features
         let supports = ThemeSupports {
-            dark_mode: features.get("darkMode").or_else(|| features.get("dark_mode")).copied().unwrap_or(false),
-            block_editor: features.get("blockEditor").or_else(|| features.get("block_editor")).copied().unwrap_or(true),
-            post_thumbnails: features.get("postThumbnails").or_else(|| features.get("post_thumbnails")).copied().unwrap_or(true),
+            dark_mode: features
+                .get("darkMode")
+                .or_else(|| features.get("dark_mode"))
+                .copied()
+                .unwrap_or(false),
+            block_editor: features
+                .get("blockEditor")
+                .or_else(|| features.get("block_editor"))
+                .copied()
+                .unwrap_or(true),
+            post_thumbnails: features
+                .get("postThumbnails")
+                .or_else(|| features.get("post_thumbnails"))
+                .copied()
+                .unwrap_or(true),
             ..Default::default()
         };
 
@@ -1297,8 +1361,8 @@ impl ThemeManifest {
 
     /// Load from file path
     pub fn load(path: &std::path::Path) -> Result<Self, ManifestError> {
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| ManifestError::IoError(e.to_string()))?;
+        let content =
+            std::fs::read_to_string(path).map_err(|e| ManifestError::IoError(e.to_string()))?;
         Self::from_toml(&content)
     }
 
@@ -1314,12 +1378,20 @@ impl ThemeManifest {
 
     /// Get all color slugs
     pub fn color_slugs(&self) -> Vec<&str> {
-        self.colors.palette.iter().map(|c| c.slug.as_str()).collect()
+        self.colors
+            .palette
+            .iter()
+            .map(|c| c.slug.as_str())
+            .collect()
     }
 
     /// Get all font size slugs
     pub fn font_size_slugs(&self) -> Vec<&str> {
-        self.typography.font_sizes.iter().map(|f| f.slug.as_str()).collect()
+        self.typography
+            .font_sizes
+            .iter()
+            .map(|f| f.slug.as_str())
+            .collect()
     }
 }
 

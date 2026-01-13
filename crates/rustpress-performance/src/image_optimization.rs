@@ -2,12 +2,12 @@
 //!
 //! Optimizes images for web delivery with format conversion, resizing, and compression.
 
+use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use parking_lot::RwLock;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Image optimization errors
@@ -204,8 +204,8 @@ impl ImageOptimizer {
         }
 
         // Load image using the image crate
-        let img = image::load_from_memory(data)
-            .map_err(|e| ImageError::LoadError(e.to_string()))?;
+        let img =
+            image::load_from_memory(data).map_err(|e| ImageError::LoadError(e.to_string()))?;
 
         let original_width = img.width();
         let original_height = img.height();
@@ -298,7 +298,12 @@ impl ImageOptimizer {
         Ok(result)
     }
 
-    fn optimize_svg(&self, data: &[u8], filename: &str, hash: &str) -> Result<OptimizedImage, ImageError> {
+    fn optimize_svg(
+        &self,
+        data: &[u8],
+        filename: &str,
+        hash: &str,
+    ) -> Result<OptimizedImage, ImageError> {
         // For SVG, just minify and return
         let svg_str = String::from_utf8_lossy(data);
         let minified = minify_svg(&svg_str);
@@ -386,11 +391,7 @@ impl ImageOptimizer {
 
     fn generate_placeholder(&self, img: &image::DynamicImage) -> Result<String, ImageError> {
         // Create a tiny blurred version
-        let tiny = img.resize(
-            32,
-            32,
-            image::imageops::FilterType::Gaussian,
-        );
+        let tiny = img.resize(32, 32, image::imageops::FilterType::Gaussian);
 
         // Blur
         let blurred = tiny.blur(self.config.placeholder_blur as f32);
@@ -398,7 +399,8 @@ impl ImageOptimizer {
         // Encode as base64 JPEG
         let mut buffer = Cursor::new(Vec::new());
         let encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut buffer, 20);
-        blurred.write_with_encoder(encoder)
+        blurred
+            .write_with_encoder(encoder)
             .map_err(|e| ImageError::EncodeError(e.to_string()))?;
 
         let base64_data = base64::Engine::encode(
@@ -460,7 +462,12 @@ pub struct OptimizerStats {
 }
 
 /// Generate variant filename
-fn generate_variant_filename(original: &str, width: u32, format: ImageFormat, hash: &str) -> String {
+fn generate_variant_filename(
+    original: &str,
+    width: u32,
+    format: ImageFormat,
+    hash: &str,
+) -> String {
     let stem = Path::new(original)
         .file_stem()
         .and_then(|s| s.to_str())
@@ -508,7 +515,8 @@ impl ResponsiveImageGenerator {
     pub fn generate_srcset(&self, image: &OptimizedImage, format: Option<ImageFormat>) -> String {
         let target_format = format.unwrap_or(image.original_format);
 
-        image.variants
+        image
+            .variants
             .iter()
             .filter(|v| v.format == target_format)
             .map(|v| format!("{}{} {}w", self.base_url, v.url, v.width))
@@ -517,8 +525,15 @@ impl ResponsiveImageGenerator {
     }
 
     /// Generate picture element HTML
-    pub fn generate_picture(&self, image: &OptimizedImage, alt: &str, class: Option<&str>) -> String {
-        let class_attr = class.map(|c| format!(" class=\"{}\"", c)).unwrap_or_default();
+    pub fn generate_picture(
+        &self,
+        image: &OptimizedImage,
+        alt: &str,
+        class: Option<&str>,
+    ) -> String {
+        let class_attr = class
+            .map(|c| format!(" class=\"{}\"", c))
+            .unwrap_or_default();
 
         let mut html = String::from("<picture>\n");
 
@@ -544,7 +559,8 @@ impl ResponsiveImageGenerator {
         let original_srcset = self.generate_srcset(image, Some(image.original_format));
 
         // Find the default src (largest variant)
-        let default_src = image.variants
+        let default_src = image
+            .variants
             .iter()
             .filter(|v| v.format == image.original_format)
             .max_by_key(|v| v.width)
@@ -562,7 +578,8 @@ impl ResponsiveImageGenerator {
         };
 
         // Add placeholder background
-        let placeholder_style = image.dominant_color
+        let placeholder_style = image
+            .dominant_color
             .as_ref()
             .map(|c| format!(" background-color: {};", c))
             .unwrap_or_default();
@@ -586,7 +603,8 @@ impl ResponsiveImageGenerator {
     pub fn generate_img(&self, image: &OptimizedImage, alt: &str) -> String {
         let srcset = self.generate_srcset(image, None);
 
-        let default_src = image.variants
+        let default_src = image
+            .variants
             .first()
             .map(|v| format!("{}{}", self.base_url, v.url))
             .unwrap_or_default();
@@ -655,7 +673,8 @@ impl ImageProcessingQueue {
 
     /// Get job status
     pub fn get_status(&self, id: &str) -> Option<JobStatus> {
-        self.queue.read()
+        self.queue
+            .read()
             .iter()
             .find(|j| j.id == id)
             .map(|j| j.status.clone())
@@ -691,7 +710,11 @@ impl ImageProcessingQueue {
 
     /// Get pending count
     pub fn pending_count(&self) -> usize {
-        self.queue.read().iter().filter(|j| j.status == JobStatus::Pending).count()
+        self.queue
+            .read()
+            .iter()
+            .filter(|j| j.status == JobStatus::Pending)
+            .count()
     }
 }
 
@@ -710,7 +733,8 @@ mod tests {
 
     #[test]
     fn test_variant_filename_generation() {
-        let filename = generate_variant_filename("photo.jpg", 800, ImageFormat::WebP, "abc123def456");
+        let filename =
+            generate_variant_filename("photo.jpg", 800, ImageFormat::WebP, "abc123def456");
         assert!(filename.contains("photo"));
         assert!(filename.contains("800w"));
         assert!(filename.ends_with(".webp"));

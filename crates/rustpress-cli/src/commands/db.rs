@@ -200,7 +200,11 @@ pub async fn execute(ctx: &CliContext, cmd: DbCommand) -> CliResult<()> {
             r#type,
         } => create_backup(ctx, output, include_media, &r#type).await,
         DbSubcommand::Restore { file, yes } => restore_backup(ctx, &file, yes).await,
-        DbSubcommand::Query { sql, explain, limit } => run_query(ctx, &sql, explain, limit).await,
+        DbSubcommand::Query {
+            sql,
+            explain,
+            limit,
+        } => run_query(ctx, &sql, explain, limit).await,
         DbSubcommand::Tables { verbose } => list_tables(ctx, verbose).await,
         DbSubcommand::Export {
             table,
@@ -248,7 +252,11 @@ async fn run_migrate(
             .map_err(|e| CliError::Network(format!("Failed to fetch migrations: {}", e)))?;
 
         if !response.status().is_success() {
-            println!("{}", ctx.output_format.info("Migration status is not available via API. Use direct database access."));
+            println!(
+                "{}",
+                ctx.output_format
+                    .info("Migration status is not available via API. Use direct database access.")
+            );
             return Ok(());
         }
 
@@ -267,10 +275,19 @@ async fn run_migrate(
         print_header(&format!("Rolling back {} migration(s)", n));
 
         if dry_run {
-            println!("{}", ctx.output_format.warning("Dry run - no changes will be made"));
+            println!(
+                "{}",
+                ctx.output_format
+                    .warning("Dry run - no changes will be made")
+            );
         }
 
-        let url = format!("{}/api/v1/db/migrations/rollback?count={}&dry_run={}", ctx.server_url(), n, dry_run);
+        let url = format!(
+            "{}/api/v1/db/migrations/rollback?count={}&dry_run={}",
+            ctx.server_url(),
+            n,
+            dry_run
+        );
         let response = client
             .post(&url)
             .header("Authorization", auth_header(ctx)?)
@@ -279,7 +296,12 @@ async fn run_migrate(
             .map_err(|e| CliError::Network(format!("Failed to rollback migrations: {}", e)))?;
 
         if !response.status().is_success() {
-            println!("{}", ctx.output_format.info("Migration rollback is not available via API. Use direct database access."));
+            println!(
+                "{}",
+                ctx.output_format.info(
+                    "Migration rollback is not available via API. Use direct database access."
+                )
+            );
             return Ok(());
         }
 
@@ -290,12 +312,20 @@ async fn run_migrate(
         print_header("Running Migrations");
 
         if dry_run {
-            println!("{}", ctx.output_format.warning("Dry run - no changes will be made"));
+            println!(
+                "{}",
+                ctx.output_format
+                    .warning("Dry run - no changes will be made")
+            );
         }
 
         let spinner = ProgressBar::spinner("Running migrations...");
 
-        let url = format!("{}/api/v1/db/migrations/run?dry_run={}", ctx.server_url(), dry_run);
+        let url = format!(
+            "{}/api/v1/db/migrations/run?dry_run={}",
+            ctx.server_url(),
+            dry_run
+        );
         let response = client
             .post(&url)
             .header("Authorization", auth_header(ctx)?)
@@ -306,7 +336,11 @@ async fn run_migrate(
         spinner.finish_and_clear();
 
         if !response.status().is_success() {
-            println!("{}", ctx.output_format.info("Migrations are not available via API. Use direct database access."));
+            println!(
+                "{}",
+                ctx.output_format
+                    .info("Migrations are not available via API. Use direct database access.")
+            );
             return Ok(());
         }
 
@@ -316,7 +350,11 @@ async fn run_migrate(
         if applied == 0 {
             println!("{}", ctx.output_format.success("Database is up to date"));
         } else if !dry_run {
-            println!("{}", ctx.output_format.success(&format!("Applied {} migration(s)", applied)));
+            println!(
+                "{}",
+                ctx.output_format
+                    .success(&format!("Applied {} migration(s)", applied))
+            );
         }
     }
 
@@ -346,7 +384,10 @@ async fn show_status(ctx: &CliContext) -> CliResult<()> {
                 print_kv("Server", &ctx.server_url());
                 print_kv("Status", "Connected");
                 println!();
-                println!("{}", ctx.output_format.success("Database connection healthy"));
+                println!(
+                    "{}",
+                    ctx.output_format.success("Database connection healthy")
+                );
             }
             _ => {
                 print_kv("Server", &ctx.server_url());
@@ -377,7 +418,10 @@ async fn show_status(ctx: &CliContext) -> CliResult<()> {
     }
 
     println!();
-    println!("{}", ctx.output_format.success("Database connection healthy"));
+    println!(
+        "{}",
+        ctx.output_format.success("Database connection healthy")
+    );
 
     Ok(())
 }
@@ -400,7 +444,12 @@ async fn create_backup(
     let spinner = ProgressBar::spinner("Creating backup...");
 
     let client = ctx.http_client();
-    let url = format!("{}/api/v1/db/backup?type={}&include_media={}", ctx.server_url(), backup_type, include_media);
+    let url = format!(
+        "{}/api/v1/db/backup?type={}&include_media={}",
+        ctx.server_url(),
+        backup_type,
+        include_media
+    );
 
     let response = client
         .post(&url)
@@ -413,22 +462,25 @@ async fn create_backup(
 
     if response.status().is_success() {
         // Save the backup file
-        let bytes = response.bytes().await
+        let bytes = response
+            .bytes()
+            .await
             .map_err(|e| CliError::Network(format!("Failed to download backup: {}", e)))?;
         std::fs::write(&output_file, &bytes)?;
-        println!("{}", ctx.output_format.success(&format!("Backup created: {}", output_file)));
+        println!(
+            "{}",
+            ctx.output_format
+                .success(&format!("Backup created: {}", output_file))
+        );
     } else {
         println!();
         println!(
             "{}",
-            ctx.output_format.info("Backup via API not available. To create a backup, use pg_dump:")
+            ctx.output_format
+                .info("Backup via API not available. To create a backup, use pg_dump:")
         );
         println!();
-        println!(
-            "  {} pg_dump $DATABASE_URL > {}",
-            "$".dimmed(),
-            output_file
-        );
+        println!("  {} pg_dump $DATABASE_URL > {}", "$".dimmed(), output_file);
 
         if include_media {
             println!();
@@ -474,13 +526,18 @@ async fn restore_backup(ctx: &CliContext, file: &str, yes: bool) -> CliResult<()
 async fn run_query(ctx: &CliContext, sql: &str, explain: bool, limit: u32) -> CliResult<()> {
     // Safety check - prevent destructive queries in CLI
     let sql_upper = sql.to_uppercase();
-    if sql_upper.contains("DROP") || sql_upper.contains("TRUNCATE") || sql_upper.contains("DELETE") {
+    if sql_upper.contains("DROP") || sql_upper.contains("TRUNCATE") || sql_upper.contains("DELETE")
+    {
         return Err(CliError::InvalidInput(
             "Destructive queries (DROP, TRUNCATE, DELETE) are not allowed via CLI. Use direct database access.".to_string()
         ));
     }
 
-    print_header(if explain { "Query Execution Plan" } else { "Query Results" });
+    print_header(if explain {
+        "Query Execution Plan"
+    } else {
+        "Query Results"
+    });
 
     let client = ctx.http_client();
     let url = format!("{}/api/v1/db/query", ctx.server_url());
@@ -500,7 +557,11 @@ async fn run_query(ctx: &CliContext, sql: &str, explain: bool, limit: u32) -> Cl
         .map_err(|e| CliError::Network(format!("Failed to execute query: {}", e)))?;
 
     if !response.status().is_success() {
-        println!("{}", ctx.output_format.error("Query execution via API is not available. Use direct database access."));
+        println!(
+            "{}",
+            ctx.output_format
+                .error("Query execution via API is not available. Use direct database access.")
+        );
         return Ok(());
     }
 
@@ -533,7 +594,11 @@ async fn list_tables(ctx: &CliContext, verbose: bool) -> CliResult<()> {
         .map_err(|e| CliError::Network(format!("Failed to fetch tables: {}", e)))?;
 
     if !response.status().is_success() {
-        println!("{}", ctx.output_format.info("Table listing via API is not available. Use direct database access."));
+        println!(
+            "{}",
+            ctx.output_format
+                .info("Table listing via API is not available. Use direct database access.")
+        );
         return Ok(());
     }
 
@@ -562,7 +627,14 @@ async fn export_table(
 ) -> CliResult<()> {
     print_header(&format!("Exporting table: {}", table));
 
-    let output_file = output.unwrap_or_else(|| format!("{}_{}.{}", table, chrono::Utc::now().format("%Y%m%d"), format));
+    let output_file = output.unwrap_or_else(|| {
+        format!(
+            "{}_{}.{}",
+            table,
+            chrono::Utc::now().format("%Y%m%d"),
+            format
+        )
+    });
 
     print_kv("Format", format);
     print_kv("Output", &output_file);
@@ -573,7 +645,12 @@ async fn export_table(
     let spinner = ProgressBar::spinner("Exporting data...");
 
     let client = ctx.http_client();
-    let mut url = format!("{}/api/v1/db/export/{}?format={}", ctx.server_url(), table, format);
+    let mut url = format!(
+        "{}/api/v1/db/export/{}?format={}",
+        ctx.server_url(),
+        table,
+        format
+    );
     if let Some(ref w) = where_clause {
         url.push_str(&format!("&where={}", w));
     }
@@ -588,14 +665,22 @@ async fn export_table(
     spinner.finish_and_clear();
 
     if !response.status().is_success() {
-        println!("{}", ctx.output_format.info("Table export via API is not available. Use direct database access."));
+        println!(
+            "{}",
+            ctx.output_format
+                .info("Table export via API is not available. Use direct database access.")
+        );
         return Ok(());
     }
 
     let content = response.text().await.unwrap_or_default();
     std::fs::write(&output_file, content)?;
 
-    println!("{}", ctx.output_format.success(&format!("Exported to {}", output_file)));
+    println!(
+        "{}",
+        ctx.output_format
+            .success(&format!("Exported to {}", output_file))
+    );
 
     Ok(())
 }
@@ -647,7 +732,11 @@ async fn import_data(
 
     if !dry_run {
         println!();
-        println!("{}", ctx.output_format.info("Data import via API is not available. Use direct database access or psql."));
+        println!(
+            "{}",
+            ctx.output_format
+                .info("Data import via API is not available. Use direct database access or psql.")
+        );
     }
 
     Ok(())
@@ -675,16 +764,25 @@ async fn optimize_tables(ctx: &CliContext, table: Option<String>) -> CliResult<(
     spinner.finish_and_clear();
 
     if !response.status().is_success() {
-        println!("{}", ctx.output_format.info("Database optimization via API is not available. Use VACUUM ANALYZE directly."));
+        println!(
+            "{}",
+            ctx.output_format.info(
+                "Database optimization via API is not available. Use VACUUM ANALYZE directly."
+            )
+        );
         return Ok(());
     }
 
     let result: serde_json::Value = response.json().await.unwrap_or_default();
-    let count = result.get("optimized").and_then(|v| v.as_i64()).unwrap_or(1);
+    let count = result
+        .get("optimized")
+        .and_then(|v| v.as_i64())
+        .unwrap_or(1);
 
     println!(
         "{}",
-        ctx.output_format.success(&format!("Optimized {} table(s)", count))
+        ctx.output_format
+            .success(&format!("Optimized {} table(s)", count))
     );
 
     Ok(())
@@ -712,7 +810,11 @@ async fn audit_log(
         if response.status().is_success() {
             println!("{}", ctx.output_format.success("Audit log cleared"));
         } else {
-            println!("{}", ctx.output_format.info("Audit log clearing via API is not available."));
+            println!(
+                "{}",
+                ctx.output_format
+                    .info("Audit log clearing via API is not available.")
+            );
         }
         return Ok(());
     }
@@ -732,7 +834,11 @@ async fn audit_log(
         .map_err(|e| CliError::Network(format!("Failed to fetch audit log: {}", e)))?;
 
     if !response.status().is_success() {
-        println!("{}", ctx.output_format.info("Audit log via API is not available."));
+        println!(
+            "{}",
+            ctx.output_format
+                .info("Audit log via API is not available.")
+        );
         return Ok(());
     }
 

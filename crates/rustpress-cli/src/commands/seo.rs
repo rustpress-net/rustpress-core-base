@@ -58,7 +58,10 @@ async fn generate_sitemap(ctx: &CliContext) -> CliResult<()> {
     let spinner = ProgressBar::spinner("Generating sitemap.xml...");
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     spinner.finish_and_clear();
-    println!("{}", ctx.output_format.success("Sitemap generated: /sitemap.xml"));
+    println!(
+        "{}",
+        ctx.output_format.success("Sitemap generated: /sitemap.xml")
+    );
     Ok(())
 }
 
@@ -99,7 +102,11 @@ async fn manage_robots(ctx: &CliContext, get: bool, set: Option<String>) -> CliR
     Ok(())
 }
 
-async fn manage_settings(ctx: &CliContext, get: Option<String>, set: Option<String>) -> CliResult<()> {
+async fn manage_settings(
+    ctx: &CliContext,
+    get: Option<String>,
+    set: Option<String>,
+) -> CliResult<()> {
     if let Some(key) = get {
         match key.as_str() {
             "title_separator" => println!("-"),
@@ -108,7 +115,11 @@ async fn manage_settings(ctx: &CliContext, get: Option<String>, set: Option<Stri
         }
     } else if let Some(kv) = set {
         if let Some((key, value)) = kv.split_once('=') {
-            println!("{}", ctx.output_format.success(&format!("Set {} = {}", key, value)));
+            println!(
+                "{}",
+                ctx.output_format
+                    .success(&format!("Set {} = {}", key, value))
+            );
         }
     } else {
         print_header("SEO Settings");

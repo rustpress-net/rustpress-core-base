@@ -2,8 +2,8 @@
 //!
 //! Generates resource hints for browsers to optimize loading performance.
 
-use std::collections::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 
 /// Resource hint type
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -389,7 +389,8 @@ impl ResourceHintAnalyzer {
     /// Analyze HTML to detect resources for preloading
     pub fn analyze_html(&mut self, html: &str) {
         // Extract stylesheet links
-        let css_re = regex::Regex::new(r#"<link[^>]+href=["']([^"']+\.css[^"']*)["'][^>]*>"#).unwrap();
+        let css_re =
+            regex::Regex::new(r#"<link[^>]+href=["']([^"']+\.css[^"']*)["'][^>]*>"#).unwrap();
         for cap in css_re.captures_iter(html) {
             if let Some(href) = cap.get(1) {
                 self.critical_css.push(href.as_str().to_string());
@@ -407,7 +408,8 @@ impl ResourceHintAnalyzer {
         }
 
         // Extract font preloads
-        let font_re = regex::Regex::new(r#"url\(["']?([^"'()]+\.(woff2?|ttf|otf|eot))["']?\)"#).unwrap();
+        let font_re =
+            regex::Regex::new(r#"url\(["']?([^"'()]+\.(woff2?|ttf|otf|eot))["']?\)"#).unwrap();
         for cap in font_re.captures_iter(html) {
             if let Some(url) = cap.get(1) {
                 self.critical_fonts.push(url.as_str().to_string());
@@ -440,7 +442,7 @@ impl ResourceHintAnalyzer {
         for css in &self.critical_css {
             hints.push(
                 ResourceHint::preload(css, ResourceAs::Style)
-                    .with_fetch_priority(FetchPriority::High)
+                    .with_fetch_priority(FetchPriority::High),
             );
         }
 
@@ -448,7 +450,7 @@ impl ResourceHintAnalyzer {
         for font in &self.critical_fonts {
             hints.push(
                 ResourceHint::preload(font, ResourceAs::Font)
-                    .with_crossorigin(CrossOrigin::Anonymous)
+                    .with_crossorigin(CrossOrigin::Anonymous),
             );
         }
 
@@ -511,7 +513,10 @@ impl NavigationPredictor {
 
     /// Record a navigation event
     pub fn record_navigation(&mut self, from: &str, to: &str) {
-        let edges = self.nav_graph.entry(from.to_string()).or_insert_with(Vec::new);
+        let edges = self
+            .nav_graph
+            .entry(from.to_string())
+            .or_insert_with(Vec::new);
 
         if let Some(edge) = edges.iter_mut().find(|(path, _)| path == to) {
             // Increase probability for existing edge

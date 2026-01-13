@@ -149,7 +149,8 @@ impl<S: RateLimitStore> RateLimiter<S> {
 
     /// Fixed window rate limiting
     async fn check_fixed(&self, key: &str, limit: u32) -> Result<RateLimitResult> {
-        let (count, window_start) = self.store
+        let (count, window_start) = self
+            .store
             .increment(key, self.config.window_seconds)
             .await?;
 
@@ -166,7 +167,8 @@ impl<S: RateLimitStore> RateLimiter<S> {
 
     /// Sliding window rate limiting
     async fn check_sliding(&self, key: &str, limit: u32) -> Result<RateLimitResult> {
-        let requests = self.store
+        let requests = self
+            .store
             .add_request(key, self.config.window_seconds)
             .await?;
 
@@ -176,9 +178,10 @@ impl<S: RateLimitStore> RateLimiter<S> {
         if count > limit {
             // Find oldest request in window to calculate retry_after
             let oldest = requests.first().cloned().unwrap_or(Utc::now());
-            let retry_after = ((oldest + Duration::seconds(self.config.window_seconds as i64)) - Utc::now())
-                .num_seconds()
-                .max(0) as u64;
+            let retry_after = ((oldest + Duration::seconds(self.config.window_seconds as i64))
+                - Utc::now())
+            .num_seconds()
+            .max(0) as u64;
             return Ok(RateLimitResult::denied(limit, reset_at, retry_after));
         }
 
@@ -191,10 +194,7 @@ impl<S: RateLimitStore> RateLimiter<S> {
         let key = format!("{}:{}", self.config.key_prefix, identifier);
         let total_limit = self.config.max_requests + self.config.burst_size;
 
-        let (count, window_start) = self.store
-            .get(&key)
-            .await?
-            .unwrap_or((0, Utc::now()));
+        let (count, window_start) = self.store.get(&key).await?.unwrap_or((0, Utc::now()));
 
         let reset_at = window_start + Duration::seconds(self.config.window_seconds as i64);
         let remaining = total_limit.saturating_sub(count);
@@ -206,8 +206,14 @@ impl<S: RateLimitStore> RateLimiter<S> {
     pub fn get_headers(&self, result: &RateLimitResult) -> Vec<(String, String)> {
         let mut headers = vec![
             ("X-RateLimit-Limit".to_string(), result.limit.to_string()),
-            ("X-RateLimit-Remaining".to_string(), result.remaining.to_string()),
-            ("X-RateLimit-Reset".to_string(), result.reset_at.timestamp().to_string()),
+            (
+                "X-RateLimit-Remaining".to_string(),
+                result.remaining.to_string(),
+            ),
+            (
+                "X-RateLimit-Reset".to_string(),
+                result.reset_at.timestamp().to_string(),
+            ),
         ];
 
         if let Some(retry_after) = result.retry_after {
@@ -257,11 +263,13 @@ impl RateLimitStore for InMemoryRateLimitStore {
         let now = Utc::now();
         let window_duration = Duration::seconds(window_seconds as i64);
 
-        let entry = entries.entry(key.to_string()).or_insert_with(|| RateLimitEntry {
-            count: 0,
-            window_start: now,
-            requests: Vec::new(),
-        });
+        let entry = entries
+            .entry(key.to_string())
+            .or_insert_with(|| RateLimitEntry {
+                count: 0,
+                window_start: now,
+                requests: Vec::new(),
+            });
 
         // Check if window has expired
         if now > entry.window_start + window_duration {
@@ -303,11 +311,13 @@ impl RateLimitStore for InMemoryRateLimitStore {
         let now = Utc::now();
         let window_start = now - Duration::seconds(window_seconds as i64);
 
-        let entry = entries.entry(key.to_string()).or_insert_with(|| RateLimitEntry {
-            count: 0,
-            window_start: now,
-            requests: Vec::new(),
-        });
+        let entry = entries
+            .entry(key.to_string())
+            .or_insert_with(|| RateLimitEntry {
+                count: 0,
+                window_start: now,
+                requests: Vec::new(),
+            });
 
         // Remove old requests outside window
         entry.requests.retain(|&t| t >= window_start);
@@ -333,7 +343,8 @@ impl<S: RateLimitStore + Clone> TieredRateLimiter<S> {
     }
 
     pub fn add_tier(&mut self, name: &str, store: S, config: RateLimitConfig) {
-        self.limiters.insert(name.to_string(), RateLimiter::new(store, config));
+        self.limiters
+            .insert(name.to_string(), RateLimiter::new(store, config));
     }
 
     pub async fn check(&self, tier: &str, identifier: &str) -> Result<RateLimitResult> {

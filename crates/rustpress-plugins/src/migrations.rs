@@ -3,10 +3,10 @@
 //! Handles database migrations for plugins.
 
 use crate::manifest::MigrationsSection;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use chrono::{DateTime, Utc};
 use tracing::{debug, error, info, warn};
 
 /// Migration manager for plugins
@@ -135,8 +135,7 @@ impl MigrationManager {
     ) -> Result<Vec<Migration>, MigrationError> {
         let mut migrations = Vec::new();
 
-        let entries = std::fs::read_dir(dir)
-            .map_err(|e| MigrationError::Io(e.to_string()))?;
+        let entries = std::fs::read_dir(dir).map_err(|e| MigrationError::Io(e.to_string()))?;
 
         for entry in entries {
             let entry = entry.map_err(|e| MigrationError::Io(e.to_string()))?;
@@ -174,8 +173,8 @@ impl MigrationManager {
         let version = parts[0].trim_start_matches('V').trim_start_matches('v');
         let description = parts[1].replace('_', " ");
 
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| MigrationError::Io(e.to_string()))?;
+        let content =
+            std::fs::read_to_string(path).map_err(|e| MigrationError::Io(e.to_string()))?;
 
         // Check for up/down sections
         let (up_sql, down_sql) = if content.contains("-- migrate:up") {
@@ -343,7 +342,10 @@ impl MigrationManager {
             .as_ref()
             .ok_or_else(|| MigrationError::NoRollback(last_applied.version.clone()))?;
 
-        executor.execute(down_sql).await.map_err(|e| MigrationError::ExecutionFailed(e))?;
+        executor
+            .execute(down_sql)
+            .await
+            .map_err(|e| MigrationError::ExecutionFailed(e))?;
 
         // Remove from applied
         if let Some(applied) = self.applied.get_mut(plugin_id) {
@@ -373,7 +375,10 @@ impl MigrationManager {
         };
 
         for applied_migration in applied {
-            if let Some(migration) = migrations.iter().find(|m| m.version == applied_migration.version) {
+            if let Some(migration) = migrations
+                .iter()
+                .find(|m| m.version == applied_migration.version)
+            {
                 if migration.checksum != applied_migration.checksum {
                     mismatches.push(ChecksumMismatch {
                         version: applied_migration.version.clone(),
@@ -389,11 +394,7 @@ impl MigrationManager {
 
     /// Get migration status for a plugin
     pub fn get_status(&self, plugin_id: &str) -> MigrationStatus {
-        let total = self
-            .migrations
-            .get(plugin_id)
-            .map(|m| m.len())
-            .unwrap_or(0);
+        let total = self.migrations.get(plugin_id).map(|m| m.len()).unwrap_or(0);
         let applied = self.applied.get(plugin_id).map(|a| a.len()).unwrap_or(0);
         let pending = total.saturating_sub(applied);
         let last_applied = self
@@ -523,13 +524,16 @@ impl MigrationBuilder {
             "CREATE TABLE IF NOT EXISTS {} ({});",
             name, columns
         ));
-        self.down_statements.insert(0, format!("DROP TABLE IF EXISTS {};", name));
+        self.down_statements
+            .insert(0, format!("DROP TABLE IF EXISTS {};", name));
         self
     }
 
     pub fn add_column(mut self, table: &str, column: &str, definition: &str) -> Self {
-        self.up_statements
-            .push(format!("ALTER TABLE {} ADD COLUMN {} {};", table, column, definition));
+        self.up_statements.push(format!(
+            "ALTER TABLE {} ADD COLUMN {} {};",
+            table, column, definition
+        ));
         self.down_statements
             .insert(0, format!("ALTER TABLE {} DROP COLUMN {};", table, column));
         self
@@ -540,7 +544,8 @@ impl MigrationBuilder {
             "CREATE INDEX IF NOT EXISTS {} ON {} ({});",
             name, table, columns
         ));
-        self.down_statements.insert(0, format!("DROP INDEX IF EXISTS {};", name));
+        self.down_statements
+            .insert(0, format!("DROP INDEX IF EXISTS {};", name));
         self
     }
 

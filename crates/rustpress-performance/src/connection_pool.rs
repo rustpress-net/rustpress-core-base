@@ -2,10 +2,10 @@
 //!
 //! Configures and optimizes database connection pools for high performance.
 
-use std::sync::Arc;
-use std::time::Duration;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use std::time::Duration;
 
 /// Connection pool configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -230,7 +230,8 @@ impl PoolMonitor {
         }
 
         if stats.health_check_failures > 0 {
-            recommendations.push("Health check failures detected. Review database connectivity".to_string());
+            recommendations
+                .push("Health check failures detected. Review database connectivity".to_string());
         }
 
         recommendations
@@ -243,7 +244,8 @@ impl PoolMonitor {
 
         if success {
             stats.total_wait_time_ms += wait_time_ms;
-            stats.avg_acquisition_time_ms = stats.total_wait_time_ms as f64 / stats.acquisitions as f64;
+            stats.avg_acquisition_time_ms =
+                stats.total_wait_time_ms as f64 / stats.acquisitions as f64;
         } else {
             stats.acquisition_failures += 1;
         }
@@ -317,22 +319,33 @@ impl PoolAdvisor {
             return current.clone();
         }
 
-        let avg_active: f64 = self.historical_stats.iter()
+        let avg_active: f64 = self
+            .historical_stats
+            .iter()
             .map(|s| s.active_connections as f64)
-            .sum::<f64>() / self.historical_stats.len() as f64;
+            .sum::<f64>()
+            / self.historical_stats.len() as f64;
 
-        let peak_active = self.historical_stats.iter()
+        let peak_active = self
+            .historical_stats
+            .iter()
             .map(|s| s.peak_connections)
             .max()
             .unwrap_or(0);
 
-        let avg_idle: f64 = self.historical_stats.iter()
+        let avg_idle: f64 = self
+            .historical_stats
+            .iter()
             .map(|s| s.idle_connections as f64)
-            .sum::<f64>() / self.historical_stats.len() as f64;
+            .sum::<f64>()
+            / self.historical_stats.len() as f64;
 
-        let avg_wait: f64 = self.historical_stats.iter()
+        let avg_wait: f64 = self
+            .historical_stats
+            .iter()
             .map(|s| s.avg_acquisition_time_ms)
-            .sum::<f64>() / self.historical_stats.len() as f64;
+            .sum::<f64>()
+            / self.historical_stats.len() as f64;
 
         let mut suggested = current.clone();
 
@@ -342,12 +355,16 @@ impl PoolAdvisor {
             suggested.max_connections = (current.max_connections as f64 * 1.25) as u32;
         } else if peak_active as f64 <= current.max_connections as f64 * 0.5 {
             // Over-provisioned, decrease
-            suggested.max_connections = ((peak_active as f64 * 1.5) as u32).max(current.min_connections);
+            suggested.max_connections =
+                ((peak_active as f64 * 1.5) as u32).max(current.min_connections);
         }
 
         // Adjust min connections based on average active
         suggested.min_connections = (avg_active * 0.8) as u32;
-        suggested.min_connections = suggested.min_connections.max(2).min(suggested.max_connections / 2);
+        suggested.min_connections = suggested
+            .min_connections
+            .max(2)
+            .min(suggested.max_connections / 2);
 
         // Adjust idle timeout based on connection patterns
         if avg_idle > avg_active * 2.0 {
@@ -460,10 +477,7 @@ impl ConnectionStringBuilder {
 
     /// Build PostgreSQL connection string
     pub fn build_postgres(&self) -> String {
-        let mut url = format!(
-            "postgres://{}",
-            self.user
-        );
+        let mut url = format!("postgres://{}", self.user);
 
         if let Some(ref password) = self.password {
             url.push(':');
@@ -479,7 +493,9 @@ impl ConnectionStringBuilder {
 
         if !self.options.is_empty() {
             url.push('?');
-            let opts: Vec<String> = self.options.iter()
+            let opts: Vec<String> = self
+                .options
+                .iter()
                 .map(|(k, v)| format!("{}={}", k, urlencoding::encode(v)))
                 .collect();
             url.push_str(&opts.join("&"));
@@ -490,10 +506,7 @@ impl ConnectionStringBuilder {
 
     /// Build MySQL connection string
     pub fn build_mysql(&self) -> String {
-        let mut url = format!(
-            "mysql://{}",
-            self.user
-        );
+        let mut url = format!("mysql://{}", self.user);
 
         if let Some(ref password) = self.password {
             url.push(':');

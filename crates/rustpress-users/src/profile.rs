@@ -113,7 +113,9 @@ impl SocialLinks {
             "mastodon" => self.mastodon = Some(url.to_string()),
             "tiktok" => self.tiktok = Some(url.to_string()),
             "pinterest" => self.pinterest = Some(url.to_string()),
-            _ => { self.custom.insert(platform.to_string(), url.to_string()); }
+            _ => {
+                self.custom.insert(platform.to_string(), url.to_string());
+            }
         }
     }
 
@@ -135,15 +137,33 @@ impl SocialLinks {
     pub fn all(&self) -> Vec<(&str, &str)> {
         let mut links = Vec::new();
 
-        if let Some(ref url) = self.twitter { links.push(("twitter", url.as_str())); }
-        if let Some(ref url) = self.facebook { links.push(("facebook", url.as_str())); }
-        if let Some(ref url) = self.instagram { links.push(("instagram", url.as_str())); }
-        if let Some(ref url) = self.linkedin { links.push(("linkedin", url.as_str())); }
-        if let Some(ref url) = self.youtube { links.push(("youtube", url.as_str())); }
-        if let Some(ref url) = self.github { links.push(("github", url.as_str())); }
-        if let Some(ref url) = self.mastodon { links.push(("mastodon", url.as_str())); }
-        if let Some(ref url) = self.tiktok { links.push(("tiktok", url.as_str())); }
-        if let Some(ref url) = self.pinterest { links.push(("pinterest", url.as_str())); }
+        if let Some(ref url) = self.twitter {
+            links.push(("twitter", url.as_str()));
+        }
+        if let Some(ref url) = self.facebook {
+            links.push(("facebook", url.as_str()));
+        }
+        if let Some(ref url) = self.instagram {
+            links.push(("instagram", url.as_str()));
+        }
+        if let Some(ref url) = self.linkedin {
+            links.push(("linkedin", url.as_str()));
+        }
+        if let Some(ref url) = self.youtube {
+            links.push(("youtube", url.as_str()));
+        }
+        if let Some(ref url) = self.github {
+            links.push(("github", url.as_str()));
+        }
+        if let Some(ref url) = self.mastodon {
+            links.push(("mastodon", url.as_str()));
+        }
+        if let Some(ref url) = self.tiktok {
+            links.push(("tiktok", url.as_str()));
+        }
+        if let Some(ref url) = self.pinterest {
+            links.push(("pinterest", url.as_str()));
+        }
 
         for (platform, url) in &self.custom {
             links.push((platform.as_str(), url.as_str()));
@@ -227,7 +247,9 @@ impl UserProfile {
 
     /// Get meta as string
     pub fn get_meta_string(&self, key: &str) -> Option<String> {
-        self.meta.get(key).and_then(|v| v.as_str().map(String::from))
+        self.meta
+            .get(key)
+            .and_then(|v| v.as_str().map(String::from))
     }
 }
 
@@ -266,16 +288,36 @@ impl ProfileUpdate {
 
     /// Apply update to profile
     pub fn apply_to(&self, profile: &mut UserProfile) {
-        if let Some(ref v) = self.display_name { profile.display_name = v.clone(); }
-        if let Some(ref v) = self.first_name { profile.first_name = v.clone(); }
-        if let Some(ref v) = self.last_name { profile.last_name = v.clone(); }
-        if let Some(ref v) = self.nickname { profile.nickname = v.clone(); }
-        if let Some(ref v) = self.url { profile.url = v.clone(); }
-        if let Some(ref v) = self.description { profile.description = v.clone(); }
-        if let Some(ref v) = self.locale { profile.locale = v.clone(); }
-        if let Some(ref v) = self.timezone { profile.timezone = v.clone(); }
-        if let Some(ref v) = self.social_links { profile.social_links = v.clone(); }
-        if let Some(v) = self.visibility { profile.visibility = v; }
+        if let Some(ref v) = self.display_name {
+            profile.display_name = v.clone();
+        }
+        if let Some(ref v) = self.first_name {
+            profile.first_name = v.clone();
+        }
+        if let Some(ref v) = self.last_name {
+            profile.last_name = v.clone();
+        }
+        if let Some(ref v) = self.nickname {
+            profile.nickname = v.clone();
+        }
+        if let Some(ref v) = self.url {
+            profile.url = v.clone();
+        }
+        if let Some(ref v) = self.description {
+            profile.description = v.clone();
+        }
+        if let Some(ref v) = self.locale {
+            profile.locale = v.clone();
+        }
+        if let Some(ref v) = self.timezone {
+            profile.timezone = v.clone();
+        }
+        if let Some(ref v) = self.social_links {
+            profile.social_links = v.clone();
+        }
+        if let Some(v) = self.visibility {
+            profile.visibility = v;
+        }
         if let Some(ref meta) = self.meta {
             for (key, value) in meta {
                 profile.meta.insert(key.clone(), value.clone());
@@ -560,7 +602,9 @@ impl ProfileManager {
         ip: Option<&str>,
         user_agent: Option<&str>,
     ) -> Result<(), String> {
-        let profile = self.profiles.get_mut(&user_id)
+        let profile = self
+            .profiles
+            .get_mut(&user_id)
             .ok_or_else(|| "Profile not found".to_string())?;
 
         // Track changes
@@ -594,7 +638,8 @@ impl ProfileManager {
 
         // Store history if changes were made
         if !history.changes.is_empty() {
-            self.history.entry(user_id)
+            self.history
+                .entry(user_id)
                 .or_insert_with(Vec::new)
                 .push(history);
         }
@@ -615,14 +660,16 @@ impl ProfileManager {
 
     /// Get fields by section
     pub fn get_fields_by_section(&self, section: &str) -> Vec<&ProfileField> {
-        self.fields.iter()
+        self.fields
+            .iter()
             .filter(|f| f.section == section)
             .collect()
     }
 
     /// Get all visible fields for frontend
     pub fn get_frontend_fields(&self) -> Vec<&ProfileField> {
-        self.fields.iter()
+        self.fields
+            .iter()
             .filter(|f| f.visible_in_frontend)
             .collect()
     }
@@ -641,7 +688,8 @@ impl ProfileManager {
     /// Search profiles
     pub fn search(&self, query: &str) -> Vec<&UserProfile> {
         let query_lower = query.to_lowercase();
-        self.profiles.values()
+        self.profiles
+            .values()
             .filter(|p| {
                 p.username.to_lowercase().contains(&query_lower)
                     || p.display_name.to_lowercase().contains(&query_lower)
@@ -654,7 +702,8 @@ impl ProfileManager {
 
     /// Get public profiles
     pub fn get_public_profiles(&self) -> Vec<&UserProfile> {
-        self.profiles.values()
+        self.profiles
+            .values()
             .filter(|p| p.visibility == ProfileVisibility::Public)
             .collect()
     }
@@ -742,8 +791,14 @@ mod tests {
         links.set("twitter", "https://twitter.com/user");
         links.set("custom_site", "https://custom.com");
 
-        assert_eq!(links.get("twitter"), Some(&"https://twitter.com/user".to_string()));
-        assert_eq!(links.get("custom_site"), Some(&"https://custom.com".to_string()));
+        assert_eq!(
+            links.get("twitter"),
+            Some(&"https://twitter.com/user".to_string())
+        );
+        assert_eq!(
+            links.get("custom_site"),
+            Some(&"https://custom.com".to_string())
+        );
     }
 
     #[test]

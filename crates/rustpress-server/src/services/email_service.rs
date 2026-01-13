@@ -157,7 +157,8 @@ impl EmailService {
 
             let mut builder = builder.port(config.smtp_port);
 
-            if let (Some(username), Some(password)) = (&config.smtp_username, &config.smtp_password) {
+            if let (Some(username), Some(password)) = (&config.smtp_username, &config.smtp_password)
+            {
                 builder = builder.credentials(Credentials::new(username.clone(), password.clone()));
             }
 
@@ -180,7 +181,8 @@ impl EmailService {
                 EmailTemplate::SecurityAlert,
             ] {
                 let name = format!("{:?}", template);
-                if let Err(e) = templates.register_template_string(&name, template.template_html()) {
+                if let Err(e) = templates.register_template_string(&name, template.template_html())
+                {
                     tracing::warn!("Failed to register template {}: {}", name, e);
                 }
             }
@@ -216,16 +218,22 @@ impl EmailService {
         let mut template_data = data;
         template_data.insert("site_name".to_string(), serde_json::json!(config.site_name));
         template_data.insert("site_url".to_string(), serde_json::json!(config.site_url));
-        template_data.insert("current_year".to_string(), serde_json::json!(chrono::Utc::now().format("%Y").to_string()));
+        template_data.insert(
+            "current_year".to_string(),
+            serde_json::json!(chrono::Utc::now().format("%Y").to_string()),
+        );
 
         // Render subject
-        let subject = template.subject().replace("{{site_name}}", &config.site_name);
+        let subject = template
+            .subject()
+            .replace("{{site_name}}", &config.site_name);
 
         // Render body
         let template_name = format!("{:?}", template);
         let body = {
             let templates = self.templates.read().await;
-            templates.render(&template_name, &template_data)
+            templates
+                .render(&template_name, &template_data)
                 .map_err(|e| EmailError::TemplateError(e.to_string()))?
         };
 
@@ -310,12 +318,16 @@ impl EmailService {
         drop(config);
 
         let mut data = HashMap::new();
-        data.insert("name".to_string(), serde_json::json!(name.unwrap_or("User")));
+        data.insert(
+            "name".to_string(),
+            serde_json::json!(name.unwrap_or("User")),
+        );
         data.insert("reset_url".to_string(), serde_json::json!(reset_url));
         data.insert("reset_token".to_string(), serde_json::json!(reset_token));
         data.insert("expires_hours".to_string(), serde_json::json!(24));
 
-        self.send_template(EmailTemplate::PasswordReset, email, name, data).await
+        self.send_template(EmailTemplate::PasswordReset, email, name, data)
+            .await
     }
 
     /// Send email verification email
@@ -326,15 +338,25 @@ impl EmailService {
         verification_token: &str,
     ) -> Result<EmailResult, EmailError> {
         let config = self.config.read().await;
-        let verify_url = format!("{}/verify-email?token={}", config.site_url, verification_token);
+        let verify_url = format!(
+            "{}/verify-email?token={}",
+            config.site_url, verification_token
+        );
         drop(config);
 
         let mut data = HashMap::new();
-        data.insert("name".to_string(), serde_json::json!(name.unwrap_or("User")));
+        data.insert(
+            "name".to_string(),
+            serde_json::json!(name.unwrap_or("User")),
+        );
         data.insert("verify_url".to_string(), serde_json::json!(verify_url));
-        data.insert("verification_token".to_string(), serde_json::json!(verification_token));
+        data.insert(
+            "verification_token".to_string(),
+            serde_json::json!(verification_token),
+        );
 
-        self.send_template(EmailTemplate::EmailVerification, email, name, data).await
+        self.send_template(EmailTemplate::EmailVerification, email, name, data)
+            .await
     }
 
     /// Send welcome email
@@ -348,10 +370,14 @@ impl EmailService {
         drop(config);
 
         let mut data = HashMap::new();
-        data.insert("name".to_string(), serde_json::json!(name.unwrap_or("User")));
+        data.insert(
+            "name".to_string(),
+            serde_json::json!(name.unwrap_or("User")),
+        );
         data.insert("login_url".to_string(), serde_json::json!(login_url));
 
-        self.send_template(EmailTemplate::Welcome, email, name, data).await
+        self.send_template(EmailTemplate::Welcome, email, name, data)
+            .await
     }
 
     /// Test the email configuration by sending a test email
@@ -378,7 +404,8 @@ impl EmailService {
                 site_name,
                 chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
             ),
-        ).await
+        )
+        .await
     }
 }
 

@@ -2,10 +2,10 @@
 //!
 //! Reusable block pattern definitions and registration.
 
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use parking_lot::RwLock;
 
 /// Block pattern category
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -166,7 +166,9 @@ impl PatternRegistry {
 
     /// Register a category
     pub fn register_category(&self, category: PatternCategory) {
-        self.categories.write().insert(category.slug.clone(), category);
+        self.categories
+            .write()
+            .insert(category.slug.clone(), category);
     }
 
     /// Get pattern by name
@@ -208,8 +210,12 @@ impl PatternRegistry {
             .values()
             .filter(|p| {
                 p.title.to_lowercase().contains(&query_lower)
-                    || p.description.as_ref().map_or(false, |d| d.to_lowercase().contains(&query_lower))
-                    || p.keywords.iter().any(|k| k.to_lowercase().contains(&query_lower))
+                    || p.description
+                        .as_ref()
+                        .map_or(false, |d| d.to_lowercase().contains(&query_lower))
+                    || p.keywords
+                        .iter()
+                        .any(|k| k.to_lowercase().contains(&query_lower))
             })
             .cloned()
             .collect()
@@ -231,7 +237,11 @@ impl PatternRegistry {
     }
 
     /// Register patterns from theme manifest
-    pub fn register_from_theme(&self, theme_id: &str, patterns: &[crate::manifest::PatternDefinition]) {
+    pub fn register_from_theme(
+        &self,
+        theme_id: &str,
+        patterns: &[crate::manifest::PatternDefinition],
+    ) {
         for def in patterns {
             let pattern = BlockPattern {
                 name: format!("{}/{}", theme_id, def.name),
@@ -244,7 +254,9 @@ impl PatternRegistry {
                 block_types: def.block_types.clone(),
                 template_types: Vec::new(), // PatternDefinition doesn't have this field
                 inserter: def.inserter,
-                source: PatternSource::Theme { theme_id: theme_id.to_string() },
+                source: PatternSource::Theme {
+                    theme_id: theme_id.to_string(),
+                },
             };
 
             self.register(pattern);

@@ -120,37 +120,59 @@ pub enum ActivityType {
 impl ActivityType {
     pub fn category(&self) -> ActivityCategory {
         match self {
-            Self::Login | Self::Logout | Self::LoginFailed |
-            Self::PasswordReset | Self::PasswordChanged |
-            Self::TwoFactorEnabled | Self::TwoFactorDisabled |
-            Self::SessionExpired => ActivityCategory::Authentication,
+            Self::Login
+            | Self::Logout
+            | Self::LoginFailed
+            | Self::PasswordReset
+            | Self::PasswordChanged
+            | Self::TwoFactorEnabled
+            | Self::TwoFactorDisabled
+            | Self::SessionExpired => ActivityCategory::Authentication,
 
-            Self::PostCreated | Self::PostUpdated | Self::PostDeleted |
-            Self::PostPublished | Self::PostTrashed | Self::PostRestored |
-            Self::PageCreated | Self::PageUpdated | Self::PageDeleted => ActivityCategory::Content,
+            Self::PostCreated
+            | Self::PostUpdated
+            | Self::PostDeleted
+            | Self::PostPublished
+            | Self::PostTrashed
+            | Self::PostRestored
+            | Self::PageCreated
+            | Self::PageUpdated
+            | Self::PageDeleted => ActivityCategory::Content,
 
-            Self::CommentCreated | Self::CommentApproved |
-            Self::CommentSpammed | Self::CommentTrashed |
-            Self::CommentDeleted => ActivityCategory::Comment,
+            Self::CommentCreated
+            | Self::CommentApproved
+            | Self::CommentSpammed
+            | Self::CommentTrashed
+            | Self::CommentDeleted => ActivityCategory::Comment,
 
-            Self::UserCreated | Self::UserUpdated | Self::UserDeleted |
-            Self::ProfileUpdated | Self::RoleChanged |
-            Self::UserActivated | Self::UserDeactivated => ActivityCategory::User,
+            Self::UserCreated
+            | Self::UserUpdated
+            | Self::UserDeleted
+            | Self::ProfileUpdated
+            | Self::RoleChanged
+            | Self::UserActivated
+            | Self::UserDeactivated => ActivityCategory::User,
 
-            Self::MediaUploaded | Self::MediaUpdated |
-            Self::MediaDeleted => ActivityCategory::Media,
+            Self::MediaUploaded | Self::MediaUpdated | Self::MediaDeleted => {
+                ActivityCategory::Media
+            }
 
             Self::OptionUpdated | Self::SettingsSaved => ActivityCategory::Settings,
 
-            Self::PluginActivated | Self::PluginDeactivated |
-            Self::PluginInstalled | Self::PluginDeleted |
-            Self::PluginUpdated => ActivityCategory::Plugin,
+            Self::PluginActivated
+            | Self::PluginDeactivated
+            | Self::PluginInstalled
+            | Self::PluginDeleted
+            | Self::PluginUpdated => ActivityCategory::Plugin,
 
-            Self::ThemeSwitched | Self::ThemeCustomized |
-            Self::ThemeInstalled | Self::ThemeDeleted => ActivityCategory::Theme,
+            Self::ThemeSwitched
+            | Self::ThemeCustomized
+            | Self::ThemeInstalled
+            | Self::ThemeDeleted => ActivityCategory::Theme,
 
-            Self::CoreUpdated | Self::ExportCreated |
-            Self::ImportCompleted => ActivityCategory::System,
+            Self::CoreUpdated | Self::ExportCreated | Self::ImportCompleted => {
+                ActivityCategory::System
+            }
 
             Self::Custom(_) => ActivityCategory::Custom,
         }
@@ -426,7 +448,8 @@ impl ActivityManager {
 
     /// Query activities
     pub fn query(&self, query: &ActivityQuery) -> Vec<&Activity> {
-        self.activities.iter()
+        self.activities
+            .iter()
             .filter(|a| {
                 if let Some(uid) = query.user_id {
                     if a.user_id != Some(uid) {
@@ -472,15 +495,13 @@ impl ActivityManager {
 
     /// Get recent activities
     pub fn recent(&self, limit: usize) -> Vec<&Activity> {
-        self.activities.iter()
-            .rev()
-            .take(limit)
-            .collect()
+        self.activities.iter().rev().take(limit).collect()
     }
 
     /// Get activities for user
     pub fn for_user(&self, user_id: i64, limit: usize) -> Vec<&Activity> {
-        self.activities.iter()
+        self.activities
+            .iter()
             .rev()
             .filter(|a| a.user_id == Some(user_id))
             .take(limit)
@@ -557,15 +578,16 @@ impl DeviceInfo {
     pub fn from_user_agent(user_agent: &str) -> Self {
         let ua = user_agent.to_lowercase();
 
-        let device_type = if ua.contains("mobile") || ua.contains("android") && !ua.contains("tablet") {
-            DeviceType::Mobile
-        } else if ua.contains("tablet") || ua.contains("ipad") {
-            DeviceType::Tablet
-        } else if ua.contains("windows") || ua.contains("macintosh") || ua.contains("linux") {
-            DeviceType::Desktop
-        } else {
-            DeviceType::Unknown
-        };
+        let device_type =
+            if ua.contains("mobile") || ua.contains("android") && !ua.contains("tablet") {
+                DeviceType::Mobile
+            } else if ua.contains("tablet") || ua.contains("ipad") {
+                DeviceType::Tablet
+            } else if ua.contains("windows") || ua.contains("macintosh") || ua.contains("linux") {
+                DeviceType::Desktop
+            } else {
+                DeviceType::Unknown
+            };
 
         // Simple browser detection
         let (browser, browser_version) = if ua.contains("firefox") {
@@ -691,23 +713,27 @@ impl LoginHistory {
 
     /// Get login history for user
     pub fn get_history(&self, user_id: i64) -> Vec<&LoginRecord> {
-        self.records.get(&user_id)
+        self.records
+            .get(&user_id)
             .map(|records| records.iter().rev().collect())
             .unwrap_or_default()
     }
 
     /// Get recent logins
     pub fn get_recent(&self, user_id: i64, limit: usize) -> Vec<&LoginRecord> {
-        self.records.get(&user_id)
+        self.records
+            .get(&user_id)
             .map(|records| records.iter().rev().take(limit).collect())
             .unwrap_or_default()
     }
 
     /// Get failed login attempts
     pub fn get_failed_attempts(&self, user_id: i64, since: DateTime<Utc>) -> Vec<&LoginRecord> {
-        self.records.get(&user_id)
+        self.records
+            .get(&user_id)
             .map(|records| {
-                records.iter()
+                records
+                    .iter()
                     .filter(|r| !r.success && r.login_at > since)
                     .collect()
             })
@@ -719,16 +745,15 @@ impl LoginHistory {
         let mut alerts = Vec::new();
 
         if let Some(records) = self.records.get(&user_id) {
-            let recent: Vec<_> = records.iter()
+            let recent: Vec<_> = records
+                .iter()
                 .rev()
                 .filter(|r| r.success)
                 .take(10)
                 .collect();
 
             // Check for login from new IP
-            let known_ips: Vec<_> = recent.iter()
-                .map(|r| r.ip_address.as_str())
-                .collect();
+            let known_ips: Vec<_> = recent.iter().map(|r| r.ip_address.as_str()).collect();
 
             if !known_ips.contains(&current_ip) && !recent.is_empty() {
                 alerts.push(SuspiciousActivity::NewIpAddress {
@@ -746,7 +771,8 @@ impl LoginHistory {
 
             // Check for multiple failed attempts
             let hour_ago = Utc::now() - Duration::hours(1);
-            let failed_count = records.iter()
+            let failed_count = records
+                .iter()
                 .filter(|r| !r.success && r.login_at > hour_ago)
                 .count();
 
@@ -777,9 +803,7 @@ impl SuspiciousActivity {
             Self::NewIpAddress { ip } => {
                 format!("Login from new IP address: {}", ip)
             }
-            Self::NewDeviceType => {
-                "Login from a new device type".to_string()
-            }
+            Self::NewDeviceType => "Login from a new device type".to_string(),
             Self::NewLocation { location } => {
                 format!("Login from new location: {}", location)
             }
@@ -845,7 +869,12 @@ mod tests {
 
     #[test]
     fn test_login_record() {
-        let record = LoginRecord::new(1, "192.168.1.1", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0", true);
+        let record = LoginRecord::new(
+            1,
+            "192.168.1.1",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0",
+            true,
+        );
 
         assert_eq!(record.device_info.device_type, DeviceType::Desktop);
         assert_eq!(record.device_info.browser, Some("Chrome".to_string()));

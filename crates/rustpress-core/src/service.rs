@@ -358,8 +358,7 @@ impl ServiceContainer {
 
     /// Register a service
     pub fn register<T: Send + Sync + 'static>(&mut self, service: Arc<T>) {
-        self.services
-            .insert(std::any::TypeId::of::<T>(), service);
+        self.services.insert(std::any::TypeId::of::<T>(), service);
     }
 
     /// Get a service
@@ -371,8 +370,10 @@ impl ServiceContainer {
 
     /// Get a service, panicking if not found
     pub fn require<T: Send + Sync + 'static>(&self) -> Arc<T> {
-        self.get::<T>()
-            .expect(&format!("Service {} not registered", std::any::type_name::<T>()))
+        self.get::<T>().expect(&format!(
+            "Service {} not registered",
+            std::any::type_name::<T>()
+        ))
     }
 }
 

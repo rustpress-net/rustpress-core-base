@@ -124,14 +124,12 @@ impl PublishScheduler {
         .await?;
 
         // Update content status to scheduled
-        sqlx::query(
-            "UPDATE contents SET status = $2, scheduled_at = $3 WHERE id = $1",
-        )
-        .bind(content_id)
-        .bind(serde_json::to_string(&ContentStatus::Scheduled).unwrap())
-        .bind(publish_at)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("UPDATE contents SET status = $2, scheduled_at = $3 WHERE id = $1")
+            .bind(content_id)
+            .bind(serde_json::to_string(&ContentStatus::Scheduled).unwrap())
+            .bind(publish_at)
+            .execute(&self.pool)
+            .await?;
 
         Ok(job)
     }
@@ -175,22 +173,18 @@ impl PublishScheduler {
         }
 
         // Update job status
-        sqlx::query(
-            "UPDATE scheduled_publishes SET status = $2 WHERE id = $1",
-        )
-        .bind(job_id)
-        .bind(serde_json::to_string(&ScheduleStatus::Cancelled).unwrap())
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("UPDATE scheduled_publishes SET status = $2 WHERE id = $1")
+            .bind(job_id)
+            .bind(serde_json::to_string(&ScheduleStatus::Cancelled).unwrap())
+            .execute(&self.pool)
+            .await?;
 
         // Reset content status
-        sqlx::query(
-            "UPDATE contents SET status = $2, scheduled_at = NULL WHERE id = $1",
-        )
-        .bind(job.content_id)
-        .bind(serde_json::to_string(&ContentStatus::Draft).unwrap())
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("UPDATE contents SET status = $2, scheduled_at = NULL WHERE id = $1")
+            .bind(job.content_id)
+            .bind(serde_json::to_string(&ContentStatus::Draft).unwrap())
+            .execute(&self.pool)
+            .await?;
 
         Ok(())
     }
@@ -209,7 +203,10 @@ impl PublishScheduler {
     }
 
     /// Get schedule for content
-    pub async fn get_content_schedule(&self, content_id: Uuid) -> ContentResult<Option<ScheduledPublish>> {
+    pub async fn get_content_schedule(
+        &self,
+        content_id: Uuid,
+    ) -> ContentResult<Option<ScheduledPublish>> {
         let row = sqlx::query_as::<_, ScheduledPublishRow>(
             "SELECT * FROM scheduled_publishes WHERE content_id = $1 AND status = 'pending'",
         )
@@ -278,13 +275,11 @@ impl PublishScheduler {
         match result {
             Ok(_) => {
                 // Mark as completed
-                let _ = sqlx::query(
-                    "UPDATE scheduled_publishes SET status = $2 WHERE id = $1",
-                )
-                .bind(job.id)
-                .bind(serde_json::to_string(&ScheduleStatus::Completed).unwrap())
-                .execute(&self.pool)
-                .await;
+                let _ = sqlx::query("UPDATE scheduled_publishes SET status = $2 WHERE id = $1")
+                    .bind(job.id)
+                    .bind(serde_json::to_string(&ScheduleStatus::Completed).unwrap())
+                    .execute(&self.pool)
+                    .await;
 
                 PublishResult {
                     job_id: job.id,
@@ -382,23 +377,20 @@ impl PublishScheduler {
 
     /// Get scheduler statistics
     pub async fn get_stats(&self) -> ContentResult<SchedulerStats> {
-        let pending: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM scheduled_publishes WHERE status = 'pending'",
-        )
-        .fetch_one(&self.pool)
-        .await?;
+        let pending: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM scheduled_publishes WHERE status = 'pending'")
+                .fetch_one(&self.pool)
+                .await?;
 
-        let completed: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM scheduled_publishes WHERE status = 'completed'",
-        )
-        .fetch_one(&self.pool)
-        .await?;
+        let completed: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM scheduled_publishes WHERE status = 'completed'")
+                .fetch_one(&self.pool)
+                .await?;
 
-        let failed: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM scheduled_publishes WHERE status = 'failed'",
-        )
-        .fetch_one(&self.pool)
-        .await?;
+        let failed: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM scheduled_publishes WHERE status = 'failed'")
+                .fetch_one(&self.pool)
+                .await?;
 
         let next_job = sqlx::query_as::<_, ScheduledPublishRow>(
             "SELECT * FROM scheduled_publishes WHERE status = 'pending' ORDER BY scheduled_at ASC LIMIT 1",
