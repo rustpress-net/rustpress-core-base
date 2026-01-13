@@ -1,5 +1,6 @@
 # Build stage
-FROM rust:1.84-slim-bookworm AS builder
+# Using rust:latest for edition2024 support required by dependencies
+FROM rust:slim-bookworm AS builder
 
 WORKDIR /app
 
