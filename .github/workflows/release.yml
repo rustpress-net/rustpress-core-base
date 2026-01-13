@@ -16,9 +16,9 @@ on:
           - minor
           - major
       admin_ui_ref:
-        description: 'Admin UI version (branch, tag, or commit)'
+        description: 'Admin UI version override (leave empty to use ADMIN_UI_VERSION file)'
         required: false
-        default: 'main'
+        default: ''
         type: string
 
 env:
@@ -151,11 +151,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Read required admin-ui version
+        id: admin_ui_version
+        shell: bash
+        run: |
+          if [ -f "ADMIN_UI_VERSION" ]; then
+            VERSION=$(cat ADMIN_UI_VERSION | tr -d '[:space:]')
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "Required admin-ui version: $VERSION"
+          else
+            echo "version=main" >> $GITHUB_OUTPUT
+            echo "No ADMIN_UI_VERSION file found, using main"
+          fi
+
       - name: Clone admin-ui repository
         uses: actions/checkout@v4
         with:
           repository: rustpress-net/rustpress-core-admin-ui
-          ref: ${{ github.event.inputs.admin_ui_ref || 'main' }}
+          ref: ${{ github.event.inputs.admin_ui_ref || steps.admin_ui_version.outputs.version }}
           path: admin-ui
 
       - name: Setup Node.js
