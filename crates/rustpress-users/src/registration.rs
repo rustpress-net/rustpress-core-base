@@ -204,7 +204,10 @@ impl RegistrationField {
                 min_length: Some(3),
                 max_length: Some(60),
                 pattern: Some(r"^[a-zA-Z0-9_-]+$".to_string()),
-                error_message: Some("Username can only contain letters, numbers, underscores, and hyphens".to_string()),
+                error_message: Some(
+                    "Username can only contain letters, numbers, underscores, and hyphens"
+                        .to_string(),
+                ),
                 ..Default::default()
             })
             .order(1)
@@ -231,15 +234,19 @@ impl RegistrationField {
     }
 
     pub fn password_confirm() -> Self {
-        Self::new("password_confirm", "Confirm Password", RegistrationFieldType::Password)
-            .required()
-            .placeholder("Re-enter your password")
-            .validation(FieldValidation {
-                must_match: Some("password".to_string()),
-                error_message: Some("Passwords do not match".to_string()),
-                ..Default::default()
-            })
-            .order(4)
+        Self::new(
+            "password_confirm",
+            "Confirm Password",
+            RegistrationFieldType::Password,
+        )
+        .required()
+        .placeholder("Re-enter your password")
+        .validation(FieldValidation {
+            must_match: Some("password".to_string()),
+            error_message: Some("Passwords do not match".to_string()),
+            ..Default::default()
+        })
+        .order(4)
     }
 
     pub fn first_name() -> Self {
@@ -430,7 +437,10 @@ impl RegistrationForm {
     }
 
     pub fn get_required_fields(&self) -> Vec<&RegistrationField> {
-        self.fields.iter().filter(|f| f.required && f.enabled).collect()
+        self.fields
+            .iter()
+            .filter(|f| f.required && f.enabled)
+            .collect()
     }
 }
 
@@ -636,8 +646,9 @@ impl RegistrationValidator {
         // Min length
         if let Some(min) = validation.min_length {
             if value.len() < min {
-                let msg = validation.error_message.clone()
-                    .unwrap_or_else(|| format!("{} must be at least {} characters", field.label, min));
+                let msg = validation.error_message.clone().unwrap_or_else(|| {
+                    format!("{} must be at least {} characters", field.label, min)
+                });
                 submission.add_error(&field.id, &msg, "min_length");
             }
         }
@@ -645,8 +656,9 @@ impl RegistrationValidator {
         // Max length
         if let Some(max) = validation.max_length {
             if value.len() > max {
-                let msg = validation.error_message.clone()
-                    .unwrap_or_else(|| format!("{} must not exceed {} characters", field.label, max));
+                let msg = validation.error_message.clone().unwrap_or_else(|| {
+                    format!("{} must not exceed {} characters", field.label, max)
+                });
                 submission.add_error(&field.id, &msg, "max_length");
             }
         }
@@ -655,7 +667,9 @@ impl RegistrationValidator {
         if let Some(ref pattern) = validation.pattern {
             if let Ok(re) = regex::Regex::new(pattern) {
                 if !re.is_match(value) {
-                    let msg = validation.error_message.clone()
+                    let msg = validation
+                        .error_message
+                        .clone()
                         .unwrap_or_else(|| format!("{} has invalid format", field.label));
                     submission.add_error(&field.id, &msg, "pattern");
                 }
@@ -686,7 +700,9 @@ impl RegistrationValidator {
         if let Some(ref other_field) = validation.must_match {
             if let Some(other_value) = submission.values.get(other_field) {
                 if value != other_value {
-                    let msg = validation.error_message.clone()
+                    let msg = validation
+                        .error_message
+                        .clone()
                         .unwrap_or_else(|| format!("{} does not match", field.label));
                     submission.add_error(&field.id, &msg, "must_match");
                 }
@@ -695,9 +711,8 @@ impl RegistrationValidator {
     }
 
     fn is_valid_email(&self, email: &str) -> bool {
-        let email_regex = regex::Regex::new(
-            r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-        ).unwrap();
+        let email_regex =
+            regex::Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap();
         email_regex.is_match(email)
     }
 
@@ -756,7 +771,12 @@ impl RegistrationManager {
     }
 
     /// Check registration limits
-    pub fn check_limits(&mut self, ip: &str, email: &str, form: &RegistrationForm) -> Result<(), String> {
+    pub fn check_limits(
+        &mut self,
+        ip: &str,
+        email: &str,
+        form: &RegistrationForm,
+    ) -> Result<(), String> {
         let limits = &form.limits;
         let now = Utc::now();
 
@@ -772,7 +792,11 @@ impl RegistrationManager {
         // Extract domain from email
         if let Some(domain) = email.split('@').nth(1) {
             // Check blocked domains
-            if limits.blocked_domains.iter().any(|d| domain.to_lowercase() == d.to_lowercase()) {
+            if limits
+                .blocked_domains
+                .iter()
+                .any(|d| domain.to_lowercase() == d.to_lowercase())
+            {
                 return Err("Registration from this email domain is not allowed".to_string());
             }
 
@@ -780,7 +804,9 @@ impl RegistrationManager {
             if let Some((count, last_reset)) = self.domain_counts.get(domain) {
                 if now.signed_duration_since(*last_reset).num_days() == 0 {
                     if *count >= limits.max_per_domain_daily {
-                        return Err("Too many registrations from this email domain today".to_string());
+                        return Err(
+                            "Too many registrations from this email domain today".to_string()
+                        );
                     }
                 }
             }
@@ -794,8 +820,7 @@ impl RegistrationManager {
         let now = Utc::now();
 
         // Update IP count
-        let (count, last_reset) = self.ip_counts.entry(ip.to_string())
-            .or_insert((0, now));
+        let (count, last_reset) = self.ip_counts.entry(ip.to_string()).or_insert((0, now));
 
         if now.signed_duration_since(*last_reset).num_days() > 0 {
             *count = 1;
@@ -806,7 +831,9 @@ impl RegistrationManager {
 
         // Update domain count
         if let Some(domain) = email.split('@').nth(1) {
-            let (count, last_reset) = self.domain_counts.entry(domain.to_string())
+            let (count, last_reset) = self
+                .domain_counts
+                .entry(domain.to_string())
                 .or_insert((0, now));
 
             if now.signed_duration_since(*last_reset).num_days() > 0 {
@@ -819,8 +846,13 @@ impl RegistrationManager {
     }
 
     /// Process a registration submission
-    pub fn process_submission(&mut self, mut submission: RegistrationSubmission) -> Result<RegistrationSubmission, String> {
-        let form = self.forms.get(&submission.form_id)
+    pub fn process_submission(
+        &mut self,
+        mut submission: RegistrationSubmission,
+    ) -> Result<RegistrationSubmission, String> {
+        let form = self
+            .forms
+            .get(&submission.form_id)
             .ok_or_else(|| "Form not found".to_string())?
             .clone();
 
@@ -830,7 +862,10 @@ impl RegistrationManager {
 
         // Check username against blocked list
         if let Some(username) = submission.values.get("username") {
-            if form.limits.blocked_usernames.iter()
+            if form
+                .limits
+                .blocked_usernames
+                .iter()
                 .any(|u| username.to_lowercase() == u.to_lowercase())
             {
                 return Err("This username is not available".to_string());
@@ -873,7 +908,9 @@ impl RegistrationManager {
 
     /// Verify email
     pub fn verify_email(&mut self, token: &str) -> Result<&RegistrationSubmission, String> {
-        let submission = self.submissions.values_mut()
+        let submission = self
+            .submissions
+            .values_mut()
             .find(|s| s.verification_token.as_deref() == Some(token))
             .ok_or_else(|| "Invalid verification token".to_string())?;
 
@@ -899,7 +936,9 @@ impl RegistrationManager {
 
     /// Approve a registration
     pub fn approve(&mut self, submission_id: Uuid, user_id: i64) -> Result<(), String> {
-        let submission = self.submissions.get_mut(&submission_id)
+        let submission = self
+            .submissions
+            .get_mut(&submission_id)
             .ok_or_else(|| "Submission not found".to_string())?;
 
         submission.status = SubmissionStatus::Approved;
@@ -910,7 +949,9 @@ impl RegistrationManager {
 
     /// Reject a registration
     pub fn reject(&mut self, submission_id: Uuid) -> Result<(), String> {
-        let submission = self.submissions.get_mut(&submission_id)
+        let submission = self
+            .submissions
+            .get_mut(&submission_id)
             .ok_or_else(|| "Submission not found".to_string())?;
 
         submission.status = SubmissionStatus::Rejected;
@@ -920,7 +961,9 @@ impl RegistrationManager {
 
     /// Mark as spam
     pub fn mark_spam(&mut self, submission_id: Uuid) -> Result<(), String> {
-        let submission = self.submissions.get_mut(&submission_id)
+        let submission = self
+            .submissions
+            .get_mut(&submission_id)
             .ok_or_else(|| "Submission not found".to_string())?;
 
         submission.status = SubmissionStatus::Spam;
@@ -930,7 +973,8 @@ impl RegistrationManager {
 
     /// Get pending submissions
     pub fn get_pending(&self) -> Vec<&RegistrationSubmission> {
-        self.submissions.values()
+        self.submissions
+            .values()
             .filter(|s| matches!(s.status, SubmissionStatus::PendingApproval))
             .collect()
     }
@@ -952,7 +996,11 @@ impl VerificationToken {
 
     /// Generate verification URL
     pub fn url(base_url: &str, token: &str) -> String {
-        format!("{}?action=verify_email&token={}", base_url, urlencoding::encode(token))
+        format!(
+            "{}?action=verify_email&token={}",
+            base_url,
+            urlencoding::encode(token)
+        )
     }
 }
 

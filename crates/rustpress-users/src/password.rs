@@ -176,16 +176,56 @@ impl PasswordValidator {
     fn load_common_passwords(&mut self) {
         // Top 100 most common passwords
         let common = vec![
-            "123456", "password", "12345678", "qwerty", "123456789",
-            "12345", "1234", "111111", "1234567", "dragon",
-            "123123", "baseball", "iloveyou", "trustno1", "sunshine",
-            "master", "welcome", "shadow", "ashley", "football",
-            "jesus", "michael", "ninja", "mustang", "password1",
-            "123456789", "adobe123", "admin", "1234567890", "letmein",
-            "photoshop", "1234", "monkey", "abc123", "azerty",
-            "princess", "000000", "login", "password123", "starwars",
-            "passw0rd", "hello", "charlie", "donald", "qwerty123",
-            "whatever", "Password", "Password1", "changeme", "secret",
+            "123456",
+            "password",
+            "12345678",
+            "qwerty",
+            "123456789",
+            "12345",
+            "1234",
+            "111111",
+            "1234567",
+            "dragon",
+            "123123",
+            "baseball",
+            "iloveyou",
+            "trustno1",
+            "sunshine",
+            "master",
+            "welcome",
+            "shadow",
+            "ashley",
+            "football",
+            "jesus",
+            "michael",
+            "ninja",
+            "mustang",
+            "password1",
+            "123456789",
+            "adobe123",
+            "admin",
+            "1234567890",
+            "letmein",
+            "photoshop",
+            "1234",
+            "monkey",
+            "abc123",
+            "azerty",
+            "princess",
+            "000000",
+            "login",
+            "password123",
+            "starwars",
+            "passw0rd",
+            "hello",
+            "charlie",
+            "donald",
+            "qwerty123",
+            "whatever",
+            "Password",
+            "Password1",
+            "changeme",
+            "secret",
         ];
 
         for pwd in common {
@@ -194,7 +234,12 @@ impl PasswordValidator {
     }
 
     /// Validate a password against the policy
-    pub fn validate(&self, password: &str, username: Option<&str>, email: Option<&str>) -> PasswordValidationResult {
+    pub fn validate(
+        &self,
+        password: &str,
+        username: Option<&str>,
+        email: Option<&str>,
+    ) -> PasswordValidationResult {
         let mut errors = Vec::new();
         let mut suggestions = Vec::new();
 
@@ -202,15 +247,24 @@ impl PasswordValidator {
         if password.len() < self.policy.min_length {
             errors.push(PasswordError {
                 code: "too_short".to_string(),
-                message: format!("Password must be at least {} characters", self.policy.min_length),
+                message: format!(
+                    "Password must be at least {} characters",
+                    self.policy.min_length
+                ),
             });
-            suggestions.push(format!("Add {} more characters", self.policy.min_length - password.len()));
+            suggestions.push(format!(
+                "Add {} more characters",
+                self.policy.min_length - password.len()
+            ));
         }
 
         if password.len() > self.policy.max_length {
             errors.push(PasswordError {
                 code: "too_long".to_string(),
-                message: format!("Password must not exceed {} characters", self.policy.max_length),
+                message: format!(
+                    "Password must not exceed {} characters",
+                    self.policy.max_length
+                ),
             });
         }
 
@@ -218,13 +272,23 @@ impl PasswordValidator {
         let has_uppercase = password.chars().any(|c| c.is_uppercase());
         let has_lowercase = password.chars().any(|c| c.is_lowercase());
         let has_digit = password.chars().any(|c| c.is_ascii_digit());
-        let has_special = password.chars().any(|c| self.policy.special_characters.contains(c));
+        let has_special = password
+            .chars()
+            .any(|c| self.policy.special_characters.contains(c));
 
         let mut char_types = 0;
-        if has_uppercase { char_types += 1; }
-        if has_lowercase { char_types += 1; }
-        if has_digit { char_types += 1; }
-        if has_special { char_types += 1; }
+        if has_uppercase {
+            char_types += 1;
+        }
+        if has_lowercase {
+            char_types += 1;
+        }
+        if has_digit {
+            char_types += 1;
+        }
+        if has_special {
+            char_types += 1;
+        }
 
         if self.policy.require_uppercase && !has_uppercase {
             errors.push(PasswordError {
@@ -255,13 +319,19 @@ impl PasswordValidator {
                 code: "missing_special".to_string(),
                 message: "Password must contain a special character".to_string(),
             });
-            suggestions.push(format!("Add a special character like {}", &self.policy.special_characters[..5]));
+            suggestions.push(format!(
+                "Add a special character like {}",
+                &self.policy.special_characters[..5]
+            ));
         }
 
         if char_types < self.policy.min_character_types {
             errors.push(PasswordError {
                 code: "insufficient_complexity".to_string(),
-                message: format!("Password must contain at least {} different character types", self.policy.min_character_types),
+                message: format!(
+                    "Password must contain at least {} different character types",
+                    self.policy.min_character_types
+                ),
             });
         }
 
@@ -292,7 +362,11 @@ impl PasswordValidator {
         if self.policy.prevent_email_in_password {
             if let Some(email) = email {
                 let email_local = email.split('@').next().unwrap_or("");
-                if !email_local.is_empty() && password.to_lowercase().contains(&email_local.to_lowercase()) {
+                if !email_local.is_empty()
+                    && password
+                        .to_lowercase()
+                        .contains(&email_local.to_lowercase())
+                {
                     errors.push(PasswordError {
                         code: "contains_email".to_string(),
                         message: "Password cannot contain your email address".to_string(),
@@ -339,7 +413,8 @@ impl PasswordValidator {
         }
 
         // Penalty for repeated characters
-        let repeated = password.chars()
+        let repeated = password
+            .chars()
             .zip(password.chars().skip(1))
             .filter(|(a, b)| a == b)
             .count();
@@ -412,7 +487,8 @@ impl PasswordHistoryManager {
 
     /// Get password history for user
     pub fn get_history(&self, user_id: i64) -> Vec<&PasswordHistoryEntry> {
-        self.history.get(&user_id)
+        self.history
+            .get(&user_id)
             .map(|h| h.iter().collect())
             .unwrap_or_default()
     }
@@ -442,7 +518,8 @@ impl PasswordExpiration {
             None
         };
 
-        let grace_period_end = expires_at.map(|exp| exp + Duration::days(policy.grace_period_days as i64));
+        let grace_period_end =
+            expires_at.map(|exp| exp + Duration::days(policy.grace_period_days as i64));
 
         Self {
             user_id,
@@ -484,15 +561,15 @@ pub fn hash_password(password: &str) -> Result<String, String> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
 
-    argon2.hash_password(password.as_bytes(), &salt)
+    argon2
+        .hash_password(password.as_bytes(), &salt)
         .map(|hash| hash.to_string())
         .map_err(|e| format!("Failed to hash password: {}", e))
 }
 
 /// Verify a password against a hash
 pub fn verify_password(password: &str, hash: &str) -> Result<bool, String> {
-    let parsed_hash = PasswordHash::new(hash)
-        .map_err(|e| format!("Invalid hash format: {}", e))?;
+    let parsed_hash = PasswordHash::new(hash).map_err(|e| format!("Invalid hash format: {}", e))?;
 
     Ok(Argon2::default()
         .verify_password(password.as_bytes(), &parsed_hash)
@@ -512,12 +589,27 @@ pub fn generate_password(length: usize, include_special: bool) -> String {
     let special = "!@#$%^&*";
 
     // Ensure at least one of each required type
-    password.push(lowercase.chars().nth(rng.gen_range(0..lowercase.len())).unwrap());
-    password.push(uppercase.chars().nth(rng.gen_range(0..uppercase.len())).unwrap());
+    password.push(
+        lowercase
+            .chars()
+            .nth(rng.gen_range(0..lowercase.len()))
+            .unwrap(),
+    );
+    password.push(
+        uppercase
+            .chars()
+            .nth(rng.gen_range(0..uppercase.len()))
+            .unwrap(),
+    );
     password.push(digits.chars().nth(rng.gen_range(0..digits.len())).unwrap());
 
     if include_special {
-        password.push(special.chars().nth(rng.gen_range(0..special.len())).unwrap());
+        password.push(
+            special
+                .chars()
+                .nth(rng.gen_range(0..special.len()))
+                .unwrap(),
+        );
     }
 
     // Fill the rest

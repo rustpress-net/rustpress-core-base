@@ -24,14 +24,18 @@ pub async fn request_id(mut request: Request<Body>, next: Next) -> Response {
         .unwrap_or_else(|| Uuid::now_v7().to_string());
 
     // Store in extensions for later use
-    request.extensions_mut().insert(RequestId(request_id.clone()));
+    request
+        .extensions_mut()
+        .insert(RequestId(request_id.clone()));
 
     let mut response = next.run(request).await;
 
     // Add request ID to response headers
     response.headers_mut().insert(
         "x-request-id",
-        request_id.parse().unwrap_or_else(|_| "unknown".parse().unwrap()),
+        request_id
+            .parse()
+            .unwrap_or_else(|_| "unknown".parse().unwrap()),
     );
 
     response
@@ -92,10 +96,7 @@ pub async fn request_logging(request: Request<Body>, next: Next) -> Response {
 }
 
 /// Request timeout middleware
-pub async fn request_timeout(
-    request: Request<Body>,
-    next: Next,
-) -> Result<Response, StatusCode> {
+pub async fn request_timeout(request: Request<Body>, next: Next) -> Result<Response, StatusCode> {
     let timeout = Duration::from_secs(30);
 
     match tokio::time::timeout(timeout, next.run(request)).await {
@@ -156,17 +157,20 @@ pub async fn rate_limit(
     if current_count >= rate_limit.requests_per_window {
         let mut response = Response::new(Body::from("Too many requests"));
         *response.status_mut() = StatusCode::TOO_MANY_REQUESTS;
-        response.headers_mut().insert(
-            "retry-after",
-            "60".parse().unwrap(),
-        );
+        response
+            .headers_mut()
+            .insert("retry-after", "60".parse().unwrap());
         return response;
     }
 
     // Increment counter
     let _ = state
         .cache
-        .set(&cache_key, &(current_count + 1), Some(Duration::from_secs(60)))
+        .set(
+            &cache_key,
+            &(current_count + 1),
+            Some(Duration::from_secs(60)),
+        )
         .await;
 
     let mut response = next.run(request).await;
@@ -178,10 +182,13 @@ pub async fn rate_limit(
     );
     response.headers_mut().insert(
         "x-ratelimit-remaining",
-        (rate_limit.requests_per_window.saturating_sub(current_count).saturating_sub(1))
-            .to_string()
-            .parse()
-            .unwrap(),
+        (rate_limit
+            .requests_per_window
+            .saturating_sub(current_count)
+            .saturating_sub(1))
+        .to_string()
+        .parse()
+        .unwrap(),
     );
 
     response
@@ -277,13 +284,19 @@ pub async fn security_headers_with_config(
     // Prevent clickjacking
     headers.insert(
         "x-frame-options",
-        config.frame_options.parse().unwrap_or_else(|_| "SAMEORIGIN".parse().unwrap()),
+        config
+            .frame_options
+            .parse()
+            .unwrap_or_else(|_| "SAMEORIGIN".parse().unwrap()),
     );
 
     // Referrer policy
     headers.insert(
         "referrer-policy",
-        config.referrer_policy.parse().unwrap_or_else(|_| "strict-origin-when-cross-origin".parse().unwrap()),
+        config
+            .referrer_policy
+            .parse()
+            .unwrap_or_else(|_| "strict-origin-when-cross-origin".parse().unwrap()),
     );
 
     // === HSTS (HTTP Strict Transport Security) ===
@@ -296,10 +309,7 @@ pub async fn security_headers_with_config(
         if config.hsts_preload {
             hsts_value.push_str("; preload");
         }
-        headers.insert(
-            "strict-transport-security",
-            hsts_value.parse().unwrap(),
-        );
+        headers.insert("strict-transport-security", hsts_value.parse().unwrap());
     }
 
     // === Content Security Policy ===
@@ -307,7 +317,10 @@ pub async fn security_headers_with_config(
     if !config.csp.is_empty() {
         headers.insert(
             "content-security-policy",
-            config.csp.parse().unwrap_or_else(|_| "default-src 'self'".parse().unwrap()),
+            config
+                .csp
+                .parse()
+                .unwrap_or_else(|_| "default-src 'self'".parse().unwrap()),
         );
     }
 
@@ -332,10 +345,7 @@ pub async fn security_headers_with_config(
 
         // Cross-Origin-Opener-Policy (COOP)
         // Isolates browsing context
-        headers.insert(
-            "cross-origin-opener-policy",
-            "same-origin".parse().unwrap(),
-        );
+        headers.insert("cross-origin-opener-policy", "same-origin".parse().unwrap());
 
         // Cross-Origin-Resource-Policy (CORP)
         // Protects resources from being loaded by other origins

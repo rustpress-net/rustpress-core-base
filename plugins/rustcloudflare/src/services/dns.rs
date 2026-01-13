@@ -2,7 +2,7 @@
 
 use crate::client::CloudflareClient;
 use crate::error::{CloudflareError, CloudflareResult};
-use crate::models::{CreateDnsRecord, DnsListParams, DnsRecord, UpdateDnsRecord, DeleteResponse};
+use crate::models::{CreateDnsRecord, DeleteResponse, DnsListParams, DnsRecord, UpdateDnsRecord};
 use sqlx::PgPool;
 use std::sync::Arc;
 use tracing::info;
@@ -15,7 +15,10 @@ pub struct DnsService {
 
 impl DnsService {
     pub fn new(client: Arc<CloudflareClient>, db: PgPool) -> Self {
-        Self { client: Some(client), db }
+        Self {
+            client: Some(client),
+            db,
+        }
     }
 
     /// Create without a configured client (for initial setup)
@@ -25,9 +28,11 @@ impl DnsService {
 
     /// Get the client or return an error if not configured
     fn get_client(&self) -> CloudflareResult<&CloudflareClient> {
-        self.client.as_ref()
-            .map(|c| c.as_ref())
-            .ok_or_else(|| CloudflareError::ConfigError("Cloudflare not configured. Please connect your account.".to_string()))
+        self.client.as_ref().map(|c| c.as_ref()).ok_or_else(|| {
+            CloudflareError::ConfigError(
+                "Cloudflare not configured. Please connect your account.".to_string(),
+            )
+        })
     }
 
     /// List all DNS records
@@ -58,7 +63,10 @@ impl DnsService {
     /// Update a DNS record
     pub async fn update(&self, id: &str, record: UpdateDnsRecord) -> CloudflareResult<DnsRecord> {
         let client = self.get_client()?;
-        info!("Updating DNS record {}: {} -> {}", id, record.name, record.content);
+        info!(
+            "Updating DNS record {}: {} -> {}",
+            id, record.name, record.content
+        );
         let result = client.update_dns_record(id, record).await?;
         self.sync_to_local(&result).await?;
         Ok(result)

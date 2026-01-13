@@ -142,11 +142,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .await?;
 
     // Get applied migrations
-    let applied: Vec<(String,)> = sqlx::query_as(
-        "SELECT version FROM schema_migrations ORDER BY version",
-    )
-    .fetch_all(&pool)
-    .await?;
+    let applied: Vec<(String,)> =
+        sqlx::query_as("SELECT version FROM schema_migrations ORDER BY version")
+            .fetch_all(&pool)
+            .await?;
 
     let applied_set: HashSet<String> = applied.into_iter().map(|(v,)| v).collect();
 
@@ -197,7 +196,12 @@ fn show_migration_status(
 
     let mut entries: Vec<_> = fs::read_dir(migrations_dir)?
         .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().map(|ext| ext == "sql").unwrap_or(false))
+        .filter(|e| {
+            e.path()
+                .extension()
+                .map(|ext| ext == "sql")
+                .unwrap_or(false)
+        })
         .collect();
 
     entries.sort_by_key(|e| e.file_name());
@@ -230,7 +234,12 @@ async fn run_migrations(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut entries: Vec<_> = fs::read_dir(migrations_dir)?
         .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().map(|ext| ext == "sql").unwrap_or(false))
+        .filter(|e| {
+            e.path()
+                .extension()
+                .map(|ext| ext == "sql")
+                .unwrap_or(false)
+        })
         .collect();
 
     entries.sort_by_key(|e| e.file_name());
@@ -356,7 +365,10 @@ async fn rollback_migrations(
 
             println!("  Rolled back: {}", name);
         } else {
-            println!("  Warning: No rollback file for {}, only removing from tracking", name);
+            println!(
+                "  Warning: No rollback file for {}, only removing from tracking",
+                name
+            );
 
             sqlx::query("DELETE FROM schema_migrations WHERE version = $1")
                 .bind(&name)

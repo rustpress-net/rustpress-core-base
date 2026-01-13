@@ -1,10 +1,10 @@
 //! Post service for handling post-related business logic.
 
 use chrono::{DateTime, Utc};
+use rustpress_admin::functions::EventDispatcher;
 use rustpress_core::error::{Error, Result};
 use rustpress_core::service::{ListParams, SortOrder};
 use rustpress_database::repository::posts::{PostRepository, PostRow};
-use rustpress_admin::functions::EventDispatcher;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -191,7 +191,11 @@ impl PostService {
     /// Create a new post service
     pub fn new(pool: PgPool) -> Self {
         let dispatcher = EventDispatcher::new(pool.clone());
-        Self { pool, site_id: None, dispatcher }
+        Self {
+            pool,
+            site_id: None,
+            dispatcher,
+        }
     }
 
     /// Set the site ID for multi-site support
@@ -221,14 +225,20 @@ impl PostService {
         }
 
         // Generate slug if not provided
-        let slug = request.slug.clone().unwrap_or_else(|| self.generate_slug(&request.title));
+        let slug = request
+            .slug
+            .clone()
+            .unwrap_or_else(|| self.generate_slug(&request.title));
 
         // Check if slug is unique
         if let Some(_) = self.repo().find_by_slug(&slug).await? {
             return Err(Error::validation("A post with this slug already exists"));
         }
 
-        let status = request.status.clone().unwrap_or_else(|| "draft".to_string());
+        let status = request
+            .status
+            .clone()
+            .unwrap_or_else(|| "draft".to_string());
         let now = Utc::now();
 
         // Prepare event data for hooks
@@ -244,20 +254,41 @@ impl PostService {
         });
 
         // Execute BEFORE hooks - can modify data or cancel the action
-        let before_result = self.dispatcher.dispatch_before("post_created", &event_data).await;
+        let before_result = self
+            .dispatcher
+            .dispatch_before("post_created", &event_data)
+            .await;
 
         if !before_result.proceed {
             return Err(Error::validation(
-                before_result.cancel_reason.unwrap_or_else(|| "Post creation cancelled by hook".to_string())
+                before_result
+                    .cancel_reason
+                    .unwrap_or_else(|| "Post creation cancelled by hook".to_string()),
             ));
         }
 
         // Use modified data if provided by hooks
         let final_data = before_result.modified_data.unwrap_or(event_data);
-        let final_title = final_data.get("title").and_then(|v| v.as_str()).unwrap_or(&request.title).to_string();
-        let final_slug = final_data.get("slug").and_then(|v| v.as_str()).unwrap_or(&slug).to_string();
-        let final_content = final_data.get("content").and_then(|v| v.as_str()).map(|s| s.to_string()).or(request.content.clone());
-        let final_excerpt = final_data.get("excerpt").and_then(|v| v.as_str()).map(|s| s.to_string()).or(request.excerpt.clone());
+        let final_title = final_data
+            .get("title")
+            .and_then(|v| v.as_str())
+            .unwrap_or(&request.title)
+            .to_string();
+        let final_slug = final_data
+            .get("slug")
+            .and_then(|v| v.as_str())
+            .unwrap_or(&slug)
+            .to_string();
+        let final_content = final_data
+            .get("content")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .or(request.content.clone());
+        let final_excerpt = final_data
+            .get("excerpt")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .or(request.excerpt.clone());
 
         // Set published_at if status is published and not already set
         let published_at = if status == "published" {
@@ -299,7 +330,8 @@ impl PostService {
 
         // Handle categories and tags
         if let Some(category_ids) = request.category_ids {
-            self.set_terms(created.id, "category", &category_ids).await?;
+            self.set_terms(created.id, "category", &category_ids)
+                .await?;
         }
         if let Some(tag_ids) = request.tag_ids {
             self.set_terms(created.id, "post_tag", &tag_ids).await?;
@@ -318,11 +350,17 @@ impl PostService {
             "author_id": response.author_id.to_string(),
             "created_at": response.created_at.to_rfc3339(),
         });
-        let _ = self.dispatcher.dispatch_after("post_created", &after_event_data).await;
+        let _ = self
+            .dispatcher
+            .dispatch_after("post_created", &after_event_data)
+            .await;
 
         // If post was published, also trigger post_published event
         if status == "published" {
-            let _ = self.dispatcher.dispatch_after("post_published", &after_event_data).await;
+            let _ = self
+                .dispatcher
+                .dispatch_after("post_published", &after_event_data)
+                .await;
         }
 
         Ok(response)
@@ -376,13 +414,14 @@ impl PostService {
 
         let where_clause = conditions.join(" AND ");
         let order_by = params.sort_by.as_deref().unwrap_or("created_at");
-        let order_dir = if sort_order == SortOrder::Desc { "DESC" } else { "ASC" };
+        let order_dir = if sort_order == SortOrder::Desc {
+            "DESC"
+        } else {
+            "ASC"
+        };
 
         // Count query
-        let count_query = format!(
-            "SELECT COUNT(*) as count FROM posts WHERE {}",
-            where_clause
-        );
+        let count_query = format!("SELECT COUNT(*) as count FROM posts WHERE {}", where_clause);
         let total: (i64,) = sqlx::query_as(&count_query)
             .fetch_one(&self.pool)
             .await
@@ -392,7 +431,12 @@ impl PostService {
         let offset = (page - 1) * per_page;
         let data_query = format!(
             "SELECT {} FROM posts WHERE {} ORDER BY {} {} LIMIT {} OFFSET {}",
-            PostRow::COLUMNS, where_clause, order_by, order_dir, per_page, offset
+            PostRow::COLUMNS,
+            where_clause,
+            order_by,
+            order_dir,
+            per_page,
+            offset
         );
 
         let rows: Vec<PostRow> = sqlx::query_as(&data_query)
@@ -454,7 +498,10 @@ impl PostService {
     /// Update a post
     pub async fn update_post(&self, id: Uuid, request: UpdatePostRequest) -> Result<PostResponse> {
         // Get existing post
-        let existing = self.repo().find_by_id(id).await?
+        let existing = self
+            .repo()
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| Error::not_found("Post", id.to_string()))?;
 
         // Check slug uniqueness if changed
@@ -484,29 +531,42 @@ impl PostService {
         });
 
         // Execute BEFORE hooks - can modify data or cancel the action
-        let before_result = self.dispatcher.dispatch_before("post_updated", &event_data).await;
+        let before_result = self
+            .dispatcher
+            .dispatch_before("post_updated", &event_data)
+            .await;
 
         if !before_result.proceed {
             return Err(Error::validation(
-                before_result.cancel_reason.unwrap_or_else(|| "Post update cancelled by hook".to_string())
+                before_result
+                    .cancel_reason
+                    .unwrap_or_else(|| "Post update cancelled by hook".to_string()),
             ));
         }
 
         // Use modified data if provided by hooks
         let final_data = before_result.modified_data.unwrap_or(event_data.clone());
-        let final_title = final_data.get("title").and_then(|v| v.as_str())
+        let final_title = final_data
+            .get("title")
+            .and_then(|v| v.as_str())
             .map(|s| s.to_string())
             .or(request.title.clone())
             .unwrap_or_else(|| existing.title.clone());
-        let final_slug = final_data.get("slug").and_then(|v| v.as_str())
+        let final_slug = final_data
+            .get("slug")
+            .and_then(|v| v.as_str())
             .map(|s| s.to_string())
             .or(request.slug.clone())
             .unwrap_or_else(|| existing.slug.clone());
-        let final_content = final_data.get("content").and_then(|v| v.as_str())
+        let final_content = final_data
+            .get("content")
+            .and_then(|v| v.as_str())
             .map(|s| s.to_string())
             .or(request.content.clone())
             .or(existing.content.clone());
-        let final_excerpt = final_data.get("excerpt").and_then(|v| v.as_str())
+        let final_excerpt = final_data
+            .get("excerpt")
+            .and_then(|v| v.as_str())
             .map(|s| s.to_string())
             .or(request.excerpt.clone())
             .or(existing.excerpt.clone());
@@ -570,11 +630,17 @@ impl PostService {
             "author_id": response.author_id.to_string(),
             "updated_at": response.updated_at.to_rfc3339(),
         });
-        let _ = self.dispatcher.dispatch_after("post_updated", &after_event_data).await;
+        let _ = self
+            .dispatcher
+            .dispatch_after("post_updated", &after_event_data)
+            .await;
 
         // If post was just published, also trigger post_published event
         if is_publishing {
-            let _ = self.dispatcher.dispatch_after("post_published", &after_event_data).await;
+            let _ = self
+                .dispatcher
+                .dispatch_after("post_published", &after_event_data)
+                .await;
         }
 
         Ok(response)
@@ -583,7 +649,10 @@ impl PostService {
     /// Delete a post (soft delete)
     pub async fn delete_post(&self, id: Uuid) -> Result<bool> {
         // Get post details for hooks
-        let existing = self.repo().find_by_id(id).await?
+        let existing = self
+            .repo()
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| Error::not_found("Post", id.to_string()))?;
 
         // Prepare event data for BEFORE hooks
@@ -596,11 +665,16 @@ impl PostService {
         });
 
         // Execute BEFORE hooks - can cancel the deletion
-        let before_result = self.dispatcher.dispatch_before("post_deleted", &event_data).await;
+        let before_result = self
+            .dispatcher
+            .dispatch_before("post_deleted", &event_data)
+            .await;
 
         if !before_result.proceed {
             return Err(Error::validation(
-                before_result.cancel_reason.unwrap_or_else(|| "Post deletion cancelled by hook".to_string())
+                before_result
+                    .cancel_reason
+                    .unwrap_or_else(|| "Post deletion cancelled by hook".to_string()),
             ));
         }
 
@@ -613,8 +687,14 @@ impl PostService {
             "slug": existing.slug,
             "deleted_at": Utc::now().to_rfc3339(),
         });
-        let _ = self.dispatcher.dispatch_after("post_deleted", &after_event_data).await;
-        let _ = self.dispatcher.dispatch_after("post_trashed", &after_event_data).await;
+        let _ = self
+            .dispatcher
+            .dispatch_after("post_deleted", &after_event_data)
+            .await;
+        let _ = self
+            .dispatcher
+            .dispatch_after("post_trashed", &after_event_data)
+            .await;
 
         Ok(true)
     }
@@ -625,16 +705,23 @@ impl PostService {
         let event_data = serde_json::json!({
             "post_id": id.to_string(),
         });
-        let before_result = self.dispatcher.dispatch_before("post_restored", &event_data).await;
+        let before_result = self
+            .dispatcher
+            .dispatch_before("post_restored", &event_data)
+            .await;
 
         if !before_result.proceed {
             return Err(Error::validation(
-                before_result.cancel_reason.unwrap_or_else(|| "Post restoration cancelled by hook".to_string())
+                before_result
+                    .cancel_reason
+                    .unwrap_or_else(|| "Post restoration cancelled by hook".to_string()),
             ));
         }
 
         self.repo().restore(id).await?;
-        let post = self.get_post(id).await?
+        let post = self
+            .get_post(id)
+            .await?
             .ok_or_else(|| Error::not_found("Post", id.to_string()))?;
 
         // Execute AFTER hooks
@@ -644,14 +731,20 @@ impl PostService {
             "slug": post.slug,
             "restored_at": Utc::now().to_rfc3339(),
         });
-        let _ = self.dispatcher.dispatch_after("post_restored", &after_event_data).await;
+        let _ = self
+            .dispatcher
+            .dispatch_after("post_restored", &after_event_data)
+            .await;
 
         Ok(post)
     }
 
     /// Publish a post
     pub async fn publish_post(&self, id: Uuid) -> Result<PostResponse> {
-        let existing = self.repo().find_by_id(id).await?
+        let existing = self
+            .repo()
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| Error::not_found("Post", id.to_string()))?;
 
         // Prepare event data for BEFORE hooks
@@ -664,11 +757,16 @@ impl PostService {
         });
 
         // Execute BEFORE hooks - can cancel publishing
-        let before_result = self.dispatcher.dispatch_before("post_published", &event_data).await;
+        let before_result = self
+            .dispatcher
+            .dispatch_before("post_published", &event_data)
+            .await;
 
         if !before_result.proceed {
             return Err(Error::validation(
-                before_result.cancel_reason.unwrap_or_else(|| "Post publishing cancelled by hook".to_string())
+                before_result
+                    .cancel_reason
+                    .unwrap_or_else(|| "Post publishing cancelled by hook".to_string()),
             ));
         }
 
@@ -696,19 +794,31 @@ impl PostService {
             "published_at": response.published_at.map(|d| d.to_rfc3339()),
             "author_id": response.author_id.to_string(),
         });
-        let _ = self.dispatcher.dispatch_after("post_published", &after_event_data).await;
-        let _ = self.dispatcher.dispatch_after("post_status_changed", &serde_json::json!({
-            "post_id": response.id.to_string(),
-            "old_status": old_status,
-            "new_status": "published",
-        })).await;
+        let _ = self
+            .dispatcher
+            .dispatch_after("post_published", &after_event_data)
+            .await;
+        let _ = self
+            .dispatcher
+            .dispatch_after(
+                "post_status_changed",
+                &serde_json::json!({
+                    "post_id": response.id.to_string(),
+                    "old_status": old_status,
+                    "new_status": "published",
+                }),
+            )
+            .await;
 
         Ok(response)
     }
 
     /// Unpublish a post (revert to draft)
     pub async fn unpublish_post(&self, id: Uuid) -> Result<PostResponse> {
-        let existing = self.repo().find_by_id(id).await?
+        let existing = self
+            .repo()
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| Error::not_found("Post", id.to_string()))?;
 
         // Prepare event data for BEFORE hooks
@@ -721,11 +831,16 @@ impl PostService {
         });
 
         // Execute BEFORE hooks - can cancel unpublishing
-        let before_result = self.dispatcher.dispatch_before("post_unpublished", &event_data).await;
+        let before_result = self
+            .dispatcher
+            .dispatch_before("post_unpublished", &event_data)
+            .await;
 
         if !before_result.proceed {
             return Err(Error::validation(
-                before_result.cancel_reason.unwrap_or_else(|| "Post unpublishing cancelled by hook".to_string())
+                before_result
+                    .cancel_reason
+                    .unwrap_or_else(|| "Post unpublishing cancelled by hook".to_string()),
             ));
         }
 
@@ -749,12 +864,21 @@ impl PostService {
             "slug": response.slug,
             "author_id": response.author_id.to_string(),
         });
-        let _ = self.dispatcher.dispatch_after("post_unpublished", &after_event_data).await;
-        let _ = self.dispatcher.dispatch_after("post_status_changed", &serde_json::json!({
-            "post_id": response.id.to_string(),
-            "old_status": old_status,
-            "new_status": "draft",
-        })).await;
+        let _ = self
+            .dispatcher
+            .dispatch_after("post_unpublished", &after_event_data)
+            .await;
+        let _ = self
+            .dispatcher
+            .dispatch_after(
+                "post_status_changed",
+                &serde_json::json!({
+                    "post_id": response.id.to_string(),
+                    "old_status": old_status,
+                    "new_status": "draft",
+                }),
+            )
+            .await;
 
         Ok(response)
     }
@@ -808,7 +932,6 @@ fn generate_slug_impl(title: &str) -> String {
 }
 
 impl PostService {
-
     /// Get terms (categories/tags) for a post
     async fn get_post_terms(&self, post_id: Uuid, taxonomy: &str) -> Result<Vec<TermResponse>> {
         let query = r#"
@@ -834,7 +957,10 @@ impl PostService {
             }
         };
 
-        Ok(rows.into_iter().map(|(id, name, slug)| TermResponse { id, name, slug }).collect())
+        Ok(rows
+            .into_iter()
+            .map(|(id, name, slug)| TermResponse { id, name, slug })
+            .collect())
     }
 
     /// Set terms for a post (replaces existing)
@@ -901,12 +1027,14 @@ impl PostService {
             .await
             .map_err(|e| Error::database_with_source("Failed to get author", e))?;
 
-        Ok(row.map(|(id, display_name, email, avatar_url)| PostAuthorResponse {
-            id,
-            name: display_name.unwrap_or_else(|| "Unknown".to_string()),
-            email: Some(email),
-            avatar_url,
-        }))
+        Ok(
+            row.map(|(id, display_name, email, avatar_url)| PostAuthorResponse {
+                id,
+                name: display_name.unwrap_or_else(|| "Unknown".to_string()),
+                email: Some(email),
+                avatar_url,
+            }),
+        )
     }
 }
 
@@ -923,8 +1051,14 @@ mod tests {
     #[test]
     fn test_generate_slug() {
         assert_eq!(generate_slug_impl("Hello World"), "hello-world");
-        assert_eq!(generate_slug_impl("  Multiple   Spaces  "), "multiple-spaces");
-        assert_eq!(generate_slug_impl("Special!@#$%Characters"), "special-characters");
+        assert_eq!(
+            generate_slug_impl("  Multiple   Spaces  "),
+            "multiple-spaces"
+        );
+        assert_eq!(
+            generate_slug_impl("Special!@#$%Characters"),
+            "special-characters"
+        );
     }
 
     #[test]
@@ -936,7 +1070,10 @@ mod tests {
     #[test]
     fn test_post_status_from_str() {
         assert_eq!("draft".parse::<PostStatus>().unwrap(), PostStatus::Draft);
-        assert_eq!("published".parse::<PostStatus>().unwrap(), PostStatus::Published);
+        assert_eq!(
+            "published".parse::<PostStatus>().unwrap(),
+            PostStatus::Published
+        );
         assert!("invalid".parse::<PostStatus>().is_err());
     }
 }

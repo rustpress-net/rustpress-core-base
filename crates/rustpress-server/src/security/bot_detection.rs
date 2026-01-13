@@ -433,7 +433,10 @@ pub async fn bot_detection(
 }
 
 /// Check honeypot fields in form data
-pub fn check_honeypot(form_data: &HashMap<String, String>, honeypot_fields: &[&str]) -> Option<BotSignal> {
+pub fn check_honeypot(
+    form_data: &HashMap<String, String>,
+    honeypot_fields: &[&str],
+) -> Option<BotSignal> {
     for field in honeypot_fields {
         if let Some(value) = form_data.get(*field) {
             if !value.is_empty() {
@@ -476,7 +479,10 @@ mod tests {
         let score = detector.analyze(&request, "127.0.0.1");
 
         assert!(score.score >= 40);
-        assert!(score.signals.iter().any(|s| matches!(s, BotSignal::MissingUserAgent)));
+        assert!(score
+            .signals
+            .iter()
+            .any(|s| matches!(s, BotSignal::MissingUserAgent)));
     }
 
     #[test]
@@ -485,7 +491,10 @@ mod tests {
         let detector = BotDetectionMiddleware::new(config);
 
         let request = create_request_with_headers(vec![
-            ("user-agent", "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"),
+            (
+                "user-agent",
+                "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+            ),
             ("accept", "*/*"),
         ]);
         let score = detector.analyze(&request, "127.0.0.1");
@@ -505,7 +514,10 @@ mod tests {
         ]);
         let score = detector.analyze(&request, "127.0.0.1");
 
-        assert!(score.signals.iter().any(|s| matches!(s, BotSignal::SuspiciousUserAgent(_))));
+        assert!(score
+            .signals
+            .iter()
+            .any(|s| matches!(s, BotSignal::SuspiciousUserAgent(_))));
     }
 
     #[test]

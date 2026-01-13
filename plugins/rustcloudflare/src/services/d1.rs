@@ -52,7 +52,9 @@ impl D1Service {
         databases
             .into_iter()
             .find(|db| db.uuid == database_id)
-            .ok_or_else(|| CloudflareError::D1Error(format!("Database '{}' not found", database_id)))
+            .ok_or_else(|| {
+                CloudflareError::D1Error(format!("Database '{}' not found", database_id))
+            })
     }
 
     /// Create a new D1 database
@@ -178,7 +180,9 @@ impl D1Service {
             );
             self.execute_query(database_id, &sql).await
         } else {
-            Err(CloudflareError::D1Error("Data must be an object".to_string()))
+            Err(CloudflareError::D1Error(
+                "Data must be an object".to_string(),
+            ))
         }
     }
 
@@ -237,7 +241,9 @@ impl D1Service {
             );
             self.execute_query(database_id, &sql).await
         } else {
-            Err(CloudflareError::D1Error("Data must be an object".to_string()))
+            Err(CloudflareError::D1Error(
+                "Data must be an object".to_string(),
+            ))
         }
     }
 

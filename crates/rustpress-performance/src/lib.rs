@@ -55,54 +55,54 @@
 //! page_cache.invalidate_by_tag("post:1");
 //! ```
 
-pub mod page_cache;
-pub mod object_cache;
-pub mod query_cache;
-pub mod http_cache;
-pub mod static_files;
-pub mod query_logging;
-pub mod lazy_loading;
-pub mod minification;
-pub mod image_optimization;
 pub mod cdn;
+pub mod connection_pool;
+pub mod edge_cache;
+pub mod http_cache;
+pub mod image_optimization;
+pub mod isr;
+pub mod lazy_loading;
+pub mod load_balancing;
+pub mod minification;
+pub mod object_cache;
+pub mod page_cache;
 pub mod preload;
+pub mod profiling;
+pub mod query_cache;
+pub mod query_logging;
 pub mod service_worker;
 pub mod ssr;
-pub mod isr;
-pub mod edge_cache;
-pub mod connection_pool;
-pub mod profiling;
-pub mod load_balancing;
+pub mod static_files;
 
 // Re-export commonly used types
-pub use page_cache::{PageCache, PageCacheConfig, CachedPage, CacheTagBuilder};
-pub use object_cache::{ObjectCache, ObjectCacheConfig, CacheBackend};
-pub use query_cache::{QueryCache, QueryCacheConfig};
-pub use http_cache::{CacheControl, ETag, HttpCacheHeaders, CacheProfile};
-pub use static_files::{StaticFileServer, AssetManifest};
-pub use query_logging::{QueryLogger, QueryLoggerConfig, QueryLogEntry};
-pub use lazy_loading::{LazyLoadingRegistry, LazyComponent};
-pub use minification::{Minifier, MinificationConfig, MinifiedAsset};
-pub use image_optimization::{ImageOptimizer, ImageOptimizerConfig, OptimizedImage};
-pub use cdn::{CdnManager, CdnConfig, CdnRewriter, CdnPurger};
-pub use preload::{ResourceHint, ResourceHintsManager, HintType};
-pub use service_worker::{ServiceWorkerGenerator, ServiceWorkerConfig};
-pub use ssr::{SsrRenderer, SsrConfig, StreamingRenderer};
-pub use isr::{IsrHandler, IsrConfig, IsrStore, StaticPage};
+pub use cdn::{CdnConfig, CdnManager, CdnPurger, CdnRewriter};
+pub use connection_pool::{PoolConfig, PoolHealth, PoolMonitor, PoolStats};
 pub use edge_cache::{EdgeCacheConfig, EdgeCacheHeaders, EdgeCacheRule};
-pub use connection_pool::{PoolConfig, PoolMonitor, PoolStats, PoolHealth};
-pub use profiling::{Profiler, ProfilingConfig, RequestTrace, PerformanceMetrics};
+pub use http_cache::{CacheControl, CacheProfile, ETag, HttpCacheHeaders};
+pub use image_optimization::{ImageOptimizer, ImageOptimizerConfig, OptimizedImage};
+pub use isr::{IsrConfig, IsrHandler, IsrStore, StaticPage};
+pub use lazy_loading::{LazyComponent, LazyLoadingRegistry};
 pub use load_balancing::{LoadBalancer, LoadBalancingStrategy, Session, SessionConfig};
+pub use minification::{MinificationConfig, MinifiedAsset, Minifier};
+pub use object_cache::{CacheBackend, ObjectCache, ObjectCacheConfig};
+pub use page_cache::{CacheTagBuilder, CachedPage, PageCache, PageCacheConfig};
+pub use preload::{HintType, ResourceHint, ResourceHintsManager};
+pub use profiling::{PerformanceMetrics, Profiler, ProfilingConfig, RequestTrace};
+pub use query_cache::{QueryCache, QueryCacheConfig};
+pub use query_logging::{QueryLogEntry, QueryLogger, QueryLoggerConfig};
+pub use service_worker::{ServiceWorkerConfig, ServiceWorkerGenerator};
+pub use ssr::{SsrConfig, SsrRenderer, StreamingRenderer};
+pub use static_files::{AssetManifest, StaticFileServer};
 
 /// Performance optimization prelude - import commonly used types
 pub mod prelude {
-    pub use crate::page_cache::{PageCache, PageCacheConfig, CachedPage, CacheTagBuilder};
-    pub use crate::object_cache::{ObjectCache, ObjectCacheConfig};
-    pub use crate::query_cache::{QueryCache, QueryCacheConfig};
+    pub use crate::cdn::{CdnConfig, CdnManager};
     pub use crate::http_cache::{CacheControl, ETag, HttpCacheHeaders};
-    pub use crate::static_files::{StaticFileServer, AssetManifest};
-    pub use crate::cdn::{CdnManager, CdnConfig};
+    pub use crate::object_cache::{ObjectCache, ObjectCacheConfig};
+    pub use crate::page_cache::{CacheTagBuilder, CachedPage, PageCache, PageCacheConfig};
     pub use crate::profiling::{Profiler, ProfilingConfig};
+    pub use crate::query_cache::{QueryCache, QueryCacheConfig};
+    pub use crate::static_files::{AssetManifest, StaticFileServer};
 }
 
 /// Create a default performance configuration

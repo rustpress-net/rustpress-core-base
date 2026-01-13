@@ -2,9 +2,9 @@
 //!
 //! Comprehensive HTTP cache control with ETags, Cache-Control, and conditional requests.
 
+use axum::http::{header, HeaderMap, HeaderValue};
 use std::collections::HashMap;
 use std::time::{Duration, UNIX_EPOCH};
-use axum::http::{header, HeaderMap, HeaderValue};
 
 /// Cache control directives
 #[derive(Debug, Clone, Default)]
@@ -248,9 +248,7 @@ impl HttpCacheHeaders {
 
     /// Set Last-Modified header
     pub fn last_modified(mut self, timestamp: i64) -> Self {
-        let datetime = httpdate::HttpDate::from(
-            UNIX_EPOCH + Duration::from_secs(timestamp as u64)
-        );
+        let datetime = httpdate::HttpDate::from(UNIX_EPOCH + Duration::from_secs(timestamp as u64));
         if let Ok(value) = HeaderValue::from_str(&datetime.to_string()) {
             self.headers.insert(header::LAST_MODIFIED, value);
         }
@@ -259,9 +257,7 @@ impl HttpCacheHeaders {
 
     /// Set Expires header
     pub fn expires(mut self, timestamp: i64) -> Self {
-        let datetime = httpdate::HttpDate::from(
-            UNIX_EPOCH + Duration::from_secs(timestamp as u64)
-        );
+        let datetime = httpdate::HttpDate::from(UNIX_EPOCH + Duration::from_secs(timestamp as u64));
         if let Ok(value) = HeaderValue::from_str(&datetime.to_string()) {
             self.headers.insert(header::EXPIRES, value);
         }
@@ -299,10 +295,8 @@ impl HttpCacheHeaders {
     /// Set CDN-Cache-Control
     pub fn cdn_cache_control(mut self, control: CacheControl) -> Self {
         if let Ok(value) = HeaderValue::from_str(&control.to_header_value()) {
-            self.headers.insert(
-                header::HeaderName::from_static("cdn-cache-control"),
-                value,
-            );
+            self.headers
+                .insert(header::HeaderName::from_static("cdn-cache-control"), value);
         }
         self
     }
@@ -337,11 +331,7 @@ impl ConditionalRequest {
         let if_none_match = headers
             .get(header::IF_NONE_MATCH)
             .and_then(|v| v.to_str().ok())
-            .map(|v| {
-                v.split(',')
-                    .filter_map(|s| ETag::parse(s.trim()))
-                    .collect()
-            })
+            .map(|v| v.split(',').filter_map(|s| ETag::parse(s.trim())).collect())
             .unwrap_or_default();
 
         let if_modified_since = headers
@@ -353,11 +343,7 @@ impl ConditionalRequest {
         let if_match = headers
             .get(header::IF_MATCH)
             .and_then(|v| v.to_str().ok())
-            .map(|v| {
-                v.split(',')
-                    .filter_map(|s| ETag::parse(s.trim()))
-                    .collect()
-            })
+            .map(|v| v.split(',').filter_map(|s| ETag::parse(s.trim())).collect())
             .unwrap_or_default();
 
         let if_unmodified_since = headers
@@ -379,7 +365,10 @@ impl ConditionalRequest {
         // Check If-None-Match
         if !self.if_none_match.is_empty() {
             if let Some(current_etag) = etag {
-                return self.if_none_match.iter().any(|e| e.matches(current_etag, true));
+                return self
+                    .if_none_match
+                    .iter()
+                    .any(|e| e.matches(current_etag, true));
             }
         }
 
@@ -448,8 +437,8 @@ impl CacheProfile {
             name: "html_pages".to_string(),
             cache_control: CacheControl {
                 public: true,
-                max_age: Some(300), // 5 minutes
-                s_maxage: Some(3600), // 1 hour for CDN
+                max_age: Some(300),                  // 5 minutes
+                s_maxage: Some(3600),                // 1 hour for CDN
                 stale_while_revalidate: Some(86400), // 1 day
                 ..Default::default()
             },
@@ -526,7 +515,10 @@ impl CacheProfileRegistry {
         // Default path patterns
         registry.add_path_pattern(r"^/static/.*", "static_assets");
         registry.add_path_pattern(r"^/assets/.*", "static_assets");
-        registry.add_path_pattern(r"\.(css|js|woff2?|ttf|eot|ico|png|jpg|jpeg|gif|svg|webp)$", "static_assets");
+        registry.add_path_pattern(
+            r"\.(css|js|woff2?|ttf|eot|ico|png|jpg|jpeg|gif|svg|webp)$",
+            "static_assets",
+        );
         registry.add_path_pattern(r"^/api/.*", "api_responses");
         registry.add_path_pattern(r"^/admin/.*", "authenticated");
         registry.add_path_pattern(r"^/wp-admin/.*", "authenticated");

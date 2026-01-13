@@ -7,7 +7,7 @@ use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
 use rustpress_core::error::{Error, Result};
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::sync::RwLock;
 use uuid::Uuid;
@@ -158,9 +158,7 @@ impl<S: RefreshTokenStore> RefreshTokenManager<S> {
     /// Generate a new refresh token
     fn generate_token(&self) -> String {
         let mut rng = rand::thread_rng();
-        let bytes: Vec<u8> = (0..self.config.token_length)
-            .map(|_| rng.gen())
-            .collect();
+        let bytes: Vec<u8> = (0..self.config.token_length).map(|_| rng.gen()).collect();
         base64_url_encode(&bytes)
     }
 
@@ -184,7 +182,9 @@ impl<S: RefreshTokenStore> RefreshTokenManager<S> {
         if families.len() >= self.config.max_families_per_user {
             // Revoke oldest family
             if let Some(oldest_family) = families.first() {
-                self.store.revoke_family(*oldest_family, RevokeReason::Expired).await?;
+                self.store
+                    .revoke_family(*oldest_family, RevokeReason::Expired)
+                    .await?;
             }
         }
 
@@ -217,12 +217,13 @@ impl<S: RefreshTokenStore> RefreshTokenManager<S> {
     pub async fn validate(&self, raw_token: &str) -> Result<RefreshToken> {
         let token_hash = Self::hash_token(raw_token);
 
-        let token = self.store
-            .get_by_hash(&token_hash)
-            .await?
-            .ok_or_else(|| Error::Authentication {
-                message: "Invalid refresh token".to_string(),
-            })?;
+        let token =
+            self.store
+                .get_by_hash(&token_hash)
+                .await?
+                .ok_or_else(|| Error::Authentication {
+                    message: "Invalid refresh token".to_string(),
+                })?;
 
         if token.is_revoked() {
             // Check if this might be token reuse
@@ -231,9 +232,12 @@ impl<S: RefreshTokenStore> RefreshTokenManager<S> {
                 if let Some(latest) = self.store.get_latest_in_family(token.family_id).await? {
                     if latest.generation > token.generation {
                         // Token reuse detected! Revoke entire family
-                        self.store.revoke_family(token.family_id, RevokeReason::TokenReuse).await?;
+                        self.store
+                            .revoke_family(token.family_id, RevokeReason::TokenReuse)
+                            .await?;
                         return Err(Error::Authentication {
-                            message: "Token reuse detected. All sessions revoked for security.".to_string(),
+                            message: "Token reuse detected. All sessions revoked for security."
+                                .to_string(),
                         });
                     }
                 }
@@ -264,7 +268,9 @@ impl<S: RefreshTokenStore> RefreshTokenManager<S> {
         let family_age = Utc::now().signed_duration_since(old_token.created_at);
         if family_age > self.config.absolute_lifetime {
             // Force re-authentication
-            self.store.revoke_family(old_token.family_id, RevokeReason::Expired).await?;
+            self.store
+                .revoke_family(old_token.family_id, RevokeReason::Expired)
+                .await?;
             return Err(Error::Authentication {
                 message: "Session expired. Please log in again.".to_string(),
             });
@@ -294,7 +300,9 @@ impl<S: RefreshTokenStore> RefreshTokenManager<S> {
         self.store.create(&new_token).await?;
 
         // Revoke old token (with grace period consideration handled by validation)
-        self.store.revoke(old_token.id, RevokeReason::Rotated).await?;
+        self.store
+            .revoke(old_token.id, RevokeReason::Rotated)
+            .await?;
 
         Ok((new_raw_token, new_token))
     }
@@ -444,7 +452,11 @@ impl RefreshTokenStore for InMemoryRefreshTokenStore {
             message: "Lock poisoned".to_string(),
             request_id: None,
         })?;
-        Ok(tokens.values().filter(|t| t.user_id == user_id).cloned().collect())
+        Ok(tokens
+            .values()
+            .filter(|t| t.user_id == user_id)
+            .cloned()
+            .collect())
     }
 
     async fn get_user_families(&self, user_id: Uuid) -> Result<Vec<Uuid>> {

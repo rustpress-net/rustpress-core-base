@@ -2,11 +2,11 @@
 //!
 //! Style variations, dark mode support, and template locking.
 
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
-use parking_lot::RwLock;
 use thiserror::Error;
 use tokio::fs;
 
@@ -73,7 +73,9 @@ impl VariationManager {
                 let variation: StyleVariation = serde_json::from_str(&content)
                     .map_err(|e| VariationError::Parse(e.to_string()))?;
 
-                self.variations.write().insert(variation.slug.clone(), variation);
+                self.variations
+                    .write()
+                    .insert(variation.slug.clone(), variation);
             }
         }
 
@@ -113,7 +115,9 @@ impl VariationManager {
 
     /// Register a variation
     pub fn register(&self, variation: StyleVariation) {
-        self.variations.write().insert(variation.slug.clone(), variation);
+        self.variations
+            .write()
+            .insert(variation.slug.clone(), variation);
     }
 
     /// Generate CSS for active variation
@@ -519,7 +523,8 @@ pub fn generate_print_stylesheet() -> String {
     word-wrap: break-word;
   }
 }
-"##.to_string()
+"##
+    .to_string()
 }
 
 #[cfg(test)]
@@ -536,8 +541,12 @@ mod tests {
     #[test]
     fn test_dark_mode_css() {
         let mut config = DarkModeConfig::default();
-        config.dark_colors.insert("--background".to_string(), "#1a1a1a".to_string());
-        config.light_colors.insert("--background".to_string(), "#ffffff".to_string());
+        config
+            .dark_colors
+            .insert("--background".to_string(), "#1a1a1a".to_string());
+        config
+            .light_colors
+            .insert("--background".to_string(), "#ffffff".to_string());
 
         let css = config.generate_css();
         assert!(css.contains("prefers-color-scheme: dark"));

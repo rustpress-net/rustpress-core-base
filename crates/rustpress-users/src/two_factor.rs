@@ -154,7 +154,14 @@ pub struct TrustedDevice {
 }
 
 impl TrustedDevice {
-    pub fn new(user_id: i64, name: &str, fingerprint: &str, user_agent: &str, ip: &str, days_valid: i64) -> Self {
+    pub fn new(
+        user_id: i64,
+        name: &str,
+        fingerprint: &str,
+        user_agent: &str,
+        ip: &str,
+        days_valid: i64,
+    ) -> Self {
         let now = Utc::now();
         Self {
             id: Uuid::new_v4(),
@@ -228,7 +235,11 @@ impl TwoFactorManager {
     }
 
     /// Initialize TOTP setup for a user
-    pub fn init_totp_setup(&mut self, user_id: i64, account_name: &str) -> Result<TotpSetup, String> {
+    pub fn init_totp_setup(
+        &mut self,
+        user_id: i64,
+        account_name: &str,
+    ) -> Result<TotpSetup, String> {
         // Generate a random secret
         let secret = Secret::generate_secret();
         let secret_base32 = secret.to_encoded().to_string();
@@ -242,17 +253,18 @@ impl TwoFactorManager {
             secret.to_bytes().map_err(|e| e.to_string())?,
             Some(self.issuer.clone()),
             account_name.to_string(),
-        ).map_err(|e| e.to_string())?;
+        )
+        .map_err(|e| e.to_string())?;
 
         // Generate QR code
-        let qr_code = totp.get_qr_base64()
-            .map_err(|e| e.to_string())?;
+        let qr_code = totp.get_qr_base64().map_err(|e| e.to_string())?;
 
         // Generate recovery codes
         let recovery_codes = self.generate_recovery_codes();
 
         // Format manual key for display
-        let manual_key = secret_base32.chars()
+        let manual_key = secret_base32
+            .chars()
             .collect::<Vec<char>>()
             .chunks(4)
             .map(|chunk| chunk.iter().collect::<String>())
@@ -260,13 +272,16 @@ impl TwoFactorManager {
             .join(" ");
 
         // Hash recovery codes before getting mutable borrow
-        let hashed_codes: Vec<String> = recovery_codes.iter()
+        let hashed_codes: Vec<String> = recovery_codes
+            .iter()
             .map(|c| self.hash_recovery_code(c))
             .collect();
         let codes_count = recovery_codes.len() as u32;
 
         // Store pending setup
-        let status = self.user_status.entry(user_id)
+        let status = self
+            .user_status
+            .entry(user_id)
             .or_insert_with(|| TwoFactorStatus::new(user_id));
         status.totp_secret = Some(secret_base32.clone());
         status.recovery_codes = hashed_codes;
@@ -287,9 +302,13 @@ impl TwoFactorManager {
     pub fn verify_totp_setup(&mut self, user_id: i64, code: &str) -> Result<bool, String> {
         // Get secret first without holding mutable borrow
         let secret = {
-            let status = self.user_status.get(&user_id)
+            let status = self
+                .user_status
+                .get(&user_id)
                 .ok_or_else(|| "2FA not initialized for user".to_string())?;
-            status.totp_secret.as_ref()
+            status
+                .totp_secret
+                .as_ref()
                 .ok_or_else(|| "TOTP secret not found".to_string())?
                 .clone()
         };
@@ -317,9 +336,15 @@ impl TwoFactorManager {
     pub fn verify_totp(&mut self, user_id: i64, code: &str) -> Result<VerificationResult, String> {
         // Get necessary info without holding mutable borrow
         let (is_enabled, secret, recovery_codes_remaining) = {
-            let status = self.user_status.get(&user_id)
+            let status = self
+                .user_status
+                .get(&user_id)
                 .ok_or_else(|| "2FA not enabled for user".to_string())?;
-            (status.enabled, status.totp_secret.clone(), status.recovery_codes_remaining)
+            (
+                status.enabled,
+                status.totp_secret.clone(),
+                status.recovery_codes_remaining,
+            )
         };
 
         if !is_enabled {
@@ -378,7 +403,8 @@ impl TwoFactorManager {
 
     /// Verify TOTP code against secret
     fn verify_totp_code(&self, secret: &str, code: &str) -> Result<bool, String> {
-        let secret_bytes = data_encoding::BASE32.decode(secret.as_bytes())
+        let secret_bytes = data_encoding::BASE32
+            .decode(secret.as_bytes())
             .map_err(|e| format!("Invalid secret: {}", e))?;
 
         let totp = TOTP::new(
@@ -389,7 +415,8 @@ impl TwoFactorManager {
             secret_bytes,
             Some(self.issuer.clone()),
             "".to_string(),
-        ).map_err(|e| e.to_string())?;
+        )
+        .map_err(|e| e.to_string())?;
 
         Ok(totp.check_current(code).unwrap_or(false))
     }
@@ -416,7 +443,7 @@ impl TwoFactorManager {
 
     /// Hash a recovery code
     fn hash_recovery_code(&self, code: &str) -> String {
-        use sha2::{Sha256, Digest};
+        use sha2::{Digest, Sha256};
         let normalized = code.to_uppercase().replace("-", "");
         let hash = Sha256::digest(normalized.as_bytes());
         hex::encode(hash)
@@ -446,7 +473,8 @@ impl TwoFactorManager {
 
         // Generate and hash codes before borrowing status mutably
         let new_codes = self.generate_recovery_codes();
-        let hashed_codes: Vec<String> = new_codes.iter()
+        let hashed_codes: Vec<String> = new_codes
+            .iter()
             .map(|c| self.hash_recovery_code(c))
             .collect();
         let codes_count = new_codes.len() as u32;
@@ -462,7 +490,9 @@ impl TwoFactorManager {
 
     /// Disable 2FA for user
     pub fn disable_2fa(&mut self, user_id: i64) -> Result<(), String> {
-        let status = self.user_status.get_mut(&user_id)
+        let status = self
+            .user_status
+            .get_mut(&user_id)
             .ok_or_else(|| "User not found".to_string())?;
 
         status.enabled = false;
@@ -486,7 +516,8 @@ impl TwoFactorManager {
 
     /// Check if 2FA is enabled
     pub fn is_enabled(&self, user_id: i64) -> bool {
-        self.user_status.get(&user_id)
+        self.user_status
+            .get(&user_id)
             .map(|s| s.enabled)
             .unwrap_or(false)
     }
@@ -515,13 +546,15 @@ impl TwoFactorManager {
 
     /// Check if device is trusted
     pub fn is_device_trusted(&self, user_id: i64, fingerprint: &str) -> bool {
-        self.trusted_devices.values()
+        self.trusted_devices
+            .values()
             .any(|d| d.user_id == user_id && d.fingerprint == fingerprint && !d.is_expired())
     }
 
     /// Get trusted devices for user
     pub fn get_trusted_devices(&self, user_id: i64) -> Vec<&TrustedDevice> {
-        self.trusted_devices.values()
+        self.trusted_devices
+            .values()
             .filter(|d| d.user_id == user_id && !d.is_expired())
             .collect()
     }
@@ -545,7 +578,9 @@ impl TwoFactorManager {
 // Hex encoding helper
 mod hex {
     pub fn encode(bytes: impl AsRef<[u8]>) -> String {
-        bytes.as_ref().iter()
+        bytes
+            .as_ref()
+            .iter()
             .map(|b| format!("{:02x}", b))
             .collect()
     }

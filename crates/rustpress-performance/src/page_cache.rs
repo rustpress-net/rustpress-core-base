@@ -2,11 +2,11 @@
 //!
 //! Full page caching system with tag-based invalidation for efficient cache management.
 
+use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Instant;
-use parking_lot::RwLock;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Page cache errors
@@ -109,7 +109,12 @@ impl CacheKeyGenerator {
     }
 
     /// Generate cache key from request
-    pub fn generate(&self, method: &str, uri: &str, vary_headers: &HashMap<String, String>) -> String {
+    pub fn generate(
+        &self,
+        method: &str,
+        uri: &str,
+        vary_headers: &HashMap<String, String>,
+    ) -> String {
         let mut hasher = blake3::Hasher::new();
 
         // Add method
@@ -204,11 +209,20 @@ impl PageCache {
 
     /// Check if path should be cached
     pub fn should_cache(&self, path: &str) -> bool {
-        !self.config.excluded_paths.iter().any(|p| path.starts_with(p))
+        !self
+            .config
+            .excluded_paths
+            .iter()
+            .any(|p| path.starts_with(p))
     }
 
     /// Generate cache key
-    pub fn cache_key(&self, method: &str, uri: &str, vary_headers: &HashMap<String, String>) -> String {
+    pub fn cache_key(
+        &self,
+        method: &str,
+        uri: &str,
+        vary_headers: &HashMap<String, String>,
+    ) -> String {
         self.key_generator.generate(method, uri, vary_headers)
     }
 
@@ -319,7 +333,9 @@ impl PageCache {
         };
 
         for tag in tags_to_invalidate {
-            let keys_count = self.tag_index.read()
+            let keys_count = self
+                .tag_index
+                .read()
                 .get(&tag)
                 .map(|k| k.len())
                 .unwrap_or(0);
@@ -352,14 +368,13 @@ impl PageCache {
 
         if cache.len() >= self.config.max_entries {
             // LRU-style eviction: remove entries with lowest hits and oldest
-            let mut entries: Vec<_> = cache.iter()
+            let mut entries: Vec<_> = cache
+                .iter()
                 .map(|(k, v)| (k.clone(), v.hits, v.created))
                 .collect();
 
             // Sort by hits (ascending) then by age (oldest first)
-            entries.sort_by(|a, b| {
-                a.1.cmp(&b.1).then_with(|| b.2.cmp(&a.2))
-            });
+            entries.sort_by(|a, b| a.1.cmp(&b.1).then_with(|| b.2.cmp(&a.2)));
 
             // Remove bottom 10%
             let to_remove = (self.config.max_entries / 10).max(1);
@@ -475,9 +490,7 @@ impl Default for CacheTagBuilder {
 /// Convert glob pattern to regex
 fn glob_to_regex(pattern: &str) -> regex::Regex {
     let escaped = regex::escape(pattern);
-    let regex_pattern = escaped
-        .replace(r"\*", ".*")
-        .replace(r"\?", ".");
+    let regex_pattern = escaped.replace(r"\*", ".*").replace(r"\?", ".");
     regex::Regex::new(&format!("^{}$", regex_pattern)).unwrap()
 }
 

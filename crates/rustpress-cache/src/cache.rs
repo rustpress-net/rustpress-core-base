@@ -164,7 +164,12 @@ impl Cache {
     }
 
     /// Remember a value (get or compute and store)
-    pub async fn remember<T, F, Fut>(&self, key: impl Into<CacheKey>, ttl: Duration, f: F) -> Result<T>
+    pub async fn remember<T, F, Fut>(
+        &self,
+        key: impl Into<CacheKey>,
+        ttl: Duration,
+        f: F,
+    ) -> Result<T>
     where
         T: Serialize + DeserializeOwned + Clone,
         F: FnOnce() -> Fut,
@@ -184,10 +189,7 @@ impl Cache {
     }
 
     /// Get multiple values
-    pub async fn get_many<T: DeserializeOwned>(
-        &self,
-        keys: &[CacheKey],
-    ) -> Result<Vec<Option<T>>> {
+    pub async fn get_many<T: DeserializeOwned>(&self, keys: &[CacheKey]) -> Result<Vec<Option<T>>> {
         let full_keys: Vec<CacheKey> = keys.iter().map(|k| self.full_key(k)).collect();
         let bytes_list = self.backend.get_many(&full_keys).await?;
 
@@ -325,10 +327,7 @@ mod tests {
     async fn test_get_set() {
         let cache = create_test_cache();
 
-        cache
-            .set("test_key", &"hello world", None)
-            .await
-            .unwrap();
+        cache.set("test_key", &"hello world", None).await.unwrap();
         let value: String = cache.get("test_key").await.unwrap().unwrap();
         assert_eq!(value, "hello world");
     }
@@ -339,7 +338,9 @@ mod tests {
 
         // First call computes the value
         let value: String = cache
-            .get_or_set("computed", None, || async { Ok("computed_value".to_string()) })
+            .get_or_set("computed", None, || async {
+                Ok("computed_value".to_string())
+            })
             .await
             .unwrap();
         assert_eq!(value, "computed_value");

@@ -3,20 +3,20 @@
 //! HTTP server implementation using Axum framework.
 
 pub mod app;
+pub mod background;
 pub mod error;
 pub mod extract;
+pub mod metrics;
 pub mod middleware;
 pub mod response;
-pub mod state;
 pub mod routes;
-pub mod metrics;
-pub mod shutdown;
-pub mod services;
-pub mod background;
 pub mod security;
+pub mod services;
 pub mod setup;
+pub mod shutdown;
+pub mod state;
 
 pub use app::App;
-pub use state::AppState;
-pub use services::{EmailService, EmailConfig, EmailTemplate};
 pub use background::init_background_tasks;
+pub use services::{EmailConfig, EmailService, EmailTemplate};
+pub use state::AppState;

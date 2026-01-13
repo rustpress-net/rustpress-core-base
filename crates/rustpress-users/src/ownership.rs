@@ -48,7 +48,13 @@ pub enum TransferStatus {
 }
 
 impl OwnershipTransfer {
-    pub fn new(content_id: i64, content_type: &str, from_user: i64, to_user: i64, requested_by: i64) -> Self {
+    pub fn new(
+        content_id: i64,
+        content_type: &str,
+        from_user: i64,
+        to_user: i64,
+        requested_by: i64,
+    ) -> Self {
         Self {
             id: Uuid::new_v4(),
             content_id,
@@ -294,7 +300,8 @@ impl MultiAuthorManager {
 
     /// Get content owner
     pub fn get_owner(&self, content_id: i64, content_type: &str) -> Option<i64> {
-        self.ownership.get(&(content_id, content_type.to_string()))
+        self.ownership
+            .get(&(content_id, content_type.to_string()))
             .map(|o| o.owner_id)
     }
 
@@ -307,19 +314,27 @@ impl MultiAuthorManager {
 
     /// Get pending transfers for user
     pub fn get_pending_transfers(&self, user_id: i64) -> Vec<&OwnershipTransfer> {
-        self.transfers.iter()
+        self.transfers
+            .iter()
             .filter(|t| {
-                t.status == TransferStatus::Pending &&
-                (t.from_user_id == user_id || t.to_user_id == user_id)
+                t.status == TransferStatus::Pending
+                    && (t.from_user_id == user_id || t.to_user_id == user_id)
             })
             .collect()
     }
 
     /// Process transfer
-    pub fn process_transfer(&mut self, transfer_id: Uuid, approved: bool, by_user: i64) -> Result<(), String> {
+    pub fn process_transfer(
+        &mut self,
+        transfer_id: Uuid,
+        approved: bool,
+        by_user: i64,
+    ) -> Result<(), String> {
         // Find transfer and extract ownership info before mutation
         let ownership_info = {
-            let transfer = self.transfers.iter_mut()
+            let transfer = self
+                .transfers
+                .iter_mut()
                 .find(|t| t.id == transfer_id)
                 .ok_or_else(|| "Transfer not found".to_string())?;
 
@@ -329,7 +344,11 @@ impl MultiAuthorManager {
 
             let info = if approved {
                 transfer.approve(by_user);
-                Some((transfer.content_id, transfer.content_type.clone(), transfer.to_user_id))
+                Some((
+                    transfer.content_id,
+                    transfer.content_type.clone(),
+                    transfer.to_user_id,
+                ))
             } else {
                 transfer.reject(by_user);
                 None
@@ -349,8 +368,7 @@ impl MultiAuthorManager {
 
     /// Add author to post
     pub fn add_author(&mut self, author: PostAuthor) -> Result<(), String> {
-        let authors = self.authors.entry(author.post_id)
-            .or_insert_with(Vec::new);
+        let authors = self.authors.entry(author.post_id).or_insert_with(Vec::new);
 
         // Check if already an author
         if authors.iter().any(|a| a.user_id == author.user_id) {
@@ -372,11 +390,15 @@ impl MultiAuthorManager {
 
     /// Remove author from post
     pub fn remove_author(&mut self, post_id: i64, user_id: i64) -> Result<(), String> {
-        let authors = self.authors.get_mut(&post_id)
+        let authors = self
+            .authors
+            .get_mut(&post_id)
             .ok_or_else(|| "Post not found".to_string())?;
 
         // Cannot remove primary author if they're the only one
-        let is_primary = authors.iter().find(|a| a.user_id == user_id)
+        let is_primary = authors
+            .iter()
+            .find(|a| a.user_id == user_id)
             .map(|a| a.role == AuthorRole::Primary)
             .unwrap_or(false);
 
@@ -391,20 +413,29 @@ impl MultiAuthorManager {
 
     /// Get authors for post
     pub fn get_authors(&self, post_id: i64) -> Vec<&PostAuthor> {
-        self.authors.get(&post_id)
+        self.authors
+            .get(&post_id)
             .map(|authors| authors.iter().collect())
             .unwrap_or_default()
     }
 
     /// Get primary author
     pub fn get_primary_author(&self, post_id: i64) -> Option<&PostAuthor> {
-        self.authors.get(&post_id)
+        self.authors
+            .get(&post_id)
             .and_then(|authors| authors.iter().find(|a| a.role == AuthorRole::Primary))
     }
 
     /// Change author role
-    pub fn change_author_role(&mut self, post_id: i64, user_id: i64, new_role: AuthorRole) -> Result<(), String> {
-        let authors = self.authors.get_mut(&post_id)
+    pub fn change_author_role(
+        &mut self,
+        post_id: i64,
+        user_id: i64,
+        new_role: AuthorRole,
+    ) -> Result<(), String> {
+        let authors = self
+            .authors
+            .get_mut(&post_id)
             .ok_or_else(|| "Post not found".to_string())?;
 
         // If changing to primary, demote current primary
@@ -416,7 +447,8 @@ impl MultiAuthorManager {
             }
         }
 
-        let author = authors.iter_mut()
+        let author = authors
+            .iter_mut()
             .find(|a| a.user_id == user_id)
             .ok_or_else(|| "Author not found".to_string())?;
 
@@ -427,7 +459,9 @@ impl MultiAuthorManager {
 
     /// Reorder authors
     pub fn reorder_authors(&mut self, post_id: i64, user_ids: &[i64]) -> Result<(), String> {
-        let authors = self.authors.get_mut(&post_id)
+        let authors = self
+            .authors
+            .get_mut(&post_id)
             .ok_or_else(|| "Post not found".to_string())?;
 
         for (index, user_id) in user_ids.iter().enumerate() {
@@ -443,14 +477,16 @@ impl MultiAuthorManager {
 
     /// Check if user is author
     pub fn is_author(&self, post_id: i64, user_id: i64) -> bool {
-        self.authors.get(&post_id)
+        self.authors
+            .get(&post_id)
             .map(|authors| authors.iter().any(|a| a.user_id == user_id))
             .unwrap_or(false)
     }
 
     /// Check if user can edit
     pub fn can_edit(&self, post_id: i64, user_id: i64) -> bool {
-        self.authors.get(&post_id)
+        self.authors
+            .get(&post_id)
             .and_then(|authors| authors.iter().find(|a| a.user_id == user_id))
             .map(|author| author.role.can_edit())
             .unwrap_or(false)
@@ -465,21 +501,24 @@ impl MultiAuthorManager {
 
     /// Get contributions for post
     pub fn get_contributions(&self, post_id: i64) -> Vec<&Contribution> {
-        self.contributions.iter()
+        self.contributions
+            .iter()
             .filter(|c| c.post_id == post_id)
             .collect()
     }
 
     /// Get contributions by user
     pub fn get_user_contributions(&self, user_id: i64) -> Vec<&Contribution> {
-        self.contributions.iter()
+        self.contributions
+            .iter()
             .filter(|c| c.user_id == user_id)
             .collect()
     }
 
     /// Get posts by author
     pub fn get_posts_by_author(&self, user_id: i64) -> Vec<i64> {
-        self.authors.iter()
+        self.authors
+            .iter()
             .filter(|(_, authors)| authors.iter().any(|a| a.user_id == user_id))
             .map(|(post_id, _)| *post_id)
             .collect()
@@ -487,7 +526,8 @@ impl MultiAuthorManager {
 
     /// Get co-authored posts
     pub fn get_coauthored_posts(&self, user_id: i64) -> Vec<i64> {
-        self.authors.iter()
+        self.authors
+            .iter()
             .filter(|(_, authors)| {
                 authors.len() > 1 && authors.iter().any(|a| a.user_id == user_id)
             })
@@ -502,7 +542,8 @@ pub struct BylineGenerator;
 impl BylineGenerator {
     /// Generate byline string
     pub fn generate(authors: &[&PostAuthor], names: &HashMap<i64, String>) -> String {
-        let author_names: Vec<_> = authors.iter()
+        let author_names: Vec<_> = authors
+            .iter()
             .filter_map(|a| names.get(&a.user_id))
             .collect();
 
@@ -512,7 +553,8 @@ impl BylineGenerator {
             2 => format!("{} and {}", author_names[0], author_names[1]),
             _ => {
                 let last = author_names.last().unwrap();
-                let rest: Vec<_> = author_names[..author_names.len()-1].iter()
+                let rest: Vec<_> = author_names[..author_names.len() - 1]
+                    .iter()
                     .map(|s| s.as_str())
                     .collect();
                 format!("{}, and {}", rest.join(", "), last)
@@ -522,7 +564,8 @@ impl BylineGenerator {
 
     /// Generate byline with roles
     pub fn generate_with_roles(authors: &[&PostAuthor], names: &HashMap<i64, String>) -> String {
-        authors.iter()
+        authors
+            .iter()
             .filter_map(|a| {
                 names.get(&a.user_id).map(|name| {
                     if a.role == AuthorRole::Primary {
@@ -559,7 +602,9 @@ mod tests {
         let mut manager = MultiAuthorManager::new();
 
         manager.add_author(PostAuthor::primary(1, 10, 10)).unwrap();
-        manager.add_author(PostAuthor::co_author(1, 20, 10)).unwrap();
+        manager
+            .add_author(PostAuthor::co_author(1, 20, 10))
+            .unwrap();
 
         let authors = manager.get_authors(1);
         assert_eq!(authors.len(), 2);
@@ -572,7 +617,9 @@ mod tests {
         let mut manager = MultiAuthorManager::new();
 
         manager.add_author(PostAuthor::primary(1, 10, 10)).unwrap();
-        manager.add_author(PostAuthor::co_author(1, 20, 10)).unwrap();
+        manager
+            .add_author(PostAuthor::co_author(1, 20, 10))
+            .unwrap();
 
         assert!(manager.can_edit(1, 10));
         assert!(manager.can_edit(1, 20));

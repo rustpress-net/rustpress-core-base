@@ -122,10 +122,16 @@ impl OAuthProviderConfig {
             authorization_url: "https://accounts.google.com/o/oauth2/v2/auth".to_string(),
             token_url: "https://oauth2.googleapis.com/token".to_string(),
             userinfo_url: Some("https://www.googleapis.com/oauth2/v3/userinfo".to_string()),
-            scopes: vec!["openid".to_string(), "email".to_string(), "profile".to_string()],
+            scopes: vec![
+                "openid".to_string(),
+                "email".to_string(),
+                "profile".to_string(),
+            ],
             redirect_uri: redirect_uri.to_string(),
             pkce_enabled: true,
-            oidc_discovery_url: Some("https://accounts.google.com/.well-known/openid-configuration".to_string()),
+            oidc_discovery_url: Some(
+                "https://accounts.google.com/.well-known/openid-configuration".to_string(),
+            ),
             extra_params: HashMap::new(),
             button_color: Some("#4285F4".to_string()),
             sort_order: 1,
@@ -163,7 +169,9 @@ impl OAuthProviderConfig {
             client_secret: client_secret.to_string(),
             authorization_url: "https://www.facebook.com/v18.0/dialog/oauth".to_string(),
             token_url: "https://graph.facebook.com/v18.0/oauth/access_token".to_string(),
-            userinfo_url: Some("https://graph.facebook.com/me?fields=id,name,email,picture".to_string()),
+            userinfo_url: Some(
+                "https://graph.facebook.com/me?fields=id,name,email,picture".to_string(),
+            ),
             scopes: vec!["email".to_string(), "public_profile".to_string()],
             redirect_uri: redirect_uri.to_string(),
             pkce_enabled: false,
@@ -175,20 +183,38 @@ impl OAuthProviderConfig {
     }
 
     /// Create Microsoft OAuth config
-    pub fn microsoft(client_id: &str, client_secret: &str, redirect_uri: &str, tenant: &str) -> Self {
+    pub fn microsoft(
+        client_id: &str,
+        client_secret: &str,
+        redirect_uri: &str,
+        tenant: &str,
+    ) -> Self {
         Self {
             provider: OAuthProvider::Microsoft,
             name: "Microsoft".to_string(),
             enabled: true,
             client_id: client_id.to_string(),
             client_secret: client_secret.to_string(),
-            authorization_url: format!("https://login.microsoftonline.com/{}/oauth2/v2.0/authorize", tenant),
-            token_url: format!("https://login.microsoftonline.com/{}/oauth2/v2.0/token", tenant),
+            authorization_url: format!(
+                "https://login.microsoftonline.com/{}/oauth2/v2.0/authorize",
+                tenant
+            ),
+            token_url: format!(
+                "https://login.microsoftonline.com/{}/oauth2/v2.0/token",
+                tenant
+            ),
             userinfo_url: Some("https://graph.microsoft.com/v1.0/me".to_string()),
-            scopes: vec!["openid".to_string(), "email".to_string(), "profile".to_string()],
+            scopes: vec![
+                "openid".to_string(),
+                "email".to_string(),
+                "profile".to_string(),
+            ],
             redirect_uri: redirect_uri.to_string(),
             pkce_enabled: true,
-            oidc_discovery_url: Some(format!("https://login.microsoftonline.com/{}/.well-known/openid-configuration", tenant)),
+            oidc_discovery_url: Some(format!(
+                "https://login.microsoftonline.com/{}/.well-known/openid-configuration",
+                tenant
+            )),
             extra_params: HashMap::new(),
             button_color: Some("#2F2F2F".to_string()),
             sort_order: 4,
@@ -287,7 +313,7 @@ impl OAuthState {
     /// Generate PKCE code challenge
     pub fn code_challenge(&self) -> Option<String> {
         self.code_verifier.as_ref().map(|v| {
-            use sha2::{Sha256, Digest};
+            use sha2::{Digest, Sha256};
             let hash = Sha256::digest(v.as_bytes());
             data_encoding::BASE64URL_NOPAD.encode(&hash)
         })
@@ -498,16 +524,21 @@ impl OAuthManager {
 
     /// Get enabled providers
     pub fn get_enabled_providers(&self) -> Vec<&OAuthProviderConfig> {
-        let mut providers: Vec<&OAuthProviderConfig> = self.providers.values()
-            .filter(|p| p.enabled)
-            .collect();
+        let mut providers: Vec<&OAuthProviderConfig> =
+            self.providers.values().filter(|p| p.enabled).collect();
         providers.sort_by_key(|p| p.sort_order);
         providers
     }
 
     /// Create authorization URL
-    pub fn create_authorization_url(&mut self, provider: OAuthProvider, redirect_to: Option<&str>) -> Result<(String, OAuthState), String> {
-        let config = self.providers.get(&provider)
+    pub fn create_authorization_url(
+        &mut self,
+        provider: OAuthProvider,
+        redirect_to: Option<&str>,
+    ) -> Result<(String, OAuthState), String> {
+        let config = self
+            .providers
+            .get(&provider)
             .ok_or_else(|| "Provider not configured".to_string())?;
 
         if !config.enabled {
@@ -562,7 +593,9 @@ impl OAuthManager {
 
     /// Validate state
     pub fn validate_state(&mut self, state_token: &str) -> Result<OAuthState, String> {
-        let state = self.states.remove(state_token)
+        let state = self
+            .states
+            .remove(state_token)
             .ok_or_else(|| "Invalid state".to_string())?;
 
         if state.is_expired() {
@@ -573,7 +606,12 @@ impl OAuthManager {
     }
 
     /// Link an account to a user
-    pub fn link_account(&mut self, user_id: i64, profile: &OAuthUserProfile, tokens: Option<&OAuthTokens>) {
+    pub fn link_account(
+        &mut self,
+        user_id: i64,
+        profile: &OAuthUserProfile,
+        tokens: Option<&OAuthTokens>,
+    ) {
         let mut account = LinkedAccount::new(user_id, profile);
 
         if let Some(tokens) = tokens {
@@ -591,38 +629,50 @@ impl OAuthManager {
         );
 
         // Store by user
-        self.linked_accounts.entry(user_id)
+        self.linked_accounts
+            .entry(user_id)
             .or_insert_with(Vec::new)
             .push(account);
     }
 
     /// Get linked accounts for user
     pub fn get_linked_accounts(&self, user_id: i64) -> Vec<&LinkedAccount> {
-        self.linked_accounts.get(&user_id)
+        self.linked_accounts
+            .get(&user_id)
             .map(|accounts| accounts.iter().collect())
             .unwrap_or_default()
     }
 
     /// Find user by provider account
-    pub fn find_user_by_provider(&self, provider: OAuthProvider, provider_user_id: &str) -> Option<i64> {
-        self.accounts_by_provider.get(&(provider, provider_user_id.to_string())).copied()
+    pub fn find_user_by_provider(
+        &self,
+        provider: OAuthProvider,
+        provider_user_id: &str,
+    ) -> Option<i64> {
+        self.accounts_by_provider
+            .get(&(provider, provider_user_id.to_string()))
+            .copied()
     }
 
     /// Unlink an account
     pub fn unlink_account(&mut self, user_id: i64, provider: OAuthProvider) -> Result<(), String> {
         // Get linked accounts for user
-        let accounts = self.linked_accounts.get_mut(&user_id)
+        let accounts = self
+            .linked_accounts
+            .get_mut(&user_id)
             .ok_or_else(|| "No linked accounts found".to_string())?;
 
         // Find the account to remove
-        let account = accounts.iter()
+        let account = accounts
+            .iter()
             .find(|a| a.provider == provider)
             .ok_or_else(|| "Account not linked".to_string())?;
 
         let provider_user_id = account.provider_user_id.clone();
 
         // Remove from provider index
-        self.accounts_by_provider.remove(&(provider, provider_user_id));
+        self.accounts_by_provider
+            .remove(&(provider, provider_user_id));
 
         // Remove from user's accounts
         accounts.retain(|a| a.provider != provider);
@@ -637,7 +687,9 @@ impl OAuthManager {
         }
 
         if let Some(domain) = email.split('@').nth(1) {
-            self.settings.allowed_email_domains.iter()
+            self.settings
+                .allowed_email_domains
+                .iter()
                 .any(|d| domain.to_lowercase() == d.to_lowercase())
         } else {
             false
@@ -669,7 +721,11 @@ mod tests {
 
     #[test]
     fn test_oauth_provider_config() {
-        let config = OAuthProviderConfig::google("client_id", "client_secret", "https://example.com/callback");
+        let config = OAuthProviderConfig::google(
+            "client_id",
+            "client_secret",
+            "https://example.com/callback",
+        );
         assert_eq!(config.provider, OAuthProvider::Google);
         assert!(config.enabled);
         assert!(config.pkce_enabled);
@@ -716,7 +772,9 @@ mod tests {
             "https://example.com/callback",
         ));
 
-        let (url, state) = manager.create_authorization_url(OAuthProvider::Google, None).unwrap();
+        let (url, state) = manager
+            .create_authorization_url(OAuthProvider::Google, None)
+            .unwrap();
         assert!(url.contains("accounts.google.com"));
         assert!(url.contains("client_id=client_id"));
         assert!(url.contains(&format!("state={}", state.state)));

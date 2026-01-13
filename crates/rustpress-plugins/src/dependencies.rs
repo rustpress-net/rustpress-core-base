@@ -68,9 +68,9 @@ impl DependencyResolver {
             };
 
             // Ensure node exists
-            let plugin_node = *node_map.entry(plugin_id.clone()).or_insert_with(|| {
-                graph.add_node(plugin_id.clone())
-            });
+            let plugin_node = *node_map
+                .entry(plugin_id.clone())
+                .or_insert_with(|| graph.add_node(plugin_id.clone()));
 
             // Process dependencies
             for (dep_id, dep_spec) in &manifest.dependencies.plugins {
@@ -126,14 +126,18 @@ impl DependencyResolver {
                         }
 
                         // Add dependency node and edge
-                        let dep_node = *node_map.entry(dep_id.clone()).or_insert_with(|| {
-                            graph.add_node(dep_id.clone())
-                        });
+                        let dep_node = *node_map
+                            .entry(dep_id.clone())
+                            .or_insert_with(|| graph.add_node(dep_id.clone()));
 
-                        graph.add_edge(plugin_node, dep_node, DependencyEdge {
-                            version_req: version_req.clone(),
-                            optional,
-                        });
+                        graph.add_edge(
+                            plugin_node,
+                            dep_node,
+                            DependencyEdge {
+                                version_req: version_req.clone(),
+                                optional,
+                            },
+                        );
 
                         // Queue dependency for processing
                         if !processed.contains(dep_id) {
@@ -158,7 +162,9 @@ impl DependencyResolver {
 
             // Check for conflicts
             for conflict_id in &manifest.dependencies.conflicts {
-                if self.available.contains_key(conflict_id) && plugins_to_activate.contains(conflict_id) {
+                if self.available.contains_key(conflict_id)
+                    && plugins_to_activate.contains(conflict_id)
+                {
                     errors.push(ResolutionError::Conflict {
                         plugin: plugin_id.clone(),
                         conflicts_with: conflict_id.clone(),
@@ -171,14 +177,18 @@ impl DependencyResolver {
         let order = match toposort(&graph, None) {
             Ok(order) => {
                 // Reverse the order since we want dependencies first
-                order.into_iter()
+                order
+                    .into_iter()
                     .rev()
                     .filter_map(|idx| graph.node_weight(idx).cloned())
                     .collect()
             }
             Err(cycle) => {
                 // Find the cycle
-                let cycle_node = graph.node_weight(cycle.node_id()).cloned().unwrap_or_default();
+                let cycle_node = graph
+                    .node_weight(cycle.node_id())
+                    .cloned()
+                    .unwrap_or_default();
                 errors.push(ResolutionError::CyclicDependency(cycle_node));
                 Vec::new()
             }
@@ -364,7 +374,9 @@ pub enum ResolutionError {
     #[error("Dependency not found: {plugin} requires {dependency}")]
     DependencyNotFound { plugin: String, dependency: String },
 
-    #[error("Version mismatch: {plugin} requires {dependency} {required}, but {available} is available")]
+    #[error(
+        "Version mismatch: {plugin} requires {dependency} {required}, but {available} is available"
+    )]
     VersionMismatch {
         plugin: String,
         dependency: String,
@@ -386,7 +398,10 @@ pub enum ResolutionError {
     CyclicDependency(String),
 
     #[error("Plugin {plugin} conflicts with {conflicts_with}")]
-    Conflict { plugin: String, conflicts_with: String },
+    Conflict {
+        plugin: String,
+        conflicts_with: String,
+    },
 }
 
 /// Validation issue
@@ -460,12 +475,7 @@ impl LockFile {
 
         for plugin_id in &result.load_order {
             if let Some(manifest) = manifests.get(plugin_id) {
-                let deps: Vec<String> = manifest
-                    .dependencies
-                    .plugins
-                    .keys()
-                    .cloned()
-                    .collect();
+                let deps: Vec<String> = manifest.dependencies.plugins.keys().cloned().collect();
 
                 lock.plugins.insert(
                     plugin_id.clone(),
@@ -577,9 +587,13 @@ pub enum MismatchType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::manifest::{PluginMeta, DependencySection};
+    use crate::manifest::{DependencySection, PluginMeta};
 
-    fn create_test_manifest(id: &str, version: &str, deps: HashMap<String, DependencySpec>) -> PluginManifest {
+    fn create_test_manifest(
+        id: &str,
+        version: &str,
+        deps: HashMap<String, DependencySpec>,
+    ) -> PluginManifest {
         PluginManifest {
             plugin: PluginMeta {
                 id: id.to_string(),
@@ -632,7 +646,10 @@ mod tests {
 
         let plugin_a = create_test_manifest("plugin-a", "1.0.0", HashMap::new());
         let mut deps_b = HashMap::new();
-        deps_b.insert("plugin-a".to_string(), DependencySpec::Version("^1.0".to_string()));
+        deps_b.insert(
+            "plugin-a".to_string(),
+            DependencySpec::Version("^1.0".to_string()),
+        );
         let plugin_b = create_test_manifest("plugin-b", "1.0.0", deps_b);
 
         resolver.add_available(vec![plugin_a, plugin_b]);
@@ -646,11 +663,17 @@ mod tests {
         let mut resolver = DependencyResolver::new();
 
         let mut deps_a = HashMap::new();
-        deps_a.insert("plugin-b".to_string(), DependencySpec::Version("^1.0".to_string()));
+        deps_a.insert(
+            "plugin-b".to_string(),
+            DependencySpec::Version("^1.0".to_string()),
+        );
         let plugin_a = create_test_manifest("plugin-a", "1.0.0", deps_a);
 
         let mut deps_b = HashMap::new();
-        deps_b.insert("plugin-a".to_string(), DependencySpec::Version("^1.0".to_string()));
+        deps_b.insert(
+            "plugin-a".to_string(),
+            DependencySpec::Version("^1.0".to_string()),
+        );
         let plugin_b = create_test_manifest("plugin-b", "1.0.0", deps_b);
 
         resolver.add_available(vec![plugin_a, plugin_b]);
@@ -664,12 +687,18 @@ mod tests {
         let mut resolver = DependencyResolver::new();
 
         let mut deps = HashMap::new();
-        deps.insert("missing-plugin".to_string(), DependencySpec::Version("^1.0".to_string()));
+        deps.insert(
+            "missing-plugin".to_string(),
+            DependencySpec::Version("^1.0".to_string()),
+        );
         let plugin = create_test_manifest("plugin-a", "1.0.0", deps);
 
         resolver.add_available(vec![plugin]);
 
         let result = resolver.resolve(&["plugin-a".to_string()]);
-        assert!(matches!(result, Err(ResolutionError::DependencyNotFound { .. })));
+        assert!(matches!(
+            result,
+            Err(ResolutionError::DependencyNotFound { .. })
+        ));
     }
 }

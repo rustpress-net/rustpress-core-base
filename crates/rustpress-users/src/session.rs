@@ -14,7 +14,7 @@
 use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use uuid::Uuid;
 
@@ -114,13 +114,15 @@ impl DeviceInfo {
     pub fn from_user_agent(user_agent: &str) -> Self {
         let ua = user_agent.to_lowercase();
 
-        let device_type = if ua.contains("mobile") || ua.contains("android") && !ua.contains("tablet") {
-            "mobile"
-        } else if ua.contains("tablet") || ua.contains("ipad") {
-            "tablet"
-        } else {
-            "desktop"
-        }.to_string();
+        let device_type =
+            if ua.contains("mobile") || ua.contains("android") && !ua.contains("tablet") {
+                "mobile"
+            } else if ua.contains("tablet") || ua.contains("ipad") {
+                "tablet"
+            } else {
+                "desktop"
+            }
+            .to_string();
 
         let browser = if ua.contains("chrome") && !ua.contains("edg") {
             Some("Chrome".to_string())
@@ -256,9 +258,9 @@ pub struct SessionSettings {
 impl Default for SessionSettings {
     fn default() -> Self {
         Self {
-            session_duration_seconds: 24 * 60 * 60, // 24 hours
+            session_duration_seconds: 24 * 60 * 60,          // 24 hours
             remember_me_duration_seconds: 30 * 24 * 60 * 60, // 30 days
-            idle_timeout_seconds: 60 * 60, // 1 hour
+            idle_timeout_seconds: 60 * 60,                   // 1 hour
             max_sessions: 5,
             invalidate_on_password_change: true,
             extend_on_activity: true,
@@ -319,9 +321,7 @@ impl SessionManager {
             let current_sessions = self.get_user_sessions(user_id);
             if current_sessions.len() >= self.settings.max_sessions {
                 // Remove oldest session
-                if let Some(oldest) = current_sessions.iter()
-                    .min_by_key(|s| s.created_at)
-                {
+                if let Some(oldest) = current_sessions.iter().min_by_key(|s| s.created_at) {
                     let oldest_id = oldest.id;
                     self.revoke_session(oldest_id)?;
                 }
@@ -344,10 +344,12 @@ impl SessionManager {
 
         // Store session
         self.sessions.insert(session_id, session.clone());
-        self.user_sessions.entry(user_id)
+        self.user_sessions
+            .entry(user_id)
             .or_insert_with(Vec::new)
             .push(session_id);
-        self.sessions_by_token.insert(token.token_hash.clone(), session_id);
+        self.sessions_by_token
+            .insert(token.token_hash.clone(), session_id);
 
         Ok((session, token.token))
     }
@@ -389,7 +391,8 @@ impl SessionManager {
 
     /// Get all sessions for a user
     pub fn get_user_sessions(&self, user_id: i64) -> Vec<&Session> {
-        self.user_sessions.get(&user_id)
+        self.user_sessions
+            .get(&user_id)
             .map(|ids| {
                 ids.iter()
                     .filter_map(|id| self.sessions.get(id))
@@ -401,7 +404,9 @@ impl SessionManager {
 
     /// Revoke a specific session
     pub fn revoke_session(&mut self, session_id: Uuid) -> Result<(), String> {
-        let session = self.sessions.remove(&session_id)
+        let session = self
+            .sessions
+            .remove(&session_id)
             .ok_or_else(|| "Session not found".to_string())?;
 
         // Remove from user sessions
@@ -417,8 +422,7 @@ impl SessionManager {
 
     /// Revoke all sessions for a user
     pub fn revoke_all_user_sessions(&mut self, user_id: i64) -> usize {
-        let session_ids: Vec<Uuid> = self.user_sessions.remove(&user_id)
-            .unwrap_or_default();
+        let session_ids: Vec<Uuid> = self.user_sessions.remove(&user_id).unwrap_or_default();
 
         let count = session_ids.len();
 
@@ -433,8 +437,15 @@ impl SessionManager {
 
     /// Revoke all sessions except current
     pub fn revoke_other_sessions(&mut self, user_id: i64, current_session_id: Uuid) -> usize {
-        let session_ids: Vec<Uuid> = self.user_sessions.get(&user_id)
-            .map(|ids| ids.iter().filter(|id| **id != current_session_id).cloned().collect())
+        let session_ids: Vec<Uuid> = self
+            .user_sessions
+            .get(&user_id)
+            .map(|ids| {
+                ids.iter()
+                    .filter(|id| **id != current_session_id)
+                    .cloned()
+                    .collect()
+            })
             .unwrap_or_default();
 
         let count = session_ids.len();
@@ -460,7 +471,9 @@ impl SessionManager {
 
     /// Cleanup expired sessions
     pub fn cleanup_expired(&mut self) -> usize {
-        let expired: Vec<Uuid> = self.sessions.iter()
+        let expired: Vec<Uuid> = self
+            .sessions
+            .iter()
             .filter(|(_, s)| s.is_expired())
             .map(|(id, _)| *id)
             .collect();
@@ -523,12 +536,9 @@ mod tests {
     #[test]
     fn test_session_creation() {
         let mut manager = SessionManager::new();
-        let (session, token) = manager.create_session(
-            1,
-            Some("Mozilla/5.0"),
-            "127.0.0.1",
-            false,
-        ).unwrap();
+        let (session, token) = manager
+            .create_session(1, Some("Mozilla/5.0"), "127.0.0.1", false)
+            .unwrap();
 
         assert_eq!(session.user_id, 1);
         assert!(!token.is_empty());

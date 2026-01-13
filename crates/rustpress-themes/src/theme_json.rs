@@ -247,7 +247,13 @@ impl Default for SpacingSettings {
             block_gap: None,
             margin: true,
             padding: true,
-            units: vec!["px".to_string(), "em".to_string(), "rem".to_string(), "%".to_string(), "vw".to_string()],
+            units: vec![
+                "px".to_string(),
+                "em".to_string(),
+                "rem".to_string(),
+                "%".to_string(),
+                "vw".to_string(),
+            ],
             spacing_sizes: Vec::new(),
             custom_spacing_size: true,
         }
@@ -625,21 +631,37 @@ impl ThemeJson {
     pub fn merge(&mut self, other: &ThemeJson) {
         // Merge color palette
         for color in &other.settings.color.palette {
-            if !self.settings.color.palette.iter().any(|c| c.slug == color.slug) {
+            if !self
+                .settings
+                .color
+                .palette
+                .iter()
+                .any(|c| c.slug == color.slug)
+            {
                 self.settings.color.palette.push(color.clone());
             }
         }
 
         // Merge font families
         for family in &other.settings.typography.font_families {
-            if !self.settings.typography.font_families.iter().any(|f| f.slug == family.slug) {
+            if !self
+                .settings
+                .typography
+                .font_families
+                .iter()
+                .any(|f| f.slug == family.slug)
+            {
                 self.settings.typography.font_families.push(family.clone());
             }
         }
 
         // Merge font sizes (child overrides parent)
         for size in &other.settings.typography.font_sizes {
-            if let Some(existing) = self.settings.typography.font_sizes.iter_mut()
+            if let Some(existing) = self
+                .settings
+                .typography
+                .font_sizes
+                .iter_mut()
                 .find(|s| s.slug == size.slug)
             {
                 *existing = size.clone();
@@ -657,7 +679,11 @@ impl ThemeJson {
 
         // Merge custom templates
         for template in &other.custom_templates {
-            if !self.custom_templates.iter().any(|t| t.name == template.name) {
+            if !self
+                .custom_templates
+                .iter()
+                .any(|t| t.name == template.name)
+            {
                 self.custom_templates.push(template.clone());
             }
         }

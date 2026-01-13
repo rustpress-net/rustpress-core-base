@@ -8,11 +8,8 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 /// Event handler function type
-pub type HandlerFn = Arc<
-    dyn Fn(Arc<DomainEvent>) -> Pin<Box<dyn Future<Output = Result<()>> + Send>>
-        + Send
-        + Sync,
->;
+pub type HandlerFn =
+    Arc<dyn Fn(Arc<DomainEvent>) -> Pin<Box<dyn Future<Output = Result<()>> + Send>> + Send + Sync>;
 
 /// Event handler trait
 #[async_trait]
@@ -226,9 +223,9 @@ impl SubscriberBuilder {
         F: Fn(Arc<DomainEvent>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<()>> + Send + 'static,
     {
-        let name = self.name.unwrap_or_else(|| {
-            format!("subscriber_{}", self.event_types.len())
-        });
+        let name = self
+            .name
+            .unwrap_or_else(|| format!("subscriber_{}", self.event_types.len()));
 
         let config = SubscriberConfig {
             event_types: self.event_types,

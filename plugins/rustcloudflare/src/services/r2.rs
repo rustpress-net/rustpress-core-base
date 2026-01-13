@@ -17,18 +17,29 @@ pub struct R2Service {
 
 impl R2Service {
     pub fn new(client: Arc<CloudflareClient>, db: PgPool) -> Self {
-        Self { client: Some(client), db, s3_client: None }
+        Self {
+            client: Some(client),
+            db,
+            s3_client: None,
+        }
     }
 
     /// Create without a configured client (for initial setup)
     pub fn new_unconfigured(db: PgPool) -> Self {
-        Self { client: None, db, s3_client: None }
+        Self {
+            client: None,
+            db,
+            s3_client: None,
+        }
     }
 
     /// Get the S3 client or return an error if not initialized
     fn get_s3_client(&self) -> CloudflareResult<&S3Client> {
-        self.s3_client.as_ref()
-            .ok_or_else(|| CloudflareError::R2Error("R2 not initialized. Please configure R2 credentials.".to_string()))
+        self.s3_client.as_ref().ok_or_else(|| {
+            CloudflareError::R2Error(
+                "R2 not initialized. Please configure R2 credentials.".to_string(),
+            )
+        })
     }
 
     pub async fn init_s3_client(&mut self, config: &CloudflareConfig) -> CloudflareResult<()> {
@@ -36,13 +47,24 @@ impl R2Service {
             return Ok(());
         }
 
-        let access_key = config.r2_access_key_id.as_ref()
+        let access_key = config
+            .r2_access_key_id
+            .as_ref()
             .ok_or(CloudflareError::MissingConfig("r2_access_key_id".into()))?;
-        let secret_key = config.r2_secret_access_key.as_ref()
-            .ok_or(CloudflareError::MissingConfig("r2_secret_access_key".into()))?;
+        let secret_key =
+            config
+                .r2_secret_access_key
+                .as_ref()
+                .ok_or(CloudflareError::MissingConfig(
+                    "r2_secret_access_key".into(),
+                ))?;
 
         let creds = aws_credential_types::Credentials::new(
-            access_key, secret_key, None, None, "rustcloudflare"
+            access_key,
+            secret_key,
+            None,
+            None,
+            "rustcloudflare",
         );
 
         let s3_config = aws_sdk_s3::Config::builder()
@@ -59,13 +81,24 @@ impl R2Service {
     pub async fn list_buckets(&self) -> CloudflareResult<Vec<String>> {
         let client = self.get_s3_client()?;
 
-        let result = client.list_buckets().send().await
+        let result = client
+            .list_buckets()
+            .send()
+            .await
             .map_err(|e| CloudflareError::R2Error(e.to_string()))?;
 
-        Ok(result.buckets().iter().filter_map(|b| b.name().map(|s| s.to_string())).collect())
+        Ok(result
+            .buckets()
+            .iter()
+            .filter_map(|b| b.name().map(|s| s.to_string()))
+            .collect())
     }
 
-    pub async fn list_objects(&self, bucket: &str, prefix: Option<&str>) -> CloudflareResult<Vec<R2Object>> {
+    pub async fn list_objects(
+        &self,
+        bucket: &str,
+        prefix: Option<&str>,
+    ) -> CloudflareResult<Vec<R2Object>> {
         let client = self.get_s3_client()?;
 
         let mut req = client.list_objects_v2().bucket(bucket);
@@ -73,21 +106,34 @@ impl R2Service {
             req = req.prefix(p);
         }
 
-        let result = req.send().await
+        let result = req
+            .send()
+            .await
             .map_err(|e| CloudflareError::R2Error(e.to_string()))?;
 
-        Ok(result.contents().iter().map(|obj| R2Object {
-            key: obj.key().unwrap_or_default().to_string(),
-            size: obj.size().unwrap_or(0),
-            etag: obj.e_tag().map(|s| s.to_string()),
-            last_modified: obj.last_modified().map(|t| t.to_string()),
-        }).collect())
+        Ok(result
+            .contents()
+            .iter()
+            .map(|obj| R2Object {
+                key: obj.key().unwrap_or_default().to_string(),
+                size: obj.size().unwrap_or(0),
+                etag: obj.e_tag().map(|s| s.to_string()),
+                last_modified: obj.last_modified().map(|t| t.to_string()),
+            })
+            .collect())
     }
 
-    pub async fn upload(&self, bucket: &str, key: &str, body: Vec<u8>, content_type: Option<&str>) -> CloudflareResult<()> {
+    pub async fn upload(
+        &self,
+        bucket: &str,
+        key: &str,
+        body: Vec<u8>,
+        content_type: Option<&str>,
+    ) -> CloudflareResult<()> {
         let client = self.get_s3_client()?;
 
-        let mut req = client.put_object()
+        let mut req = client
+            .put_object()
             .bucket(bucket)
             .key(key)
             .body(body.into());
@@ -96,7 +142,8 @@ impl R2Service {
             req = req.content_type(ct);
         }
 
-        req.send().await
+        req.send()
+            .await
             .map_err(|e| CloudflareError::R2Error(e.to_string()))?;
 
         Ok(())
@@ -105,18 +152,27 @@ impl R2Service {
     pub async fn delete(&self, bucket: &str, key: &str) -> CloudflareResult<()> {
         let client = self.get_s3_client()?;
 
-        client.delete_object()
+        client
+            .delete_object()
             .bucket(bucket)
             .key(key)
-            .send().await
+            .send()
+            .await
             .map_err(|e| CloudflareError::R2Error(e.to_string()))?;
 
         Ok(())
     }
 
-    pub async fn get_presigned_url(&self, _bucket: &str, _key: &str, _expires_in: u64) -> CloudflareResult<String> {
+    pub async fn get_presigned_url(
+        &self,
+        _bucket: &str,
+        _key: &str,
+        _expires_in: u64,
+    ) -> CloudflareResult<String> {
         // R2 presigned URLs would be implemented here
-        Err(CloudflareError::R2Error("Presigned URLs not implemented".into()))
+        Err(CloudflareError::R2Error(
+            "Presigned URLs not implemented".into(),
+        ))
     }
 }
 

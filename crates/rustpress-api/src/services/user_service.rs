@@ -209,11 +209,19 @@ impl UserService {
 
         // Validate username
         if request.username.len() < 3 || request.username.len() > 50 {
-            return Err(Error::validation("Username must be between 3 and 50 characters"));
+            return Err(Error::validation(
+                "Username must be between 3 and 50 characters",
+            ));
         }
 
-        if !request.username.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
-            return Err(Error::validation("Username can only contain letters, numbers, underscores, and hyphens"));
+        if !request
+            .username
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+        {
+            return Err(Error::validation(
+                "Username can only contain letters, numbers, underscores, and hyphens",
+            ));
         }
 
         // Validate password
@@ -227,7 +235,12 @@ impl UserService {
         }
 
         // Check if username is already taken
-        if self.repo().find_by_username(&request.username).await?.is_some() {
+        if self
+            .repo()
+            .find_by_username(&request.username)
+            .await?
+            .is_some()
+        {
             return Err(Error::validation("Username is already taken"));
         }
 
@@ -287,13 +300,14 @@ impl UserService {
 
         let where_clause = conditions.join(" AND ");
         let order_by = params.sort_by.as_deref().unwrap_or("created_at");
-        let order_dir = if sort_order == SortOrder::Desc { "DESC" } else { "ASC" };
+        let order_dir = if sort_order == SortOrder::Desc {
+            "DESC"
+        } else {
+            "ASC"
+        };
 
         // Count query
-        let count_query = format!(
-            "SELECT COUNT(*) as count FROM users WHERE {}",
-            where_clause
-        );
+        let count_query = format!("SELECT COUNT(*) as count FROM users WHERE {}", where_clause);
         let total: (i64,) = sqlx::query_as(&count_query)
             .fetch_one(&self.pool)
             .await
@@ -343,7 +357,9 @@ impl UserService {
 
     /// Update a user
     pub async fn update_user(&self, id: Uuid, request: UpdateUserRequest) -> Result<UserResponse> {
-        let existing = self.find_by_id(id).await?
+        let existing = self
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| Error::not_found("User", id.to_string()))?;
 
         // Check email uniqueness if changed
@@ -368,7 +384,10 @@ impl UserService {
         }
 
         // Build update query
-        let email = request.email.map(|e| e.to_lowercase()).unwrap_or(existing.email);
+        let email = request
+            .email
+            .map(|e| e.to_lowercase())
+            .unwrap_or(existing.email);
         let username = request.username.unwrap_or(existing.username);
 
         let query = r#"
@@ -410,12 +429,15 @@ impl UserService {
         request: UpdatePasswordRequest,
         require_current: bool,
     ) -> Result<()> {
-        let existing = self.find_by_id(id).await?
+        let existing = self
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| Error::not_found("User", id.to_string()))?;
 
         // Verify current password if required
         if require_current {
-            let current = request.current_password
+            let current = request
+                .current_password
                 .ok_or_else(|| Error::validation("Current password is required"))?;
 
             if !self.verify_password(&current, &existing.password_hash)? {
@@ -443,7 +465,9 @@ impl UserService {
 
     /// Delete a user (soft delete)
     pub async fn delete_user(&self, id: Uuid) -> Result<bool> {
-        let _ = self.find_by_id(id).await?
+        let _ = self
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| Error::not_found("User", id.to_string()))?;
 
         sqlx::query("UPDATE users SET deleted_at = NOW(), status = 'deleted', updated_at = NOW() WHERE id = $1")
@@ -457,11 +481,13 @@ impl UserService {
 
     /// Suspend a user
     pub async fn suspend_user(&self, id: Uuid) -> Result<UserResponse> {
-        let _ = self.find_by_id(id).await?
+        let _ = self
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| Error::not_found("User", id.to_string()))?;
 
         let updated: UserRow = sqlx::query_as(
-            "UPDATE users SET status = 'suspended', updated_at = NOW() WHERE id = $1 RETURNING *"
+            "UPDATE users SET status = 'suspended', updated_at = NOW() WHERE id = $1 RETURNING *",
         )
         .bind(id)
         .fetch_one(&self.pool)
@@ -473,11 +499,13 @@ impl UserService {
 
     /// Activate a user
     pub async fn activate_user(&self, id: Uuid) -> Result<UserResponse> {
-        let _ = self.find_by_id(id).await?
+        let _ = self
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| Error::not_found("User", id.to_string()))?;
 
         let updated: UserRow = sqlx::query_as(
-            "UPDATE users SET status = 'active', updated_at = NOW() WHERE id = $1 RETURNING *"
+            "UPDATE users SET status = 'active', updated_at = NOW() WHERE id = $1 RETURNING *",
         )
         .bind(id)
         .fetch_one(&self.pool)
@@ -550,7 +578,6 @@ fn is_valid_email_impl(email: &str) -> bool {
 }
 
 impl UserService {
-
     fn hash_password(&self, password: &str) -> Result<String> {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
@@ -596,7 +623,10 @@ mod tests {
 
     #[test]
     fn test_user_role_from_str() {
-        assert_eq!("admin".parse::<UserRole>().unwrap(), UserRole::Administrator);
+        assert_eq!(
+            "admin".parse::<UserRole>().unwrap(),
+            UserRole::Administrator
+        );
         assert_eq!("editor".parse::<UserRole>().unwrap(), UserRole::Editor);
         assert!("invalid".parse::<UserRole>().is_err());
     }

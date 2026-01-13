@@ -113,9 +113,7 @@ impl AutosaveService {
         .fetch_all(&self.pool)
         .await?;
 
-        rows.into_iter()
-            .map(|r| r.try_into())
-            .collect()
+        rows.into_iter().map(|r| r.try_into()).collect()
     }
 
     /// Check if autosave exists and is newer than content

@@ -204,21 +204,28 @@ impl Helper for ReplCompleter {}
 /// Run the interactive REPL
 pub async fn run_repl() -> CliResult<()> {
     print_header("RustPress Interactive Shell");
-    println!("{}", "Type 'help' for available commands, 'exit' to quit.".dimmed());
+    println!(
+        "{}",
+        "Type 'help' for available commands, 'exit' to quit.".dimmed()
+    );
     println!();
 
     // Check authentication status
     let creds = CliCredentials::load();
     if creds.access_token.is_some() {
         if let Some(email) = &creds.email {
-            println!("{} {} on {}",
+            println!(
+                "{} {} on {}",
                 "Logged in as".green(),
                 email.cyan().bold(),
                 creds.server_url.cyan()
             );
         }
     } else {
-        println!("{}", "Not logged in. Use 'auth login' to authenticate.".yellow());
+        println!(
+            "{}",
+            "Not logged in. Use 'auth login' to authenticate.".yellow()
+        );
     }
     println!();
 
@@ -325,7 +332,12 @@ async fn execute_command(line: &str) -> CliResult<()> {
     // Parse the command line
     let args = match shellwords::split(line) {
         Ok(args) => args,
-        Err(e) => return Err(CliError::InvalidInput(format!("Failed to parse command: {}", e))),
+        Err(e) => {
+            return Err(CliError::InvalidInput(format!(
+                "Failed to parse command: {}",
+                e
+            )))
+        }
     };
 
     if args.is_empty() {
@@ -351,10 +363,18 @@ async fn execute_command(line: &str) -> CliResult<()> {
 
     // Check authentication for non-exempt commands
     match &cli.command {
-        Commands::Artifacts { .. } | Commands::Auth(_) | Commands::Completion(_) | Commands::Config(_)
-        | Commands::Interactive | Commands::Health { .. } | Commands::Info => {}
+        Commands::Artifacts { .. }
+        | Commands::Auth(_)
+        | Commands::Completion(_)
+        | Commands::Config(_)
+        | Commands::Interactive
+        | Commands::Health { .. }
+        | Commands::Info => {}
         Commands::ImportExport(ref cmd) => {
-            if !matches!(cmd.command, crate::commands::import_export::ImportExportSubcommand::Analyze { .. }) {
+            if !matches!(
+                cmd.command,
+                crate::commands::import_export::ImportExportSubcommand::Analyze { .. }
+            ) {
                 ctx.require_auth()?;
             }
         }
@@ -365,9 +385,8 @@ async fn execute_command(line: &str) -> CliResult<()> {
 
     // Execute the command
     match cli.command {
-        Commands::Artifacts { command } => {
-            crate::commands::artifacts::execute(command).map_err(|e| anyhow::anyhow!(e.to_string()).into())
-        }
+        Commands::Artifacts { command } => crate::commands::artifacts::execute(command)
+            .map_err(|e| anyhow::anyhow!(e.to_string()).into()),
         Commands::Auth(cmd) => crate::commands::auth::execute(&ctx, cmd).await,
         Commands::Server(cmd) => crate::commands::server::execute(&ctx, cmd).await,
         Commands::Db(cmd) => crate::commands::db::execute(&ctx, cmd).await,
@@ -413,7 +432,10 @@ fn print_repl_help() {
     println!("  {}   Show system information", "info".green());
     println!();
     println!("{}", "Main Commands:".yellow());
-    println!("  {}       Authentication (login, logout, whoami)", "auth".green());
+    println!(
+        "  {}       Authentication (login, logout, whoami)",
+        "auth".green()
+    );
     println!("  {}     Server management", "server".green());
     println!("  {}         Database operations", "db".green());
     println!("  {}      User management", "users".green());
@@ -429,9 +451,17 @@ fn print_repl_help() {
     println!("  {}     Configuration", "config".green());
     println!();
     println!("{}", "Examples:".yellow());
-    println!("  {} {}", "auth login".cyan(), "--email admin@example.com".dimmed());
+    println!(
+        "  {} {}",
+        "auth login".cyan(),
+        "--email admin@example.com".dimmed()
+    );
     println!("  {}", "posts list --limit 10".cyan());
-    println!("  {} {}", "users create".cyan(), "--email user@example.com --password secret123".dimmed());
+    println!(
+        "  {} {}",
+        "users create".cyan(),
+        "--email user@example.com --password secret123".dimmed()
+    );
     println!();
     println!("{}", "Tips:".yellow());
     println!("  - Use {} to auto-complete commands", "Tab".cyan());

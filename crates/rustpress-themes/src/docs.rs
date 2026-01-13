@@ -176,8 +176,7 @@ impl DocGenerator {
 {}
 </body>
 </html>"#,
-            self.manifest.theme.name,
-            html_body
+            self.manifest.theme.name, html_body
         );
 
         let output_path = self.output_dir.join("index.html");
@@ -194,7 +193,11 @@ impl DocGenerator {
             author: Some(self.manifest.theme.author.clone()),
             license: Some(self.manifest.theme.license.clone()),
             features: self.collect_features(),
-            colors: self.manifest.colors.palette.iter()
+            colors: self
+                .manifest
+                .colors
+                .palette
+                .iter()
                 .map(|c| ColorDoc {
                     name: c.name.clone(),
                     slug: c.slug.clone(),
@@ -202,17 +205,25 @@ impl DocGenerator {
                 })
                 .collect(),
             typography: TypographyDoc {
-                font_families: self.manifest.typography.font_families.iter()
+                font_families: self
+                    .manifest
+                    .typography
+                    .font_families
+                    .iter()
                     .map(|f| f.name.clone())
                     .collect(),
-                font_sizes: self.manifest.typography.font_sizes.iter()
+                font_sizes: self
+                    .manifest
+                    .typography
+                    .font_sizes
+                    .iter()
                     .map(|s| s.name.clone())
                     .collect(),
             },
         };
 
-        let json = serde_json::to_string_pretty(&doc)
-            .map_err(|e| DocsError::Template(e.to_string()))?;
+        let json =
+            serde_json::to_string_pretty(&doc).map_err(|e| DocsError::Template(e.to_string()))?;
 
         let output_path = self.output_dir.join("theme-docs.json");
         fs::write(&output_path, json).await?;
@@ -260,7 +271,8 @@ impl DocGenerator {
         while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
             if path.extension().map_or(false, |e| e == "html") {
-                let name = path.file_stem()
+                let name = path
+                    .file_stem()
                     .and_then(|s| s.to_str())
                     .unwrap_or("unknown");
 
@@ -303,7 +315,10 @@ impl DocGenerator {
                 content.push_str(&format!("{}\n\n", desc));
             }
 
-            content.push_str(&format!("- **Categories:** {}\n", pattern.categories.join(", ")));
+            content.push_str(&format!(
+                "- **Categories:** {}\n",
+                pattern.categories.join(", ")
+            ));
             content.push('\n');
         }
 
@@ -314,19 +329,29 @@ impl DocGenerator {
         content.push_str("The theme provides the following customization options:\n\n");
 
         content.push_str("### Colors\n\n");
-        content.push_str("Customize the theme color palette in Appearance > Customize > Colors.\n\n");
+        content
+            .push_str("Customize the theme color palette in Appearance > Customize > Colors.\n\n");
 
         content.push_str("### Typography\n\n");
-        content.push_str("Customize fonts and text sizes in Appearance > Customize > Typography.\n\n");
+        content
+            .push_str("Customize fonts and text sizes in Appearance > Customize > Typography.\n\n");
 
         content.push_str("### Layout\n\n");
         content.push_str(&format!(
             "- **Content Width:** {}\n",
-            self.manifest.layout.content_width.as_deref().unwrap_or("Not set")
+            self.manifest
+                .layout
+                .content_width
+                .as_deref()
+                .unwrap_or("Not set")
         ));
         content.push_str(&format!(
             "- **Wide Width:** {}\n",
-            self.manifest.layout.wide_width.as_deref().unwrap_or("Not set")
+            self.manifest
+                .layout
+                .wide_width
+                .as_deref()
+                .unwrap_or("Not set")
         ));
         content.push('\n');
     }
@@ -357,7 +382,10 @@ impl DocGenerator {
             content.push_str("Default system fonts.\n\n");
         } else {
             for family in &self.manifest.typography.font_families {
-                content.push_str(&format!("- **{}:** `{}`\n", family.name, family.font_family));
+                content.push_str(&format!(
+                    "- **{}:** `{}`\n",
+                    family.name, family.font_family
+                ));
             }
             content.push('\n');
         }
@@ -392,12 +420,24 @@ impl DocGenerator {
         let mut features = Vec::new();
         let supports = &self.manifest.supports;
 
-        if supports.block_editor { features.push("Block Editor".to_string()); }
-        if supports.custom_logo.is_some() { features.push("Custom Logo".to_string()); }
-        if supports.post_thumbnails { features.push("Post Thumbnails".to_string()); }
-        if supports.custom_header.is_some() { features.push("Custom Header".to_string()); }
-        if supports.custom_background.is_some() { features.push("Custom Background".to_string()); }
-        if supports.full_site_editing { features.push("Full Site Editing".to_string()); }
+        if supports.block_editor {
+            features.push("Block Editor".to_string());
+        }
+        if supports.custom_logo.is_some() {
+            features.push("Custom Logo".to_string());
+        }
+        if supports.post_thumbnails {
+            features.push("Post Thumbnails".to_string());
+        }
+        if supports.custom_header.is_some() {
+            features.push("Custom Header".to_string());
+        }
+        if supports.custom_background.is_some() {
+            features.push("Custom Background".to_string());
+        }
+        if supports.full_site_editing {
+            features.push("Full Site Editing".to_string());
+        }
 
         features
     }
@@ -437,7 +477,11 @@ impl DocGenerator {
                 }
 
                 let cells: Vec<&str> = line.trim_matches('|').split('|').collect();
-                let tag = if html.contains("<table>") && !html.contains("</tr>") { "th" } else { "td" };
+                let tag = if html.contains("<table>") && !html.contains("</tr>") {
+                    "th"
+                } else {
+                    "td"
+                };
 
                 html.push_str("<tr>");
                 for cell in cells {
@@ -574,10 +618,8 @@ impl ScreenshotGenerator {
         use image::{ImageBuffer, Rgb};
 
         // Create a simple gradient image
-        let mut img: ImageBuffer<Rgb<u8>, Vec<u8>> = ImageBuffer::new(
-            self.config.width,
-            self.config.height,
-        );
+        let mut img: ImageBuffer<Rgb<u8>, Vec<u8>> =
+            ImageBuffer::new(self.config.width, self.config.height);
 
         for (x, y, pixel) in img.enumerate_pixels_mut() {
             let r = (x as f32 / self.config.width as f32 * 255.0) as u8;
@@ -632,10 +674,7 @@ impl ScreenshotGenerator {
     }
 
     /// Generate theme screenshot (1200x900 standard)
-    pub async fn generate_theme_screenshot(
-        &self,
-        theme_path: &Path,
-    ) -> Result<PathBuf, DocsError> {
+    pub async fn generate_theme_screenshot(&self, theme_path: &Path) -> Result<PathBuf, DocsError> {
         let output_path = theme_path.join("screenshot.png");
 
         // Try to find an index.html or front-page.html

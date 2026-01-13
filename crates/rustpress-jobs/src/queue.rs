@@ -226,13 +226,11 @@ impl Queue for JobQueue {
     }
 
     async fn complete(&self, job_id: Uuid) -> Result<()> {
-        sqlx::query(
-            "UPDATE jobs SET status = 'completed', completed_at = NOW() WHERE id = $1",
-        )
-        .bind(job_id)
-        .execute(&self.pool)
-        .await
-        .map_err(|e| Error::database_with_source("Failed to complete job", e))?;
+        sqlx::query("UPDATE jobs SET status = 'completed', completed_at = NOW() WHERE id = $1")
+            .bind(job_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| Error::database_with_source("Failed to complete job", e))?;
 
         tracing::debug!(job_id = %job_id, "Job completed");
         Ok(())
@@ -279,24 +277,22 @@ impl Queue for JobQueue {
     }
 
     async fn get(&self, job_id: Uuid) -> Result<Option<Job>> {
-        let job: Option<JobRow> =
-            sqlx::query_as("SELECT * FROM jobs WHERE id = $1")
-                .bind(job_id)
-                .fetch_optional(&self.pool)
-                .await
-                .map_err(|e| Error::database_with_source("Failed to get job", e))?;
+        let job: Option<JobRow> = sqlx::query_as("SELECT * FROM jobs WHERE id = $1")
+            .bind(job_id)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| Error::database_with_source("Failed to get job", e))?;
 
         Ok(job.map(|r| r.into()))
     }
 
     async fn size(&self, queue: &str) -> Result<u64> {
-        let (count,): (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM jobs WHERE queue = $1 AND status = 'pending'",
-        )
-        .bind(queue)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| Error::database_with_source("Failed to get queue size", e))?;
+        let (count,): (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM jobs WHERE queue = $1 AND status = 'pending'")
+                .bind(queue)
+                .fetch_one(&self.pool)
+                .await
+                .map_err(|e| Error::database_with_source("Failed to get queue size", e))?;
 
         Ok(count as u64)
     }

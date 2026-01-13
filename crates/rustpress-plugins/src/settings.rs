@@ -3,10 +3,10 @@
 //! Provides typed settings management for plugins.
 
 use crate::manifest::{SettingDefinition, SettingType, SettingsSection};
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use parking_lot::RwLock;
 use tracing::{debug, warn};
 
 /// Plugin settings manager
@@ -105,11 +105,9 @@ impl From<SettingValue> for serde_json::Value {
             SettingValue::Null => serde_json::Value::Null,
             SettingValue::Boolean(b) => serde_json::Value::Bool(b),
             SettingValue::Integer(i) => serde_json::Value::Number(i.into()),
-            SettingValue::Number(n) => {
-                serde_json::Number::from_f64(n)
-                    .map(serde_json::Value::Number)
-                    .unwrap_or(serde_json::Value::Null)
-            }
+            SettingValue::Number(n) => serde_json::Number::from_f64(n)
+                .map(serde_json::Value::Number)
+                .unwrap_or(serde_json::Value::Null),
             SettingValue::String(s) => serde_json::Value::String(s),
             SettingValue::Array(arr) => {
                 serde_json::Value::Array(arr.into_iter().map(Into::into).collect())
@@ -173,9 +171,15 @@ impl From<&SettingType> for FieldType {
             SettingType::Number => FieldType::Number,
             SettingType::Integer => FieldType::Integer,
             SettingType::Boolean => FieldType::Boolean,
-            SettingType::Select => FieldType::Select { options: Vec::new() },
-            SettingType::MultiSelect => FieldType::MultiSelect { options: Vec::new() },
-            SettingType::Radio => FieldType::Radio { options: Vec::new() },
+            SettingType::Select => FieldType::Select {
+                options: Vec::new(),
+            },
+            SettingType::MultiSelect => FieldType::MultiSelect {
+                options: Vec::new(),
+            },
+            SettingType::Radio => FieldType::Radio {
+                options: Vec::new(),
+            },
             SettingType::Checkbox => FieldType::Checkbox,
             SettingType::Color => FieldType::Color,
             SettingType::Date => FieldType::Date,
@@ -186,7 +190,9 @@ impl From<&SettingType> for FieldType {
             SettingType::Email => FieldType::Email,
             SettingType::Password => FieldType::Password,
             SettingType::Json => FieldType::Json,
-            SettingType::Code => FieldType::Code { language: "text".to_string() },
+            SettingType::Code => FieldType::Code {
+                language: "text".to_string(),
+            },
         }
     }
 }
@@ -315,7 +321,12 @@ impl SettingsManager {
     }
 
     /// Set a setting value
-    pub fn set(&self, plugin_id: &str, key: &str, value: SettingValue) -> Result<(), SettingsError> {
+    pub fn set(
+        &self,
+        plugin_id: &str,
+        key: &str,
+        value: SettingValue,
+    ) -> Result<(), SettingsError> {
         // Validate against schema
         if let Some(schema) = self.schemas.read().get(plugin_id) {
             if let Some(field) = schema.fields.get(key) {
@@ -326,13 +337,13 @@ impl SettingsManager {
         // Update storage
         {
             let mut storage = self.storage.write();
-            let settings = storage.entry(plugin_id.to_string()).or_insert_with(|| {
-                PluginSettings {
+            let settings = storage
+                .entry(plugin_id.to_string())
+                .or_insert_with(|| PluginSettings {
                     plugin_id: plugin_id.to_string(),
                     values: HashMap::new(),
                     updated_at: None,
-                }
-            });
+                });
             settings.values.insert(key.to_string(), value.clone());
             settings.updated_at = Some(chrono::Utc::now());
         }
@@ -386,7 +397,11 @@ impl SettingsManager {
     }
 
     /// Validate a value against a field
-    fn validate_value(&self, value: &SettingValue, field: &SchemaField) -> Result<(), SettingsError> {
+    fn validate_value(
+        &self,
+        value: &SettingValue,
+        field: &SchemaField,
+    ) -> Result<(), SettingsError> {
         // Check required
         if field.required && value.is_null() {
             return Err(SettingsError::Required(field.key.clone()));
@@ -394,7 +409,14 @@ impl SettingsManager {
 
         // Type validation
         match (&field.field_type, value) {
-            (FieldType::String | FieldType::Text | FieldType::Email | FieldType::Url | FieldType::Password, SettingValue::String(_)) => {}
+            (
+                FieldType::String
+                | FieldType::Text
+                | FieldType::Email
+                | FieldType::Url
+                | FieldType::Password,
+                SettingValue::String(_),
+            ) => {}
             (FieldType::Number, SettingValue::Number(_) | SettingValue::Integer(_)) => {}
             (FieldType::Integer, SettingValue::Integer(_)) => {}
             (FieldType::Boolean | FieldType::Checkbox, SettingValue::Boolean(_)) => {}
@@ -463,10 +485,12 @@ impl SettingsManager {
 
     /// Import settings from JSON
     pub fn import(&self, plugin_id: &str, data: serde_json::Value) -> Result<(), SettingsError> {
-        let values = data
-            .get("values")
-            .and_then(|v| v.as_object())
-            .ok_or(SettingsError::ImportError("Invalid settings format".to_string()))?;
+        let values =
+            data.get("values")
+                .and_then(|v| v.as_object())
+                .ok_or(SettingsError::ImportError(
+                    "Invalid settings format".to_string(),
+                ))?;
 
         for (key, value) in values {
             self.set(plugin_id, key, value.clone().into())?;
@@ -524,7 +548,10 @@ mod tests {
         if let SettingValue::Object(obj) = value {
             assert!(matches!(obj.get("name"), Some(SettingValue::String(s)) if s == "test"));
             assert!(matches!(obj.get("count"), Some(SettingValue::Integer(42))));
-            assert!(matches!(obj.get("enabled"), Some(SettingValue::Boolean(true))));
+            assert!(matches!(
+                obj.get("enabled"),
+                Some(SettingValue::Boolean(true))
+            ));
         } else {
             panic!("Expected object");
         }
@@ -534,7 +561,13 @@ mod tests {
     fn test_settings_manager() {
         let manager = SettingsManager::new();
 
-        manager.set("test-plugin", "api_key", SettingValue::String("secret".to_string())).unwrap();
+        manager
+            .set(
+                "test-plugin",
+                "api_key",
+                SettingValue::String("secret".to_string()),
+            )
+            .unwrap();
 
         let value = manager.get("test-plugin", "api_key");
         assert!(matches!(value, Some(SettingValue::String(s)) if s == "secret"));

@@ -71,12 +71,12 @@ impl LocalBackend {
 
     async fn ensure_directory(&self, path: &Path) -> Result<()> {
         if let Some(parent) = path.parent() {
-            tokio::fs::create_dir_all(parent).await.map_err(|e| {
-                Error::Storage {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|e| Error::Storage {
                     message: format!("Failed to create directory: {}", e),
                     source: Some(Box::new(e)),
-                }
-            })?;
+                })?;
         }
         Ok(())
     }
@@ -196,8 +196,10 @@ impl StorageBackend for LocalBackend {
             .and_then(|s| s.to_str())
             .unwrap_or("file");
 
-        Ok(StoredFile::new(to, filename, "application/octet-stream", metadata.len())
-            .with_backend("local"))
+        Ok(
+            StoredFile::new(to, filename, "application/octet-stream", metadata.len())
+                .with_backend("local"),
+        )
     }
 
     async fn move_file(&self, from: &str, to: &str) -> Result<StoredFile> {
@@ -225,8 +227,10 @@ impl StorageBackend for LocalBackend {
             .and_then(|s| s.to_str())
             .unwrap_or("file");
 
-        Ok(StoredFile::new(to, filename, "application/octet-stream", metadata.len())
-            .with_backend("local"))
+        Ok(
+            StoredFile::new(to, filename, "application/octet-stream", metadata.len())
+                .with_backend("local"),
+        )
     }
 
     fn url(&self, path: &str) -> Option<String> {
@@ -275,12 +279,12 @@ impl StorageBackend for LocalBackend {
     async fn health_check(&self) -> Result<()> {
         // Check if root directory exists and is writable
         if !self.root.exists() {
-            tokio::fs::create_dir_all(&self.root).await.map_err(|e| {
-                Error::Storage {
+            tokio::fs::create_dir_all(&self.root)
+                .await
+                .map_err(|e| Error::Storage {
                     message: format!("Failed to create storage directory: {}", e),
                     source: Some(Box::new(e)),
-                }
-            })?;
+                })?;
         }
 
         // Try to write a test file
@@ -407,12 +411,14 @@ impl StorageBackend for S3Backend {
 
         let location = object_store::path::Path::from(path);
 
-        let result = self.store.get(&location).await.map_err(|e| {
-            Error::Storage {
+        let result = self
+            .store
+            .get(&location)
+            .await
+            .map_err(|e| Error::Storage {
                 message: format!("Failed to get from S3: {}", e),
                 source: Some(Box::new(e)),
-            }
-        })?;
+            })?;
 
         let bytes = result.bytes().await.map_err(|e| Error::Storage {
             message: format!("Failed to read S3 object: {}", e),
@@ -427,12 +433,13 @@ impl StorageBackend for S3Backend {
 
         let location = object_store::path::Path::from(path);
 
-        self.store.delete(&location).await.map_err(|e| {
-            Error::Storage {
+        self.store
+            .delete(&location)
+            .await
+            .map_err(|e| Error::Storage {
                 message: format!("Failed to delete from S3: {}", e),
                 source: Some(Box::new(e)),
-            }
-        })?;
+            })?;
 
         Ok(true)
     }
@@ -457,12 +464,14 @@ impl StorageBackend for S3Backend {
 
         let location = object_store::path::Path::from(path);
 
-        let meta = self.store.head(&location).await.map_err(|e| {
-            Error::Storage {
+        let meta = self
+            .store
+            .head(&location)
+            .await
+            .map_err(|e| Error::Storage {
                 message: format!("Failed to get S3 object metadata: {}", e),
                 source: Some(Box::new(e)),
-            }
-        })?;
+            })?;
 
         Ok(meta.size as u64)
     }

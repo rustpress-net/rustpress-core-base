@@ -72,9 +72,24 @@ async fn show_stats(ctx: &CliContext) -> CliResult<()> {
     print_header("Cache Statistics");
 
     let stats = vec![
-        CacheStats { cache_type: "Page".into(), entries: 156, hit_rate: "94.2%".into(), memory: "12.4 MB".into() },
-        CacheStats { cache_type: "Object".into(), entries: 2341, hit_rate: "87.8%".into(), memory: "8.1 MB".into() },
-        CacheStats { cache_type: "Query".into(), entries: 89, hit_rate: "91.5%".into(), memory: "2.3 MB".into() },
+        CacheStats {
+            cache_type: "Page".into(),
+            entries: 156,
+            hit_rate: "94.2%".into(),
+            memory: "12.4 MB".into(),
+        },
+        CacheStats {
+            cache_type: "Object".into(),
+            entries: 2341,
+            hit_rate: "87.8%".into(),
+            memory: "8.1 MB".into(),
+        },
+        CacheStats {
+            cache_type: "Query".into(),
+            entries: 89,
+            hit_rate: "91.5%".into(),
+            memory: "2.3 MB".into(),
+        },
     ];
 
     println!("{}", ctx.output_format.format(&stats));
@@ -87,13 +102,23 @@ async fn show_stats(ctx: &CliContext) -> CliResult<()> {
 }
 
 async fn clear_cache(ctx: &CliContext, cache_type: &str) -> CliResult<()> {
-    print_header(&format!("Clearing {} Cache", if cache_type == "all" { "All" } else { cache_type }));
+    print_header(&format!(
+        "Clearing {} Cache",
+        if cache_type == "all" {
+            "All"
+        } else {
+            cache_type
+        }
+    ));
 
     let spinner = ProgressBar::spinner("Clearing cache...");
     tokio::time::sleep(std::time::Duration::from_millis(500)).await;
     spinner.finish_and_clear();
 
-    println!("{}", ctx.output_format.success("Cache cleared successfully"));
+    println!(
+        "{}",
+        ctx.output_format.success("Cache cleared successfully")
+    );
     Ok(())
 }
 
@@ -118,11 +143,18 @@ async fn config_cache(ctx: &CliContext, get: Option<String>, set: Option<String>
         match key.as_str() {
             "ttl" => print_kv("ttl", "3600"),
             "max_size" => print_kv("max_size", "100MB"),
-            _ => println!("{}", ctx.output_format.error(&format!("Unknown key: {}", key))),
+            _ => println!(
+                "{}",
+                ctx.output_format.error(&format!("Unknown key: {}", key))
+            ),
         }
     } else if let Some(kv) = set {
         if let Some((key, value)) = kv.split_once('=') {
-            println!("{}", ctx.output_format.success(&format!("Set {} = {}", key, value)));
+            println!(
+                "{}",
+                ctx.output_format
+                    .success(&format!("Set {} = {}", key, value))
+            );
         }
     } else {
         print_header("Cache Configuration");

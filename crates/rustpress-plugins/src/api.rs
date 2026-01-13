@@ -3,10 +3,10 @@
 //! Allows plugins to register custom API endpoints.
 
 use crate::manifest::{ApiEndpoint, ApiSection, HttpMethod, RateLimit};
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use parking_lot::RwLock;
 use tracing::{debug, info};
 
 /// API registry for plugin endpoints
@@ -102,12 +102,11 @@ impl ApiRegistry {
     }
 
     /// Register API from plugin manifest
-    pub fn register_from_manifest(
-        &self,
-        plugin_id: &str,
-        section: &ApiSection,
-    ) {
-        let namespace = section.namespace.clone().unwrap_or_else(|| plugin_id.to_string());
+    pub fn register_from_manifest(&self, plugin_id: &str, section: &ApiSection) {
+        let namespace = section
+            .namespace
+            .clone()
+            .unwrap_or_else(|| plugin_id.to_string());
         let version = &section.version;
 
         // Register namespace
@@ -204,12 +203,7 @@ impl ApiRegistry {
 
     /// Get all routes
     pub fn get_all_routes(&self) -> Vec<RegisteredRoute> {
-        self.routes
-            .read()
-            .values()
-            .flatten()
-            .cloned()
-            .collect()
+        self.routes.read().values().flatten().cloned().collect()
     }
 
     /// Find route by path and method
@@ -226,7 +220,11 @@ impl ApiRegistry {
     }
 
     /// Match route with path parameters
-    pub fn match_route(&self, path: &str, method: HttpMethod) -> Option<(RegisteredRoute, HashMap<String, String>)> {
+    pub fn match_route(
+        &self,
+        path: &str,
+        method: HttpMethod,
+    ) -> Option<(RegisteredRoute, HashMap<String, String>)> {
         let routes = self.routes.read();
         for plugin_routes in routes.values() {
             for route in plugin_routes {
@@ -271,13 +269,13 @@ impl ApiRegistry {
         let mut limiters = self.rate_limiters.write();
         let now = std::time::Instant::now();
 
-        let state = limiters.entry(route_key.to_string()).or_insert_with(|| {
-            RateLimiterState {
+        let state = limiters
+            .entry(route_key.to_string())
+            .or_insert_with(|| RateLimiterState {
                 requests: 0,
                 window_start: now,
                 limit: rate_limit.clone(),
-            }
-        });
+            });
 
         // Check if window has expired
         let window_duration = std::time::Duration::from_secs(state.limit.window_seconds as u64);
@@ -410,7 +408,12 @@ impl<'a> RouteBuilder<'a> {
         self
     }
 
-    pub fn required_param(mut self, name: &str, param_type: &str, location: ParameterLocation) -> Self {
+    pub fn required_param(
+        mut self,
+        name: &str,
+        param_type: &str,
+        location: ParameterLocation,
+    ) -> Self {
         self.parameters.push(RouteParameter {
             name: name.to_string(),
             location,
@@ -526,7 +529,13 @@ mod tests {
         let registry = ApiRegistry::new();
 
         registry
-            .register("test-plugin", "test", "/items", HttpMethod::Get, "get_items")
+            .register(
+                "test-plugin",
+                "test",
+                "/items",
+                HttpMethod::Get,
+                "get_items",
+            )
             .description("Get all items")
             .permission("read")
             .build();

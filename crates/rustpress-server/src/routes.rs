@@ -7,8 +7,8 @@ use axum::{
     routing::{delete, get, post, put},
     Json, Router,
 };
-use tower_http::services::{ServeDir, ServeFile};
 use serde::{Deserialize, Serialize};
+use tower_http::services::{ServeDir, ServeFile};
 use uuid::Uuid;
 
 use crate::error::HttpResult;
@@ -28,9 +28,10 @@ pub fn create_router(state: AppState) -> Router {
         .nest_service("/api/v1/cloudflare", build_cloudflare_router(&state))
         // Admin UI routes (serve static files, handle by frontend)
         // Handle /admin/ with trailing slash - redirect to /admin
-        .route("/admin/", get(|| async {
-            axum::response::Redirect::permanent("/admin")
-        }))
+        .route(
+            "/admin/",
+            get(|| async { axum::response::Redirect::permanent("/admin") }),
+        )
         .nest("/admin", admin_routes())
         // Public-facing website routes (theme rendering)
         .merge(public_routes())
@@ -42,79 +43,74 @@ pub fn create_router(state: AppState) -> Router {
 /// Admin routes - serve static files from admin-ui/dist
 fn admin_routes() -> Router<AppState> {
     // Path to admin UI dist directory
-    let admin_dist = std::env::var("ADMIN_UI_PATH")
-        .unwrap_or_else(|_| "./admin-ui/dist".to_string());
+    let admin_dist =
+        std::env::var("ADMIN_UI_PATH").unwrap_or_else(|_| "./admin-ui/dist".to_string());
 
     let index_path = format!("{}/index.html", admin_dist);
 
     // Use a single fallback handler for all paths (SPA routing)
-    Router::new()
-        .fallback(move |req: axum::extract::Request| {
-            let admin_dist = admin_dist.clone();
-            let index_path = index_path.clone();
-            async move {
-                use axum::response::IntoResponse;
-                use axum::body::Body;
-                use axum::http::{StatusCode, header};
+    Router::new().fallback(move |req: axum::extract::Request| {
+        let admin_dist = admin_dist.clone();
+        let index_path = index_path.clone();
+        async move {
+            use axum::body::Body;
+            use axum::http::{header, StatusCode};
+            use axum::response::IntoResponse;
 
-                let path = req.uri().path();
+            let path = req.uri().path();
 
-                // Check if this looks like a static asset request
-                let is_asset = path.starts_with("/assets/") ||
-                               path.ends_with(".js") ||
-                               path.ends_with(".css") ||
-                               path.ends_with(".svg") ||
-                               path.ends_with(".ico") ||
-                               path.ends_with(".png") ||
-                               path.ends_with(".jpg") ||
-                               path.ends_with(".woff") ||
-                               path.ends_with(".woff2");
+            // Check if this looks like a static asset request
+            let is_asset = path.starts_with("/assets/")
+                || path.ends_with(".js")
+                || path.ends_with(".css")
+                || path.ends_with(".svg")
+                || path.ends_with(".ico")
+                || path.ends_with(".png")
+                || path.ends_with(".jpg")
+                || path.ends_with(".woff")
+                || path.ends_with(".woff2");
 
-                if is_asset {
-                    // Try to serve the static file
-                    let file_path = format!("{}{}", admin_dist, path);
-                    match tokio::fs::read(&file_path).await {
-                        Ok(contents) => {
-                            let content_type = if path.ends_with(".js") {
-                                "application/javascript"
-                            } else if path.ends_with(".css") {
-                                "text/css"
-                            } else if path.ends_with(".svg") {
-                                "image/svg+xml"
-                            } else if path.ends_with(".png") {
-                                "image/png"
-                            } else if path.ends_with(".ico") {
-                                "image/x-icon"
-                            } else {
-                                "application/octet-stream"
-                            };
-                            (
-                                StatusCode::OK,
-                                [(header::CONTENT_TYPE, content_type)],
-                                Body::from(contents)
-                            ).into_response()
-                        }
-                        Err(_) => {
-                            (StatusCode::NOT_FOUND, "Not found").into_response()
-                        }
+            if is_asset {
+                // Try to serve the static file
+                let file_path = format!("{}{}", admin_dist, path);
+                match tokio::fs::read(&file_path).await {
+                    Ok(contents) => {
+                        let content_type = if path.ends_with(".js") {
+                            "application/javascript"
+                        } else if path.ends_with(".css") {
+                            "text/css"
+                        } else if path.ends_with(".svg") {
+                            "image/svg+xml"
+                        } else if path.ends_with(".png") {
+                            "image/png"
+                        } else if path.ends_with(".ico") {
+                            "image/x-icon"
+                        } else {
+                            "application/octet-stream"
+                        };
+                        (
+                            StatusCode::OK,
+                            [(header::CONTENT_TYPE, content_type)],
+                            Body::from(contents),
+                        )
+                            .into_response()
                     }
-                } else {
-                    // Serve index.html for SPA routes (root, trailing slash, and all other paths)
-                    match tokio::fs::read(&index_path).await {
-                        Ok(contents) => {
-                            (
-                                StatusCode::OK,
-                                [(header::CONTENT_TYPE, "text/html")],
-                                Body::from(contents)
-                            ).into_response()
-                        }
-                        Err(_) => {
-                            (StatusCode::NOT_FOUND, "Admin UI not found").into_response()
-                        }
-                    }
+                    Err(_) => (StatusCode::NOT_FOUND, "Not found").into_response(),
+                }
+            } else {
+                // Serve index.html for SPA routes (root, trailing slash, and all other paths)
+                match tokio::fs::read(&index_path).await {
+                    Ok(contents) => (
+                        StatusCode::OK,
+                        [(header::CONTENT_TYPE, "text/html")],
+                        Body::from(contents),
+                    )
+                        .into_response(),
+                    Err(_) => (StatusCode::NOT_FOUND, "Admin UI not found").into_response(),
                 }
             }
-        })
+        }
+    })
 }
 
 /// Public website routes
@@ -191,10 +187,23 @@ fn api_v1_routes() -> Router<AppState> {
         // Taxonomy routes (categories, tags)
         .nest("/taxonomies", taxonomy_routes())
         // Direct category/tag routes (aliases for frontend compatibility)
-        .route("/categories", get(list_categories_handler).post(create_category_handler))
-        .route("/categories/:id", get(get_category_handler).put(update_category_handler).delete(delete_category_handler))
+        .route(
+            "/categories",
+            get(list_categories_handler).post(create_category_handler),
+        )
+        .route(
+            "/categories/:id",
+            get(get_category_handler)
+                .put(update_category_handler)
+                .delete(delete_category_handler),
+        )
         .route("/tags", get(list_tags_handler).post(create_tag_handler))
-        .route("/tags/:id", get(get_tag_handler).put(update_tag_handler).delete(delete_tag_handler))
+        .route(
+            "/tags/:id",
+            get(get_tag_handler)
+                .put(update_tag_handler)
+                .delete(delete_tag_handler),
+        )
         // Menu routes
         .nest("/menus", menu_routes())
         // Widget routes
@@ -306,7 +315,10 @@ fn page_routes() -> Router<AppState> {
 fn media_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(list_media_handler).post(upload_media_handler))
-        .route("/folders", get(list_media_folders_handler).post(create_media_folder_handler))
+        .route(
+            "/folders",
+            get(list_media_folders_handler).post(create_media_folder_handler),
+        )
         .route(
             "/:id",
             get(get_media_handler)
@@ -345,7 +357,10 @@ fn settings_routes() -> Router<AppState> {
         .route("/writing", get(get_writing_settings_handler))
         .route("/discussion", get(get_discussion_settings_handler))
         .route("/permalinks", get(get_permalinks_settings_handler))
-        .route("/:key", get(get_setting_handler).put(update_setting_handler))
+        .route(
+            "/:key",
+            get(get_setting_handler).put(update_setting_handler),
+        )
 }
 
 /// Plugin routes
@@ -411,7 +426,7 @@ struct LoginRequest {
     password: String,
 }
 
-use rustpress_auth::{PasswordHasher, PasswordValidator, PasswordRules};
+use rustpress_auth::{PasswordHasher, PasswordRules, PasswordValidator};
 
 #[derive(Serialize)]
 struct TokenResponse {
@@ -446,19 +461,24 @@ async fn login_handler(
         FROM users
         WHERE (email = $1 OR username = $1) AND deleted_at IS NULL
         LIMIT 1
-        "#
+        "#,
     )
     .bind(&payload.email)
     .fetch_optional(pool)
     .await
     .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to find user", e))?;
 
-    let user = user.ok_or_else(|| rustpress_core::error::Error::unauthorized("Invalid credentials"))?;
+    let user =
+        user.ok_or_else(|| rustpress_core::error::Error::unauthorized("Invalid credentials"))?;
 
     // Verify password
     let hasher = PasswordHasher::new();
-    if !hasher.verify(&payload.password, &user.password_hash)
-        .map_err(|e| rustpress_core::error::Error::internal(format!("Password verification failed: {}", e)))? {
+    if !hasher
+        .verify(&payload.password, &user.password_hash)
+        .map_err(|e| {
+            rustpress_core::error::Error::internal(format!("Password verification failed: {}", e))
+        })?
+    {
         return Err(rustpress_core::error::Error::unauthorized("Invalid credentials").into());
     }
 
@@ -477,11 +497,20 @@ async fn login_handler(
     let jwt_manager = state.jwt();
     let user_id_str = user.id.to_string();
 
-    let token = jwt_manager.generate_access_token(&user_id_str, Some(&user.role), None)
-        .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to generate token: {}", e)))?;
+    let token = jwt_manager
+        .generate_access_token(&user_id_str, Some(&user.role), None)
+        .map_err(|e| {
+            rustpress_core::error::Error::internal(format!("Failed to generate token: {}", e))
+        })?;
 
-    let refresh = jwt_manager.generate_refresh_token(&user_id_str)
-        .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to generate refresh token: {}", e)))?;
+    let refresh = jwt_manager
+        .generate_refresh_token(&user_id_str)
+        .map_err(|e| {
+            rustpress_core::error::Error::internal(format!(
+                "Failed to generate refresh token: {}",
+                e
+            ))
+        })?;
 
     Ok(Json(TokenResponse {
         access_token: token,
@@ -505,13 +534,13 @@ async fn logout_handler(
     let pool = state.db().inner();
 
     // Invalidate all active sessions for this user
-    sqlx::query(
-        "UPDATE sessions SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL"
-    )
-    .bind(user.id)
-    .execute(pool)
-    .await
-    .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to revoke sessions", e))?;
+    sqlx::query("UPDATE sessions SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL")
+        .bind(user.id)
+        .execute(pool)
+        .await
+        .map_err(|e| {
+            rustpress_core::error::Error::database_with_source("Failed to revoke sessions", e)
+        })?;
 
     tracing::info!(user_id = %user.id, "User logged out, sessions revoked");
 
@@ -530,7 +559,8 @@ async fn refresh_token_handler(
     let jwt_manager = state.jwt();
 
     // Validate refresh token and get claims
-    let claims = jwt_manager.validate_refresh_token(&payload.refresh_token)
+    let claims = jwt_manager
+        .validate_refresh_token(&payload.refresh_token)
         .map_err(|_| rustpress_core::error::Error::unauthorized("Invalid refresh token"))?;
 
     // Parse user ID from claims
@@ -546,7 +576,7 @@ async fn refresh_token_handler(
                email_verified_at, last_login_at, created_at, updated_at, deleted_at
         FROM users
         WHERE id = $1 AND deleted_at IS NULL
-        "#
+        "#,
     )
     .bind(user_uuid)
     .fetch_optional(pool)
@@ -561,11 +591,20 @@ async fn refresh_token_handler(
 
     // Generate new tokens
     let user_id_str = user.id.to_string();
-    let token = jwt_manager.generate_access_token(&user_id_str, Some(&user.role), None)
-        .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to generate token: {}", e)))?;
+    let token = jwt_manager
+        .generate_access_token(&user_id_str, Some(&user.role), None)
+        .map_err(|e| {
+            rustpress_core::error::Error::internal(format!("Failed to generate token: {}", e))
+        })?;
 
-    let refresh = jwt_manager.generate_refresh_token(&user_id_str)
-        .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to generate refresh token: {}", e)))?;
+    let refresh = jwt_manager
+        .generate_refresh_token(&user_id_str)
+        .map_err(|e| {
+            rustpress_core::error::Error::internal(format!(
+                "Failed to generate refresh token: {}",
+                e
+            ))
+        })?;
 
     Ok(Json(TokenResponse {
         access_token: token,
@@ -598,30 +637,29 @@ async fn register_handler(
 
     // Validate password
     let validator = PasswordValidator::new(PasswordRules::default());
-    validator.validate(&payload.password)
+    validator
+        .validate(&payload.password)
         .map_err(|e| rustpress_core::error::Error::validation(format!("{}", e)))?;
 
     // Check if email exists
-    let exists: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM users WHERE email = $1 AND deleted_at IS NULL"
-    )
-    .bind(&payload.email.to_lowercase())
-    .fetch_one(pool)
-    .await
-    .map_err(|e| rustpress_core::error::Error::database_with_source("Database error", e))?;
+    let exists: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM users WHERE email = $1 AND deleted_at IS NULL")
+            .bind(&payload.email.to_lowercase())
+            .fetch_one(pool)
+            .await
+            .map_err(|e| rustpress_core::error::Error::database_with_source("Database error", e))?;
 
     if exists.0 > 0 {
         return Err(rustpress_core::error::Error::validation("Email already registered").into());
     }
 
     // Check if username exists
-    let exists: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM users WHERE username = $1 AND deleted_at IS NULL"
-    )
-    .bind(&payload.username)
-    .fetch_one(pool)
-    .await
-    .map_err(|e| rustpress_core::error::Error::database_with_source("Database error", e))?;
+    let exists: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM users WHERE username = $1 AND deleted_at IS NULL")
+            .bind(&payload.username)
+            .fetch_one(pool)
+            .await
+            .map_err(|e| rustpress_core::error::Error::database_with_source("Database error", e))?;
 
     if exists.0 > 0 {
         return Err(rustpress_core::error::Error::validation("Username already taken").into());
@@ -629,8 +667,9 @@ async fn register_handler(
 
     // Hash password
     let hasher = PasswordHasher::new();
-    let password_hash = hasher.hash(&payload.password)
-        .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to hash password: {}", e)))?;
+    let password_hash = hasher.hash(&payload.password).map_err(|e| {
+        rustpress_core::error::Error::internal(format!("Failed to hash password: {}", e))
+    })?;
 
     // Create user
     let user_id = Uuid::now_v7();
@@ -658,7 +697,7 @@ async fn register_handler(
         INSERT INTO user_roles (id, user_id, role_id, created_at)
         SELECT gen_random_uuid(), $1, id, NOW()
         FROM roles WHERE name = 'subscriber'
-        "#
+        "#,
     )
     .bind(user_id)
     .execute(pool)
@@ -684,7 +723,7 @@ async fn forgot_password_handler(
 
     // Check if user exists (but don't reveal this to the client)
     let user: Option<(Uuid, String, Option<String>)> = sqlx::query_as(
-        "SELECT id, email, display_name FROM users WHERE email = $1 AND deleted_at IS NULL"
+        "SELECT id, email, display_name FROM users WHERE email = $1 AND deleted_at IS NULL",
     )
     .bind(&payload.email.to_lowercase())
     .fetch_optional(pool)
@@ -697,7 +736,7 @@ async fn forgot_password_handler(
         let expires_at = chrono::Utc::now() + chrono::Duration::hours(24);
 
         // Hash the token for storage (using SHA-256)
-        use sha2::{Sha256, Digest};
+        use sha2::{Digest, Sha256};
         let mut hasher = Sha256::new();
         hasher.update(reset_token.as_bytes());
         let token_hash = format!("{:x}", hasher.finalize());
@@ -723,7 +762,11 @@ async fn forgot_password_handler(
         // Send email with reset link
         if state.email().is_enabled().await {
             let name = display_name.as_deref();
-            if let Err(e) = state.email().send_password_reset(&email, name, &reset_token).await {
+            if let Err(e) = state
+                .email()
+                .send_password_reset(&email, name, &reset_token)
+                .await
+            {
                 tracing::error!("Failed to send password reset email: {}", e);
             }
         } else {
@@ -754,11 +797,12 @@ async fn reset_password_handler(
 
     // Validate password
     let validator = PasswordValidator::new(PasswordRules::default());
-    validator.validate(&payload.password)
+    validator
+        .validate(&payload.password)
         .map_err(|e| rustpress_core::error::Error::validation(format!("{}", e)))?;
 
     // Hash the provided token to compare with stored hash
-    use sha2::{Sha256, Digest};
+    use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(payload.token.as_bytes());
     let token_hash = format!("{:x}", hasher.finalize());
@@ -771,19 +815,21 @@ async fn reset_password_handler(
         WHERE token_hash = $1
           AND expires_at > NOW()
           AND used_at IS NULL
-        "#
+        "#,
     )
     .bind(&token_hash)
     .fetch_optional(pool)
     .await
     .map_err(|e| rustpress_core::error::Error::database_with_source("Database error", e))?;
 
-    let (token_id, user_id) = token_record
-        .ok_or_else(|| rustpress_core::error::Error::validation("Invalid or expired reset token"))?;
+    let (token_id, user_id) = token_record.ok_or_else(|| {
+        rustpress_core::error::Error::validation("Invalid or expired reset token")
+    })?;
 
     // Hash the new password
-    let password_hash = bcrypt::hash(&payload.password, bcrypt::DEFAULT_COST)
-        .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to hash password: {}", e)))?;
+    let password_hash = bcrypt::hash(&payload.password, bcrypt::DEFAULT_COST).map_err(|e| {
+        rustpress_core::error::Error::internal(format!("Failed to hash password: {}", e))
+    })?;
 
     // Update the user's password
     sqlx::query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2")
@@ -827,7 +873,7 @@ async fn current_user_handler(
                email_verified_at, last_login_at, created_at, updated_at, deleted_at
         FROM users
         WHERE id = $1 AND deleted_at IS NULL
-        "#
+        "#,
     )
     .bind(user.id)
     .fetch_optional(pool)
@@ -858,7 +904,7 @@ async fn current_user_handler(
 // =============================================================================
 
 use rustpress_api::services::user_service::{
-    UserService, CreateUserRequest, UpdateUserRequest, UserListParams,
+    CreateUserRequest, UpdateUserRequest, UserListParams, UserService,
 };
 
 /// User list query parameters
@@ -970,7 +1016,7 @@ async fn update_user_roles_handler(
 // =============================================================================
 
 use rustpress_api::services::post_service::{
-    PostService, CreatePostRequest, UpdatePostRequest, PostListParams,
+    CreatePostRequest, PostListParams, PostService, UpdatePostRequest,
 };
 
 /// Post list query parameters
@@ -1094,7 +1140,9 @@ async fn bulk_delete_posts_handler(
         }
     }
 
-    Ok(json(BulkDeletePostsResponse { deleted: deleted_count }))
+    Ok(json(BulkDeletePostsResponse {
+        deleted: deleted_count,
+    }))
 }
 
 async fn duplicate_post_handler(
@@ -1105,11 +1153,14 @@ async fn duplicate_post_handler(
     let service = PostService::new(state.db().inner().clone());
 
     // Get the original post
-    let original = service.get_post(id).await?
-        .ok_or_else(|| rustpress_core::error::Error::NotFound {
-            entity_type: "post".to_string(),
-            id: id.to_string()
-        })?;
+    let original =
+        service
+            .get_post(id)
+            .await?
+            .ok_or_else(|| rustpress_core::error::Error::NotFound {
+                entity_type: "post".to_string(),
+                id: id.to_string(),
+            })?;
 
     // Create a duplicate with modified title
     let duplicate_request = CreatePostRequest {
@@ -1125,8 +1176,16 @@ async fn duplicate_post_handler(
         comment_status: original.comment_status,
         ping_status: original.ping_status,
         published_at: None,
-        category_ids: if original.categories.is_empty() { None } else { Some(original.categories.iter().map(|c| c.id).collect()) },
-        tag_ids: if original.tags.is_empty() { None } else { Some(original.tags.iter().map(|t| t.id).collect()) },
+        category_ids: if original.categories.is_empty() {
+            None
+        } else {
+            Some(original.categories.iter().map(|c| c.id).collect())
+        },
+        tag_ids: if original.tags.is_empty() {
+            None
+        } else {
+            Some(original.tags.iter().map(|t| t.id).collect())
+        },
     };
 
     let new_post = service.create_post(duplicate_request, user.id).await?;
@@ -1138,7 +1197,7 @@ async fn duplicate_post_handler(
 // =============================================================================
 
 use rustpress_api::services::page_service::{
-    PageService, CreatePageRequest, UpdatePageRequest, PageListParams,
+    CreatePageRequest, PageListParams, PageService, UpdatePageRequest,
 };
 
 /// Page list query parameters
@@ -1224,8 +1283,7 @@ async fn delete_page_handler(
 
 use axum::extract::Multipart;
 use rustpress_api::services::media_service::{
-    MediaService, UpdateMediaRequest as MediaUpdateRequest, MediaListParams,
-    validate_upload,
+    validate_upload, MediaListParams, MediaService, UpdateMediaRequest as MediaUpdateRequest,
 };
 use std::io::Write;
 
@@ -1278,9 +1336,9 @@ async fn upload_media_handler(
     let mut title: Option<String> = None;
     let mut description: Option<String> = None;
 
-    while let Some(field) = multipart.next_field().await
-        .map_err(|e| rustpress_core::error::Error::validation(format!("Failed to read multipart: {}", e)))?
-    {
+    while let Some(field) = multipart.next_field().await.map_err(|e| {
+        rustpress_core::error::Error::validation(format!("Failed to read multipart: {}", e))
+    })? {
         let name = field.name().unwrap_or("").to_string();
 
         match name.as_str() {
@@ -1289,9 +1347,18 @@ async fn upload_media_handler(
                 if let Some(ct) = field.content_type() {
                     content_type = ct.to_string();
                 }
-                file_data = Some(field.bytes().await
-                    .map_err(|e| rustpress_core::error::Error::validation(format!("Failed to read file: {}", e)))?
-                    .to_vec());
+                file_data = Some(
+                    field
+                        .bytes()
+                        .await
+                        .map_err(|e| {
+                            rustpress_core::error::Error::validation(format!(
+                                "Failed to read file: {}",
+                                e
+                            ))
+                        })?
+                        .to_vec(),
+                );
             }
             "alt_text" => {
                 alt_text = field.text().await.ok();
@@ -1306,7 +1373,8 @@ async fn upload_media_handler(
         }
     }
 
-    let data = file_data.ok_or_else(|| rustpress_core::error::Error::validation("No file uploaded"))?;
+    let data =
+        file_data.ok_or_else(|| rustpress_core::error::Error::validation("No file uploaded"))?;
     let file_size = data.len() as u64;
 
     // Validate the upload
@@ -1314,26 +1382,40 @@ async fn upload_media_handler(
 
     // Generate unique filename
     let ext = original_filename.rsplit('.').next().unwrap_or("bin");
-    let unique_filename = format!("{}_{}.{}", Uuid::new_v4(), chrono::Utc::now().timestamp(), ext);
+    let unique_filename = format!(
+        "{}_{}.{}",
+        Uuid::new_v4(),
+        chrono::Utc::now().timestamp(),
+        ext
+    );
 
     // Storage path (relative)
     let now = chrono::Utc::now();
-    let storage_path = format!("{}/{}/{}/{}", now.format("%Y"), now.format("%m"), now.format("%d"), unique_filename);
+    let storage_path = format!(
+        "{}/{}/{}/{}",
+        now.format("%Y"),
+        now.format("%m"),
+        now.format("%d"),
+        unique_filename
+    );
 
     // Create directory and save file
     let uploads_dir = std::path::Path::new("uploads");
     let full_path = uploads_dir.join(&storage_path);
 
     if let Some(parent) = full_path.parent() {
-        std::fs::create_dir_all(parent)
-            .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to create directory: {}", e)))?;
+        std::fs::create_dir_all(parent).map_err(|e| {
+            rustpress_core::error::Error::internal(format!("Failed to create directory: {}", e))
+        })?;
     }
 
-    let mut file = std::fs::File::create(&full_path)
-        .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to create file: {}", e)))?;
+    let mut file = std::fs::File::create(&full_path).map_err(|e| {
+        rustpress_core::error::Error::internal(format!("Failed to create file: {}", e))
+    })?;
 
-    file.write_all(&data)
-        .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to write file: {}", e)))?;
+    file.write_all(&data).map_err(|e| {
+        rustpress_core::error::Error::internal(format!("Failed to write file: {}", e))
+    })?;
 
     // Create database record
     let metadata = rustpress_api::services::media_service::UploadMediaMetadata {
@@ -1342,17 +1424,19 @@ async fn upload_media_handler(
         description,
     };
 
-    let media = service.upload_media(
-        user.id,
-        unique_filename,
-        original_filename,
-        content_type,
-        file_size as i64,
-        storage_path,
-        Some(metadata),
-        None, // dimensions - would need image processing
-        None, // duration - would need audio/video processing
-    ).await?;
+    let media = service
+        .upload_media(
+            user.id,
+            unique_filename,
+            original_filename,
+            content_type,
+            file_size as i64,
+            storage_path,
+            Some(metadata),
+            None, // dimensions - would need image processing
+            None, // duration - would need audio/video processing
+        )
+        .await?;
 
     Ok(created(media))
 }
@@ -1396,20 +1480,22 @@ async fn list_media_folders_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    let folders: Vec<(Uuid, String, Option<Uuid>)> = sqlx::query_as(
-        "SELECT id, name, parent_id FROM media_folders ORDER BY name"
-    )
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default();
+    let folders: Vec<(Uuid, String, Option<Uuid>)> =
+        sqlx::query_as("SELECT id, name, parent_id FROM media_folders ORDER BY name")
+            .fetch_all(pool)
+            .await
+            .unwrap_or_default();
 
-    let folder_list: Vec<serde_json::Value> = folders.iter().map(|(id, name, parent_id)| {
-        serde_json::json!({
-            "id": id,
-            "name": name,
-            "parent_id": parent_id
+    let folder_list: Vec<serde_json::Value> = folders
+        .iter()
+        .map(|(id, name, parent_id)| {
+            serde_json::json!({
+                "id": id,
+                "name": name,
+                "parent_id": parent_id
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(json(serde_json::json!({ "folders": folder_list })))
 }
@@ -1442,7 +1528,9 @@ async fn create_media_folder_handler(
     .await
     .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to create folder", e))?;
 
-    Ok(created(serde_json::json!({ "id": id, "name": payload.name })))
+    Ok(created(
+        serde_json::json!({ "id": id, "name": payload.name }),
+    ))
 }
 
 // =============================================================================
@@ -1450,8 +1538,8 @@ async fn create_media_folder_handler(
 // =============================================================================
 
 use rustpress_api::services::comment_service::{
-    CommentService, CreateCommentRequest as CommentCreateRequest,
-    UpdateCommentRequest as CommentUpdateRequest, BatchModerateRequest,
+    BatchModerateRequest, CommentService, CreateCommentRequest as CommentCreateRequest,
+    UpdateCommentRequest as CommentUpdateRequest,
 };
 use rustpress_database::repository::comments::CommentStatus;
 
@@ -1606,7 +1694,9 @@ async fn comment_counts_handler(
 // Settings Handlers
 // =============================================================================
 
-use rustpress_api::services::settings_service::{SettingsService, SettingUpdate, BatchUpdateRequest};
+use rustpress_api::services::settings_service::{
+    BatchUpdateRequest, SettingUpdate, SettingsService,
+};
 
 /// List all settings grouped
 async fn list_settings_handler(
@@ -1897,7 +1987,10 @@ async fn get_theme_menus_handler(
     axum::extract::Path(theme_id): axum::extract::Path<String>,
     State(state): State<AppState>,
 ) -> HttpResult<impl axum::response::IntoResponse> {
-    let menus = state.theme_manager().get_menu_assignments(&theme_id).await?;
+    let menus = state
+        .theme_manager()
+        .get_menu_assignments(&theme_id)
+        .await?;
     Ok(json(menus))
 }
 
@@ -1924,7 +2017,10 @@ async fn get_theme_widgets_handler(
     axum::extract::Path(theme_id): axum::extract::Path<String>,
     State(state): State<AppState>,
 ) -> HttpResult<impl axum::response::IntoResponse> {
-    let widgets = state.theme_manager().get_widget_assignments(&theme_id).await?;
+    let widgets = state
+        .theme_manager()
+        .get_widget_assignments(&theme_id)
+        .await?;
     Ok(json(widgets))
 }
 
@@ -1975,26 +2071,36 @@ async fn upload_theme_handler(
     let mut zip_data: Option<Vec<u8>> = None;
     let mut activate_after = false;
 
-    while let Some(field) = multipart.next_field().await
-        .map_err(|e| crate::error::HttpError::bad_request(format!("Failed to read multipart: {}", e)))? {
-
+    while let Some(field) = multipart.next_field().await.map_err(|e| {
+        crate::error::HttpError::bad_request(format!("Failed to read multipart: {}", e))
+    })? {
         let name = field.name().unwrap_or("").to_string();
 
         if name == "theme" || name == "file" {
-            zip_data = Some(field.bytes().await
-                .map_err(|e| crate::error::HttpError::bad_request(format!("Failed to read file: {}", e)))?
-                .to_vec());
+            zip_data = Some(
+                field
+                    .bytes()
+                    .await
+                    .map_err(|e| {
+                        crate::error::HttpError::bad_request(format!("Failed to read file: {}", e))
+                    })?
+                    .to_vec(),
+            );
         } else if name == "activate" {
             let value = field.text().await.unwrap_or_default();
             activate_after = value == "true" || value == "1";
         }
     }
 
-    let zip_data = zip_data
-        .ok_or_else(|| crate::error::HttpError::bad_request("No theme file provided".to_string()))?;
+    let zip_data = zip_data.ok_or_else(|| {
+        crate::error::HttpError::bad_request("No theme file provided".to_string())
+    })?;
 
     // Install the theme
-    let result = state.theme_manager().install_from_zip(&zip_data, activate_after).await?;
+    let result = state
+        .theme_manager()
+        .install_from_zip(&zip_data, activate_after)
+        .await?;
 
     Ok(created(serde_json::json!({
         "success": result.success,
@@ -2013,20 +2119,27 @@ async fn validate_theme_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let mut zip_data: Option<Vec<u8>> = None;
 
-    while let Some(field) = multipart.next_field().await
-        .map_err(|e| crate::error::HttpError::bad_request(format!("Failed to read multipart: {}", e)))? {
-
+    while let Some(field) = multipart.next_field().await.map_err(|e| {
+        crate::error::HttpError::bad_request(format!("Failed to read multipart: {}", e))
+    })? {
         let name = field.name().unwrap_or("").to_string();
 
         if name == "theme" || name == "file" {
-            zip_data = Some(field.bytes().await
-                .map_err(|e| crate::error::HttpError::bad_request(format!("Failed to read file: {}", e)))?
-                .to_vec());
+            zip_data = Some(
+                field
+                    .bytes()
+                    .await
+                    .map_err(|e| {
+                        crate::error::HttpError::bad_request(format!("Failed to read file: {}", e))
+                    })?
+                    .to_vec(),
+            );
         }
     }
 
-    let zip_data = zip_data
-        .ok_or_else(|| crate::error::HttpError::bad_request("No theme file provided".to_string()))?;
+    let zip_data = zip_data.ok_or_else(|| {
+        crate::error::HttpError::bad_request("No theme file provided".to_string())
+    })?;
 
     let result = state.theme_manager().validate_zip(&zip_data)?;
 
@@ -2056,20 +2169,27 @@ async fn update_theme_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let mut zip_data: Option<Vec<u8>> = None;
 
-    while let Some(field) = multipart.next_field().await
-        .map_err(|e| crate::error::HttpError::bad_request(format!("Failed to read multipart: {}", e)))? {
-
+    while let Some(field) = multipart.next_field().await.map_err(|e| {
+        crate::error::HttpError::bad_request(format!("Failed to read multipart: {}", e))
+    })? {
         let name = field.name().unwrap_or("").to_string();
 
         if name == "theme" || name == "file" {
-            zip_data = Some(field.bytes().await
-                .map_err(|e| crate::error::HttpError::bad_request(format!("Failed to read file: {}", e)))?
-                .to_vec());
+            zip_data = Some(
+                field
+                    .bytes()
+                    .await
+                    .map_err(|e| {
+                        crate::error::HttpError::bad_request(format!("Failed to read file: {}", e))
+                    })?
+                    .to_vec(),
+            );
         }
     }
 
-    let zip_data = zip_data
-        .ok_or_else(|| crate::error::HttpError::bad_request("No theme file provided".to_string()))?;
+    let zip_data = zip_data.ok_or_else(|| {
+        crate::error::HttpError::bad_request("No theme file provided".to_string())
+    })?;
 
     let result = state.theme_manager().update_from_zip(&zip_data).await?;
 
@@ -2111,18 +2231,24 @@ struct PublicQueryParams {
 }
 
 /// Convert rendered page to response
-fn rendered_response(result: Result<crate::services::RenderedPage, rustpress_core::error::Error>) -> Response {
+fn rendered_response(
+    result: Result<crate::services::RenderedPage, rustpress_core::error::Error>,
+) -> Response {
     match result {
         Ok(page) => {
             let mut response = Html(page.html).into_response();
             let headers = response.headers_mut();
             headers.insert(
                 header::CACHE_CONTROL,
-                page.cache_control.parse().unwrap_or_else(|_| "no-cache".parse().unwrap()),
+                page.cache_control
+                    .parse()
+                    .unwrap_or_else(|_| "no-cache".parse().unwrap()),
             );
             headers.insert(
                 header::CONTENT_TYPE,
-                page.content_type.parse().unwrap_or_else(|_| "text/html".parse().unwrap()),
+                page.content_type
+                    .parse()
+                    .unwrap_or_else(|_| "text/html".parse().unwrap()),
             );
             response
         }
@@ -2132,8 +2258,10 @@ fn rendered_response(result: Result<crate::services::RenderedPage, rustpress_cor
             } else {
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR
             };
-            (status, Html(format!(
-                r#"<!DOCTYPE html>
+            (
+                status,
+                Html(format!(
+                    r#"<!DOCTYPE html>
 <html>
 <head><title>Error</title></head>
 <body>
@@ -2141,8 +2269,10 @@ fn rendered_response(result: Result<crate::services::RenderedPage, rustpress_cor
 <p>{}</p>
 </body>
 </html>"#,
-                e
-            ))).into_response()
+                    e
+                )),
+            )
+                .into_response()
         }
     }
 }
@@ -2152,7 +2282,10 @@ async fn public_home_handler(
     State(state): State<AppState>,
     Query(params): Query<PublicQueryParams>,
 ) -> Response {
-    let result = state.renderer().render_home(params.preview.as_deref()).await;
+    let result = state
+        .renderer()
+        .render_home(params.preview.as_deref())
+        .await;
     rendered_response(result)
 }
 
@@ -2162,7 +2295,10 @@ async fn public_blog_handler(
     Query(params): Query<PublicQueryParams>,
 ) -> Response {
     // Blog page is same as home for now
-    let result = state.renderer().render_home(params.preview.as_deref()).await;
+    let result = state
+        .renderer()
+        .render_home(params.preview.as_deref())
+        .await;
     rendered_response(result)
 }
 
@@ -2172,7 +2308,10 @@ async fn public_post_handler(
     axum::extract::Path(slug): axum::extract::Path<String>,
     Query(params): Query<PublicQueryParams>,
 ) -> Response {
-    let result = state.renderer().render_post(&slug, params.preview.as_deref()).await;
+    let result = state
+        .renderer()
+        .render_post(&slug, params.preview.as_deref())
+        .await;
     rendered_response(result)
 }
 
@@ -2182,7 +2321,10 @@ async fn public_page_handler(
     axum::extract::Path(slug): axum::extract::Path<String>,
     Query(params): Query<PublicQueryParams>,
 ) -> Response {
-    let result = state.renderer().render_page(&slug, params.preview.as_deref()).await;
+    let result = state
+        .renderer()
+        .render_page(&slug, params.preview.as_deref())
+        .await;
     rendered_response(result)
 }
 
@@ -2193,7 +2335,10 @@ async fn public_category_handler(
     Query(params): Query<PublicQueryParams>,
 ) -> Response {
     let page = params.page.unwrap_or(1);
-    let result = state.renderer().render_category(&slug, page, params.preview.as_deref()).await;
+    let result = state
+        .renderer()
+        .render_category(&slug, page, params.preview.as_deref())
+        .await;
     rendered_response(result)
 }
 
@@ -2204,7 +2349,10 @@ async fn public_tag_handler(
     Query(params): Query<PublicQueryParams>,
 ) -> Response {
     let page = params.page.unwrap_or(1);
-    let result = state.renderer().render_tag(&slug, page, params.preview.as_deref()).await;
+    let result = state
+        .renderer()
+        .render_tag(&slug, page, params.preview.as_deref())
+        .await;
     rendered_response(result)
 }
 
@@ -2215,7 +2363,10 @@ async fn public_author_handler(
     Query(params): Query<PublicQueryParams>,
 ) -> Response {
     let page = params.page.unwrap_or(1);
-    let result = state.renderer().render_author(&slug, page, params.preview.as_deref()).await;
+    let result = state
+        .renderer()
+        .render_author(&slug, page, params.preview.as_deref())
+        .await;
     rendered_response(result)
 }
 
@@ -2236,7 +2387,8 @@ async fn public_search_handler(
     let page = params.page.unwrap_or(1);
 
     if query.is_empty() {
-        return Html(r#"<!DOCTYPE html>
+        return Html(
+            r#"<!DOCTYPE html>
 <html>
 <head><title>Search</title></head>
 <body>
@@ -2246,17 +2398,20 @@ async fn public_search_handler(
 <button type="submit">Search</button>
 </form>
 </body>
-</html>"#).into_response();
+</html>"#,
+        )
+        .into_response();
     }
 
-    let result = state.renderer().render_search(&query, page, params.preview.as_deref()).await;
+    let result = state
+        .renderer()
+        .render_search(&query, page, params.preview.as_deref())
+        .await;
     rendered_response(result)
 }
 
 /// Public RSS feed handler
-async fn public_feed_handler(
-    State(state): State<AppState>,
-) -> impl IntoResponse {
+async fn public_feed_handler(State(state): State<AppState>) -> impl IntoResponse {
     // Generate RSS 2.0 feed
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
@@ -2277,9 +2432,7 @@ async fn public_feed_handler(
 }
 
 /// Public Atom feed handler
-async fn public_atom_feed_handler(
-    State(state): State<AppState>,
-) -> impl IntoResponse {
+async fn public_atom_feed_handler(State(state): State<AppState>) -> impl IntoResponse {
     // Generate Atom feed
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
@@ -2297,9 +2450,7 @@ async fn public_atom_feed_handler(
 }
 
 /// Public sitemap handler
-async fn public_sitemap_handler(
-    State(state): State<AppState>,
-) -> impl IntoResponse {
+async fn public_sitemap_handler(State(state): State<AppState>) -> impl IntoResponse {
     // Generate XML sitemap
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -2388,11 +2539,10 @@ async fn theme_asset_handler(
                     (header::CACHE_CONTROL, "public, max-age=31536000"),
                 ],
                 contents,
-            ).into_response()
+            )
+                .into_response()
         }
-        Err(_) => {
-            (axum::http::StatusCode::NOT_FOUND, "File not found").into_response()
-        }
+        Err(_) => (axum::http::StatusCode::NOT_FOUND, "File not found").into_response(),
     }
 }
 
@@ -2490,16 +2640,19 @@ async fn search_handler(
     .await
     .map_err(|e| rustpress_core::error::Error::database_with_source("Search count failed", e))?;
 
-    let results: Vec<serde_json::Value> = posts.iter().map(|(id, title, slug, excerpt, content_type, published_at)| {
-        serde_json::json!({
-            "id": id,
-            "title": title,
-            "slug": slug,
-            "excerpt": excerpt,
-            "type": content_type,
-            "published_at": published_at
+    let results: Vec<serde_json::Value> = posts
+        .iter()
+        .map(|(id, title, slug, excerpt, content_type, published_at)| {
+            serde_json::json!({
+                "id": id,
+                "title": title,
+                "slug": slug,
+                "excerpt": excerpt,
+                "type": content_type,
+                "published_at": published_at
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(json(serde_json::json!({
         "results": results,
@@ -2533,7 +2686,7 @@ async fn search_suggest_handler(
           AND title ILIKE '%' || $1 || '%'
         ORDER BY title
         LIMIT $2
-        "#
+        "#,
     )
     .bind(search_term)
     .bind(limit as i64)
@@ -2594,9 +2747,20 @@ fn backup_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(list_backups_handler).post(create_backup_handler))
         .route("/storage", get(backup_storage_handler))
-        .route("/schedules", get(list_backup_schedules_handler).post(create_backup_schedule_handler))
-        .route("/schedules/:id", get(get_backup_schedule_handler).put(update_backup_schedule_handler).delete(delete_backup_schedule_handler))
-        .route("/:id", get(get_backup_handler).delete(delete_backup_handler))
+        .route(
+            "/schedules",
+            get(list_backup_schedules_handler).post(create_backup_schedule_handler),
+        )
+        .route(
+            "/schedules/:id",
+            get(get_backup_schedule_handler)
+                .put(update_backup_schedule_handler)
+                .delete(delete_backup_schedule_handler),
+        )
+        .route(
+            "/:id",
+            get(get_backup_handler).delete(delete_backup_handler),
+        )
         .route("/:id/download", get(download_backup_handler))
         .route("/:id/restore", post(restore_backup_handler))
         .route("/restore/:job_id", get(restore_progress_handler))
@@ -2623,13 +2787,20 @@ async fn list_backups_handler(
     let offset = ((page - 1) * per_page) as i64;
 
     // Get backups from database (using actual schema with file_size column)
-    let backups: Vec<(Uuid, String, String, Option<i64>, String, chrono::DateTime<chrono::Utc>)> = sqlx::query_as(
+    let backups: Vec<(
+        Uuid,
+        String,
+        String,
+        Option<i64>,
+        String,
+        chrono::DateTime<chrono::Utc>,
+    )> = sqlx::query_as(
         r#"
         SELECT id, name, backup_type, file_size, status, created_at
         FROM backups
         ORDER BY created_at DESC
         LIMIT $1 OFFSET $2
-        "#
+        "#,
     )
     .bind(per_page as i64)
     .bind(offset)
@@ -2642,16 +2813,19 @@ async fn list_backups_handler(
         .await
         .unwrap_or((0,));
 
-    let backup_list: Vec<serde_json::Value> = backups.iter().map(|(id, name, backup_type, size, status, created_at)| {
-        serde_json::json!({
-            "id": id,
-            "name": name,
-            "type": backup_type,
-            "size_bytes": size.unwrap_or(0),
-            "status": status,
-            "created_at": created_at
+    let backup_list: Vec<serde_json::Value> = backups
+        .iter()
+        .map(|(id, name, backup_type, size, status, created_at)| {
+            serde_json::json!({
+                "id": id,
+                "name": name,
+                "type": backup_type,
+                "size_bytes": size.unwrap_or(0),
+                "status": status,
+                "created_at": created_at
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(json(serde_json::json!({
         "backups": backup_list,
@@ -2727,8 +2901,15 @@ async fn get_backup_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    let backup: Option<(Uuid, String, String, Option<i64>, String, chrono::DateTime<chrono::Utc>)> = sqlx::query_as(
-        "SELECT id, name, backup_type, file_size, status, created_at FROM backups WHERE id = $1"
+    let backup: Option<(
+        Uuid,
+        String,
+        String,
+        Option<i64>,
+        String,
+        chrono::DateTime<chrono::Utc>,
+    )> = sqlx::query_as(
+        "SELECT id, name, backup_type, file_size, status, created_at FROM backups WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(pool)
@@ -2736,16 +2917,14 @@ async fn get_backup_handler(
     .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to get backup", e))?;
 
     match backup {
-        Some((id, name, backup_type, size, status, created_at)) => {
-            Ok(json(serde_json::json!({
-                "id": id,
-                "name": name,
-                "type": backup_type,
-                "size_bytes": size.unwrap_or(0),
-                "status": status,
-                "created_at": created_at
-            })))
-        }
+        Some((id, name, backup_type, size, status, created_at)) => Ok(json(serde_json::json!({
+            "id": id,
+            "name": name,
+            "type": backup_type,
+            "size_bytes": size.unwrap_or(0),
+            "status": status,
+            "created_at": created_at
+        }))),
         None => Err(rustpress_core::error::Error::not_found("Backup", id.to_string()).into()),
     }
 }
@@ -2763,7 +2942,9 @@ async fn delete_backup_handler(
         .bind(id)
         .execute(pool)
         .await
-        .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to delete backup", e))?;
+        .map_err(|e| {
+            rustpress_core::error::Error::database_with_source("Failed to delete backup", e)
+        })?;
 
     Ok(no_content())
 }
@@ -2777,7 +2958,7 @@ async fn download_backup_handler(
     let pool = state.db().inner();
 
     let backup: Option<(String, Option<String>)> = sqlx::query_as(
-        "SELECT name, file_path FROM backups WHERE id = $1 AND status = 'completed'"
+        "SELECT name, file_path FROM backups WHERE id = $1 AND status = 'completed'",
     )
     .bind(id)
     .fetch_optional(pool)
@@ -2787,8 +2968,9 @@ async fn download_backup_handler(
     match backup {
         Some((name, Some(file_path))) => {
             // Read backup file
-            let contents = tokio::fs::read(&file_path).await
-                .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to read backup file: {}", e)))?;
+            let contents = tokio::fs::read(&file_path).await.map_err(|e| {
+                rustpress_core::error::Error::internal(format!("Failed to read backup file: {}", e))
+            })?;
 
             let disposition = format!("attachment; filename=\"{}.zip\"", name);
 
@@ -2800,7 +2982,10 @@ async fn download_backup_handler(
                 .unwrap()
                 .into_response())
         }
-        Some((_, None)) => Err(rustpress_core::error::Error::internal("Backup file path not set".to_string()).into()),
+        Some((_, None)) => Err(rustpress_core::error::Error::internal(
+            "Backup file path not set".to_string(),
+        )
+        .into()),
         None => Err(rustpress_core::error::Error::not_found("Backup", id.to_string()).into()),
     }
 }
@@ -2843,19 +3028,15 @@ async fn backup_storage_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    let total_size: (i64,) = sqlx::query_as(
-        "SELECT COALESCE(SUM(file_size), 0) FROM backups"
-    )
-    .fetch_one(pool)
-    .await
-    .unwrap_or((0,));
+    let total_size: (i64,) = sqlx::query_as("SELECT COALESCE(SUM(file_size), 0) FROM backups")
+        .fetch_one(pool)
+        .await
+        .unwrap_or((0,));
 
-    let backup_count: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM backups"
-    )
-    .fetch_one(pool)
-    .await
-    .unwrap_or((0,));
+    let backup_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM backups")
+        .fetch_one(pool)
+        .await
+        .unwrap_or((0,));
 
     Ok(json(serde_json::json!({
         "used_bytes": total_size.0,
@@ -2880,17 +3061,22 @@ async fn list_backup_schedules_handler(
     .await
     .unwrap_or_default();
 
-    let schedule_list: Vec<serde_json::Value> = schedules.iter().map(|(id, name, frequency, cron_expr, backup_type, enabled, next_run)| {
-        serde_json::json!({
-            "id": id,
-            "name": name,
-            "frequency": frequency,
-            "schedule": cron_expr.clone().unwrap_or_else(|| frequency.clone()),
-            "type": backup_type,
-            "enabled": enabled,
-            "next_run_at": next_run
-        })
-    }).collect();
+    let schedule_list: Vec<serde_json::Value> = schedules
+        .iter()
+        .map(
+            |(id, name, frequency, cron_expr, backup_type, enabled, next_run)| {
+                serde_json::json!({
+                    "id": id,
+                    "name": name,
+                    "frequency": frequency,
+                    "schedule": cron_expr.clone().unwrap_or_else(|| frequency.clone()),
+                    "type": backup_type,
+                    "enabled": enabled,
+                    "next_run_at": next_run
+                })
+            },
+        )
+        .collect();
 
     Ok(json(serde_json::json!({ "schedules": schedule_list })))
 }
@@ -2979,7 +3165,9 @@ async fn delete_backup_schedule_handler(
         .bind(id)
         .execute(pool)
         .await
-        .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to delete schedule", e))?;
+        .map_err(|e| {
+            rustpress_core::error::Error::database_with_source("Failed to delete schedule", e)
+        })?;
 
     Ok(no_content())
 }
@@ -2991,14 +3179,23 @@ async fn delete_backup_schedule_handler(
 /// SEO management routes
 fn seo_routes() -> Router<AppState> {
     Router::new()
-        .route("/settings", get(get_seo_settings_handler).put(update_seo_settings_handler))
+        .route(
+            "/settings",
+            get(get_seo_settings_handler).put(update_seo_settings_handler),
+        )
         .route("/sitemap", get(get_sitemap_status_handler))
         .route("/sitemap/generate", post(generate_sitemap_handler))
-        .route("/robots", get(get_robots_txt_handler).put(update_robots_txt_handler))
+        .route(
+            "/robots",
+            get(get_robots_txt_handler).put(update_robots_txt_handler),
+        )
         .route("/analyze", post(analyze_seo_handler))
         .route("/bulk-analyze", post(bulk_analyze_seo_handler))
         .route("/dashboard", get(seo_dashboard_handler))
-        .route("/:content_type/:id", get(get_content_seo_handler).put(update_content_seo_handler))
+        .route(
+            "/:content_type/:id",
+            get(get_content_seo_handler).put(update_content_seo_handler),
+        )
 }
 
 /// Get SEO settings
@@ -3010,7 +3207,7 @@ async fn get_seo_settings_handler(
 
     // Get SEO-related settings
     let settings: Vec<(String, serde_json::Value)> = sqlx::query_as(
-        "SELECT key, value FROM settings WHERE key LIKE 'seo_%' OR key LIKE 'site_%'"
+        "SELECT key, value FROM settings WHERE key LIKE 'seo_%' OR key LIKE 'site_%'",
     )
     .fetch_all(pool)
     .await
@@ -3053,7 +3250,7 @@ async fn update_seo_settings_handler(
                 INSERT INTO settings (id, key, value, group_name, updated_at)
                 VALUES (gen_random_uuid(), $1, $2, 'seo', NOW())
                 ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()
-                "#
+                "#,
             )
             .bind(key)
             .bind(value)
@@ -3107,13 +3304,12 @@ async fn get_robots_txt_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    let robots: Option<(serde_json::Value,)> = sqlx::query_as(
-        "SELECT value FROM settings WHERE key = 'robots_txt'"
-    )
-    .fetch_optional(pool)
-    .await
-    .ok()
-    .flatten();
+    let robots: Option<(serde_json::Value,)> =
+        sqlx::query_as("SELECT value FROM settings WHERE key = 'robots_txt'")
+            .fetch_optional(pool)
+            .await
+            .ok()
+            .flatten();
 
     let content = robots
         .and_then(|(v,)| v.as_str().map(String::from))
@@ -3130,7 +3326,8 @@ async fn update_robots_txt_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    let content = payload.get("content")
+    let content = payload
+        .get("content")
         .and_then(|v| v.as_str())
         .unwrap_or("User-agent: *\nAllow: /");
 
@@ -3139,12 +3336,14 @@ async fn update_robots_txt_handler(
         INSERT INTO settings (id, key, value, group_name, updated_at)
         VALUES (gen_random_uuid(), 'robots_txt', $1, 'seo', NOW())
         ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()
-        "#
+        "#,
     )
     .bind(serde_json::json!(content))
     .execute(pool)
     .await
-    .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to update robots.txt", e))?;
+    .map_err(|e| {
+        rustpress_core::error::Error::database_with_source("Failed to update robots.txt", e)
+    })?;
 
     Ok(json(serde_json::json!({ "success": true })))
 }
@@ -3200,13 +3399,21 @@ async fn analyze_seo_handler(
 
     // Focus keyword analysis
     if let Some(ref keyword) = payload.focus_keyword {
-        if payload.title.to_lowercase().contains(&keyword.to_lowercase()) {
+        if payload
+            .title
+            .to_lowercase()
+            .contains(&keyword.to_lowercase())
+        {
             score += 15;
         } else {
             suggestions.push("Include your focus keyword in the title.");
         }
 
-        if payload.content.to_lowercase().contains(&keyword.to_lowercase()) {
+        if payload
+            .content
+            .to_lowercase()
+            .contains(&keyword.to_lowercase())
+        {
             score += 15;
         } else {
             suggestions.push("Include your focus keyword in the content.");
@@ -3261,10 +3468,12 @@ async fn seo_dashboard_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    let post_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM posts WHERE status = 'published' AND deleted_at IS NULL")
-        .fetch_one(pool)
-        .await
-        .unwrap_or((0,));
+    let post_count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM posts WHERE status = 'published' AND deleted_at IS NULL",
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap_or((0,));
 
     Ok(json(serde_json::json!({
         "total_pages_indexed": post_count.0,
@@ -3337,7 +3546,7 @@ async fn update_content_seo_handler(
                 INSERT INTO post_meta (id, post_id, key, value, created_at, updated_at)
                 VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW())
                 ON CONFLICT (post_id, key) DO UPDATE SET value = $3, updated_at = NOW()
-                "#
+                "#,
             )
             .bind(id)
             .bind(&meta_key)
@@ -3362,9 +3571,15 @@ fn cache_routes() -> Router<AppState> {
         .route("/clear", post(clear_all_cache_handler))
         .route("/clear/:cache_type", post(clear_cache_by_type_handler))
         .route("/clear/tag", post(clear_cache_by_tag_handler))
-        .route("/clear/:content_type/:id", post(clear_content_cache_handler))
+        .route(
+            "/clear/:content_type/:id",
+            post(clear_content_cache_handler),
+        )
         .route("/entries", get(list_cache_entries_handler))
-        .route("/config", get(get_cache_config_handler).put(update_cache_config_handler))
+        .route(
+            "/config",
+            get(get_cache_config_handler).put(update_cache_config_handler),
+        )
         .route("/warm", post(warm_cache_handler))
         .route("/health", get(cache_health_handler))
 }
@@ -3402,8 +3617,9 @@ async fn clear_all_cache_handler(
     State(state): State<AppState>,
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let cache = state.cache();
-    cache.clear().await
-        .map_err(|e| rustpress_core::error::Error::internal(format!("Cache clear failed: {}", e)))?;
+    cache.clear().await.map_err(|e| {
+        rustpress_core::error::Error::internal(format!("Cache clear failed: {}", e))
+    })?;
 
     Ok(json(serde_json::json!({
         "success": true,
@@ -3484,7 +3700,8 @@ async fn list_cache_entries_handler(
     let per_page = query.per_page.unwrap_or(50) as usize;
     let offset = (page - 1) * per_page;
 
-    let paginated: Vec<serde_json::Value> = entries.iter()
+    let paginated: Vec<serde_json::Value> = entries
+        .iter()
         .skip(offset)
         .take(per_page)
         .map(|key| serde_json::json!({ "key": key }))
@@ -3542,7 +3759,9 @@ async fn warm_cache_handler(
     Json(payload): Json<WarmCacheRequest>,
 ) -> HttpResult<impl axum::response::IntoResponse> {
     // In production, this would queue cache warming jobs
-    let types = payload.types.unwrap_or_else(|| vec!["posts".to_string(), "pages".to_string()]);
+    let types = payload
+        .types
+        .unwrap_or_else(|| vec!["posts".to_string(), "pages".to_string()]);
 
     Ok(json(serde_json::json!({
         "success": true,
@@ -3560,7 +3779,13 @@ async fn cache_health_handler(
 
     let status = if stats.hits + stats.misses > 0 {
         let hit_rate = stats.hits as f64 / (stats.hits + stats.misses) as f64;
-        if hit_rate >= 0.8 { "healthy" } else if hit_rate >= 0.5 { "degraded" } else { "poor" }
+        if hit_rate >= 0.8 {
+            "healthy"
+        } else if hit_rate >= 0.5 {
+            "degraded"
+        } else {
+            "poor"
+        }
     } else {
         "unknown"
     };
@@ -3585,7 +3810,10 @@ async fn cache_health_handler(
 fn cdn_routes() -> Router<AppState> {
     Router::new()
         .route("/status", get(cdn_status_handler))
-        .route("/config", get(get_cdn_config_handler).put(update_cdn_config_handler))
+        .route(
+            "/config",
+            get(get_cdn_config_handler).put(update_cdn_config_handler),
+        )
         .route("/purge/all", post(cdn_purge_all_handler))
         .route("/purge/urls", post(cdn_purge_urls_handler))
         .route("/purge/tags", post(cdn_purge_tags_handler))
@@ -3621,22 +3849,22 @@ async fn cdn_status_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     // Get CDN configuration from options
     let pool = state.db().inner();
-    let cdn_enabled: Option<(String,)> = sqlx::query_as(
-        "SELECT option_value::text FROM options WHERE option_name = 'cdn_enabled'"
-    )
-    .fetch_optional(pool)
-    .await
-    .unwrap_or(None);
+    let cdn_enabled: Option<(String,)> =
+        sqlx::query_as("SELECT option_value::text FROM options WHERE option_name = 'cdn_enabled'")
+            .fetch_optional(pool)
+            .await
+            .unwrap_or(None);
 
-    let cdn_provider: Option<(String,)> = sqlx::query_as(
-        "SELECT option_value::text FROM options WHERE option_name = 'cdn_provider'"
-    )
-    .fetch_optional(pool)
-    .await
-    .unwrap_or(None);
+    let cdn_provider: Option<(String,)> =
+        sqlx::query_as("SELECT option_value::text FROM options WHERE option_name = 'cdn_provider'")
+            .fetch_optional(pool)
+            .await
+            .unwrap_or(None);
 
     let enabled = cdn_enabled.map(|v| v.0 == "true").unwrap_or(false);
-    let provider = cdn_provider.map(|v| v.0).unwrap_or_else(|| "none".to_string());
+    let provider = cdn_provider
+        .map(|v| v.0)
+        .unwrap_or_else(|| "none".to_string());
 
     Ok(json(serde_json::json!({
         "enabled": enabled,
@@ -3659,7 +3887,7 @@ async fn get_cdn_config_handler(
     let pool = state.db().inner();
 
     let options: Vec<(String, String)> = sqlx::query_as(
-        "SELECT option_name, option_value::text FROM options WHERE option_name LIKE 'cdn_%'"
+        "SELECT option_name, option_value::text FROM options WHERE option_name LIKE 'cdn_%'",
     )
     .fetch_all(pool)
     .await
@@ -3698,7 +3926,7 @@ async fn update_cdn_config_handler(
             VALUES ('cdn_provider', $1::jsonb, true)
             ON CONFLICT (option_name) WHERE site_id IS NULL
             DO UPDATE SET option_value = $1::jsonb, updated_at = NOW()
-            "#
+            "#,
         )
         .bind(serde_json::json!(provider))
         .execute(pool)
@@ -3713,7 +3941,7 @@ async fn update_cdn_config_handler(
             VALUES ('cdn_api_key', $1::jsonb, false)
             ON CONFLICT (option_name) WHERE site_id IS NULL
             DO UPDATE SET option_value = $1::jsonb, updated_at = NOW()
-            "#
+            "#,
         )
         .bind(serde_json::json!(api_key))
         .execute(pool)
@@ -3728,7 +3956,7 @@ async fn update_cdn_config_handler(
             VALUES ('cdn_zone_id', $1::jsonb, false)
             ON CONFLICT (option_name) WHERE site_id IS NULL
             DO UPDATE SET option_value = $1::jsonb, updated_at = NOW()
-            "#
+            "#,
         )
         .bind(serde_json::json!(zone_id))
         .execute(pool)
@@ -3743,7 +3971,7 @@ async fn update_cdn_config_handler(
             VALUES ('cdn_enabled', $1::jsonb, true)
             ON CONFLICT (option_name) WHERE site_id IS NULL
             DO UPDATE SET option_value = $1::jsonb, updated_at = NOW()
-            "#
+            "#,
         )
         .bind(serde_json::json!(enabled))
         .execute(pool)
@@ -3791,14 +4019,20 @@ async fn cdn_purge_urls_handler(
     }
 
     if urls.len() > 30 {
-        return Err(rustpress_core::error::Error::validation("Maximum 30 URLs per purge request").into());
+        return Err(
+            rustpress_core::error::Error::validation("Maximum 30 URLs per purge request").into(),
+        );
     }
 
     // Clear related local cache entries
     let cache = state.cache();
     for url in urls {
         // Create a cache key from URL
-        let key = format!("page:{}", url.trim_start_matches("http://").trim_start_matches("https://"));
+        let key = format!(
+            "page:{}",
+            url.trim_start_matches("http://")
+                .trim_start_matches("https://")
+        );
         let _ = cache.delete(&key).await;
     }
 
@@ -3868,12 +4102,11 @@ async fn cdn_health_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    let cdn_enabled: Option<(String,)> = sqlx::query_as(
-        "SELECT option_value::text FROM options WHERE option_name = 'cdn_enabled'"
-    )
-    .fetch_optional(pool)
-    .await
-    .unwrap_or(None);
+    let cdn_enabled: Option<(String,)> =
+        sqlx::query_as("SELECT option_value::text FROM options WHERE option_name = 'cdn_enabled'")
+            .fetch_optional(pool)
+            .await
+            .unwrap_or(None);
 
     let enabled = cdn_enabled.map(|v| v.0 == "true").unwrap_or(false);
 
@@ -3896,10 +4129,23 @@ async fn cdn_health_handler(
 /// Taxonomy management routes
 fn taxonomy_routes() -> Router<AppState> {
     Router::new()
-        .route("/categories", get(list_categories_handler).post(create_category_handler))
-        .route("/categories/:id", get(get_category_handler).put(update_category_handler).delete(delete_category_handler))
+        .route(
+            "/categories",
+            get(list_categories_handler).post(create_category_handler),
+        )
+        .route(
+            "/categories/:id",
+            get(get_category_handler)
+                .put(update_category_handler)
+                .delete(delete_category_handler),
+        )
         .route("/tags", get(list_tags_handler).post(create_tag_handler))
-        .route("/tags/:id", get(get_tag_handler).put(update_tag_handler).delete(delete_tag_handler))
+        .route(
+            "/tags/:id",
+            get(get_tag_handler)
+                .put(update_tag_handler)
+                .delete(delete_tag_handler),
+        )
 }
 
 /// List categories
@@ -3920,16 +4166,19 @@ async fn list_categories_handler(
     .await
     .unwrap_or_default();
 
-    let cat_list: Vec<serde_json::Value> = categories.iter().map(|(id, name, slug, desc, parent, count)| {
-        serde_json::json!({
-            "id": id,
-            "name": name,
-            "slug": slug,
-            "description": desc,
-            "parent_id": parent,
-            "post_count": count
+    let cat_list: Vec<serde_json::Value> = categories
+        .iter()
+        .map(|(id, name, slug, desc, parent, count)| {
+            serde_json::json!({
+                "id": id,
+                "name": name,
+                "slug": slug,
+                "description": desc,
+                "parent_id": parent,
+                "post_count": count
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(json(serde_json::json!({ "categories": cat_list })))
 }
@@ -3951,14 +4200,16 @@ async fn create_category_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
     let id = Uuid::now_v7();
-    let slug = payload.slug.unwrap_or_else(|| slugify::slugify(&payload.name, "-", "", None));
+    let slug = payload
+        .slug
+        .unwrap_or_else(|| slugify::slugify(&payload.name, "-", "", None));
     let now = chrono::Utc::now();
 
     sqlx::query(
         r#"
         INSERT INTO categories (id, name, slug, description, parent_id, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, $6)
-        "#
+        "#,
     )
     .bind(id)
     .bind(&payload.name)
@@ -3968,7 +4219,9 @@ async fn create_category_handler(
     .bind(now)
     .execute(pool)
     .await
-    .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to create category", e))?;
+    .map_err(|e| {
+        rustpress_core::error::Error::database_with_source("Failed to create category", e)
+    })?;
 
     Ok(created(serde_json::json!({
         "id": id,
@@ -3985,7 +4238,7 @@ async fn get_category_handler(
     let pool = state.db().inner();
 
     let category: Option<(Uuid, String, String, Option<String>, Option<Uuid>)> = sqlx::query_as(
-        "SELECT id, name, slug, description, parent_id FROM categories WHERE id = $1"
+        "SELECT id, name, slug, description, parent_id FROM categories WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(pool)
@@ -4033,7 +4286,9 @@ async fn delete_category_handler(
         .bind(id)
         .execute(pool)
         .await
-        .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to delete category", e))?;
+        .map_err(|e| {
+            rustpress_core::error::Error::database_with_source("Failed to delete category", e)
+        })?;
 
     Ok(no_content())
 }
@@ -4050,21 +4305,24 @@ async fn list_tags_handler(
                (SELECT COUNT(*) FROM post_tags WHERE tag_id = tags.id)::int as post_count
         FROM tags
         ORDER BY name
-        "#
+        "#,
     )
     .fetch_all(pool)
     .await
     .unwrap_or_default();
 
-    let tag_list: Vec<serde_json::Value> = tags.iter().map(|(id, name, slug, desc, count)| {
-        serde_json::json!({
-            "id": id,
-            "name": name,
-            "slug": slug,
-            "description": desc,
-            "post_count": count
+    let tag_list: Vec<serde_json::Value> = tags
+        .iter()
+        .map(|(id, name, slug, desc, count)| {
+            serde_json::json!({
+                "id": id,
+                "name": name,
+                "slug": slug,
+                "description": desc,
+                "post_count": count
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(json(serde_json::json!({ "tags": tag_list })))
 }
@@ -4085,14 +4343,16 @@ async fn create_tag_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
     let id = Uuid::now_v7();
-    let slug = payload.slug.unwrap_or_else(|| slugify::slugify(&payload.name, "-", "", None));
+    let slug = payload
+        .slug
+        .unwrap_or_else(|| slugify::slugify(&payload.name, "-", "", None));
     let now = chrono::Utc::now();
 
     sqlx::query(
         r#"
         INSERT INTO tags (id, name, slug, description, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5, $5)
-        "#
+        "#,
     )
     .bind(id)
     .bind(&payload.name)
@@ -4117,13 +4377,14 @@ async fn get_tag_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    let tag: Option<(Uuid, String, String, Option<String>)> = sqlx::query_as(
-        "SELECT id, name, slug, description FROM tags WHERE id = $1"
-    )
-    .bind(id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to get tag", e))?;
+    let tag: Option<(Uuid, String, String, Option<String>)> =
+        sqlx::query_as("SELECT id, name, slug, description FROM tags WHERE id = $1")
+            .bind(id)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| {
+                rustpress_core::error::Error::database_with_source("Failed to get tag", e)
+            })?;
 
     match tag {
         Some((id, name, slug, desc)) => Ok(json(serde_json::json!({
@@ -4166,7 +4427,9 @@ async fn delete_tag_handler(
         .bind(id)
         .execute(pool)
         .await
-        .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to delete tag", e))?;
+        .map_err(|e| {
+            rustpress_core::error::Error::database_with_source("Failed to delete tag", e)
+        })?;
 
     Ok(no_content())
 }
@@ -4180,8 +4443,16 @@ fn menu_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(list_menus_handler).post(create_menu_handler))
         .route("/locations", get(list_menu_locations_handler))
-        .route("/:id", get(get_menu_handler).put(update_menu_handler).delete(delete_menu_handler))
-        .route("/:id/items", get(get_menu_items_handler).put(update_menu_items_handler))
+        .route(
+            "/:id",
+            get(get_menu_handler)
+                .put(update_menu_handler)
+                .delete(delete_menu_handler),
+        )
+        .route(
+            "/:id/items",
+            get(get_menu_items_handler).put(update_menu_items_handler),
+        )
 }
 
 /// List menus
@@ -4191,20 +4462,23 @@ async fn list_menus_handler(
     let pool = state.db().inner();
 
     let menus: Vec<(Uuid, String, String, Option<String>)> = sqlx::query_as(
-        "SELECT id, name, slug, location FROM menus WHERE deleted_at IS NULL ORDER BY name"
+        "SELECT id, name, slug, location FROM menus WHERE deleted_at IS NULL ORDER BY name",
     )
     .fetch_all(pool)
     .await
     .unwrap_or_default();
 
-    let menu_list: Vec<serde_json::Value> = menus.iter().map(|(id, name, slug, location)| {
-        serde_json::json!({
-            "id": id,
-            "name": name,
-            "slug": slug,
-            "location": location
+    let menu_list: Vec<serde_json::Value> = menus
+        .iter()
+        .map(|(id, name, slug, location)| {
+            serde_json::json!({
+                "id": id,
+                "name": name,
+                "slug": slug,
+                "location": location
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(json(serde_json::json!({ "menus": menu_list })))
 }
@@ -4246,14 +4520,19 @@ async fn create_menu_handler(
 
     let pool = state.db().inner();
     let id = Uuid::now_v7();
-    let slug = payload.slug.filter(|s| !s.trim().is_empty())
+    let slug = payload
+        .slug
+        .filter(|s| !s.trim().is_empty())
         .unwrap_or_else(|| {
             // Use a safe slug generation - fallback to UUID if slugify fails
-            let base_slug = payload.name.to_lowercase()
+            let base_slug = payload
+                .name
+                .to_lowercase()
                 .chars()
                 .map(|c| if c.is_alphanumeric() { c } else { '-' })
                 .collect::<String>();
-            let cleaned: String = base_slug.split('-')
+            let cleaned: String = base_slug
+                .split('-')
                 .filter(|s| !s.is_empty())
                 .collect::<Vec<_>>()
                 .join("-");
@@ -4277,7 +4556,9 @@ async fn create_menu_handler(
     .await
     .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to create menu", e))?;
 
-    Ok(created(serde_json::json!({ "id": id, "name": payload.name, "slug": slug })))
+    Ok(created(
+        serde_json::json!({ "id": id, "name": payload.name, "slug": slug }),
+    ))
 }
 
 /// Get menu
@@ -4288,7 +4569,7 @@ async fn get_menu_handler(
     let pool = state.db().inner();
 
     let menu: Option<(Uuid, String, String, Option<String>)> = sqlx::query_as(
-        "SELECT id, name, slug, location FROM menus WHERE id = $1 AND deleted_at IS NULL"
+        "SELECT id, name, slug, location FROM menus WHERE id = $1 AND deleted_at IS NULL",
     )
     .bind(id)
     .fetch_optional(pool)
@@ -4336,7 +4617,9 @@ async fn delete_menu_handler(
         .bind(id)
         .execute(pool)
         .await
-        .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to delete menu", e))?;
+        .map_err(|e| {
+            rustpress_core::error::Error::database_with_source("Failed to delete menu", e)
+        })?;
 
     Ok(no_content())
 }
@@ -4348,34 +4631,50 @@ async fn get_menu_items_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    let items: Vec<(Uuid, String, Option<String>, Option<Uuid>, i32, String, Option<String>, String, Option<String>, bool)> = sqlx::query_as(
+    let items: Vec<(
+        Uuid,
+        String,
+        Option<String>,
+        Option<Uuid>,
+        i32,
+        String,
+        Option<String>,
+        String,
+        Option<String>,
+        bool,
+    )> = sqlx::query_as(
         r#"
         SELECT id, title, url, parent_id, position, item_type, target,
                COALESCE(css_classes, '') as css_classes, icon, is_visible
         FROM menu_items
         WHERE menu_id = $1
         ORDER BY position, created_at
-        "#
+        "#,
     )
     .bind(id)
     .fetch_all(pool)
     .await
     .unwrap_or_default();
 
-    let item_list: Vec<serde_json::Value> = items.iter().map(|(id, title, url, parent, pos, item_type, target, css_classes, icon, is_visible)| {
-        serde_json::json!({
-            "id": id,
-            "title": title,
-            "url": url,
-            "parent_id": parent,
-            "position": pos,
-            "item_type": item_type,
-            "target": target,
-            "css_classes": css_classes,
-            "icon": icon,
-            "is_visible": is_visible
-        })
-    }).collect();
+    let item_list: Vec<serde_json::Value> = items
+        .iter()
+        .map(
+            |(id, title, url, parent, pos, item_type, target, css_classes, icon, is_visible)| {
+                serde_json::json!({
+                    "id": id,
+                    "title": title,
+                    "url": url,
+                    "parent_id": parent,
+                    "position": pos,
+                    "item_type": item_type,
+                    "target": target,
+                    "css_classes": css_classes,
+                    "icon": icon,
+                    "is_visible": is_visible
+                })
+            },
+        )
+        .collect();
 
     Ok(json(serde_json::json!({ "items": item_list })))
 }
@@ -4423,13 +4722,14 @@ async fn update_menu_items_handler(
     let pool = state.db().inner();
 
     // Verify menu exists
-    let menu_exists: Option<(Uuid,)> = sqlx::query_as(
-        "SELECT id FROM menus WHERE id = $1 AND deleted_at IS NULL"
-    )
-    .bind(menu_id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to verify menu", e))?;
+    let menu_exists: Option<(Uuid,)> =
+        sqlx::query_as("SELECT id FROM menus WHERE id = $1 AND deleted_at IS NULL")
+            .bind(menu_id)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| {
+                rustpress_core::error::Error::database_with_source("Failed to verify menu", e)
+            })?;
 
     if menu_exists.is_none() {
         return Err(rustpress_core::error::Error::not_found("Menu", menu_id.to_string()).into());
@@ -4440,14 +4740,20 @@ async fn update_menu_items_handler(
         .bind(menu_id)
         .execute(pool)
         .await
-        .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to clear menu items", e))?;
+        .map_err(|e| {
+            rustpress_core::error::Error::database_with_source("Failed to clear menu items", e)
+        })?;
 
     // Insert new items
     let mut inserted_items: Vec<serde_json::Value> = Vec::new();
 
     for (idx, item) in payload.items.iter().enumerate() {
         let item_id = item.id.unwrap_or_else(Uuid::now_v7);
-        let position = if item.position == 0 { idx as i32 } else { item.position };
+        let position = if item.position == 0 {
+            idx as i32
+        } else {
+            item.position
+        };
         let url = item.url.clone().unwrap_or_default();
         let target = item.target.clone().unwrap_or_else(|| "_self".to_string());
 
@@ -4459,7 +4765,7 @@ async fn update_menu_items_handler(
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
             RETURNING id
-            "#
+            "#,
         )
         .bind(item_id)
         .bind(menu_id)
@@ -4476,7 +4782,9 @@ async fn update_menu_items_handler(
         .bind(&item.object_type)
         .fetch_one(pool)
         .await
-        .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to insert menu item", e))?;
+        .map_err(|e| {
+            rustpress_core::error::Error::database_with_source("Failed to insert menu item", e)
+        })?;
 
         inserted_items.push(serde_json::json!({
             "id": result.0,
@@ -4509,8 +4817,16 @@ fn widget_routes() -> Router<AppState> {
         .route("/", get(list_widgets_handler))
         .route("/types", get(list_widget_types_handler))
         .route("/areas", get(list_widget_areas_handler))
-        .route("/areas/:area_id", get(get_widget_area_handler).put(update_widget_area_handler))
-        .route("/:id", get(get_widget_handler).put(update_widget_handler).delete(delete_widget_handler))
+        .route(
+            "/areas/:area_id",
+            get(get_widget_area_handler).put(update_widget_area_handler),
+        )
+        .route(
+            "/:id",
+            get(get_widget_handler)
+                .put(update_widget_handler)
+                .delete(delete_widget_handler),
+        )
 }
 
 /// List available widgets
@@ -4561,14 +4877,17 @@ async fn list_widget_areas_handler(
     .await
     .unwrap_or_default();
 
-    let area_list: Vec<serde_json::Value> = areas.iter().map(|(id, slug, name, desc)| {
-        serde_json::json!({
-            "id": id,
-            "slug": slug,
-            "name": name,
-            "description": desc
+    let area_list: Vec<serde_json::Value> = areas
+        .iter()
+        .map(|(id, slug, name, desc)| {
+            serde_json::json!({
+                "id": id,
+                "slug": slug,
+                "name": name,
+                "description": desc
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(json(serde_json::json!({ "areas": area_list })))
 }
@@ -4581,7 +4900,7 @@ async fn get_widget_area_handler(
     let pool = state.db().inner();
 
     let area: Option<(Uuid, String, String)> = sqlx::query_as(
-        "SELECT id, slug, name FROM widget_areas WHERE slug = $1 AND deleted_at IS NULL"
+        "SELECT id, slug, name FROM widget_areas WHERE slug = $1 AND deleted_at IS NULL",
     )
     .bind(&area_id)
     .fetch_optional(pool)
@@ -4597,22 +4916,25 @@ async fn get_widget_area_handler(
                 FROM widgets
                 WHERE area_id = $1 AND deleted_at IS NULL
                 ORDER BY position
-                "#
+                "#,
             )
             .bind(id)
             .fetch_all(pool)
             .await
             .unwrap_or_default();
 
-            let widget_list: Vec<serde_json::Value> = widgets.iter().map(|(id, wtype, title, settings, pos)| {
-                serde_json::json!({
-                    "id": id,
-                    "type": wtype,
-                    "title": title,
-                    "settings": settings,
-                    "position": pos
+            let widget_list: Vec<serde_json::Value> = widgets
+                .iter()
+                .map(|(id, wtype, title, settings, pos)| {
+                    serde_json::json!({
+                        "id": id,
+                        "type": wtype,
+                        "title": title,
+                        "settings": settings,
+                        "position": pos
+                    })
                 })
-            }).collect();
+                .collect();
 
             Ok(json(serde_json::json!({
                 "id": id,
@@ -4632,7 +4954,9 @@ async fn update_widget_area_handler(
     State(state): State<AppState>,
     Json(payload): Json<serde_json::Value>,
 ) -> HttpResult<impl axum::response::IntoResponse> {
-    Ok(json(serde_json::json!({ "area_id": area_id, "updated": true })))
+    Ok(json(
+        serde_json::json!({ "area_id": area_id, "updated": true }),
+    ))
 }
 
 /// Get widget
@@ -4643,7 +4967,7 @@ async fn get_widget_handler(
     let pool = state.db().inner();
 
     let widget: Option<(Uuid, String, String, serde_json::Value)> = sqlx::query_as(
-        "SELECT id, widget_type, title, settings FROM widgets WHERE id = $1 AND deleted_at IS NULL"
+        "SELECT id, widget_type, title, settings FROM widgets WHERE id = $1 AND deleted_at IS NULL",
     )
     .bind(id)
     .fetch_optional(pool)
@@ -4691,7 +5015,9 @@ async fn delete_widget_handler(
         .bind(id)
         .execute(pool)
         .await
-        .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to delete widget", e))?;
+        .map_err(|e| {
+            rustpress_core::error::Error::database_with_source("Failed to delete widget", e)
+        })?;
 
     Ok(no_content())
 }
@@ -4719,16 +5045,30 @@ async fn dashboard_stats_handler(
     let pool = state.db().inner();
 
     // Get counts
-    let posts: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM posts WHERE post_type = 'post' AND deleted_at IS NULL")
-        .fetch_one(pool).await.unwrap_or((0,));
-    let pages: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM posts WHERE post_type = 'page' AND deleted_at IS NULL")
-        .fetch_one(pool).await.unwrap_or((0,));
+    let posts: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM posts WHERE post_type = 'post' AND deleted_at IS NULL",
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap_or((0,));
+    let pages: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM posts WHERE post_type = 'page' AND deleted_at IS NULL",
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap_or((0,));
     let comments: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM comments WHERE deleted_at IS NULL")
-        .fetch_one(pool).await.unwrap_or((0,));
+        .fetch_one(pool)
+        .await
+        .unwrap_or((0,));
     let users: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM users WHERE deleted_at IS NULL")
-        .fetch_one(pool).await.unwrap_or((0,));
+        .fetch_one(pool)
+        .await
+        .unwrap_or((0,));
     let media: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM media WHERE deleted_at IS NULL")
-        .fetch_one(pool).await.unwrap_or((0,));
+        .fetch_one(pool)
+        .await
+        .unwrap_or((0,));
 
     Ok(json(serde_json::json!({
         "posts": posts.0,
@@ -4749,8 +5089,12 @@ async fn posts_stats_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM posts WHERE post_type = 'post' AND deleted_at IS NULL")
-        .fetch_one(pool).await.unwrap_or((0,));
+    let total: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM posts WHERE post_type = 'post' AND deleted_at IS NULL",
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap_or((0,));
     let published: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM posts WHERE post_type = 'post' AND status = 'published' AND deleted_at IS NULL")
         .fetch_one(pool).await.unwrap_or((0,));
     let draft: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM posts WHERE post_type = 'post' AND status = 'draft' AND deleted_at IS NULL")
@@ -4790,10 +5134,17 @@ async fn content_stats_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    let published: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM posts WHERE status = 'published' AND deleted_at IS NULL")
-        .fetch_one(pool).await.unwrap_or((0,));
-    let drafts: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM posts WHERE status = 'draft' AND deleted_at IS NULL")
-        .fetch_one(pool).await.unwrap_or((0,));
+    let published: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM posts WHERE status = 'published' AND deleted_at IS NULL",
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap_or((0,));
+    let drafts: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM posts WHERE status = 'draft' AND deleted_at IS NULL")
+            .fetch_one(pool)
+            .await
+            .unwrap_or((0,));
 
     Ok(json(serde_json::json!({
         "published": published.0,
@@ -4824,8 +5175,14 @@ async fn activity_stats_handler(
 /// Email routes for SMTP configuration and testing
 fn email_routes() -> Router<AppState> {
     Router::new()
-        .route("/config", get(email_config_handler).put(email_config_update_handler))
-        .route("/settings", get(email_config_handler).put(email_config_update_handler))
+        .route(
+            "/config",
+            get(email_config_handler).put(email_config_update_handler),
+        )
+        .route(
+            "/settings",
+            get(email_config_handler).put(email_config_update_handler),
+        )
         .route("/test", post(email_test_handler))
         .route("/templates", get(email_templates_handler))
         .route("/send", post(email_send_handler))
@@ -4869,19 +5226,19 @@ async fn email_config_handler(
     if user.claims.role.as_deref() != Some("administrator") {
         return Err(rustpress_core::error::Error::authorization(
             "view email configuration",
-            "administrator"
-        ).into());
+            "administrator",
+        )
+        .into());
     }
 
     let pool = state.db().inner();
 
     // Get email settings from options table
-    let settings: Option<(serde_json::Value,)> = sqlx::query_as(
-        "SELECT option_value FROM options WHERE option_name = 'email_settings'"
-    )
-    .fetch_optional(pool)
-    .await
-    .unwrap_or(None);
+    let settings: Option<(serde_json::Value,)> =
+        sqlx::query_as("SELECT option_value FROM options WHERE option_name = 'email_settings'")
+            .fetch_optional(pool)
+            .await
+            .unwrap_or(None);
 
     let config = if let Some((value,)) = settings {
         serde_json::from_value::<EmailConfigResponse>(value).unwrap_or_else(|_| {
@@ -4924,19 +5281,19 @@ async fn email_config_update_handler(
     if user.claims.role.as_deref() != Some("administrator") {
         return Err(rustpress_core::error::Error::authorization(
             "update email configuration",
-            "administrator"
-        ).into());
+            "administrator",
+        )
+        .into());
     }
 
     let pool = state.db().inner();
 
     // Get current settings
-    let current: Option<(serde_json::Value,)> = sqlx::query_as(
-        "SELECT option_value FROM options WHERE option_name = 'email_settings'"
-    )
-    .fetch_optional(pool)
-    .await
-    .unwrap_or(None);
+    let current: Option<(serde_json::Value,)> =
+        sqlx::query_as("SELECT option_value FROM options WHERE option_name = 'email_settings'")
+            .fetch_optional(pool)
+            .await
+            .unwrap_or(None);
 
     // Build updated config (merge with existing)
     let mut config = if let Some((value,)) = current {
@@ -4992,12 +5349,14 @@ async fn email_config_update_handler(
         INSERT INTO options (option_name, option_value, autoload)
         VALUES ('email_settings', $1, true)
         ON CONFLICT (option_name) DO UPDATE SET option_value = $1
-        "#
+        "#,
     )
     .bind(&config)
     .execute(pool)
     .await
-    .map_err(|e| rustpress_core::error::Error::database_with_source("Failed to save email settings", e))?;
+    .map_err(|e| {
+        rustpress_core::error::Error::database_with_source("Failed to save email settings", e)
+    })?;
 
     // Configure the email service with new settings if it exists in AppState
     // Note: This would require adding EmailService to AppState
@@ -5024,19 +5383,19 @@ async fn email_test_handler(
     if user.claims.role.as_deref() != Some("administrator") {
         return Err(rustpress_core::error::Error::authorization(
             "send test emails",
-            "administrator"
-        ).into());
+            "administrator",
+        )
+        .into());
     }
 
     let pool = state.db().inner();
 
     // Get email settings
-    let settings: Option<(serde_json::Value,)> = sqlx::query_as(
-        "SELECT option_value FROM options WHERE option_name = 'email_settings'"
-    )
-    .fetch_optional(pool)
-    .await
-    .unwrap_or(None);
+    let settings: Option<(serde_json::Value,)> =
+        sqlx::query_as("SELECT option_value FROM options WHERE option_name = 'email_settings'")
+            .fetch_optional(pool)
+            .await
+            .unwrap_or(None);
 
     let config = if let Some((value,)) = settings {
         value
@@ -5047,7 +5406,10 @@ async fn email_test_handler(
         })));
     };
 
-    let enabled = config.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
+    let enabled = config
+        .get("enabled")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
     if !enabled {
         return Ok(json(serde_json::json!({
             "success": false,
@@ -5059,15 +5421,47 @@ async fn email_test_handler(
     use crate::services::email_service::{EmailConfig, EmailService};
 
     let email_config = EmailConfig {
-        smtp_host: config.get("smtp_host").and_then(|v| v.as_str()).unwrap_or("localhost").to_string(),
-        smtp_port: config.get("smtp_port").and_then(|v| v.as_u64()).unwrap_or(587) as u16,
-        smtp_username: config.get("smtp_username").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        smtp_password: config.get("smtp_password").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        smtp_tls: config.get("smtp_tls").and_then(|v| v.as_bool()).unwrap_or(true),
-        from_email: config.get("from_email").and_then(|v| v.as_str()).unwrap_or("noreply@localhost").to_string(),
-        from_name: config.get("from_name").and_then(|v| v.as_str()).unwrap_or("RustPress").to_string(),
-        site_name: config.get("site_name").and_then(|v| v.as_str()).unwrap_or("RustPress").to_string(),
-        site_url: config.get("site_url").and_then(|v| v.as_str()).unwrap_or("http://localhost").to_string(),
+        smtp_host: config
+            .get("smtp_host")
+            .and_then(|v| v.as_str())
+            .unwrap_or("localhost")
+            .to_string(),
+        smtp_port: config
+            .get("smtp_port")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(587) as u16,
+        smtp_username: config
+            .get("smtp_username")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
+        smtp_password: config
+            .get("smtp_password")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
+        smtp_tls: config
+            .get("smtp_tls")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true),
+        from_email: config
+            .get("from_email")
+            .and_then(|v| v.as_str())
+            .unwrap_or("noreply@localhost")
+            .to_string(),
+        from_name: config
+            .get("from_name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("RustPress")
+            .to_string(),
+        site_name: config
+            .get("site_name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("RustPress")
+            .to_string(),
+        site_url: config
+            .get("site_url")
+            .and_then(|v| v.as_str())
+            .unwrap_or("http://localhost")
+            .to_string(),
         enabled: true,
     };
 
@@ -5094,12 +5488,10 @@ async fn email_test_handler(
                 })))
             }
         }
-        Err(e) => {
-            Ok(json(serde_json::json!({
-                "success": false,
-                "error": format!("{}", e)
-            })))
-        }
+        Err(e) => Ok(json(serde_json::json!({
+            "success": false,
+            "error": format!("{}", e)
+        }))),
     }
 }
 
@@ -5112,8 +5504,9 @@ async fn email_templates_handler(
     if user.claims.role.as_deref() != Some("administrator") {
         return Err(rustpress_core::error::Error::authorization(
             "view email templates",
-            "administrator"
-        ).into());
+            "administrator",
+        )
+        .into());
     }
 
     let templates = vec![
@@ -5189,21 +5582,19 @@ async fn email_send_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     // Only admins can send emails
     if user.claims.role.as_deref() != Some("administrator") {
-        return Err(rustpress_core::error::Error::authorization(
-            "send emails",
-            "administrator"
-        ).into());
+        return Err(
+            rustpress_core::error::Error::authorization("send emails", "administrator").into(),
+        );
     }
 
     let pool = state.db().inner();
 
     // Get email settings
-    let settings: Option<(serde_json::Value,)> = sqlx::query_as(
-        "SELECT option_value FROM options WHERE option_name = 'email_settings'"
-    )
-    .fetch_optional(pool)
-    .await
-    .unwrap_or(None);
+    let settings: Option<(serde_json::Value,)> =
+        sqlx::query_as("SELECT option_value FROM options WHERE option_name = 'email_settings'")
+            .fetch_optional(pool)
+            .await
+            .unwrap_or(None);
 
     let config = if let Some((value,)) = settings {
         value
@@ -5214,7 +5605,10 @@ async fn email_send_handler(
         })));
     };
 
-    let enabled = config.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
+    let enabled = config
+        .get("enabled")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
     if !enabled {
         return Ok(json(serde_json::json!({
             "success": false,
@@ -5243,15 +5637,47 @@ async fn email_send_handler(
     };
 
     let email_config = EmailConfig {
-        smtp_host: config.get("smtp_host").and_then(|v| v.as_str()).unwrap_or("localhost").to_string(),
-        smtp_port: config.get("smtp_port").and_then(|v| v.as_u64()).unwrap_or(587) as u16,
-        smtp_username: config.get("smtp_username").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        smtp_password: config.get("smtp_password").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        smtp_tls: config.get("smtp_tls").and_then(|v| v.as_bool()).unwrap_or(true),
-        from_email: config.get("from_email").and_then(|v| v.as_str()).unwrap_or("noreply@localhost").to_string(),
-        from_name: config.get("from_name").and_then(|v| v.as_str()).unwrap_or("RustPress").to_string(),
-        site_name: config.get("site_name").and_then(|v| v.as_str()).unwrap_or("RustPress").to_string(),
-        site_url: config.get("site_url").and_then(|v| v.as_str()).unwrap_or("http://localhost").to_string(),
+        smtp_host: config
+            .get("smtp_host")
+            .and_then(|v| v.as_str())
+            .unwrap_or("localhost")
+            .to_string(),
+        smtp_port: config
+            .get("smtp_port")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(587) as u16,
+        smtp_username: config
+            .get("smtp_username")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
+        smtp_password: config
+            .get("smtp_password")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
+        smtp_tls: config
+            .get("smtp_tls")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true),
+        from_email: config
+            .get("from_email")
+            .and_then(|v| v.as_str())
+            .unwrap_or("noreply@localhost")
+            .to_string(),
+        from_name: config
+            .get("from_name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("RustPress")
+            .to_string(),
+        site_name: config
+            .get("site_name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("RustPress")
+            .to_string(),
+        site_url: config
+            .get("site_url")
+            .and_then(|v| v.as_str())
+            .unwrap_or("http://localhost")
+            .to_string(),
         enabled: true,
     };
 
@@ -5265,7 +5691,15 @@ async fn email_send_handler(
 
     let variables = payload.variables.unwrap_or_default();
 
-    match service.send_template(template, &payload.to_email, payload.to_name.as_deref(), variables).await {
+    match service
+        .send_template(
+            template,
+            &payload.to_email,
+            payload.to_name.as_deref(),
+            variables,
+        )
+        .await
+    {
         Ok(result) => {
             if result.success {
                 Ok(json(serde_json::json!({
@@ -5280,12 +5714,10 @@ async fn email_send_handler(
                 })))
             }
         }
-        Err(e) => {
-            Ok(json(serde_json::json!({
-                "success": false,
-                "error": format!("{}", e)
-            })))
-        }
+        Err(e) => Ok(json(serde_json::json!({
+            "success": false,
+            "error": format!("{}", e)
+        }))),
     }
 }
 
@@ -5293,13 +5725,13 @@ async fn email_send_handler(
 /// This returns a router with CloudflareServices state that will be merged at the api_v1 level
 pub fn build_cloudflare_router(state: &AppState) -> Router {
     use rustcloudflare::services::CloudflareServices;
-    
+
     // Get the database pool from AppState
     let db_pool = state.database.inner().clone();
-    
+
     // Create unconfigured cloudflare services (config loaded dynamically from DB)
     let services = Arc::new(CloudflareServices::new_unconfigured(db_pool));
-    
+
     // Create the cloudflare router with its own state
     rustcloudflare::api::create_router(services)
 }

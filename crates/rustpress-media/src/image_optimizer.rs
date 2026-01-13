@@ -6,7 +6,7 @@
 //! - AVIF conversion
 //! - Automatic format selection
 
-use image::{DynamicImage, ImageFormat, GenericImageView};
+use image::{DynamicImage, GenericImageView, ImageFormat};
 use std::io::Cursor;
 use std::path::Path;
 
@@ -114,7 +114,7 @@ impl ImageOptimizer {
         // AVIF encoding requires the `avif-encoder` or similar crate
         // This is a placeholder that returns an error
         Err(MediaError::UnsupportedFormat(
-            "AVIF encoding not yet implemented. Add avif-encoder crate.".to_string()
+            "AVIF encoding not yet implemented. Add avif-encoder crate.".to_string(),
         ))
     }
 
@@ -132,7 +132,12 @@ impl ImageOptimizer {
     }
 
     /// Generate thumbnail with exact dimensions (crop to fit)
-    pub fn generate_thumbnail_exact(&self, data: &[u8], width: u32, height: u32) -> MediaResult<Vec<u8>> {
+    pub fn generate_thumbnail_exact(
+        &self,
+        data: &[u8],
+        width: u32,
+        height: u32,
+    ) -> MediaResult<Vec<u8>> {
         let img = image::load_from_memory(data)?;
 
         // Calculate crop region to maintain aspect ratio
@@ -286,8 +291,10 @@ impl ImageAnalysis {
 
         let has_alpha = matches!(
             color,
-            image::ColorType::La8 | image::ColorType::La16 |
-            image::ColorType::Rgba8 | image::ColorType::Rgba16
+            image::ColorType::La8
+                | image::ColorType::La16
+                | image::ColorType::Rgba8
+                | image::ColorType::Rgba16
         );
 
         // Simple complexity estimation based on unique colors in a sample

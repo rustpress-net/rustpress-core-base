@@ -228,6 +228,9 @@ mod tests {
     #[test]
     fn test_predefined_keys() {
         assert_eq!(keys::post("123").as_str(), "post:123");
-        assert_eq!(keys::user_by_email("test@example.com").as_str(), "user:email:test@example.com");
+        assert_eq!(
+            keys::user_by_email("test@example.com").as_str(),
+            "user:email:test@example.com"
+        );
     }
 }

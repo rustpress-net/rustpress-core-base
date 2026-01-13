@@ -35,8 +35,7 @@ async fn main() {
 }
 
 fn init_tracing() {
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("warn"));
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("warn"));
 
     tracing_subscriber::registry()
         .with(filter)
@@ -53,11 +52,20 @@ async fn run(cli: Cli) -> CliResult<()> {
 
     // Commands that don't require authentication
     match &cli.command {
-        Commands::Artifacts { .. } | Commands::Auth(_) | Commands::Completion(_) | Commands::Config(_)
-        | Commands::Interactive | Commands::Health { .. } | Commands::Info | Commands::Server(_) => {}
+        Commands::Artifacts { .. }
+        | Commands::Auth(_)
+        | Commands::Completion(_)
+        | Commands::Config(_)
+        | Commands::Interactive
+        | Commands::Health { .. }
+        | Commands::Info
+        | Commands::Server(_) => {}
         // ImportExport analyze doesn't need auth
         Commands::ImportExport(ref cmd) => {
-            if !matches!(cmd.command, commands::import_export::ImportExportSubcommand::Analyze { .. }) {
+            if !matches!(
+                cmd.command,
+                commands::import_export::ImportExportSubcommand::Analyze { .. }
+            ) {
                 ctx.require_auth()?;
             }
         }
@@ -135,10 +143,19 @@ async fn run_health_check(detailed: bool) -> CliResult<()> {
             }
         }
         Ok(response) => {
-            println!("  {} Server returned {}", "✗".red(), response.status().to_string().red());
+            println!(
+                "  {} Server returned {}",
+                "✗".red(),
+                response.status().to_string().red()
+            );
         }
         Err(e) => {
-            println!("  {} Server is {} ({})", "✗".red(), "unreachable".red().bold(), e);
+            println!(
+                "  {} Server is {} ({})",
+                "✗".red(),
+                "unreachable".red().bold(),
+                e
+            );
         }
     }
 
@@ -146,7 +163,11 @@ async fn run_health_check(detailed: bool) -> CliResult<()> {
     println!();
     println!("  {} Checking authentication...", "→".cyan());
     if creds.access_token.is_some() {
-        println!("  {} Authentication token {}", "✓".green(), "present".green());
+        println!(
+            "  {} Authentication token {}",
+            "✓".green(),
+            "present".green()
+        );
 
         // Verify token is valid
         if let Some(token) = &creds.access_token {
@@ -162,7 +183,10 @@ async fn run_health_check(detailed: bool) -> CliResult<()> {
                 }
                 Ok(response) if response.status() == reqwest::StatusCode::UNAUTHORIZED => {
                     println!("  {} Token is {}", "✗".yellow(), "expired".yellow());
-                    println!("    {} Run 'rustpress auth login' to re-authenticate", "Tip:".dimmed());
+                    println!(
+                        "    {} Run 'rustpress auth login' to re-authenticate",
+                        "Tip:".dimmed()
+                    );
                 }
                 _ => {
                     println!("  {} Token validation {}", "?".yellow(), "unknown".yellow());
@@ -195,10 +219,24 @@ async fn run_system_info() -> CliResult<()> {
     let creds = CliCredentials::load();
     println!();
     println!("  {}", "Configuration:".cyan().bold());
-    println!("    {} {}", "Server URL:".green(),
-        if creds.server_url.is_empty() { "http://localhost:3080 (default)" } else { &creds.server_url });
-    println!("    {} {}", "Authenticated:".green(),
-        if creds.access_token.is_some() { "Yes".green().to_string() } else { "No".yellow().to_string() });
+    println!(
+        "    {} {}",
+        "Server URL:".green(),
+        if creds.server_url.is_empty() {
+            "http://localhost:3080 (default)"
+        } else {
+            &creds.server_url
+        }
+    );
+    println!(
+        "    {} {}",
+        "Authenticated:".green(),
+        if creds.access_token.is_some() {
+            "Yes".green().to_string()
+        } else {
+            "No".yellow().to_string()
+        }
+    );
     if let Some(email) = &creds.email {
         println!("    {} {}", "User:".green(), email);
     }
@@ -219,7 +257,10 @@ async fn run_system_info() -> CliResult<()> {
         let info_url = format!("{}/api/v1/info", server_url);
         if let Ok(response) = client
             .get(&info_url)
-            .header("Authorization", format!("Bearer {}", creds.access_token.as_ref().unwrap()))
+            .header(
+                "Authorization",
+                format!("Bearer {}", creds.access_token.as_ref().unwrap()),
+            )
             .send()
             .await
         {

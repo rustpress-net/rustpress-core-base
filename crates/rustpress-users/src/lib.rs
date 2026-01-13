@@ -43,14 +43,14 @@
 //! - [`gdpr`] - GDPR compliance: data export and account deletion
 
 // Registration & Authentication
-pub mod registration;
 pub mod password;
+pub mod registration;
 pub mod session;
 
 // Security
-pub mod two_factor;
-pub mod oauth;
 pub mod audit;
+pub mod oauth;
+pub mod two_factor;
 
 // User Profiles
 pub mod avatar;
@@ -82,8 +82,8 @@ pub mod gdpr;
 
 // Re-export commonly used types
 pub use activity::{
-    Activity, ActivityCategory, ActivityManager, ActivityQuery, ActivityType,
-    LoginHistory, LoginRecord, SuspiciousActivity,
+    Activity, ActivityCategory, ActivityManager, ActivityQuery, ActivityType, LoginHistory,
+    LoginRecord, SuspiciousActivity,
 };
 
 pub use avatar::{
@@ -132,14 +132,12 @@ pub use profile::{
 };
 
 pub use registration::{
-    FieldValidation, FieldVisibility, RegistrationField, RegistrationFieldType,
-    RegistrationForm, RegistrationManager, RegistrationSubmission, RegistrationValidator,
-    SubmissionStatus, ValidationError,
+    FieldValidation, FieldVisibility, RegistrationField, RegistrationFieldType, RegistrationForm,
+    RegistrationManager, RegistrationSubmission, RegistrationValidator, SubmissionStatus,
+    ValidationError,
 };
 
-pub use roles::{
-    Capability, Role, RoleManager, UserRole,
-};
+pub use roles::{Capability, Role, RoleManager, UserRole};
 
 pub use social::{
     AuthorArchiveSettings, AuthorMeta, AuthorPage, AuthorStats, Badge, BadgeManager, BadgeTier,
@@ -149,28 +147,26 @@ pub use social::{
 
 // New security modules
 pub use password::{
-    PasswordPolicy, PasswordValidator, PasswordValidationResult, PasswordStrength,
-    PasswordError, PasswordHistoryManager, PasswordExpiration,
-    hash_password, verify_password, generate_password,
+    generate_password, hash_password, verify_password, PasswordError, PasswordExpiration,
+    PasswordHistoryManager, PasswordPolicy, PasswordStrength, PasswordValidationResult,
+    PasswordValidator,
 };
 
-pub use session::{
-    Session, SessionToken, SessionManager, SessionSettings, DeviceInfo,
-};
+pub use session::{DeviceInfo, Session, SessionManager, SessionSettings, SessionToken};
 
 pub use two_factor::{
-    TwoFactorManager, TwoFactorStatus, TwoFactorMethod, TotpSetup,
-    TrustedDevice, VerificationResult,
+    TotpSetup, TrustedDevice, TwoFactorManager, TwoFactorMethod, TwoFactorStatus,
+    VerificationResult,
 };
 
 pub use oauth::{
-    OAuthManager, OAuthProvider, OAuthProviderConfig, OAuthState, OAuthTokens,
-    OAuthUserProfile, OAuthSettings, LinkedAccount,
+    LinkedAccount, OAuthManager, OAuthProvider, OAuthProviderConfig, OAuthSettings, OAuthState,
+    OAuthTokens, OAuthUserProfile,
 };
 
 pub use audit::{
-    AuditManager, AuditEntry, AuditAction, AuditCategory, AuditSeverity,
-    AuditQuery, AuditStats, RetentionPolicy as AuditRetentionPolicy,
+    AuditAction, AuditCategory, AuditEntry, AuditManager, AuditQuery, AuditSeverity, AuditStats,
+    RetentionPolicy as AuditRetentionPolicy,
 };
 
 /// Prelude module for convenient imports
@@ -190,11 +186,11 @@ pub mod prelude {
     pub use crate::social::{BadgeManager, FollowManager, InboxManager};
 
     // Security modules
-    pub use crate::password::{PasswordPolicy, PasswordValidator};
-    pub use crate::session::{SessionManager, Session};
-    pub use crate::two_factor::{TwoFactorManager, TwoFactorStatus};
+    pub use crate::audit::{AuditAction, AuditEntry, AuditManager};
     pub use crate::oauth::{OAuthManager, OAuthProvider};
-    pub use crate::audit::{AuditManager, AuditEntry, AuditAction};
+    pub use crate::password::{PasswordPolicy, PasswordValidator};
+    pub use crate::session::{Session, SessionManager};
+    pub use crate::two_factor::{TwoFactorManager, TwoFactorStatus};
 }
 
 #[cfg(test)]

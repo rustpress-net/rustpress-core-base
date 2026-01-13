@@ -293,7 +293,10 @@ pub trait WebAuthnStore: Send + Sync {
 
     // Registration challenges
     async fn store_registration_challenge(&self, challenge: &RegistrationChallenge) -> Result<()>;
-    async fn get_registration_challenge(&self, challenge: &str) -> Result<Option<RegistrationChallenge>>;
+    async fn get_registration_challenge(
+        &self,
+        challenge: &str,
+    ) -> Result<Option<RegistrationChallenge>>;
     async fn delete_registration_challenge(&self, id: Uuid) -> Result<()>;
 
     // Authentication challenges
@@ -340,7 +343,10 @@ impl<S: WebAuthnStore> WebAuthnManager<S> {
         if count >= self.config.max_credentials_per_user {
             return Err(Error::InvalidInput {
                 field: "credentials".to_string(),
-                message: format!("Maximum {} credentials per user", self.config.max_credentials_per_user),
+                message: format!(
+                    "Maximum {} credentials per user",
+                    self.config.max_credentials_per_user
+                ),
             });
         }
 
@@ -361,7 +367,9 @@ impl<S: WebAuthnStore> WebAuthnManager<S> {
             expires_at: now + chrono::Duration::seconds(self.config.challenge_timeout_secs as i64),
         };
 
-        self.store.store_registration_challenge(&reg_challenge).await?;
+        self.store
+            .store_registration_challenge(&reg_challenge)
+            .await?;
 
         // Get existing credentials to exclude
         let existing = self.store.get_user_credentials(user_id).await?;
@@ -388,7 +396,7 @@ impl<S: WebAuthnStore> WebAuthnManager<S> {
             pub_key_cred_params: vec![
                 PublicKeyCredentialParameters {
                     cred_type: "public-key".to_string(),
-                    alg: -7,  // ES256
+                    alg: -7, // ES256
                 },
                 PublicKeyCredentialParameters {
                     cred_type: "public-key".to_string(),
@@ -403,18 +411,21 @@ impl<S: WebAuthnStore> WebAuthnManager<S> {
                     match a {
                         AuthenticatorAttachment::Platform => "platform",
                         AuthenticatorAttachment::CrossPlatform => "cross-platform",
-                    }.to_string()
+                    }
+                    .to_string()
                 }),
                 resident_key: match self.config.resident_key {
                     ResidentKeyRequirement::Discouraged => "discouraged",
                     ResidentKeyRequirement::Preferred => "preferred",
                     ResidentKeyRequirement::Required => "required",
-                }.to_string(),
+                }
+                .to_string(),
                 user_verification: if self.config.require_user_verification {
                     "required"
                 } else {
                     "preferred"
-                }.to_string(),
+                }
+                .to_string(),
             }),
         };
 
@@ -429,7 +440,8 @@ impl<S: WebAuthnStore> WebAuthnManager<S> {
         name: &str,
     ) -> Result<WebAuthnCredential> {
         // Get and validate challenge
-        let challenge = self.store
+        let challenge = self
+            .store
             .get_registration_challenge(challenge_str)
             .await?
             .ok_or_else(|| Error::Authentication {
@@ -459,7 +471,8 @@ impl<S: WebAuthnStore> WebAuthnManager<S> {
             name: name.to_string(),
             aaguid: None,
             sign_count: 0,
-            credential_type: response.authenticator_attachment
+            credential_type: response
+                .authenticator_attachment
                 .as_ref()
                 .map(|a| {
                     if a == "platform" {
@@ -480,7 +493,9 @@ impl<S: WebAuthnStore> WebAuthnManager<S> {
         };
 
         self.store.store_credential(&credential).await?;
-        self.store.delete_registration_challenge(challenge.id).await?;
+        self.store
+            .delete_registration_challenge(challenge.id)
+            .await?;
 
         Ok(credential)
     }
@@ -539,7 +554,8 @@ impl<S: WebAuthnStore> WebAuthnManager<S> {
                 "required"
             } else {
                 "preferred"
-            }.to_string(),
+            }
+            .to_string(),
         };
 
         Ok((auth_challenge, options))
@@ -552,7 +568,8 @@ impl<S: WebAuthnStore> WebAuthnManager<S> {
         response: &AuthenticationResponse,
     ) -> Result<WebAuthnCredential> {
         // Get and validate challenge
-        let challenge = self.store
+        let challenge = self
+            .store
             .get_auth_challenge(challenge_str)
             .await?
             .ok_or_else(|| Error::Authentication {
@@ -566,7 +583,8 @@ impl<S: WebAuthnStore> WebAuthnManager<S> {
         }
 
         // Get credential
-        let mut credential = self.store
+        let mut credential = self
+            .store
             .get_credential(&response.id)
             .await?
             .ok_or_else(|| Error::Authentication {
@@ -602,7 +620,10 @@ impl<S: WebAuthnStore> WebAuthnManager<S> {
 
     /// Delete a credential
     pub async fn delete_credential(&self, user_id: Uuid, credential_id: Uuid) -> Result<()> {
-        let cred = self.store.get_credential(&credential_id.to_string()).await?;
+        let cred = self
+            .store
+            .get_credential(&credential_id.to_string())
+            .await?;
         if let Some(c) = cred {
             if c.user_id != user_id {
                 return Err(Error::Authorization {
@@ -616,7 +637,11 @@ impl<S: WebAuthnStore> WebAuthnManager<S> {
 
     /// Rename a credential
     pub async fn rename_credential(&self, credential_id: Uuid, new_name: &str) -> Result<()> {
-        if let Some(mut cred) = self.store.get_credential(&credential_id.to_string()).await? {
+        if let Some(mut cred) = self
+            .store
+            .get_credential(&credential_id.to_string())
+            .await?
+        {
             cred.name = new_name.to_string();
             self.store.update_credential(&cred).await?;
         }
@@ -687,7 +712,11 @@ impl WebAuthnStore for InMemoryWebAuthnStore {
             message: "Lock poisoned".to_string(),
             request_id: None,
         })?;
-        Ok(creds.values().filter(|c| c.user_id == user_id).cloned().collect())
+        Ok(creds
+            .values()
+            .filter(|c| c.user_id == user_id)
+            .cloned()
+            .collect())
     }
 
     async fn update_credential(&self, credential: &WebAuthnCredential) -> Result<()> {
@@ -713,31 +742,46 @@ impl WebAuthnStore for InMemoryWebAuthnStore {
             message: "Lock poisoned".to_string(),
             request_id: None,
         })?;
-        Ok(creds.values().filter(|c| c.user_id == user_id && c.is_active).count())
+        Ok(creds
+            .values()
+            .filter(|c| c.user_id == user_id && c.is_active)
+            .count())
     }
 
     async fn store_registration_challenge(&self, challenge: &RegistrationChallenge) -> Result<()> {
-        let mut challenges = self.registration_challenges.write().map_err(|_| Error::Internal {
-            message: "Lock poisoned".to_string(),
-            request_id: None,
-        })?;
+        let mut challenges = self
+            .registration_challenges
+            .write()
+            .map_err(|_| Error::Internal {
+                message: "Lock poisoned".to_string(),
+                request_id: None,
+            })?;
         challenges.insert(challenge.challenge.clone(), challenge.clone());
         Ok(())
     }
 
-    async fn get_registration_challenge(&self, challenge: &str) -> Result<Option<RegistrationChallenge>> {
-        let challenges = self.registration_challenges.read().map_err(|_| Error::Internal {
-            message: "Lock poisoned".to_string(),
-            request_id: None,
-        })?;
+    async fn get_registration_challenge(
+        &self,
+        challenge: &str,
+    ) -> Result<Option<RegistrationChallenge>> {
+        let challenges = self
+            .registration_challenges
+            .read()
+            .map_err(|_| Error::Internal {
+                message: "Lock poisoned".to_string(),
+                request_id: None,
+            })?;
         Ok(challenges.get(challenge).cloned())
     }
 
     async fn delete_registration_challenge(&self, id: Uuid) -> Result<()> {
-        let mut challenges = self.registration_challenges.write().map_err(|_| Error::Internal {
-            message: "Lock poisoned".to_string(),
-            request_id: None,
-        })?;
+        let mut challenges = self
+            .registration_challenges
+            .write()
+            .map_err(|_| Error::Internal {
+                message: "Lock poisoned".to_string(),
+                request_id: None,
+            })?;
         challenges.retain(|_, c| c.id != id);
         Ok(())
     }
@@ -773,10 +817,13 @@ impl WebAuthnStore for InMemoryWebAuthnStore {
         let mut count = 0;
 
         {
-            let mut challenges = self.registration_challenges.write().map_err(|_| Error::Internal {
-                message: "Lock poisoned".to_string(),
-                request_id: None,
-            })?;
+            let mut challenges =
+                self.registration_challenges
+                    .write()
+                    .map_err(|_| Error::Internal {
+                        message: "Lock poisoned".to_string(),
+                        request_id: None,
+                    })?;
             let before = challenges.len();
             challenges.retain(|_, c| c.expires_at > now);
             count += (before - challenges.len()) as u64;
@@ -826,10 +873,7 @@ mod tests {
         let store = InMemoryWebAuthnStore::new();
         let manager = WebAuthnManager::new(store, WebAuthnConfig::default());
 
-        let (challenge, options) = manager
-            .begin_authentication(None)
-            .await
-            .unwrap();
+        let (challenge, options) = manager.begin_authentication(None).await.unwrap();
 
         assert!(!challenge.challenge.is_empty());
         assert!(options.allow_credentials.is_empty());

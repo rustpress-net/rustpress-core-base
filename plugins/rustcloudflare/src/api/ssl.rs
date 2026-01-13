@@ -1,13 +1,13 @@
 //! SSL/TLS API handlers
 
+use crate::error::CloudflareResult;
+use crate::services::CloudflareServices;
 use axum::{
     extract::{Path, State},
     Json,
 };
 use serde::Deserialize;
 use std::sync::Arc;
-use crate::error::CloudflareResult;
-use crate::services::CloudflareServices;
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateSslModeRequest {
@@ -166,9 +166,11 @@ pub async fn delete_certificate(
 fn get_ssl_mode_description(mode: &str) -> &'static str {
     match mode {
         "off" => "Off - No encryption between visitor and Cloudflare, and no encryption to origin",
-        "flexible" => "Flexible - Encrypts traffic between visitor and Cloudflare, but not to origin",
+        "flexible" => {
+            "Flexible - Encrypts traffic between visitor and Cloudflare, but not to origin"
+        }
         "full" => "Full - Encrypts end-to-end, but doesn't validate origin certificate",
         "strict" => "Full (Strict) - Encrypts end-to-end and validates origin certificate",
-        _ => "Unknown SSL mode"
+        _ => "Unknown SSL mode",
     }
 }

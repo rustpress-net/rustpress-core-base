@@ -30,17 +30,11 @@ impl Default for Priority {
 
 /// Type alias for async action handlers
 pub type ActionHandler = Arc<
-    dyn Fn(Arc<dyn Any + Send + Sync>) -> Pin<Box<dyn Future<Output = ()> + Send>>
-        + Send
-        + Sync,
+    dyn Fn(Arc<dyn Any + Send + Sync>) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync,
 >;
 
 /// Type alias for async filter handlers
-pub type FilterHandler<T> = Arc<
-    dyn Fn(T) -> Pin<Box<dyn Future<Output = T> + Send>>
-        + Send
-        + Sync,
->;
+pub type FilterHandler<T> = Arc<dyn Fn(T) -> Pin<Box<dyn Future<Output = T> + Send>> + Send + Sync>;
 
 /// A registered action callback
 struct ActionCallback {
@@ -317,11 +311,15 @@ impl Clone for Action {
     fn clone(&self) -> Self {
         Self {
             name: self.name.clone(),
-            callbacks: self.callbacks.iter().map(|cb| ActionCallback {
-                handler: cb.handler.clone(),
-                priority: cb.priority,
-                plugin_id: cb.plugin_id.clone(),
-            }).collect(),
+            callbacks: self
+                .callbacks
+                .iter()
+                .map(|cb| ActionCallback {
+                    handler: cb.handler.clone(),
+                    priority: cb.priority,
+                    plugin_id: cb.plugin_id.clone(),
+                })
+                .collect(),
         }
     }
 }

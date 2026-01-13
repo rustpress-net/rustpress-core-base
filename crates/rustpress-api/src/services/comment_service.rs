@@ -3,8 +3,8 @@
 use chrono::{DateTime, Utc};
 use rustpress_core::error::{Error, Result};
 use rustpress_database::repository::comments::{
-    CommentRow, CommentStatus, CommentWithAuthor, CommentsRepository,
-    CreateComment, UpdateComment, CommentListParams,
+    CommentListParams, CommentRow, CommentStatus, CommentWithAuthor, CommentsRepository,
+    CreateComment, UpdateComment,
 };
 use rustpress_database::repository::options::OptionsRepository;
 use serde::{Deserialize, Serialize};
@@ -118,7 +118,8 @@ impl From<CommentWithAuthor> for CommentResponse {
     fn from(row: CommentWithAuthor) -> Self {
         let author = CommentAuthorResponse {
             id: row.user_id,
-            name: row.user_display_name
+            name: row
+                .user_display_name
                 .or(row.author_name)
                 .unwrap_or_else(|| "Anonymous".to_string()),
             email: row.author_email,
@@ -155,7 +156,10 @@ pub struct CommentService {
 impl CommentService {
     /// Create a new comment service
     pub fn new(pool: PgPool) -> Self {
-        Self { pool, site_id: None }
+        Self {
+            pool,
+            site_id: None,
+        }
     }
 
     /// Set the site ID for multi-site support
@@ -224,17 +228,29 @@ impl CommentService {
 
         // Registered users: check if they have previously approved comments
         if let Some(uid) = user_id {
-            if self.repo().has_approved_comment_by_user(uid).await.unwrap_or(false) {
+            if self
+                .repo()
+                .has_approved_comment_by_user(uid)
+                .await
+                .unwrap_or(false)
+            {
                 return CommentStatus::Approved;
             }
         }
 
         // Guest users: check if their email has previously approved comments
-        let auto_approve_previous = self.get_bool_option("comment_previously_approved", true).await;
+        let auto_approve_previous = self
+            .get_bool_option("comment_previously_approved", true)
+            .await;
         if auto_approve_previous {
             if let Some(email) = author_email {
                 if !email.trim().is_empty() {
-                    if self.repo().has_approved_comment_by_email(email).await.unwrap_or(false) {
+                    if self
+                        .repo()
+                        .has_approved_comment_by_email(email)
+                        .await
+                        .unwrap_or(false)
+                    {
                         return CommentStatus::Approved;
                     }
                 }
@@ -260,10 +276,20 @@ impl CommentService {
 
         // For guest comments, require name and email
         if user_id.is_none() {
-            if request.author_name.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
+            if request
+                .author_name
+                .as_ref()
+                .map(|s| s.trim().is_empty())
+                .unwrap_or(true)
+            {
                 return Err(Error::validation("Name is required for guest comments"));
             }
-            if request.author_email.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
+            if request
+                .author_email
+                .as_ref()
+                .map(|s| s.trim().is_empty())
+                .unwrap_or(true)
+            {
                 return Err(Error::validation("Email is required for guest comments"));
             }
         }
@@ -272,11 +298,9 @@ impl CommentService {
         let spam_score = self.calculate_spam_score(&request, &ip, &user_agent);
 
         // Determine initial status based on settings and author history
-        let initial_status = self.determine_initial_status(
-            spam_score,
-            user_id,
-            &request.author_email,
-        ).await;
+        let initial_status = self
+            .determine_initial_status(spam_score, user_id, &request.author_email)
+            .await;
 
         // Render content to HTML (basic for now)
         let content_html = Some(self.render_content(&request.content));
@@ -303,7 +327,10 @@ impl CommentService {
                 "score": spam_score,
                 "auto_detected": true
             });
-            let _ = self.repo().update_spam_score(comment.id, spam_score, Some(reasons)).await;
+            let _ = self
+                .repo()
+                .update_spam_score(comment.id, spam_score, Some(reasons))
+                .await;
         }
 
         Ok(CommentResponse::from(comment))
@@ -350,7 +377,11 @@ impl CommentService {
     }
 
     /// Update a comment
-    pub async fn update_comment(&self, id: Uuid, request: UpdateCommentRequest) -> Result<CommentResponse> {
+    pub async fn update_comment(
+        &self,
+        id: Uuid,
+        request: UpdateCommentRequest,
+    ) -> Result<CommentResponse> {
         let updates = UpdateComment {
             content: request.content.clone(),
             content_html: request.content.map(|c| self.render_content(&c)),
@@ -368,19 +399,28 @@ impl CommentService {
 
     /// Approve a comment
     pub async fn approve_comment(&self, id: Uuid, moderator_id: Uuid) -> Result<CommentResponse> {
-        let comment = self.repo().update_status(id, CommentStatus::Approved, moderator_id, None).await?;
+        let comment = self
+            .repo()
+            .update_status(id, CommentStatus::Approved, moderator_id, None)
+            .await?;
         Ok(CommentResponse::from(comment))
     }
 
     /// Mark a comment as spam
     pub async fn mark_as_spam(&self, id: Uuid, moderator_id: Uuid) -> Result<CommentResponse> {
-        let comment = self.repo().update_status(id, CommentStatus::Spam, moderator_id, None).await?;
+        let comment = self
+            .repo()
+            .update_status(id, CommentStatus::Spam, moderator_id, None)
+            .await?;
         Ok(CommentResponse::from(comment))
     }
 
     /// Move a comment to trash
     pub async fn trash_comment(&self, id: Uuid, moderator_id: Uuid) -> Result<CommentResponse> {
-        let comment = self.repo().update_status(id, CommentStatus::Trash, moderator_id, None).await?;
+        let comment = self
+            .repo()
+            .update_status(id, CommentStatus::Trash, moderator_id, None)
+            .await?;
         Ok(CommentResponse::from(comment))
     }
 
@@ -410,7 +450,8 @@ impl CommentService {
 
     /// Get comments for a post as a tree
     pub async fn get_comment_tree(&self, post_id: Uuid) -> Result<Vec<CommentTreeNode>> {
-        let comments = self.repo()
+        let comments = self
+            .repo()
             .list_by_post_with_authors(post_id, Some(CommentStatus::Approved))
             .await?;
 
@@ -492,7 +533,14 @@ fn calculate_spam_score_impl(
     let content = &request.content;
 
     // Check for common spam patterns
-    let spam_keywords = ["viagra", "casino", "lottery", "click here", "buy now", "free money"];
+    let spam_keywords = [
+        "viagra",
+        "casino",
+        "lottery",
+        "click here",
+        "buy now",
+        "free money",
+    ];
     let content_lower = content.to_lowercase();
     for keyword in &spam_keywords {
         if content_lower.contains(keyword) {
@@ -523,7 +571,6 @@ fn calculate_spam_score_impl(
 }
 
 impl CommentService {
-
     /// Render markdown content to HTML
     /// Supports limited markdown for comments: bold, italic, links, code, lists
     fn render_content(&self, content: &str) -> String {
@@ -544,7 +591,9 @@ impl CommentService {
                 // Block raw HTML
                 Event::Html(html) => {
                     // Escape any HTML tags
-                    Some(Event::Text(html.replace('<', "&lt;").replace('>', "&gt;").into()))
+                    Some(Event::Text(
+                        html.replace('<', "&lt;").replace('>', "&gt;").into(),
+                    ))
                 }
                 // Pass through other events
                 other => Some(other),

@@ -2,8 +2,8 @@
 //!
 //! Configuration for edge/CDN caching with proper cache directives.
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Edge caching configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,20 +33,14 @@ pub struct EdgeCacheConfig {
 impl Default for EdgeCacheConfig {
     fn default() -> Self {
         Self {
-            static_ttl: 31536000,  // 1 year
-            dynamic_ttl: 3600,     // 1 hour
-            api_ttl: 60,           // 1 minute
+            static_ttl: 31536000,          // 1 year
+            dynamic_ttl: 3600,             // 1 hour
+            api_ttl: 60,                   // 1 minute
             stale_while_revalidate: 86400, // 1 day
             stale_if_error: 604800,        // 1 week
             surrogate_keys: true,
-            vary_headers: vec![
-                "Accept-Encoding".to_string(),
-                "Accept".to_string(),
-            ],
-            bypass_cookies: vec![
-                "wordpress_logged_in".to_string(),
-                "session".to_string(),
-            ],
+            vary_headers: vec!["Accept-Encoding".to_string(), "Accept".to_string()],
+            bypass_cookies: vec!["wordpress_logged_in".to_string(), "session".to_string()],
             no_cache_paths: vec![
                 "/wp-admin".to_string(),
                 "/admin".to_string(),
@@ -137,7 +131,10 @@ impl EdgeCacheHeaders {
         }
 
         // Check no-cache paths
-        self.config.no_cache_paths.iter().any(|p| path.starts_with(p))
+        self.config
+            .no_cache_paths
+            .iter()
+            .any(|p| path.starts_with(p))
     }
 
     fn find_matching_rule(&self, path: &str) -> Option<EdgeCacheRule> {
@@ -164,12 +161,8 @@ impl EdgeCacheHeaders {
                     ttl, ttl, self.config.stale_while_revalidate, self.config.stale_if_error
                 )
             }
-            CacheBehavior::Bypass => {
-                "no-store, no-cache, must-revalidate".to_string()
-            }
-            CacheBehavior::Revalidate => {
-                "no-cache, must-revalidate".to_string()
-            }
+            CacheBehavior::Bypass => "no-store, no-cache, must-revalidate".to_string(),
+            CacheBehavior::Revalidate => "no-cache, must-revalidate".to_string(),
             CacheBehavior::Private => {
                 let ttl = rule.ttl.unwrap_or(3600);
                 format!("private, max-age={}", ttl)
@@ -190,10 +183,7 @@ impl EdgeCacheHeaders {
 
         // Add surrogate keys
         if self.config.surrogate_keys && !rule.surrogate_keys.is_empty() {
-            headers.insert(
-                "Surrogate-Key".to_string(),
-                rule.surrogate_keys.join(" "),
-            );
+            headers.insert("Surrogate-Key".to_string(), rule.surrogate_keys.join(" "));
         }
 
         headers
@@ -210,10 +200,7 @@ impl EdgeCacheHeaders {
             (self.config.dynamic_ttl, false)
         };
 
-        let mut cache_control = format!(
-            "public, max-age={}, s-maxage={}",
-            ttl, ttl
-        );
+        let mut cache_control = format!("public, max-age={}, s-maxage={}", ttl, ttl);
 
         if is_immutable {
             cache_control.push_str(", immutable");
@@ -259,16 +246,14 @@ impl EdgeCacheHeaders {
 
         headers.insert(
             "Surrogate-Control".to_string(),
-            format!("max-age={}, stale-while-revalidate={}, stale-if-error={}",
+            format!(
+                "max-age={}, stale-while-revalidate={}, stale-if-error={}",
                 ttl, self.config.stale_while_revalidate, self.config.stale_if_error
             ),
         );
 
         if !surrogate_keys.is_empty() {
-            headers.insert(
-                "Surrogate-Key".to_string(),
-                surrogate_keys.join(" "),
-            );
+            headers.insert("Surrogate-Key".to_string(), surrogate_keys.join(" "));
         }
 
         headers
@@ -528,7 +513,10 @@ mod tests {
     fn test_surrogate_keys() {
         assert_eq!(SurrogateKeyGenerator::post(123), "post-123");
         assert_eq!(SurrogateKeyGenerator::post_type("page"), "type-page");
-        assert_eq!(SurrogateKeyGenerator::term("category", 5), "term-category-5");
+        assert_eq!(
+            SurrogateKeyGenerator::term("category", 5),
+            "term-category-5"
+        );
     }
 
     #[test]
@@ -536,7 +524,8 @@ mod tests {
         let config = EdgeCacheConfig::default();
         let generator = EdgeCacheHeaders::new(config);
 
-        let headers = generator.generate_headers("/assets/main.js", "application/javascript", false);
+        let headers =
+            generator.generate_headers("/assets/main.js", "application/javascript", false);
         assert!(headers.get("Cache-Control").unwrap().contains("max-age="));
     }
 }

@@ -4,6 +4,7 @@
 //! This module handles database connection setup, schema installation,
 //! and initial configuration when RustPress is first started.
 
+use argon2::password_hash::rand_core::{OsRng, RngCore};
 use axum::{
     extract::{Json, State},
     response::Html,
@@ -20,7 +21,6 @@ use std::time::Duration;
 use tokio::net::TcpListener;
 use tokio::sync::RwLock;
 use tracing::{error, info};
-use argon2::password_hash::rand_core::{OsRng, RngCore};
 
 /// Setup wizard state
 #[derive(Clone)]
@@ -128,12 +128,10 @@ pub fn needs_setup(config_path: &PathBuf) -> bool {
     }
 
     match fs::read_to_string(config_path) {
-        Ok(content) => {
-            match toml::from_str::<RustPressConfig>(&content) {
-                Ok(config) => !config.setup_complete,
-                Err(_) => true,
-            }
-        }
+        Ok(content) => match toml::from_str::<RustPressConfig>(&content) {
+            Ok(config) => !config.setup_complete,
+            Err(_) => true,
+        },
         Err(_) => true,
     }
 }
@@ -176,15 +174,16 @@ async fn setup_status(State(state): State<SetupState>) -> Json<serde_json::Value
 }
 
 /// Test database connection
-async fn test_connection(
-    Json(req): Json<TestConnectionRequest>,
-) -> Json<TestConnectionResponse> {
+async fn test_connection(Json(req): Json<TestConnectionRequest>) -> Json<TestConnectionResponse> {
     let database_url = format!(
         "postgres://{}:{}@{}:{}/{}",
         req.username, req.password, req.host, req.port, req.database
     );
 
-    info!("Testing database connection to {}:{}/{}", req.host, req.port, req.database);
+    info!(
+        "Testing database connection to {}:{}/{}",
+        req.host, req.port, req.database
+    );
 
     match PgPoolOptions::new()
         .max_connections(1)
@@ -200,7 +199,10 @@ async fn test_connection(
                     Json(TestConnectionResponse {
                         success: true,
                         message: "Connection successful!".to_string(),
-                        details: Some(format!("Connected to PostgreSQL at {}:{}", req.host, req.port)),
+                        details: Some(format!(
+                            "Connected to PostgreSQL at {}:{}",
+                            req.host, req.port
+                        )),
                     })
                 }
                 Err(e) => {
@@ -278,16 +280,12 @@ async fn install_schema(
 
     // Save configuration
     let config = RustPressConfig {
-        database: DatabaseSection {
-            database_url,
-        },
+        database: DatabaseSection { database_url },
         server: ServerSection {
             host: "127.0.0.1".to_string(),
             port: 8080,
         },
-        auth: AuthSection {
-            jwt_secret,
-        },
+        auth: AuthSection { jwt_secret },
         setup_complete: true,
     };
 
@@ -304,7 +302,9 @@ async fn install_schema(
     info!("RustPress setup completed successfully!");
     Json(InstallSchemaResponse {
         success: true,
-        message: "RustPress has been installed successfully! The server will restart automatically.".to_string(),
+        message:
+            "RustPress has been installed successfully! The server will restart automatically."
+                .to_string(),
     })
 }
 
@@ -400,17 +400,23 @@ async fn run_schema_installation(
 }
 
 /// Run the setup wizard server
-pub async fn run_setup_wizard(addr: SocketAddr, config_path: PathBuf) -> Result<bool, Box<dyn std::error::Error>> {
+pub async fn run_setup_wizard(
+    addr: SocketAddr,
+    config_path: PathBuf,
+) -> Result<bool, Box<dyn std::error::Error>> {
     let state = SetupState::new(config_path);
     let setup_complete = state.setup_complete.clone();
 
     let router = create_setup_router(state);
 
     info!("Starting RustPress Setup Wizard on http://{}", addr);
-    info!("Open your browser and navigate to http://{} to complete setup", addr);
+    info!(
+        "Open your browser and navigate to http://{} to complete setup",
+        addr
+    );
 
     let listener = TcpListener::bind(addr).await?;
-    
+
     // Create a shutdown signal that triggers when setup is complete
     let setup_complete_clone = setup_complete.clone();
     let shutdown_signal = async move {
@@ -421,18 +427,18 @@ pub async fn run_setup_wizard(addr: SocketAddr, config_path: PathBuf) -> Result<
             }
         }
     };
-    
+
     // Run the server with graceful shutdown
     axum::serve(listener, router)
         .with_graceful_shutdown(shutdown_signal)
         .await?;
-    
+
     // Check if setup was completed
     let completed = *setup_complete.read().await;
     if completed {
         info!("Setup complete, shutting down setup wizard...");
     }
-    
+
     Ok(completed)
 }
 

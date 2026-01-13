@@ -5,7 +5,7 @@ use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
 use rustpress_core::error::{Error, Result};
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::sync::RwLock;
 use uuid::Uuid;
@@ -80,7 +80,11 @@ impl VerificationToken {
 #[async_trait::async_trait]
 pub trait TokenStore: Send + Sync {
     async fn store_token(&self, token: &SecureToken) -> Result<()>;
-    async fn get_token(&self, token_hash: &str, token_type: TokenType) -> Result<Option<SecureToken>>;
+    async fn get_token(
+        &self,
+        token_hash: &str,
+        token_type: TokenType,
+    ) -> Result<Option<SecureToken>>;
     async fn mark_used(&self, id: Uuid) -> Result<()>;
     async fn invalidate_user_tokens(&self, user_id: Uuid, token_type: TokenType) -> Result<u64>;
     async fn cleanup_expired(&self) -> Result<u64>;
@@ -127,9 +131,7 @@ impl<S: TokenStore> TokenManager<S> {
     /// Generate a secure random token
     fn generate_token(&self) -> String {
         let mut rng = rand::thread_rng();
-        let bytes: Vec<u8> = (0..self.config.token_length)
-            .map(|_| rng.gen())
-            .collect();
+        let bytes: Vec<u8> = (0..self.config.token_length).map(|_| rng.gen()).collect();
         base64_url_encode(&bytes)
     }
 
@@ -150,7 +152,9 @@ impl<S: TokenStore> TokenManager<S> {
     ) -> Result<(String, PasswordResetToken)> {
         // Optionally invalidate previous tokens
         if self.config.invalidate_previous {
-            self.store.invalidate_user_tokens(user_id, TokenType::PasswordReset).await?;
+            self.store
+                .invalidate_user_tokens(user_id, TokenType::PasswordReset)
+                .await?;
         }
 
         let token = self.generate_token();
@@ -197,7 +201,8 @@ impl<S: TokenStore> TokenManager<S> {
     pub async fn verify_password_reset(&self, token: &str) -> Result<SecureToken> {
         let token_hash = Self::hash_token(token);
 
-        let stored = self.store
+        let stored = self
+            .store
             .get_token(&token_hash, TokenType::PasswordReset)
             .await?
             .ok_or_else(|| Error::InvalidToken {
@@ -232,7 +237,9 @@ impl<S: TokenStore> TokenManager<S> {
     ) -> Result<(String, VerificationToken)> {
         // Invalidate previous verification tokens for this user
         if self.config.invalidate_previous {
-            self.store.invalidate_user_tokens(user_id, TokenType::EmailVerification).await?;
+            self.store
+                .invalidate_user_tokens(user_id, TokenType::EmailVerification)
+                .await?;
         }
 
         let token = self.generate_token();
@@ -274,7 +281,8 @@ impl<S: TokenStore> TokenManager<S> {
     pub async fn verify_email(&self, token: &str) -> Result<SecureToken> {
         let token_hash = Self::hash_token(token);
 
-        let stored = self.store
+        let stored = self
+            .store
             .get_token(&token_hash, TokenType::EmailVerification)
             .await?
             .ok_or_else(|| Error::InvalidToken {
@@ -361,13 +369,18 @@ impl TokenStore for InMemoryTokenStore {
         Ok(())
     }
 
-    async fn get_token(&self, token_hash: &str, token_type: TokenType) -> Result<Option<SecureToken>> {
+    async fn get_token(
+        &self,
+        token_hash: &str,
+        token_type: TokenType,
+    ) -> Result<Option<SecureToken>> {
         let tokens = self.tokens.read().map_err(|_| Error::Internal {
             message: "Lock poisoned".to_string(),
             request_id: None,
         })?;
 
-        Ok(tokens.get(token_hash)
+        Ok(tokens
+            .get(token_hash)
             .filter(|t| t.token_type == token_type)
             .cloned())
     }

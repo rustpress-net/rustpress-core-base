@@ -50,7 +50,7 @@ impl AudioService {
                    waveform_data, created_at
             FROM audio_metadata
             WHERE media_id = $1
-            "#
+            "#,
         )
         .bind(media_id)
         .fetch_optional(&self.pool)
@@ -58,8 +58,8 @@ impl AudioService {
         .ok_or(MediaError::NotFound(media_id))?;
 
         let waveform_value: Option<serde_json::Value> = row.try_get("waveform_data").ok();
-        let waveform: Option<Vec<f32>> = waveform_value
-            .and_then(|v| serde_json::from_value(v).ok());
+        let waveform: Option<Vec<f32>> =
+            waveform_value.and_then(|v| serde_json::from_value(v).ok());
 
         Ok(AudioMetadata {
             id: row.get("id"),
@@ -113,7 +113,10 @@ impl AudioService {
     ) -> String {
         let title = metadata.title.as_deref().unwrap_or("Unknown Title");
         let artist = metadata.artist.as_deref().unwrap_or("Unknown Artist");
-        let cover = metadata.cover_art_url.as_deref().unwrap_or("/images/default-cover.png");
+        let cover = metadata
+            .cover_art_url
+            .as_deref()
+            .unwrap_or("/images/default-cover.png");
 
         format!(
             r#"
@@ -150,7 +153,8 @@ impl AudioService {
             title = title,
             artist = artist,
             url = audio_url,
-            waveform = serde_json::to_string(&metadata.waveform_data.clone().unwrap_or_default()).unwrap_or_else(|_| "[]".to_string())
+            waveform = serde_json::to_string(&metadata.waveform_data.clone().unwrap_or_default())
+                .unwrap_or_else(|_| "[]".to_string())
         )
     }
 

@@ -75,7 +75,9 @@ pub async fn execute(ctx: &CliContext, cmd: PluginsCommand) -> CliResult<()> {
         PluginsSubcommand::Activate { plugin } => activate_plugin(ctx, &plugin).await,
         PluginsSubcommand::Deactivate { plugin } => deactivate_plugin(ctx, &plugin).await,
         PluginsSubcommand::Install { source } => install_plugin(ctx, &source).await,
-        PluginsSubcommand::Uninstall { plugin, force } => uninstall_plugin(ctx, &plugin, force).await,
+        PluginsSubcommand::Uninstall { plugin, force } => {
+            uninstall_plugin(ctx, &plugin, force).await
+        }
         PluginsSubcommand::CheckUpdates => check_updates(ctx).await,
     }
 }
@@ -156,7 +158,14 @@ async fn get_plugin(ctx: &CliContext, plugin: &str) -> CliResult<()> {
     print_header(&format!("Plugin: {}", details.name));
     print_kv("ID", &details.id);
     print_kv("Version", &details.version);
-    print_kv("Status", if details.is_active { "Active" } else { "Inactive" });
+    print_kv(
+        "Status",
+        if details.is_active {
+            "Active"
+        } else {
+            "Inactive"
+        },
+    );
     if let Some(ref desc) = details.description {
         print_kv("Description", desc);
     }
@@ -191,7 +200,11 @@ async fn activate_plugin(ctx: &CliContext, plugin: &str) -> CliResult<()> {
         )));
     }
 
-    println!("{}", ctx.output_format.success(&format!("Plugin '{}' activated", plugin)));
+    println!(
+        "{}",
+        ctx.output_format
+            .success(&format!("Plugin '{}' activated", plugin))
+    );
     Ok(())
 }
 
@@ -219,7 +232,11 @@ async fn deactivate_plugin(ctx: &CliContext, plugin: &str) -> CliResult<()> {
         )));
     }
 
-    println!("{}", ctx.output_format.success(&format!("Plugin '{}' deactivated", plugin)));
+    println!(
+        "{}",
+        ctx.output_format
+            .success(&format!("Plugin '{}' deactivated", plugin))
+    );
     Ok(())
 }
 
@@ -266,7 +283,11 @@ async fn install_plugin(ctx: &CliContext, source: &str) -> CliResult<()> {
             )));
         }
 
-        println!("{}", ctx.output_format.success(&format!("Plugin '{}' installed", plugin_id)));
+        println!(
+            "{}",
+            ctx.output_format
+                .success(&format!("Plugin '{}' installed", plugin_id))
+        );
     } else {
         // URL-based install
         let spinner = ProgressBar::spinner("Installing plugin from URL...");
@@ -333,7 +354,11 @@ async fn uninstall_plugin(ctx: &CliContext, plugin: &str, force: bool) -> CliRes
         )));
     }
 
-    println!("{}", ctx.output_format.success(&format!("Plugin '{}' uninstalled", plugin)));
+    println!(
+        "{}",
+        ctx.output_format
+            .success(&format!("Plugin '{}' uninstalled", plugin))
+    );
     Ok(())
 }
 
@@ -360,10 +385,7 @@ async fn check_updates(ctx: &CliContext) -> CliResult<()> {
         return Ok(());
     }
 
-    let updates: Vec<serde_json::Value> = response
-        .json()
-        .await
-        .unwrap_or_default();
+    let updates: Vec<serde_json::Value> = response.json().await.unwrap_or_default();
 
     if updates.is_empty() {
         println!("{}", ctx.output_format.info("All plugins are up to date"));

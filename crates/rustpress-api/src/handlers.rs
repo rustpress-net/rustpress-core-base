@@ -4,20 +4,20 @@
 //! incoming HTTP requests and return responses.
 
 pub mod auth;
-pub mod posts;
-pub mod pages;
-pub mod users;
-pub mod media;
 pub mod comments;
+pub mod media;
+pub mod pages;
+pub mod posts;
 pub mod settings;
 pub mod themes;
+pub mod users;
 
 // Re-export handlers
 pub use auth::*;
-pub use posts::*;
-pub use pages::*;
-pub use users::*;
-pub use media::*;
 pub use comments::*;
+pub use media::*;
+pub use pages::*;
+pub use posts::*;
 pub use settings::*;
 pub use themes::*;
+pub use users::*;

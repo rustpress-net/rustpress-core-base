@@ -2,10 +2,10 @@
 //!
 //! Handles checking for updates and marketplace operations.
 
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use parking_lot::RwLock;
 use tracing::{debug, error, info, warn};
 
 // ============================================================================
@@ -118,7 +118,9 @@ impl UpdateChecker {
             is_security_update: false,
         };
 
-        self.cache.write().insert(plugin_id.to_string(), info.clone());
+        self.cache
+            .write()
+            .insert(plugin_id.to_string(), info.clone());
         Ok(info)
     }
 
@@ -346,7 +348,11 @@ impl MarketplaceClient {
     }
 
     /// Install plugin from marketplace
-    pub async fn install(&self, slug: &str, install_path: &std::path::Path) -> Result<(), MarketplaceError> {
+    pub async fn install(
+        &self,
+        slug: &str,
+        install_path: &std::path::Path,
+    ) -> Result<(), MarketplaceError> {
         let data = self.download(slug).await?;
 
         // Would extract and install
@@ -355,7 +361,12 @@ impl MarketplaceClient {
     }
 
     /// Submit a review
-    pub async fn submit_review(&self, slug: &str, rating: u8, content: &str) -> Result<(), MarketplaceError> {
+    pub async fn submit_review(
+        &self,
+        slug: &str,
+        rating: u8,
+        content: &str,
+    ) -> Result<(), MarketplaceError> {
         if self.api_key.is_none() {
             return Err(MarketplaceError::AuthRequired);
         }
@@ -478,7 +489,9 @@ impl ConflictDetector {
 
         // Check known conflicts
         for conflict in &self.known_conflicts {
-            if active_plugins.contains(&conflict.plugin_a) && active_plugins.contains(&conflict.plugin_b) {
+            if active_plugins.contains(&conflict.plugin_a)
+                && active_plugins.contains(&conflict.plugin_b)
+            {
                 conflicts.push(DetectedConflict {
                     plugin_a: conflict.plugin_a.clone(),
                     plugin_b: conflict.plugin_b.clone(),

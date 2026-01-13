@@ -102,9 +102,7 @@ impl AmpCompatibility {
 
     fn transform_images(&self, html: &str) -> String {
         // Simple regex-based transformation
-        let re = regex::Regex::new(
-            r#"<img\s+([^>]*src="[^"]+")([^>]*)>"#
-        ).unwrap();
+        let re = regex::Regex::new(r#"<img\s+([^>]*src="[^"]+")([^>]*)>"#).unwrap();
 
         re.replace_all(html, |caps: &regex::Captures| {
             let attrs = &caps[1];
@@ -114,11 +112,13 @@ impl AmpCompatibility {
             let width_re = regex::Regex::new(r#"width="(\d+)""#).unwrap();
             let height_re = regex::Regex::new(r#"height="(\d+)""#).unwrap();
 
-            let width = width_re.captures(rest)
+            let width = width_re
+                .captures(rest)
                 .map(|c| c[1].to_string())
                 .unwrap_or_else(|| "auto".to_string());
 
-            let height = height_re.captures(rest)
+            let height = height_re
+                .captures(rest)
                 .map(|c| c[1].to_string())
                 .unwrap_or_else(|| "auto".to_string());
 
@@ -126,37 +126,37 @@ impl AmpCompatibility {
                 r#"<amp-img {} layout="responsive" width="{}" height="{}"></amp-img>"#,
                 attrs, width, height
             )
-        }).to_string()
+        })
+        .to_string()
     }
 
     fn transform_videos(&self, html: &str) -> String {
-        let re = regex::Regex::new(
-            r#"<video\s+([^>]*)>([\s\S]*?)</video>"#
-        ).unwrap();
+        let re = regex::Regex::new(r#"<video\s+([^>]*)>([\s\S]*?)</video>"#).unwrap();
 
         re.replace_all(html, |caps: &regex::Captures| {
             let attrs = &caps[1];
             let inner = &caps[2];
-            format!(r#"<amp-video {} layout="responsive">{}</amp-video>"#, attrs, inner)
-        }).to_string()
+            format!(
+                r#"<amp-video {} layout="responsive">{}</amp-video>"#,
+                attrs, inner
+            )
+        })
+        .to_string()
     }
 
     fn transform_audio(&self, html: &str) -> String {
-        let re = regex::Regex::new(
-            r#"<audio\s+([^>]*)>([\s\S]*?)</audio>"#
-        ).unwrap();
+        let re = regex::Regex::new(r#"<audio\s+([^>]*)>([\s\S]*?)</audio>"#).unwrap();
 
         re.replace_all(html, |caps: &regex::Captures| {
             let attrs = &caps[1];
             let inner = &caps[2];
             format!(r#"<amp-audio {}>{}</amp-audio>"#, attrs, inner)
-        }).to_string()
+        })
+        .to_string()
     }
 
     fn transform_iframes(&self, html: &str) -> String {
-        let re = regex::Regex::new(
-            r#"<iframe\s+([^>]*)></iframe>"#
-        ).unwrap();
+        let re = regex::Regex::new(r#"<iframe\s+([^>]*)></iframe>"#).unwrap();
 
         re.replace_all(html, |caps: &regex::Captures| {
             let attrs = &caps[1];
@@ -181,7 +181,8 @@ impl AmpCompatibility {
             } else {
                 String::new()
             }
-        }).to_string()
+        })
+        .to_string()
     }
 
     /// Generate AMP boilerplate
@@ -371,9 +372,18 @@ impl AccessibilityChecker {
             }
         }
 
-        let errors = issues.iter().filter(|i| i.severity == Severity::Error).count();
-        let warnings = issues.iter().filter(|i| i.severity == Severity::Warning).count();
-        let notices = issues.iter().filter(|i| i.severity == Severity::Notice).count();
+        let errors = issues
+            .iter()
+            .filter(|i| i.severity == Severity::Error)
+            .count();
+        let warnings = issues
+            .iter()
+            .filter(|i| i.severity == Severity::Warning)
+            .count();
+        let notices = issues
+            .iter()
+            .filter(|i| i.severity == Severity::Notice)
+            .count();
 
         AccessibilityReport {
             issues,
@@ -415,7 +425,10 @@ impl AccessibilityChecker {
             let attrs = &cap[1];
             let text = cap[2].trim();
 
-            if text.is_empty() && !attrs.contains("aria-label") && !attrs.contains("aria-labelledby") {
+            if text.is_empty()
+                && !attrs.contains("aria-label")
+                && !attrs.contains("aria-labelledby")
+            {
                 issues.push(AccessibilityIssue {
                     rule_id: rule.id.clone(),
                     severity: rule.severity,
@@ -463,7 +476,11 @@ impl AccessibilityChecker {
             let input_id = &cap[2];
             let label_pattern = format!(r#"<label[^>]*for="{}""#, regex::escape(input_id));
 
-            if regex::Regex::new(&label_pattern).unwrap().find(html).is_none() {
+            if regex::Regex::new(&label_pattern)
+                .unwrap()
+                .find(html)
+                .is_none()
+            {
                 // Check for aria-label
                 if !cap[1].contains("aria-label") {
                     issues.push(AccessibilityIssue {
@@ -471,7 +488,8 @@ impl AccessibilityChecker {
                         severity: rule.severity,
                         message: format!("Input '{}' has no associated label", input_id),
                         element: Some(cap[0].to_string()),
-                        suggestion: "Add a <label> element with matching 'for' attribute".to_string(),
+                        suggestion: "Add a <label> element with matching 'for' attribute"
+                            .to_string(),
                         wcag_criteria: rule.wcag_criteria.clone(),
                     });
                 }
@@ -485,10 +503,10 @@ impl AccessibilityChecker {
         let mut issues = Vec::new();
 
         // Check for skip link pattern
-        let has_skip_link = html.contains(r##"href="#content""##) ||
-            html.contains(r##"href="#main""##) ||
-            html.contains("skip-link") ||
-            html.contains("skip-to-content");
+        let has_skip_link = html.contains(r##"href="#content""##)
+            || html.contains(r##"href="#main""##)
+            || html.contains("skip-link")
+            || html.contains("skip-to-content");
 
         if !has_skip_link {
             issues.push(AccessibilityIssue {
@@ -539,7 +557,11 @@ impl AccessibilityChecker {
     fn check_language(&self, html: &str, rule: &AccessibilityRule) -> Vec<AccessibilityIssue> {
         let mut issues = Vec::new();
 
-        if !html.contains(r#"<html"#) || !regex::Regex::new(r#"<html[^>]+lang="#).unwrap().is_match(html) {
+        if !html.contains(r#"<html"#)
+            || !regex::Regex::new(r#"<html[^>]+lang="#)
+                .unwrap()
+                .is_match(html)
+        {
             issues.push(AccessibilityIssue {
                 rule_id: rule.id.clone(),
                 severity: rule.severity,
@@ -668,28 +690,36 @@ impl PerformanceScorer {
         score += image_score * self.weights.image_optimization;
 
         // Critical CSS
-        let critical_score = if metrics.has_critical_css { 1.0 } else {
+        let critical_score = if metrics.has_critical_css {
+            1.0
+        } else {
             recommendations.push("Implement critical CSS for faster rendering".to_string());
             0.0
         };
         score += critical_score * self.weights.critical_css;
 
         // Lazy loading
-        let lazy_score = if metrics.lazy_loading_enabled { 1.0 } else {
+        let lazy_score = if metrics.lazy_loading_enabled {
+            1.0
+        } else {
             recommendations.push("Enable lazy loading for images".to_string());
             0.0
         };
         score += lazy_score * self.weights.lazy_loading;
 
         // Caching
-        let cache_score = if metrics.cache_headers { 1.0 } else {
+        let cache_score = if metrics.cache_headers {
+            1.0
+        } else {
             recommendations.push("Configure proper cache headers".to_string());
             0.0
         };
         score += cache_score * self.weights.caching;
 
         // Compression
-        let compression_score = if metrics.compression_enabled { 1.0 } else {
+        let compression_score = if metrics.compression_enabled {
+            1.0
+        } else {
             recommendations.push("Enable gzip/brotli compression".to_string());
             0.0
         };

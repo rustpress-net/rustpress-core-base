@@ -22,9 +22,9 @@ use rustpress_events::EventBus;
 use rustpress_jobs::JobQueue;
 use rustpress_storage::{LocalBackend, Storage, StorageConfig};
 
+use rustpress_server::setup;
 use rustpress_server::state::AppState;
 use rustpress_server::App;
-use rustpress_server::setup;
 
 /// Environment variable names
 mod env_vars {
@@ -83,11 +83,11 @@ fn needs_setup() -> bool {
 /// Test if database connection works
 async fn test_database_connection() -> bool {
     let config = load_config();
-    
+
     if config.database.url.is_empty() {
         return false;
     }
-    
+
     // Try to connect to database
     match sqlx::postgres::PgPoolOptions::new()
         .max_connections(1)
@@ -159,7 +159,9 @@ fn load_config() -> AppConfig {
 
     if let Ok(secret) = env::var(env_vars::JWT_SECRET) {
         config.auth.jwt_secret = secret;
-    } else if config.auth.jwt_secret.is_empty() || config.auth.jwt_secret == "change-me-in-production" {
+    } else if config.auth.jwt_secret.is_empty()
+        || config.auth.jwt_secret == "change-me-in-production"
+    {
         warn!("JWT_SECRET not set, using default (not recommended for production)");
     }
 
@@ -220,10 +222,7 @@ fn init_job_queue(pool: &DatabasePool) -> JobQueue {
 
 /// Initialize the storage subsystem
 fn init_storage(config: &AppConfig) -> Storage {
-    let backend = Arc::new(
-        LocalBackend::new(&config.storage.local_path)
-            .with_base_url("/uploads"),
-    );
+    let backend = Arc::new(LocalBackend::new(&config.storage.local_path).with_base_url("/uploads"));
 
     let storage_config = StorageConfig {
         max_upload_size: config.storage.max_upload_size as u64,
@@ -295,14 +294,16 @@ async fn ensure_directories(config: &AppConfig) -> Result<(), Box<dyn std::error
 
 /// Print startup banner
 fn print_banner() {
-    println!(r#"
+    println!(
+        r#"
   ____           _   ____
  |  _ \ _   _ __| |_|  _ \ _ __ ___  ___ ___
  | |_) | | | / _` __| |_) | '__/ _ \/ __/ __|
  |  _ <| |_| \__ \ |_|  __/| | |  __/\__ \__ \
  |_| \_\__,_|___/\__|_|   |_|  \___||___/___/
 
-    "#);
+    "#
+    );
     println!("  RustPress CMS - A Modern WordPress Alternative in Rust");
     println!("  Version: {}", env!("CARGO_PKG_VERSION"));
     println!();

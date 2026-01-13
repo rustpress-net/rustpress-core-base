@@ -6,10 +6,10 @@ use crate::child_theme::ThemeInheritance;
 use crate::manifest::ThemeManifest;
 use crate::settings::ThemeSettings;
 use crate::templates::{TemplateEngine, TemplateError};
+use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use parking_lot::RwLock;
 use thiserror::Error;
 use tokio::fs;
 use tokio::sync::broadcast;
@@ -195,7 +195,9 @@ impl ThemeManager {
         self.themes.write().insert(theme_id.to_string(), theme);
 
         // Broadcast event
-        let _ = self.event_tx.send(ThemeEvent::Registered(theme_id.to_string()));
+        let _ = self
+            .event_tx
+            .send(ThemeEvent::Registered(theme_id.to_string()));
 
         Ok(())
     }
@@ -213,7 +215,11 @@ impl ThemeManager {
         None
     }
 
-    async fn validate_theme(&self, _path: &Path, manifest: &ThemeManifest) -> Result<(), ThemeManagerError> {
+    async fn validate_theme(
+        &self,
+        _path: &Path,
+        manifest: &ThemeManifest,
+    ) -> Result<(), ThemeManagerError> {
         // Validate required fields
         if manifest.theme.id.is_empty() {
             return Err(ThemeManagerError::Invalid("Missing theme ID".to_string()));
@@ -250,7 +256,9 @@ impl ThemeManager {
         self.settings.write().remove(theme_id);
         self.engines.write().remove(theme_id);
 
-        let _ = self.event_tx.send(ThemeEvent::Unregistered(theme_id.to_string()));
+        let _ = self
+            .event_tx
+            .send(ThemeEvent::Unregistered(theme_id.to_string()));
 
         Ok(())
     }
@@ -258,7 +266,11 @@ impl ThemeManager {
     /// Activate a theme
     pub async fn activate(&self, theme_id: &str) -> Result<(), ThemeManagerError> {
         // Get theme
-        let theme = self.themes.read().get(theme_id).cloned()
+        let theme = self
+            .themes
+            .read()
+            .get(theme_id)
+            .cloned()
             .ok_or_else(|| ThemeManagerError::NotFound(theme_id.to_string()))?;
 
         // Deactivate current theme if any
@@ -268,7 +280,9 @@ impl ThemeManager {
         }
 
         // Load parent chain via inheritance
-        self.inheritance.load_theme(theme_id).await
+        self.inheritance
+            .load_theme(theme_id)
+            .await
             .map_err(|e| ThemeManagerError::ActivationFailed(e.to_string()))?;
 
         // Initialize theme settings
@@ -278,7 +292,9 @@ impl ThemeManager {
             ThemeManagerError::ActivationFailed(format!("Failed to load settings: {}", e))
         })?;
 
-        self.settings.write().insert(theme_id.to_string(), theme_settings);
+        self.settings
+            .write()
+            .insert(theme_id.to_string(), theme_settings);
 
         // Initialize template engine
         let extension = theme.manifest.templates.extension.as_str();
@@ -297,7 +313,9 @@ impl ThemeManager {
         *self.active_theme.write() = Some(theme_id.to_string());
 
         // Broadcast event
-        let _ = self.event_tx.send(ThemeEvent::Activated(theme_id.to_string()));
+        let _ = self
+            .event_tx
+            .send(ThemeEvent::Activated(theme_id.to_string()));
 
         tracing::info!("Activated theme: {}", theme_id);
 
@@ -314,13 +332,18 @@ impl ThemeManager {
         }
 
         // Broadcast event
-        let _ = self.event_tx.send(ThemeEvent::Deactivated(theme_id.to_string()));
+        let _ = self
+            .event_tx
+            .send(ThemeEvent::Deactivated(theme_id.to_string()));
 
         Ok(())
     }
 
     /// Switch to a different theme
-    pub async fn switch_theme(&self, new_theme_id: &str) -> Result<ThemeSwitchEvent, ThemeManagerError> {
+    pub async fn switch_theme(
+        &self,
+        new_theme_id: &str,
+    ) -> Result<ThemeSwitchEvent, ThemeManagerError> {
         let old_theme = self.active_theme.read().clone();
 
         // Activate new theme
@@ -403,7 +426,10 @@ impl ThemeManager {
         }
 
         // Check no children depend on it
-        let has_children = self.themes.read().values()
+        let has_children = self
+            .themes
+            .read()
+            .values()
             .any(|t| t.parent_id.as_ref() == Some(&theme_id.to_string()));
 
         if has_children {
@@ -429,7 +455,9 @@ impl ThemeManager {
         // Read manifest to get theme ID
         let manifest_path = source.join("theme.toml");
         if !manifest_path.exists() {
-            return Err(ThemeManagerError::Invalid("No theme.toml found".to_string()));
+            return Err(ThemeManagerError::Invalid(
+                "No theme.toml found".to_string(),
+            ));
         }
 
         let manifest_content = fs::read_to_string(&manifest_path).await?;
@@ -498,7 +526,11 @@ impl ThemePreview {
     }
 
     /// Start a preview session
-    pub fn start_preview(&self, theme_id: &str, user_id: &str) -> Result<String, ThemeManagerError> {
+    pub fn start_preview(
+        &self,
+        theme_id: &str,
+        user_id: &str,
+    ) -> Result<String, ThemeManagerError> {
         // Verify theme exists
         if !self.manager.themes.read().contains_key(theme_id) {
             return Err(ThemeManagerError::NotFound(theme_id.to_string()));
@@ -515,7 +547,9 @@ impl ThemePreview {
             expires_at: now + chrono::Duration::hours(1),
         };
 
-        self.preview_sessions.write().insert(session_id.clone(), session);
+        self.preview_sessions
+            .write()
+            .insert(session_id.clone(), session);
 
         Ok(session_id)
     }
@@ -541,7 +575,9 @@ impl ThemePreview {
     /// Clean expired sessions
     pub fn clean_expired(&self) {
         let now = chrono::Utc::now();
-        self.preview_sessions.write().retain(|_, s| s.expires_at > now);
+        self.preview_sessions
+            .write()
+            .retain(|_, s| s.expires_at > now);
     }
 
     /// Get theme for request (considers preview)

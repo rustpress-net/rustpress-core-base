@@ -80,9 +80,9 @@ impl EventBus {
 
         // Sort by priority (higher priority first)
         for mut entry in self.subscribers.iter_mut() {
-            entry.value_mut().sort_by(|a, b| {
-                b.config.priority.cmp(&a.config.priority)
-            });
+            entry
+                .value_mut()
+                .sort_by(|a, b| b.config.priority.cmp(&a.config.priority));
         }
 
         self
@@ -167,10 +167,7 @@ impl EventBus {
         if errors.is_empty() {
             Ok(())
         } else {
-            tracing::warn!(
-                error_count = errors.len(),
-                "Some event handlers failed"
-            );
+            tracing::warn!(error_count = errors.len(), "Some event handlers failed");
             Ok(()) // We continue on error by default
         }
     }
@@ -330,9 +327,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_event_history() {
-        let bus = EventBusBuilder::new()
-            .with_history(10)
-            .build();
+        let bus = EventBusBuilder::new().with_history(10).build();
 
         for i in 0..5 {
             let event = DomainEvent::new("test.event", serde_json::json!({"i": i}));
@@ -364,14 +359,18 @@ mod tests {
         bus.subscribe(subscriber);
 
         // First event should be handled
-        bus.publish(DomainEvent::new("test.event", serde_json::json!({}))).await.unwrap();
+        bus.publish(DomainEvent::new("test.event", serde_json::json!({})))
+            .await
+            .unwrap();
         assert_eq!(counter.load(Ordering::SeqCst), 1);
 
         // Unsubscribe
         bus.unsubscribe("test_sub");
 
         // Second event should not be handled
-        bus.publish(DomainEvent::new("test.event", serde_json::json!({}))).await.unwrap();
+        bus.publish(DomainEvent::new("test.event", serde_json::json!({})))
+            .await
+            .unwrap();
         assert_eq!(counter.load(Ordering::SeqCst), 1);
     }
 

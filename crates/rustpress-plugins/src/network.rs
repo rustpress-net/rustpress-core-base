@@ -2,11 +2,11 @@
 //!
 //! Advanced plugin features for enterprise and multi-site deployments.
 
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use parking_lot::RwLock;
 use tracing::{debug, error, info, warn};
 
 // ============================================================================
@@ -47,8 +47,8 @@ impl MustUseManager {
 
         let mut plugins = Vec::new();
 
-        for entry in std::fs::read_dir(&self.mu_dir)
-            .map_err(|e| MustUseError::ScanFailed(e.to_string()))?
+        for entry in
+            std::fs::read_dir(&self.mu_dir).map_err(|e| MustUseError::ScanFailed(e.to_string()))?
         {
             let entry = entry.map_err(|e| MustUseError::ScanFailed(e.to_string()))?;
             let path = entry.path();
@@ -79,12 +79,12 @@ impl MustUseManager {
             .map_err(|e| MustUseError::LoadFailed(e.to_string()))?;
 
         // Parse minimal manifest info
-        let manifest: toml::Value = toml::from_str(&content)
-            .map_err(|e| MustUseError::ParseFailed(e.to_string()))?;
+        let manifest: toml::Value =
+            toml::from_str(&content).map_err(|e| MustUseError::ParseFailed(e.to_string()))?;
 
-        let plugin_info = manifest.get("plugin").ok_or_else(|| {
-            MustUseError::ParseFailed("Missing [plugin] section".to_string())
-        })?;
+        let plugin_info = manifest
+            .get("plugin")
+            .ok_or_else(|| MustUseError::ParseFailed("Missing [plugin] section".to_string()))?;
 
         let plugin_id = plugin_info
             .get("id")
@@ -103,7 +103,10 @@ impl MustUseManager {
             name,
             path: path.to_path_buf(),
             load_order: 0,
-            description: plugin_info.get("description").and_then(|v| v.as_str()).map(String::from),
+            description: plugin_info
+                .get("description")
+                .and_then(|v| v.as_str())
+                .map(String::from),
         }))
     }
 
@@ -197,7 +200,9 @@ impl NetworkPluginManager {
         };
 
         info!("Network activating plugin: {}", plugin_id);
-        self.network_plugins.write().insert(plugin_id.to_string(), plugin);
+        self.network_plugins
+            .write()
+            .insert(plugin_id.to_string(), plugin);
     }
 
     /// Deactivate plugin network-wide
@@ -224,12 +229,12 @@ impl NetworkPluginManager {
     /// Disable plugin for specific site
     pub fn disable_for_site(&self, plugin_id: &str, site_id: i64) {
         let mut overrides = self.site_overrides.write();
-        let site = overrides.entry(site_id).or_insert_with(|| {
-            SitePluginOverrides {
+        let site = overrides
+            .entry(site_id)
+            .or_insert_with(|| SitePluginOverrides {
                 site_id,
                 ..Default::default()
-            }
-        });
+            });
 
         if !site.disabled.contains(&plugin_id.to_string()) {
             site.disabled.push(plugin_id.to_string());
@@ -369,7 +374,9 @@ impl SigningVerifier {
         let sig_path = plugin_path.join("plugin.sig");
         if !sig_path.exists() {
             result.errors.push("No signature file found".to_string());
-            self.cache.write().insert(plugin_id.to_string(), result.clone());
+            self.cache
+                .write()
+                .insert(plugin_id.to_string(), result.clone());
             return result;
         }
 
@@ -379,8 +386,12 @@ impl SigningVerifier {
         let signature = match std::fs::read(&sig_path) {
             Ok(s) => s,
             Err(e) => {
-                result.errors.push(format!("Failed to read signature: {}", e));
-                self.cache.write().insert(plugin_id.to_string(), result.clone());
+                result
+                    .errors
+                    .push(format!("Failed to read signature: {}", e));
+                self.cache
+                    .write()
+                    .insert(plugin_id.to_string(), result.clone());
                 return result;
             }
         };
@@ -389,8 +400,12 @@ impl SigningVerifier {
         let (key_id, _sig_bytes) = match self.parse_signature(&signature) {
             Ok(s) => s,
             Err(e) => {
-                result.errors.push(format!("Invalid signature format: {}", e));
-                self.cache.write().insert(plugin_id.to_string(), result.clone());
+                result
+                    .errors
+                    .push(format!("Invalid signature format: {}", e));
+                self.cache
+                    .write()
+                    .insert(plugin_id.to_string(), result.clone());
                 return result;
             }
         };
@@ -400,8 +415,12 @@ impl SigningVerifier {
         let key = match keys.get(&key_id) {
             Some(k) => k.clone(),
             None => {
-                result.errors.push(format!("Unknown signing key: {}", key_id));
-                self.cache.write().insert(plugin_id.to_string(), result.clone());
+                result
+                    .errors
+                    .push(format!("Unknown signing key: {}", key_id));
+                self.cache
+                    .write()
+                    .insert(plugin_id.to_string(), result.clone());
                 return result;
             }
         };
@@ -416,7 +435,9 @@ impl SigningVerifier {
         result.signer = Some(key.owner);
         result.trust_level = Some(key.trusted_for);
 
-        self.cache.write().insert(plugin_id.to_string(), result.clone());
+        self.cache
+            .write()
+            .insert(plugin_id.to_string(), result.clone());
         result
     }
 
@@ -531,7 +552,9 @@ impl RollbackManager {
         // Store backup info
         {
             let mut backups = self.backups.write();
-            let plugin_backups = backups.entry(plugin_id.to_string()).or_insert_with(Vec::new);
+            let plugin_backups = backups
+                .entry(plugin_id.to_string())
+                .or_insert_with(Vec::new);
             plugin_backups.push(backup.clone());
 
             // Cleanup old backups
@@ -554,8 +577,8 @@ impl RollbackManager {
     fn copy_recursive(&self, src: &Path, dst: &Path) -> Result<u64, RollbackError> {
         let mut total_size = 0;
 
-        for entry in std::fs::read_dir(src)
-            .map_err(|e| RollbackError::BackupFailed(e.to_string()))?
+        for entry in
+            std::fs::read_dir(src).map_err(|e| RollbackError::BackupFailed(e.to_string()))?
         {
             let entry = entry.map_err(|e| RollbackError::BackupFailed(e.to_string()))?;
             let src_path = entry.path();
@@ -576,7 +599,11 @@ impl RollbackManager {
     }
 
     /// Rollback to previous version
-    pub fn rollback(&self, plugin_id: &str, plugin_path: &Path) -> Result<PluginBackup, RollbackError> {
+    pub fn rollback(
+        &self,
+        plugin_id: &str,
+        plugin_path: &Path,
+    ) -> Result<PluginBackup, RollbackError> {
         let backups = self.backups.read();
         let plugin_backups = backups
             .get(plugin_id)
@@ -854,7 +881,13 @@ impl AnalyticsCollector {
 
     /// Get recent events
     pub fn get_recent_events(&self, limit: usize) -> Vec<AnalyticsEvent> {
-        self.events.read().iter().rev().take(limit).cloned().collect()
+        self.events
+            .read()
+            .iter()
+            .rev()
+            .take(limit)
+            .cloned()
+            .collect()
     }
 
     /// Generate summary report
@@ -869,13 +902,21 @@ impl AnalyticsCollector {
         let most_active: Vec<_> = {
             let mut plugins: Vec<_> = usage.iter().collect();
             plugins.sort_by_key(|(_, u)| std::cmp::Reverse(u.hook_calls));
-            plugins.into_iter().take(5).map(|(id, _)| id.clone()).collect()
+            plugins
+                .into_iter()
+                .take(5)
+                .map(|(id, _)| id.clone())
+                .collect()
         };
 
         let most_errors: Vec<_> = {
             let mut plugins: Vec<_> = usage.iter().collect();
             plugins.sort_by_key(|(_, u)| std::cmp::Reverse(u.error_count));
-            plugins.into_iter().take(5).map(|(id, _)| id.clone()).collect()
+            plugins
+                .into_iter()
+                .take(5)
+                .map(|(id, _)| id.clone())
+                .collect()
         };
 
         AnalyticsReport {

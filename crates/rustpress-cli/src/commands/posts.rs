@@ -222,7 +222,11 @@ async fn list_posts(
     print_header("Posts");
 
     let client = ctx.http_client();
-    let mut url = format!("{}/api/v1/posts?limit={}&type=post", ctx.server_url(), limit);
+    let mut url = format!(
+        "{}/api/v1/posts?limit={}&type=post",
+        ctx.server_url(),
+        limit
+    );
 
     if let Some(ref s) = status {
         url.push_str(&format!("&status={}", s));
@@ -328,12 +332,16 @@ async fn create_post(
         .await
         .map_err(|e| CliError::Serialization(format!("Failed to parse response: {}", e)))?;
 
-    let id = created.get("id").and_then(|v| v.as_str()).unwrap_or("unknown");
+    let id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unknown");
 
     println!();
     println!(
         "{}",
-        ctx.output_format.success(&format!("Post created with ID: {}", id))
+        ctx.output_format
+            .success(&format!("Post created with ID: {}", id))
     );
 
     Ok(())
@@ -435,7 +443,10 @@ async fn update_post(
         )));
     }
 
-    println!("{}", ctx.output_format.success(&format!("Post {} updated", post)));
+    println!(
+        "{}",
+        ctx.output_format.success(&format!("Post {} updated", post))
+    );
     Ok(())
 }
 
@@ -445,7 +456,11 @@ async fn delete_post(ctx: &CliContext, post: &str, force: bool) -> CliResult<()>
         println!("Run with --force to permanently delete.");
     }
 
-    let spinner = ProgressBar::spinner(if force { "Deleting post..." } else { "Moving to trash..." });
+    let spinner = ProgressBar::spinner(if force {
+        "Deleting post..."
+    } else {
+        "Moving to trash..."
+    });
 
     let client = ctx.http_client();
     let url = if force {
@@ -474,7 +489,11 @@ async fn delete_post(ctx: &CliContext, post: &str, force: bool) -> CliResult<()>
 
     println!(
         "{}",
-        ctx.output_format.success(if force { "Post deleted" } else { "Post moved to trash" })
+        ctx.output_format.success(if force {
+            "Post deleted"
+        } else {
+            "Post moved to trash"
+        })
     );
     Ok(())
 }
@@ -570,11 +589,15 @@ async fn duplicate_post(ctx: &CliContext, post: &str) -> CliResult<()> {
         .await
         .map_err(|e| CliError::Serialization(format!("Failed to parse response: {}", e)))?;
 
-    let id = created.get("id").and_then(|v| v.as_str()).unwrap_or("unknown");
+    let id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unknown");
 
     println!(
         "{}",
-        ctx.output_format.success(&format!("Post duplicated with ID: {}", id))
+        ctx.output_format
+            .success(&format!("Post duplicated with ID: {}", id))
     );
     Ok(())
 }
@@ -611,7 +634,11 @@ async fn bulk_delete(ctx: &CliContext, posts: Vec<String>, force: bool) -> CliRe
             "{} {} post(s){}",
             if force { "Deleted" } else { "Trashed" },
             deleted,
-            if errors > 0 { format!(", {} failed", errors) } else { String::new() }
+            if errors > 0 {
+                format!(", {} failed", errors)
+            } else {
+                String::new()
+            }
         ))
     );
 

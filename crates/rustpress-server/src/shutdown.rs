@@ -172,10 +172,7 @@ impl ShutdownHandle {
             }
 
             if start.elapsed() > timeout {
-                warn!(
-                    "Shutdown timeout reached with {} tasks still active",
-                    count
-                );
+                warn!("Shutdown timeout reached with {} tasks still active", count);
                 break;
             }
 
@@ -207,10 +204,7 @@ impl Drop for TaskGuard {
 }
 
 /// Shutdown-aware sleep that returns early if shutdown is initiated
-pub async fn shutdown_aware_sleep(
-    duration: Duration,
-    controller: &ShutdownController,
-) -> bool {
+pub async fn shutdown_aware_sleep(duration: Duration, controller: &ShutdownController) -> bool {
     let mut receiver = controller.subscribe();
 
     tokio::select! {
@@ -223,10 +217,8 @@ pub async fn shutdown_aware_sleep(
 }
 
 /// Run a task with shutdown awareness
-pub async fn run_with_shutdown<F, Fut>(
-    controller: ShutdownController,
-    task: F,
-) where
+pub async fn run_with_shutdown<F, Fut>(controller: ShutdownController, task: F)
+where
     F: FnOnce() -> Fut,
     Fut: Future<Output = ()>,
 {
@@ -286,7 +278,10 @@ impl ShutdownPhase {
 /// Ordered shutdown executor
 pub struct ShutdownExecutor {
     controller: ShutdownController,
-    handlers: Vec<(ShutdownPhase, Box<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>)>,
+    handlers: Vec<(
+        ShutdownPhase,
+        Box<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+    )>,
 }
 
 impl ShutdownExecutor {
@@ -303,10 +298,8 @@ impl ShutdownExecutor {
         F: Fn() -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static,
     {
-        self.handlers.push((
-            phase,
-            Box::new(move || Box::pin(handler())),
-        ));
+        self.handlers
+            .push((phase, Box::new(move || Box::pin(handler()))));
     }
 
     /// Execute shutdown in order
@@ -319,11 +312,7 @@ impl ShutdownExecutor {
         for phase in ShutdownPhase::all() {
             info!("Executing shutdown phase: {}", phase.name());
 
-            let phase_handlers: Vec<_> = self
-                .handlers
-                .iter()
-                .filter(|(p, _)| p == phase)
-                .collect();
+            let phase_handlers: Vec<_> = self.handlers.iter().filter(|(p, _)| p == phase).collect();
 
             if phase_handlers.is_empty() {
                 continue;

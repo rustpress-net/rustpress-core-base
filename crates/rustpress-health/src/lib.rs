@@ -35,9 +35,7 @@ pub use checker::{HealthChecker, HealthCheckerBuilder};
 pub use handlers::*;
 pub use probes::{ProbeConfig, ProbeResult, ProbeType};
 pub use router::HealthRouter;
-pub use status::{
-    ComponentHealth, ComponentStatus, HealthReport, HealthStatus, ServiceHealth,
-};
+pub use status::{ComponentHealth, ComponentStatus, HealthReport, HealthStatus, ServiceHealth};
 pub use system::SystemHealth;
 
 use std::sync::Arc;

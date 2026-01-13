@@ -219,154 +219,292 @@ impl RoleManager {
     /// Register WordPress-compatible default capabilities
     fn register_default_capabilities(&mut self) {
         // Reading
-        self.register_capability(Capability::new("read", "Read", "reading")
-            .with_description("Allows access to the dashboard"));
+        self.register_capability(
+            Capability::new("read", "Read", "reading")
+                .with_description("Allows access to the dashboard"),
+        );
 
         // Posts
-        self.register_capability(Capability::new("edit_posts", "Edit Posts", "posts")
-            .with_description("Allows editing own posts"));
-        self.register_capability(Capability::new("edit_others_posts", "Edit Others' Posts", "posts")
-            .with_description("Allows editing other users' posts"));
-        self.register_capability(Capability::new("edit_published_posts", "Edit Published Posts", "posts")
-            .with_description("Allows editing already published posts"));
-        self.register_capability(Capability::new("publish_posts", "Publish Posts", "posts")
-            .with_description("Allows publishing posts"));
-        self.register_capability(Capability::new("delete_posts", "Delete Posts", "posts")
-            .with_description("Allows deleting own posts"));
-        self.register_capability(Capability::new("delete_others_posts", "Delete Others' Posts", "posts")
-            .with_description("Allows deleting other users' posts"));
-        self.register_capability(Capability::new("delete_published_posts", "Delete Published Posts", "posts")
-            .with_description("Allows deleting published posts"));
-        self.register_capability(Capability::new("delete_private_posts", "Delete Private Posts", "posts")
-            .with_description("Allows deleting private posts"));
-        self.register_capability(Capability::new("edit_private_posts", "Edit Private Posts", "posts")
-            .with_description("Allows editing private posts"));
-        self.register_capability(Capability::new("read_private_posts", "Read Private Posts", "posts")
-            .with_description("Allows reading private posts"));
+        self.register_capability(
+            Capability::new("edit_posts", "Edit Posts", "posts")
+                .with_description("Allows editing own posts"),
+        );
+        self.register_capability(
+            Capability::new("edit_others_posts", "Edit Others' Posts", "posts")
+                .with_description("Allows editing other users' posts"),
+        );
+        self.register_capability(
+            Capability::new("edit_published_posts", "Edit Published Posts", "posts")
+                .with_description("Allows editing already published posts"),
+        );
+        self.register_capability(
+            Capability::new("publish_posts", "Publish Posts", "posts")
+                .with_description("Allows publishing posts"),
+        );
+        self.register_capability(
+            Capability::new("delete_posts", "Delete Posts", "posts")
+                .with_description("Allows deleting own posts"),
+        );
+        self.register_capability(
+            Capability::new("delete_others_posts", "Delete Others' Posts", "posts")
+                .with_description("Allows deleting other users' posts"),
+        );
+        self.register_capability(
+            Capability::new("delete_published_posts", "Delete Published Posts", "posts")
+                .with_description("Allows deleting published posts"),
+        );
+        self.register_capability(
+            Capability::new("delete_private_posts", "Delete Private Posts", "posts")
+                .with_description("Allows deleting private posts"),
+        );
+        self.register_capability(
+            Capability::new("edit_private_posts", "Edit Private Posts", "posts")
+                .with_description("Allows editing private posts"),
+        );
+        self.register_capability(
+            Capability::new("read_private_posts", "Read Private Posts", "posts")
+                .with_description("Allows reading private posts"),
+        );
 
         // Pages
-        self.register_capability(Capability::new("edit_pages", "Edit Pages", "pages")
-            .with_description("Allows editing own pages"));
-        self.register_capability(Capability::new("edit_others_pages", "Edit Others' Pages", "pages")
-            .with_description("Allows editing other users' pages"));
-        self.register_capability(Capability::new("edit_published_pages", "Edit Published Pages", "pages")
-            .with_description("Allows editing published pages"));
-        self.register_capability(Capability::new("publish_pages", "Publish Pages", "pages")
-            .with_description("Allows publishing pages"));
-        self.register_capability(Capability::new("delete_pages", "Delete Pages", "pages")
-            .with_description("Allows deleting own pages"));
-        self.register_capability(Capability::new("delete_others_pages", "Delete Others' Pages", "pages")
-            .with_description("Allows deleting other users' pages"));
-        self.register_capability(Capability::new("delete_published_pages", "Delete Published Pages", "pages")
-            .with_description("Allows deleting published pages"));
-        self.register_capability(Capability::new("delete_private_pages", "Delete Private Pages", "pages")
-            .with_description("Allows deleting private pages"));
-        self.register_capability(Capability::new("edit_private_pages", "Edit Private Pages", "pages")
-            .with_description("Allows editing private pages"));
-        self.register_capability(Capability::new("read_private_pages", "Read Private Pages", "pages")
-            .with_description("Allows reading private pages"));
+        self.register_capability(
+            Capability::new("edit_pages", "Edit Pages", "pages")
+                .with_description("Allows editing own pages"),
+        );
+        self.register_capability(
+            Capability::new("edit_others_pages", "Edit Others' Pages", "pages")
+                .with_description("Allows editing other users' pages"),
+        );
+        self.register_capability(
+            Capability::new("edit_published_pages", "Edit Published Pages", "pages")
+                .with_description("Allows editing published pages"),
+        );
+        self.register_capability(
+            Capability::new("publish_pages", "Publish Pages", "pages")
+                .with_description("Allows publishing pages"),
+        );
+        self.register_capability(
+            Capability::new("delete_pages", "Delete Pages", "pages")
+                .with_description("Allows deleting own pages"),
+        );
+        self.register_capability(
+            Capability::new("delete_others_pages", "Delete Others' Pages", "pages")
+                .with_description("Allows deleting other users' pages"),
+        );
+        self.register_capability(
+            Capability::new("delete_published_pages", "Delete Published Pages", "pages")
+                .with_description("Allows deleting published pages"),
+        );
+        self.register_capability(
+            Capability::new("delete_private_pages", "Delete Private Pages", "pages")
+                .with_description("Allows deleting private pages"),
+        );
+        self.register_capability(
+            Capability::new("edit_private_pages", "Edit Private Pages", "pages")
+                .with_description("Allows editing private pages"),
+        );
+        self.register_capability(
+            Capability::new("read_private_pages", "Read Private Pages", "pages")
+                .with_description("Allows reading private pages"),
+        );
 
         // Media/Files
-        self.register_capability(Capability::new("upload_files", "Upload Files", "media")
-            .with_description("Allows uploading files"));
-        self.register_capability(Capability::new("edit_files", "Edit Files", "media")
-            .with_description("Allows editing uploaded files"));
-        self.register_capability(Capability::new("delete_files", "Delete Files", "media")
-            .with_description("Allows deleting uploaded files"));
+        self.register_capability(
+            Capability::new("upload_files", "Upload Files", "media")
+                .with_description("Allows uploading files"),
+        );
+        self.register_capability(
+            Capability::new("edit_files", "Edit Files", "media")
+                .with_description("Allows editing uploaded files"),
+        );
+        self.register_capability(
+            Capability::new("delete_files", "Delete Files", "media")
+                .with_description("Allows deleting uploaded files"),
+        );
 
         // Comments
-        self.register_capability(Capability::new("moderate_comments", "Moderate Comments", "comments")
-            .with_description("Allows moderating comments"));
-        self.register_capability(Capability::new("edit_comment", "Edit Comments", "comments")
-            .with_description("Allows editing comments"));
+        self.register_capability(
+            Capability::new("moderate_comments", "Moderate Comments", "comments")
+                .with_description("Allows moderating comments"),
+        );
+        self.register_capability(
+            Capability::new("edit_comment", "Edit Comments", "comments")
+                .with_description("Allows editing comments"),
+        );
 
         // Categories & Tags
-        self.register_capability(Capability::new("manage_categories", "Manage Categories", "taxonomy")
-            .with_description("Allows managing categories"));
-        self.register_capability(Capability::new("edit_categories", "Edit Categories", "taxonomy")
-            .with_description("Allows editing categories"));
-        self.register_capability(Capability::new("delete_categories", "Delete Categories", "taxonomy")
-            .with_description("Allows deleting categories"));
-        self.register_capability(Capability::new("assign_categories", "Assign Categories", "taxonomy")
-            .with_description("Allows assigning categories to posts"));
-        self.register_capability(Capability::new("manage_tags", "Manage Tags", "taxonomy")
-            .with_description("Allows managing tags"));
-        self.register_capability(Capability::new("edit_tags", "Edit Tags", "taxonomy")
-            .with_description("Allows editing tags"));
-        self.register_capability(Capability::new("delete_tags", "Delete Tags", "taxonomy")
-            .with_description("Allows deleting tags"));
-        self.register_capability(Capability::new("assign_tags", "Assign Tags", "taxonomy")
-            .with_description("Allows assigning tags to posts"));
+        self.register_capability(
+            Capability::new("manage_categories", "Manage Categories", "taxonomy")
+                .with_description("Allows managing categories"),
+        );
+        self.register_capability(
+            Capability::new("edit_categories", "Edit Categories", "taxonomy")
+                .with_description("Allows editing categories"),
+        );
+        self.register_capability(
+            Capability::new("delete_categories", "Delete Categories", "taxonomy")
+                .with_description("Allows deleting categories"),
+        );
+        self.register_capability(
+            Capability::new("assign_categories", "Assign Categories", "taxonomy")
+                .with_description("Allows assigning categories to posts"),
+        );
+        self.register_capability(
+            Capability::new("manage_tags", "Manage Tags", "taxonomy")
+                .with_description("Allows managing tags"),
+        );
+        self.register_capability(
+            Capability::new("edit_tags", "Edit Tags", "taxonomy")
+                .with_description("Allows editing tags"),
+        );
+        self.register_capability(
+            Capability::new("delete_tags", "Delete Tags", "taxonomy")
+                .with_description("Allows deleting tags"),
+        );
+        self.register_capability(
+            Capability::new("assign_tags", "Assign Tags", "taxonomy")
+                .with_description("Allows assigning tags to posts"),
+        );
 
         // Users
-        self.register_capability(Capability::new("list_users", "List Users", "users")
-            .with_description("Allows viewing user list"));
-        self.register_capability(Capability::new("create_users", "Create Users", "users")
-            .with_description("Allows creating new users"));
-        self.register_capability(Capability::new("edit_users", "Edit Users", "users")
-            .with_description("Allows editing user profiles"));
-        self.register_capability(Capability::new("delete_users", "Delete Users", "users")
-            .with_description("Allows deleting users"));
-        self.register_capability(Capability::new("promote_users", "Promote Users", "users")
-            .with_description("Allows changing user roles"));
+        self.register_capability(
+            Capability::new("list_users", "List Users", "users")
+                .with_description("Allows viewing user list"),
+        );
+        self.register_capability(
+            Capability::new("create_users", "Create Users", "users")
+                .with_description("Allows creating new users"),
+        );
+        self.register_capability(
+            Capability::new("edit_users", "Edit Users", "users")
+                .with_description("Allows editing user profiles"),
+        );
+        self.register_capability(
+            Capability::new("delete_users", "Delete Users", "users")
+                .with_description("Allows deleting users"),
+        );
+        self.register_capability(
+            Capability::new("promote_users", "Promote Users", "users")
+                .with_description("Allows changing user roles"),
+        );
 
         // Themes
-        self.register_capability(Capability::new("switch_themes", "Switch Themes", "themes")
-            .with_description("Allows switching themes"));
-        self.register_capability(Capability::new("edit_themes", "Edit Themes", "themes")
-            .with_description("Allows editing theme files"));
-        self.register_capability(Capability::new("edit_theme_options", "Edit Theme Options", "themes")
-            .with_description("Allows editing theme options"));
-        self.register_capability(Capability::new("install_themes", "Install Themes", "themes")
-            .with_description("Allows installing themes"));
-        self.register_capability(Capability::new("update_themes", "Update Themes", "themes")
-            .with_description("Allows updating themes"));
-        self.register_capability(Capability::new("delete_themes", "Delete Themes", "themes")
-            .with_description("Allows deleting themes"));
+        self.register_capability(
+            Capability::new("switch_themes", "Switch Themes", "themes")
+                .with_description("Allows switching themes"),
+        );
+        self.register_capability(
+            Capability::new("edit_themes", "Edit Themes", "themes")
+                .with_description("Allows editing theme files"),
+        );
+        self.register_capability(
+            Capability::new("edit_theme_options", "Edit Theme Options", "themes")
+                .with_description("Allows editing theme options"),
+        );
+        self.register_capability(
+            Capability::new("install_themes", "Install Themes", "themes")
+                .with_description("Allows installing themes"),
+        );
+        self.register_capability(
+            Capability::new("update_themes", "Update Themes", "themes")
+                .with_description("Allows updating themes"),
+        );
+        self.register_capability(
+            Capability::new("delete_themes", "Delete Themes", "themes")
+                .with_description("Allows deleting themes"),
+        );
 
         // Plugins
-        self.register_capability(Capability::new("activate_plugins", "Activate Plugins", "plugins")
-            .with_description("Allows activating plugins"));
-        self.register_capability(Capability::new("edit_plugins", "Edit Plugins", "plugins")
-            .with_description("Allows editing plugin files"));
-        self.register_capability(Capability::new("install_plugins", "Install Plugins", "plugins")
-            .with_description("Allows installing plugins"));
-        self.register_capability(Capability::new("update_plugins", "Update Plugins", "plugins")
-            .with_description("Allows updating plugins"));
-        self.register_capability(Capability::new("delete_plugins", "Delete Plugins", "plugins")
-            .with_description("Allows deleting plugins"));
+        self.register_capability(
+            Capability::new("activate_plugins", "Activate Plugins", "plugins")
+                .with_description("Allows activating plugins"),
+        );
+        self.register_capability(
+            Capability::new("edit_plugins", "Edit Plugins", "plugins")
+                .with_description("Allows editing plugin files"),
+        );
+        self.register_capability(
+            Capability::new("install_plugins", "Install Plugins", "plugins")
+                .with_description("Allows installing plugins"),
+        );
+        self.register_capability(
+            Capability::new("update_plugins", "Update Plugins", "plugins")
+                .with_description("Allows updating plugins"),
+        );
+        self.register_capability(
+            Capability::new("delete_plugins", "Delete Plugins", "plugins")
+                .with_description("Allows deleting plugins"),
+        );
 
         // Settings
-        self.register_capability(Capability::new("manage_options", "Manage Options", "settings")
-            .with_description("Allows managing site settings"));
-        self.register_capability(Capability::new("export", "Export", "settings")
-            .with_description("Allows exporting site content"));
-        self.register_capability(Capability::new("import", "Import", "settings")
-            .with_description("Allows importing content"));
+        self.register_capability(
+            Capability::new("manage_options", "Manage Options", "settings")
+                .with_description("Allows managing site settings"),
+        );
+        self.register_capability(
+            Capability::new("export", "Export", "settings")
+                .with_description("Allows exporting site content"),
+        );
+        self.register_capability(
+            Capability::new("import", "Import", "settings")
+                .with_description("Allows importing content"),
+        );
 
         // Super admin capabilities
-        self.register_capability(Capability::new("manage_network", "Manage Network", "multisite")
-            .with_description("Super admin capability for multisite"));
-        self.register_capability(Capability::new("manage_sites", "Manage Sites", "multisite")
-            .with_description("Allows managing sites in multisite"));
-        self.register_capability(Capability::new("manage_network_users", "Manage Network Users", "multisite")
-            .with_description("Allows managing network users"));
-        self.register_capability(Capability::new("manage_network_plugins", "Manage Network Plugins", "multisite")
-            .with_description("Allows managing network plugins"));
-        self.register_capability(Capability::new("manage_network_themes", "Manage Network Themes", "multisite")
-            .with_description("Allows managing network themes"));
-        self.register_capability(Capability::new("manage_network_options", "Manage Network Options", "multisite")
-            .with_description("Allows managing network options"));
+        self.register_capability(
+            Capability::new("manage_network", "Manage Network", "multisite")
+                .with_description("Super admin capability for multisite"),
+        );
+        self.register_capability(
+            Capability::new("manage_sites", "Manage Sites", "multisite")
+                .with_description("Allows managing sites in multisite"),
+        );
+        self.register_capability(
+            Capability::new("manage_network_users", "Manage Network Users", "multisite")
+                .with_description("Allows managing network users"),
+        );
+        self.register_capability(
+            Capability::new(
+                "manage_network_plugins",
+                "Manage Network Plugins",
+                "multisite",
+            )
+            .with_description("Allows managing network plugins"),
+        );
+        self.register_capability(
+            Capability::new(
+                "manage_network_themes",
+                "Manage Network Themes",
+                "multisite",
+            )
+            .with_description("Allows managing network themes"),
+        );
+        self.register_capability(
+            Capability::new(
+                "manage_network_options",
+                "Manage Network Options",
+                "multisite",
+            )
+            .with_description("Allows managing network options"),
+        );
 
         // Misc
-        self.register_capability(Capability::new("unfiltered_html", "Unfiltered HTML", "misc")
-            .with_description("Allows posting unfiltered HTML"));
-        self.register_capability(Capability::new("unfiltered_upload", "Unfiltered Upload", "misc")
-            .with_description("Allows uploading any file type"));
-        self.register_capability(Capability::new("edit_dashboard", "Edit Dashboard", "misc")
-            .with_description("Allows editing dashboard widgets"));
-        self.register_capability(Capability::new("update_core", "Update Core", "misc")
-            .with_description("Allows updating WordPress core"));
+        self.register_capability(
+            Capability::new("unfiltered_html", "Unfiltered HTML", "misc")
+                .with_description("Allows posting unfiltered HTML"),
+        );
+        self.register_capability(
+            Capability::new("unfiltered_upload", "Unfiltered Upload", "misc")
+                .with_description("Allows uploading any file type"),
+        );
+        self.register_capability(
+            Capability::new("edit_dashboard", "Edit Dashboard", "misc")
+                .with_description("Allows editing dashboard widgets"),
+        );
+        self.register_capability(
+            Capability::new("update_core", "Update Core", "misc")
+                .with_description("Allows updating WordPress core"),
+        );
     }
 
     /// Register WordPress-compatible default roles
@@ -391,18 +529,36 @@ impl RoleManager {
             .builtin();
         editor.add_caps(&[
             "read",
-            "edit_posts", "edit_others_posts", "edit_published_posts",
-            "publish_posts", "delete_posts", "delete_others_posts",
-            "delete_published_posts", "delete_private_posts",
-            "edit_private_posts", "read_private_posts",
-            "edit_pages", "edit_others_pages", "edit_published_pages",
-            "publish_pages", "delete_pages", "delete_others_pages",
-            "delete_published_pages", "delete_private_pages",
-            "edit_private_pages", "read_private_pages",
-            "upload_files", "moderate_comments",
-            "manage_categories", "manage_tags", "edit_categories",
-            "delete_categories", "edit_tags", "delete_tags",
-            "assign_categories", "assign_tags",
+            "edit_posts",
+            "edit_others_posts",
+            "edit_published_posts",
+            "publish_posts",
+            "delete_posts",
+            "delete_others_posts",
+            "delete_published_posts",
+            "delete_private_posts",
+            "edit_private_posts",
+            "read_private_posts",
+            "edit_pages",
+            "edit_others_pages",
+            "edit_published_pages",
+            "publish_pages",
+            "delete_pages",
+            "delete_others_pages",
+            "delete_published_pages",
+            "delete_private_pages",
+            "edit_private_pages",
+            "read_private_pages",
+            "upload_files",
+            "moderate_comments",
+            "manage_categories",
+            "manage_tags",
+            "edit_categories",
+            "delete_categories",
+            "edit_tags",
+            "delete_tags",
+            "assign_categories",
+            "assign_tags",
             "unfiltered_html",
         ]);
         self.register_role(editor);
@@ -414,10 +570,14 @@ impl RoleManager {
             .builtin();
         author.add_caps(&[
             "read",
-            "edit_posts", "edit_published_posts", "publish_posts",
-            "delete_posts", "delete_published_posts",
+            "edit_posts",
+            "edit_published_posts",
+            "publish_posts",
+            "delete_posts",
+            "delete_published_posts",
             "upload_files",
-            "assign_categories", "assign_tags",
+            "assign_categories",
+            "assign_tags",
         ]);
         self.register_role(author);
 
@@ -428,8 +588,10 @@ impl RoleManager {
             .builtin();
         contributor.add_caps(&[
             "read",
-            "edit_posts", "delete_posts",
-            "assign_categories", "assign_tags",
+            "edit_posts",
+            "delete_posts",
+            "assign_categories",
+            "assign_tags",
         ]);
         self.register_role(contributor);
 
@@ -444,7 +606,8 @@ impl RoleManager {
 
     /// Register a capability
     pub fn register_capability(&mut self, capability: Capability) {
-        self.capabilities.insert(capability.name.clone(), capability);
+        self.capabilities
+            .insert(capability.name.clone(), capability);
     }
 
     /// Register a role
@@ -471,13 +634,16 @@ impl RoleManager {
 
     /// Get all editable (non-builtin) roles
     pub fn get_editable_roles(&self) -> Vec<&Role> {
-        self.roles.values()
-            .filter(|r| !r.is_builtin)
-            .collect()
+        self.roles.values().filter(|r| !r.is_builtin).collect()
     }
 
     /// Create a new custom role
-    pub fn create_role(&mut self, name: &str, display_name: &str, capabilities: &[&str]) -> Result<&Role, String> {
+    pub fn create_role(
+        &mut self,
+        name: &str,
+        display_name: &str,
+        capabilities: &[&str],
+    ) -> Result<&Role, String> {
         if self.roles.contains_key(name) {
             return Err("Role already exists".to_string());
         }
@@ -504,8 +670,15 @@ impl RoleManager {
     }
 
     /// Clone a role as a new custom role
-    pub fn clone_role(&mut self, source: &str, new_name: &str, new_display_name: &str) -> Result<&Role, String> {
-        let source_role = self.roles.get(source)
+    pub fn clone_role(
+        &mut self,
+        source: &str,
+        new_name: &str,
+        new_display_name: &str,
+    ) -> Result<&Role, String> {
+        let source_role = self
+            .roles
+            .get(source)
             .ok_or_else(|| "Source role not found".to_string())?
             .clone();
 
@@ -533,14 +706,17 @@ impl RoleManager {
 
     /// Get capabilities by category
     pub fn get_capabilities_by_category(&self, category: &str) -> Vec<&Capability> {
-        self.capabilities.values()
+        self.capabilities
+            .values()
             .filter(|c| c.category == category)
             .collect()
     }
 
     /// Get capability categories
     pub fn get_capability_categories(&self) -> Vec<&str> {
-        let mut categories: HashSet<&str> = self.capabilities.values()
+        let mut categories: HashSet<&str> = self
+            .capabilities
+            .values()
             .map(|c| c.category.as_str())
             .collect();
         let mut result: Vec<&str> = categories.drain().collect();
@@ -549,7 +725,12 @@ impl RoleManager {
     }
 
     /// Assign role to user
-    pub fn assign_role(&mut self, user_id: i64, role: &str, assigned_by: Option<i64>) -> Result<(), String> {
+    pub fn assign_role(
+        &mut self,
+        user_id: i64,
+        role: &str,
+        assigned_by: Option<i64>,
+    ) -> Result<(), String> {
         if !self.roles.contains_key(role) {
             return Err("Role not found".to_string());
         }
@@ -559,7 +740,8 @@ impl RoleManager {
             user_role = user_role.assigned_by(by);
         }
 
-        self.user_roles.entry(user_id)
+        self.user_roles
+            .entry(user_id)
             .or_insert_with(Vec::new)
             .push(user_role);
 
@@ -574,7 +756,12 @@ impl RoleManager {
     }
 
     /// Set user's roles (replace all)
-    pub fn set_user_roles(&mut self, user_id: i64, roles: &[&str], assigned_by: Option<i64>) -> Result<(), String> {
+    pub fn set_user_roles(
+        &mut self,
+        user_id: i64,
+        roles: &[&str],
+        assigned_by: Option<i64>,
+    ) -> Result<(), String> {
         // Validate all roles exist
         for role in roles {
             if !self.roles.contains_key(*role) {
@@ -582,7 +769,8 @@ impl RoleManager {
             }
         }
 
-        let user_roles: Vec<UserRole> = roles.iter()
+        let user_roles: Vec<UserRole> = roles
+            .iter()
             .map(|r| {
                 let mut ur = UserRole::new(user_id, r);
                 if let Some(by) = assigned_by {
@@ -598,7 +786,8 @@ impl RoleManager {
 
     /// Get user's roles
     pub fn get_user_roles(&self, user_id: i64) -> Vec<&UserRole> {
-        self.user_roles.get(&user_id)
+        self.user_roles
+            .get(&user_id)
             .map(|roles| roles.iter().filter(|r| !r.is_expired()).collect())
             .unwrap_or_default()
     }
@@ -619,10 +808,7 @@ impl RoleManager {
         self.get_user_roles(user_id)
             .iter()
             .filter_map(|ur| self.roles.get(&ur.role))
-            .any(|role| {
-                role.capabilities.iter()
-                    .any(|c| effective_caps.contains(c))
-            })
+            .any(|role| role.capabilities.iter().any(|c| effective_caps.contains(c)))
     }
 
     /// Get effective capabilities (including implied)
@@ -671,7 +857,8 @@ impl RoleManager {
 
     /// Get users by role
     pub fn get_users_with_role(&self, role: &str) -> Vec<i64> {
-        self.user_roles.iter()
+        self.user_roles
+            .iter()
             .filter(|(_, roles)| roles.iter().any(|r| r.role == role && !r.is_expired()))
             .map(|(user_id, _)| *user_id)
             .collect()
@@ -679,9 +866,8 @@ impl RoleManager {
 
     /// Count users by role
     pub fn count_users_by_role(&self) -> HashMap<String, usize> {
-        let mut counts: HashMap<String, usize> = self.roles.keys()
-            .map(|r| (r.clone(), 0))
-            .collect();
+        let mut counts: HashMap<String, usize> =
+            self.roles.keys().map(|r| (r.clone(), 0)).collect();
 
         for roles in self.user_roles.values() {
             for ur in roles {
@@ -745,7 +931,13 @@ mod tests {
     #[test]
     fn test_custom_role() {
         let mut manager = RoleManager::new();
-        manager.create_role("moderator", "Moderator", &["read", "moderate_comments", "edit_posts"]).unwrap();
+        manager
+            .create_role(
+                "moderator",
+                "Moderator",
+                &["read", "moderate_comments", "edit_posts"],
+            )
+            .unwrap();
 
         let role = manager.get_role("moderator").unwrap();
         assert!(role.has_cap("moderate_comments"));
@@ -755,7 +947,9 @@ mod tests {
     #[test]
     fn test_clone_role() {
         let mut manager = RoleManager::new();
-        manager.clone_role("editor", "senior_editor", "Senior Editor").unwrap();
+        manager
+            .clone_role("editor", "senior_editor", "Senior Editor")
+            .unwrap();
 
         let cloned = manager.get_role("senior_editor").unwrap();
         let original = manager.get_role("editor").unwrap();

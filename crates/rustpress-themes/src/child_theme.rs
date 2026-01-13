@@ -3,10 +3,10 @@
 //! Inheritance and override system for child themes.
 
 use crate::manifest::ThemeManifest;
+use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use parking_lot::RwLock;
 use thiserror::Error;
 use tokio::fs;
 
@@ -59,7 +59,12 @@ impl ThemeInheritance {
     }
 
     /// Load a theme and its parent chain
-    pub fn load_theme<'a>(&'a self, theme_id: &'a str) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<LoadedTheme, ChildThemeError>> + Send + 'a>> {
+    pub fn load_theme<'a>(
+        &'a self,
+        theme_id: &'a str,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<LoadedTheme, ChildThemeError>> + Send + 'a>,
+    > {
         Box::pin(async move {
             // Check if already loaded
             if let Some(theme) = self.themes.read().get(theme_id) {
@@ -111,7 +116,9 @@ impl ThemeInheritance {
                 }
 
                 // Record hierarchy
-                self.hierarchy.write().insert(theme_id.to_string(), parent.clone());
+                self.hierarchy
+                    .write()
+                    .insert(theme_id.to_string(), parent.clone());
             }
 
             let theme = LoadedTheme {
@@ -122,13 +129,19 @@ impl ThemeInheritance {
                 is_active: false,
             };
 
-            self.themes.write().insert(theme_id.to_string(), theme.clone());
+            self.themes
+                .write()
+                .insert(theme_id.to_string(), theme.clone());
 
             Ok(theme)
         })
     }
 
-    fn check_circular_dependency(&self, theme_id: &str, parent_id: &str) -> Result<(), ChildThemeError> {
+    fn check_circular_dependency(
+        &self,
+        theme_id: &str,
+        parent_id: &str,
+    ) -> Result<(), ChildThemeError> {
         let hierarchy = self.hierarchy.read();
         let mut current = Some(parent_id.to_string());
         let mut chain = vec![theme_id.to_string()];
@@ -190,7 +203,10 @@ impl ThemeInheritance {
                 }
 
                 // Check template-parts directory (WordPress compat)
-                let part_path = theme.path.join("template-parts").join(format!("{}.html", part_name));
+                let part_path = theme
+                    .path
+                    .join("template-parts")
+                    .join(format!("{}.html", part_name));
                 if part_path.exists() {
                     return Some(part_path);
                 }
@@ -207,7 +223,10 @@ impl ThemeInheritance {
 
         for id in chain {
             if let Some(theme) = themes.get(&id) {
-                let pattern_path = theme.path.join("patterns").join(format!("{}.html", pattern_name));
+                let pattern_path = theme
+                    .path
+                    .join("patterns")
+                    .join(format!("{}.html", pattern_name));
                 if pattern_path.exists() {
                     return Some(pattern_path);
                 }
@@ -296,7 +315,9 @@ impl ThemeInheritance {
 
                 // Child font sizes override/extend parent
                 for size in &theme.manifest.typography.font_sizes {
-                    if let Some(existing) = merged.font_sizes.iter_mut().find(|s| s.slug == size.slug) {
+                    if let Some(existing) =
+                        merged.font_sizes.iter_mut().find(|s| s.slug == size.slug)
+                    {
                         *existing = size.clone();
                     } else {
                         merged.font_sizes.push(size.clone());
@@ -322,15 +343,9 @@ fn is_version_compatible(version: &str, requirement: &str) -> bool {
     // Simple version checking - in production use semver crate
     let req = requirement.trim_start_matches('^').trim_start_matches('~');
 
-    let version_parts: Vec<u32> = version
-        .split('.')
-        .filter_map(|s| s.parse().ok())
-        .collect();
+    let version_parts: Vec<u32> = version.split('.').filter_map(|s| s.parse().ok()).collect();
 
-    let req_parts: Vec<u32> = req
-        .split('.')
-        .filter_map(|s| s.parse().ok())
-        .collect();
+    let req_parts: Vec<u32> = req.split('.').filter_map(|s| s.parse().ok()).collect();
 
     if requirement.starts_with('^') {
         // Caret: compatible with same major version
@@ -482,17 +497,18 @@ pub async fn analyze_overrides(
     theme_id: &str,
 ) -> Result<Vec<ThemeOverride>, ChildThemeError> {
     let themes = inheritance.themes.read();
-    let theme = themes.get(theme_id).ok_or_else(|| {
-        ChildThemeError::Manifest(format!("Theme not found: {}", theme_id))
-    })?;
+    let theme = themes
+        .get(theme_id)
+        .ok_or_else(|| ChildThemeError::Manifest(format!("Theme not found: {}", theme_id)))?;
 
-    let parent_id = theme.parent_id.as_ref().ok_or_else(|| {
-        ChildThemeError::Manifest("Not a child theme".to_string())
-    })?;
+    let parent_id = theme
+        .parent_id
+        .as_ref()
+        .ok_or_else(|| ChildThemeError::Manifest("Not a child theme".to_string()))?;
 
-    let parent = themes.get(parent_id).ok_or_else(|| {
-        ChildThemeError::ParentNotFound(parent_id.clone())
-    })?;
+    let parent = themes
+        .get(parent_id)
+        .ok_or_else(|| ChildThemeError::ParentNotFound(parent_id.clone()))?;
 
     let mut overrides = Vec::new();
 
@@ -509,7 +525,11 @@ pub async fn analyze_overrides(
 
             overrides.push(ThemeOverride {
                 file_path: entry.path().to_path_buf(),
-                parent_path: if parent_path.exists() { Some(parent_path) } else { None },
+                parent_path: if parent_path.exists() {
+                    Some(parent_path)
+                } else {
+                    None
+                },
                 override_type: OverrideType::Template,
             });
         }
@@ -528,7 +548,11 @@ pub async fn analyze_overrides(
 
             overrides.push(ThemeOverride {
                 file_path: entry.path().to_path_buf(),
-                parent_path: if parent_path.exists() { Some(parent_path) } else { None },
+                parent_path: if parent_path.exists() {
+                    Some(parent_path)
+                } else {
+                    None
+                },
                 override_type: OverrideType::TemplatePart,
             });
         }
@@ -559,8 +583,14 @@ mod tests {
         let inheritance = ThemeInheritance::new(PathBuf::from("/themes"));
 
         // Manually add hierarchy for testing
-        inheritance.hierarchy.write().insert("child".to_string(), "parent".to_string());
-        inheritance.hierarchy.write().insert("grandchild".to_string(), "child".to_string());
+        inheritance
+            .hierarchy
+            .write()
+            .insert("child".to_string(), "parent".to_string());
+        inheritance
+            .hierarchy
+            .write()
+            .insert("grandchild".to_string(), "child".to_string());
 
         let chain = inheritance.get_inheritance_chain("grandchild");
         assert_eq!(chain, vec!["grandchild", "child", "parent"]);

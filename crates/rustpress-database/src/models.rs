@@ -5,18 +5,17 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 // Re-export repository models
-pub use crate::repository::posts::PostRow;
-pub use crate::repository::users::UserRow;
-pub use crate::repository::options::{OptionRow, SettingsGroup};
 pub use crate::repository::comments::{
-    CommentRow, CommentMetaRow, CommentLikeRow, CommentWithAuthor,
-    CommentStatus, CreateComment, UpdateComment, CommentListParams,
-    CommentsRepository
+    CommentLikeRow, CommentListParams, CommentMetaRow, CommentRow, CommentStatus,
+    CommentWithAuthor, CommentsRepository, CreateComment, UpdateComment,
 };
+pub use crate::repository::options::{OptionRow, SettingsGroup};
+pub use crate::repository::posts::PostRow;
 pub use crate::repository::themes::{
-    ThemeRow, ThemeOptionRow, ThemePreviewRow,
-    ThemeMenuAssignmentRow, ThemeWidgetAssignmentRow, ThemeRepository
+    ThemeMenuAssignmentRow, ThemeOptionRow, ThemePreviewRow, ThemeRepository, ThemeRow,
+    ThemeWidgetAssignmentRow,
 };
+pub use crate::repository::users::UserRow;
 
 /// Media model
 #[derive(Debug, Clone, sqlx::FromRow, Serialize, Deserialize)]

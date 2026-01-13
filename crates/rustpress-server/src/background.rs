@@ -7,9 +7,8 @@ use std::sync::Arc;
 use tracing::{error, info};
 
 use rustpress_jobs::{
-    JobQueue, Scheduler, Schedule, Worker,
-    PublishScheduledPostsJob, PublishScheduledPostsHandler,
-    CleanThemePreviewsJob, CleanThemePreviewsHandler,
+    CleanThemePreviewsHandler, CleanThemePreviewsJob, JobQueue, PublishScheduledPostsHandler,
+    PublishScheduledPostsJob, Schedule, Scheduler, Worker,
 };
 
 /// Initialize and start the job scheduler with periodic tasks

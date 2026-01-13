@@ -260,15 +260,9 @@ impl Content {
     /// Render content to HTML
     pub fn render_html(&self) -> String {
         match self.format {
-            ContentFormat::Blocks => {
-                BlockRenderer::new().render_blocks(&self.blocks)
-            }
-            ContentFormat::Elementor => {
-                ElementorRenderer::new().render(&self.content)
-            }
-            ContentFormat::Markdown => {
-                MarkdownProcessor::new().to_html(&self.content)
-            }
+            ContentFormat::Blocks => BlockRenderer::new().render_blocks(&self.blocks),
+            ContentFormat::Elementor => ElementorRenderer::new().render(&self.content),
+            ContentFormat::Markdown => MarkdownProcessor::new().to_html(&self.content),
             ContentFormat::Html => self.content.clone(),
             ContentFormat::Text => {
                 format!("<p>{}</p>", ammonia::clean(&self.content))
@@ -418,13 +412,11 @@ impl ContentService {
 
     /// Get content by ID
     pub async fn get(&self, id: Uuid) -> ContentResult<Content> {
-        let row = sqlx::query_as::<_, ContentRow>(
-            "SELECT * FROM contents WHERE id = $1",
-        )
-        .bind(id)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or_else(|| ContentError::NotFound(id.to_string()))?;
+        let row = sqlx::query_as::<_, ContentRow>("SELECT * FROM contents WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&self.pool)
+            .await?
+            .ok_or_else(|| ContentError::NotFound(id.to_string()))?;
 
         row.into_content()
     }
@@ -466,7 +458,11 @@ impl ContentService {
         query.push_str(&format!(
             " ORDER BY {} {} LIMIT {} OFFSET {}",
             filter.order_by.unwrap_or_else(|| "created_at".to_string()),
-            if filter.order_desc.unwrap_or(true) { "DESC" } else { "ASC" },
+            if filter.order_desc.unwrap_or(true) {
+                "DESC"
+            } else {
+                "ASC"
+            },
             filter.limit.unwrap_or(20),
             filter.offset.unwrap_or(0)
         ));
@@ -503,7 +499,8 @@ impl ContentService {
         let slug_regex = regex::Regex::new(r"^[a-z0-9]+(?:-[a-z0-9]+)*$").unwrap();
         if !slug_regex.is_match(&content.slug) {
             return Err(ContentError::Validation(
-                "Invalid slug format. Use lowercase letters, numbers, and hyphens only.".to_string(),
+                "Invalid slug format. Use lowercase letters, numbers, and hyphens only."
+                    .to_string(),
             ));
         }
 

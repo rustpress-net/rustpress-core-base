@@ -118,9 +118,10 @@ impl CloudflareError {
             Self::AuthenticationError(_) | Self::InvalidToken => StatusCode::UNAUTHORIZED,
             Self::PermissionDenied(_) => StatusCode::FORBIDDEN,
             Self::NotFound(_) | Self::ZoneNotFound(_) => StatusCode::NOT_FOUND,
-            Self::ValidationError(_) | Self::InvalidConfig(_) | Self::MissingConfig(_) | Self::ConfigError(_) => {
-                StatusCode::BAD_REQUEST
-            }
+            Self::ValidationError(_)
+            | Self::InvalidConfig(_)
+            | Self::MissingConfig(_)
+            | Self::ConfigError(_) => StatusCode::BAD_REQUEST,
             Self::NotConfigured => StatusCode::SERVICE_UNAVAILABLE,
             Self::RateLimitExceeded => StatusCode::TOO_MANY_REQUESTS,
             Self::Conflict(_) => StatusCode::CONFLICT,

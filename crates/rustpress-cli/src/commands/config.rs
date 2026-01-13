@@ -46,8 +46,14 @@ fn show_config(ctx: &CliContext, secrets: bool) -> CliResult<()> {
     print_header("Current Configuration");
 
     println!("{}", "Server".bold());
-    print_kv("  Host", &std::env::var("RUSTPRESS_HOST").unwrap_or_else(|_| "127.0.0.1".into()));
-    print_kv("  Port", &std::env::var("RUSTPRESS_PORT").unwrap_or_else(|_| "3080".into()));
+    print_kv(
+        "  Host",
+        &std::env::var("RUSTPRESS_HOST").unwrap_or_else(|_| "127.0.0.1".into()),
+    );
+    print_kv(
+        "  Port",
+        &std::env::var("RUSTPRESS_PORT").unwrap_or_else(|_| "3080".into()),
+    );
 
     println!();
     println!("{}", "Database".bold());
@@ -66,15 +72,31 @@ fn show_config(ctx: &CliContext, secrets: bool) -> CliResult<()> {
 
     println!();
     println!("{}", "Storage".bold());
-    print_kv("  Path", &std::env::var("STORAGE_PATH").unwrap_or_else(|_| "./storage".into()));
-    print_kv("  Themes", &std::env::var("THEMES_PATH").unwrap_or_else(|_| "./themes".into()));
+    print_kv(
+        "  Path",
+        &std::env::var("STORAGE_PATH").unwrap_or_else(|_| "./storage".into()),
+    );
+    print_kv(
+        "  Themes",
+        &std::env::var("THEMES_PATH").unwrap_or_else(|_| "./themes".into()),
+    );
 
     println!();
     println!("{}", "Auth".bold());
     if secrets {
-        print_kv("  JWT Secret", &std::env::var("JWT_SECRET").unwrap_or_else(|_| "(not set)".into()));
+        print_kv(
+            "  JWT Secret",
+            &std::env::var("JWT_SECRET").unwrap_or_else(|_| "(not set)".into()),
+        );
     } else {
-        print_kv("  JWT Secret", if std::env::var("JWT_SECRET").is_ok() { "***" } else { "(not set)" });
+        print_kv(
+            "  JWT Secret",
+            if std::env::var("JWT_SECRET").is_ok() {
+                "***"
+            } else {
+                "(not set)"
+            },
+        );
     }
 
     Ok(())
@@ -163,7 +185,10 @@ fn show_env(_ctx: &CliContext) -> CliResult<()> {
     print_kv("  STORAGE_PATH", "File storage path (default: ./storage)");
     print_kv("  THEMES_PATH", "Themes directory (default: ./themes)");
     print_kv("  RUST_LOG", "Logging level (default: info)");
-    print_kv("  CACHE_MAX_CAPACITY", "Maximum cache entries (default: 10000)");
+    print_kv(
+        "  CACHE_MAX_CAPACITY",
+        "Maximum cache entries (default: 10000)",
+    );
 
     Ok(())
 }

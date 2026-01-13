@@ -43,38 +43,25 @@ pub enum SecurityEvent {
         action: String,
     },
     /// Rate limit was exceeded
-    RateLimitExceeded {
-        limit: u32,
-        window_seconds: u64,
-    },
+    RateLimitExceeded { limit: u32, window_seconds: u64 },
     /// Suspicious pattern was detected
     SuspiciousPattern {
         pattern_type: String,
         details: String,
     },
     /// Bot was detected
-    BotDetected {
-        score: u32,
-        signals: Vec<String>,
-    },
+    BotDetected { score: u32, signals: Vec<String> },
     /// Brute force attempt detected
-    BruteForceAttempt {
-        target: String,
-        attempt_count: u32,
-    },
+    BruteForceAttempt { target: String, attempt_count: u32 },
     /// Session anomaly detected
     SessionAnomaly {
         session_id: String,
         anomaly_type: String,
     },
     /// IP was blocked
-    IpBlocked {
-        reason: String,
-    },
+    IpBlocked { reason: String },
     /// CSRF validation failed
-    CsrfFailure {
-        reason: String,
-    },
+    CsrfFailure { reason: String },
 }
 
 impl SecurityEvent {
@@ -360,11 +347,7 @@ impl SecurityAuditLogger {
     }
 
     /// Get event count by type in the last N seconds
-    pub fn count_events_since(
-        &self,
-        event_type: &str,
-        seconds: i64,
-    ) -> usize {
+    pub fn count_events_since(&self, event_type: &str, seconds: i64) -> usize {
         let cutoff = Utc::now() - chrono::Duration::seconds(seconds);
         let events = self.events.read();
         events
@@ -449,13 +432,7 @@ pub async fn security_audit(
                 limit: 0,
                 window_seconds: 0,
             })
-            .with_request_info(
-                request_id,
-                client_ip,
-                None,
-                Some(path),
-                Some(method),
-            ),
+            .with_request_info(request_id, client_ip, None, Some(path), Some(method)),
         );
     }
 

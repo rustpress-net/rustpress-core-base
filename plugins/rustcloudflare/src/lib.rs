@@ -26,6 +26,7 @@ pub mod models;
 pub mod services;
 pub mod workers;
 
+use crate::error::CloudflareResult;
 use async_trait::async_trait;
 use axum::Router;
 use rustpress_core::{
@@ -33,10 +34,9 @@ use rustpress_core::{
     plugin::{Plugin, PluginInfo, PluginState},
     AppContext,
 };
-use crate::error::CloudflareResult;
 use rustpress_plugins::lifecycle::{
-    ActivationContext, DeactivationContext, HookError, InitContext, LifecycleHook,
-    LoadContext, ShutdownContext, UninstallContext, UpgradeContext,
+    ActivationContext, DeactivationContext, HookError, InitContext, LifecycleHook, LoadContext,
+    ShutdownContext, UninstallContext, UpgradeContext,
 };
 use sqlx::PgPool;
 use std::sync::Arc;
@@ -70,9 +70,8 @@ impl RustCloudflarePlugin {
             info: PluginInfo {
                 id: PLUGIN_ID.to_string(),
                 name: "RustCloudflare".to_string(),
-                version: semver::Version::parse(VERSION).unwrap_or_else(|_| {
-                    semver::Version::new(1, 0, 0)
-                }),
+                version: semver::Version::parse(VERSION)
+                    .unwrap_or_else(|_| semver::Version::new(1, 0, 0)),
                 description: "Seamless Cloudflare integration for RustPress".to_string(),
                 author: "RustPress Team".to_string(),
                 author_url: Some("https://rustpress.io".to_string()),
@@ -112,10 +111,7 @@ impl RustCloudflarePlugin {
                 client.verify_connection().await?;
 
                 // Create services layer
-                let services = Arc::new(CloudflareServices::new(
-                    Arc::clone(&client),
-                    pool,
-                ));
+                let services = Arc::new(CloudflareServices::new(Arc::clone(&client), pool));
 
                 // Store in plugin state
                 *self.config.write().await = Some(config);
@@ -139,7 +135,11 @@ impl RustCloudflarePlugin {
     pub async fn init_with_settings(&self, settings: serde_json::Value) -> CloudflareResult<()> {
         let config = CloudflareConfig::from_settings(settings)?;
 
-        let pool = self.db_pool.read().await.clone()
+        let pool = self
+            .db_pool
+            .read()
+            .await
+            .clone()
             .ok_or_else(|| error::CloudflareError::NotConfigured)?;
 
         // Create the Cloudflare API client
@@ -149,10 +149,7 @@ impl RustCloudflarePlugin {
         client.verify_connection().await?;
 
         // Create services layer
-        let services = Arc::new(CloudflareServices::new(
-            Arc::clone(&client),
-            pool,
-        ));
+        let services = Arc::new(CloudflareServices::new(Arc::clone(&client), pool));
 
         // Store in plugin state
         *self.config.write().await = Some(config);
@@ -271,18 +268,27 @@ impl Plugin for RustCloudflarePlugin {
 
     fn state(&self) -> PluginState {
         // This is a sync method, so we use try_read
-        self.state.try_read().map(|s| s.clone()).unwrap_or(PluginState::Inactive)
+        self.state
+            .try_read()
+            .map(|s| s.clone())
+            .unwrap_or(PluginState::Inactive)
     }
 }
 
 #[async_trait]
 impl LifecycleHook for RustCloudflarePlugin {
-    async fn on_activate(&self, _context: &ActivationContext) -> std::result::Result<(), HookError> {
+    async fn on_activate(
+        &self,
+        _context: &ActivationContext,
+    ) -> std::result::Result<(), HookError> {
         info!("RustCloudflare lifecycle: on_activate");
         Ok(())
     }
 
-    async fn on_deactivate(&self, _context: &DeactivationContext) -> std::result::Result<(), HookError> {
+    async fn on_deactivate(
+        &self,
+        _context: &DeactivationContext,
+    ) -> std::result::Result<(), HookError> {
         info!("RustCloudflare lifecycle: on_deactivate");
         Ok(())
     }

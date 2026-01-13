@@ -1,14 +1,14 @@
 //! Page Rules API handlers
 
+use crate::error::CloudflareResult;
+use crate::models::{CreatePageRule, UpdatePageRule};
+use crate::services::CloudflareServices;
 use axum::{
     extract::{Path, State},
     Json,
 };
 use serde::Deserialize;
 use std::sync::Arc;
-use crate::error::CloudflareResult;
-use crate::models::{CreatePageRule, UpdatePageRule};
-use crate::services::CloudflareServices;
 
 /// List all page rules
 pub async fn list_page_rules(
@@ -201,12 +201,16 @@ pub async fn test_pattern(
         }
     };
 
-    let results: Vec<serde_json::Value> = req.urls.iter().map(|url| {
-        serde_json::json!({
-            "url": url,
-            "matches": regex.is_match(url)
+    let results: Vec<serde_json::Value> = req
+        .urls
+        .iter()
+        .map(|url| {
+            serde_json::json!({
+                "url": url,
+                "matches": regex.is_match(url)
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(Json(serde_json::json!({
         "success": true,

@@ -246,17 +246,15 @@ impl MimeDetector {
             // Documents
             "pdf" => Some("application/pdf"),
             "doc" => Some("application/msword"),
-            "docx" => Some(
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            ),
-            "xls" => Some("application/vnd.ms-excel"),
-            "xlsx" => {
-                Some("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            "docx" => {
+                Some("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
             }
+            "xls" => Some("application/vnd.ms-excel"),
+            "xlsx" => Some("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
             "ppt" => Some("application/vnd.ms-powerpoint"),
-            "pptx" => Some(
-                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            ),
+            "pptx" => {
+                Some("application/vnd.openxmlformats-officedocument.presentationml.presentation")
+            }
 
             // Text
             "txt" => Some("text/plain"),
@@ -341,7 +339,10 @@ mod tests {
         let (storage, _temp) = create_test_storage();
 
         let content = Bytes::from("Hello, Storage!");
-        let file = storage.upload(content, "test.txt", "text/plain").await.unwrap();
+        let file = storage
+            .upload(content, "test.txt", "text/plain")
+            .await
+            .unwrap();
 
         assert!(file.path.ends_with(".txt"));
         assert_eq!(file.size, 15);
@@ -353,7 +354,9 @@ mod tests {
 
         // File too large
         let large_content = Bytes::from(vec![0u8; 100 * 1024 * 1024]); // 100MB
-        let result = storage.upload(large_content, "big.bin", "application/octet-stream").await;
+        let result = storage
+            .upload(large_content, "big.bin", "application/octet-stream")
+            .await;
         assert!(result.is_err());
     }
 
@@ -361,7 +364,10 @@ mod tests {
     fn test_mime_detector() {
         assert_eq!(MimeDetector::from_extension("jpg"), Some("image/jpeg"));
         assert_eq!(MimeDetector::from_extension("mp4"), Some("video/mp4"));
-        assert_eq!(MimeDetector::from_filename("document.pdf"), Some("application/pdf"));
+        assert_eq!(
+            MimeDetector::from_filename("document.pdf"),
+            Some("application/pdf")
+        );
         assert!(MimeDetector::is_image("image/png"));
         assert!(MimeDetector::is_video("video/mp4"));
     }

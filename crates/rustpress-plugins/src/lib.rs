@@ -44,21 +44,21 @@ pub mod registry;
 pub mod sandbox;
 
 // Plugin manifest and discovery (Points 161-163)
-pub mod manifest;
-pub mod discovery;
 pub mod dependencies;
+pub mod discovery;
+pub mod manifest;
 
 // Plugin lifecycle and settings (Points 165-166)
 pub mod lifecycle;
 pub mod settings;
 
 // Database and assets (Points 167-168)
-pub mod migrations;
 pub mod assets;
+pub mod migrations;
 
 // API and admin (Points 169-170)
-pub mod api;
 pub mod admin;
+pub mod api;
 
 // Registration systems (Points 171-176)
 pub mod registrations;
@@ -83,25 +83,25 @@ pub use registry::PluginRegistry;
 pub use sandbox::PluginSandbox;
 
 // Re-export manifest types (Point 161)
-pub use manifest::{PluginManifest, PluginMeta, ManifestError};
+pub use manifest::{ManifestError, PluginManifest, PluginMeta};
 
 // Re-export discovery types (Point 162)
-pub use discovery::{PluginDiscovery, DiscoveredPlugin, PluginLoader as DiscoveryLoader};
+pub use discovery::{DiscoveredPlugin, PluginDiscovery, PluginLoader as DiscoveryLoader};
 
 // Re-export dependency types (Point 163)
 pub use dependencies::DependencyResolver;
 
 // Re-export sandbox types (Point 164)
-pub use sandbox::{WasmPluginSandbox, WasmSandboxConfig, SandboxError, WasmValue};
+pub use sandbox::{SandboxError, WasmPluginSandbox, WasmSandboxConfig, WasmValue};
 
 // Re-export lifecycle types (Point 165)
-pub use lifecycle::{LifecycleManager, PluginState, HookRegistry};
+pub use lifecycle::{HookRegistry, LifecycleManager, PluginState};
 
 // Re-export settings types (Point 166)
-pub use settings::{SettingsManager, SettingValue, SettingsSchema};
+pub use settings::{SettingValue, SettingsManager, SettingsSchema};
 
 // Re-export migration types (Point 167)
-pub use migrations::{MigrationManager, Migration, MigrationError};
+pub use migrations::{Migration, MigrationError, MigrationManager};
 
 // Re-export asset types (Point 168)
 pub use assets::AssetManager;
@@ -116,49 +116,31 @@ pub use manifest::AdminPage;
 
 // Re-export registration types (Points 171-176)
 pub use registrations::{
-    ShortcodeRegistry,
-    BlockRegistry,
-    WidgetRegistry,
-    CliRegistry,
-    CronRegistry,
-    CapabilityRegistry,
+    BlockRegistry, CapabilityRegistry, CliRegistry, CronRegistry, ShortcodeRegistry, WidgetRegistry,
 };
 
 // Re-export update types (Points 177-179)
 pub use updates::{
-    UpdateChecker, UpdateInfo, UpdateConfig,
-    MarketplaceClient, MarketplacePlugin,
-    ConflictDetector, DetectedConflict,
+    ConflictDetector, DetectedConflict, MarketplaceClient, MarketplacePlugin, UpdateChecker,
+    UpdateConfig, UpdateInfo,
 };
 
 // Re-export monitoring types (Points 180-181)
-pub use monitoring::{
-    PerformanceMonitor, PluginMetrics,
-    ErrorIsolator,
-};
+pub use monitoring::{ErrorIsolator, PerformanceMonitor, PluginMetrics};
 
 // Re-export feature types (Points 182-185)
 pub use features::{
-    ConfigManager, PluginConfig,
-    ABTestManager,
-    FeatureFlagManager, FeatureFlag,
-    PluginHub,
+    ABTestManager, ConfigManager, FeatureFlag, FeatureFlagManager, PluginConfig, PluginHub,
 };
 
 // Re-export network types (Points 186-190)
 pub use network::{
-    MustUseManager, MustUsePlugin,
-    NetworkPluginManager, NetworkPlugin,
-    SigningVerifier, VerificationResult,
-    RollbackManager, PluginBackup,
-    AnalyticsCollector, PluginUsage,
+    AnalyticsCollector, MustUseManager, MustUsePlugin, NetworkPlugin, NetworkPluginManager,
+    PluginBackup, PluginUsage, RollbackManager, SigningVerifier, VerificationResult,
 };
 
 // Re-export crypto types for API key encryption
-pub use crypto::{
-    EncryptionKey, ApiKeyEncryptor, EncryptedValue,
-    CryptoError, CryptoResult,
-};
+pub use crypto::{ApiKeyEncryptor, CryptoError, CryptoResult, EncryptedValue, EncryptionKey};
 
 use rustpress_core::plugin::{Plugin, PluginInfo};
 use std::sync::Arc;

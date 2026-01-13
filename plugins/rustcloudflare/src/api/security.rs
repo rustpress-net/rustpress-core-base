@@ -1,14 +1,14 @@
 //! Security API handlers (WAF, Firewall, IP Access Rules)
 
+use crate::error::CloudflareResult;
+use crate::models::CreateFirewallRule;
+use crate::services::CloudflareServices;
 use axum::{
     extract::{Path, Query, State},
     Json,
 };
 use serde::Deserialize;
 use std::sync::Arc;
-use crate::error::CloudflareResult;
-use crate::models::CreateFirewallRule;
-use crate::services::CloudflareServices;
 
 #[derive(Debug, Deserialize)]
 pub struct SetSecurityLevelRequest {
@@ -63,7 +63,14 @@ pub async fn set_security_level(
     Json(req): Json<SetSecurityLevelRequest>,
 ) -> CloudflareResult<Json<serde_json::Value>> {
     // Validate level
-    let valid_levels = ["off", "essentially_off", "low", "medium", "high", "under_attack"];
+    let valid_levels = [
+        "off",
+        "essentially_off",
+        "low",
+        "medium",
+        "high",
+        "under_attack",
+    ];
     if !valid_levels.contains(&req.level.as_str()) {
         return Ok(Json(serde_json::json!({
             "success": false,
@@ -207,7 +214,10 @@ pub async fn block_ip(
     State(services): State<Arc<CloudflareServices>>,
     Json(req): Json<IpAccessRequest>,
 ) -> CloudflareResult<Json<serde_json::Value>> {
-    let rule = services.security.block_ip(&req.ip, req.note.as_deref()).await?;
+    let rule = services
+        .security
+        .block_ip(&req.ip, req.note.as_deref())
+        .await?;
 
     Ok(Json(serde_json::json!({
         "success": true,
@@ -221,7 +231,10 @@ pub async fn allow_ip(
     State(services): State<Arc<CloudflareServices>>,
     Json(req): Json<IpAccessRequest>,
 ) -> CloudflareResult<Json<serde_json::Value>> {
-    let rule = services.security.allow_ip(&req.ip, req.note.as_deref()).await?;
+    let rule = services
+        .security
+        .allow_ip(&req.ip, req.note.as_deref())
+        .await?;
 
     Ok(Json(serde_json::json!({
         "success": true,
@@ -288,6 +301,6 @@ fn get_security_level_description(level: &str) -> &'static str {
         "medium" => "Medium - Challenges both moderate and severe threats",
         "high" => "High - Challenges all visitors that have shown threatening behavior",
         "under_attack" => "I'm Under Attack! - Maximum protection for sites under DDoS attack",
-        _ => "Unknown security level"
+        _ => "Unknown security level",
     }
 }

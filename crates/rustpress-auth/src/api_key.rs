@@ -6,7 +6,7 @@ use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
 use rustpress_core::error::{Error, Result};
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use std::sync::RwLock;
 use uuid::Uuid;
@@ -185,9 +185,7 @@ impl<S: ApiKeyStore> ApiKeyManager<S> {
     /// Generate a new API key
     fn generate_key(&self) -> String {
         let mut rng = rand::thread_rng();
-        let bytes: Vec<u8> = (0..self.config.key_length)
-            .map(|_| rng.gen())
-            .collect();
+        let bytes: Vec<u8> = (0..self.config.key_length).map(|_| rng.gen()).collect();
 
         format!("{}{}", self.config.key_prefix, hex::encode(bytes))
     }
@@ -213,9 +211,10 @@ impl<S: ApiKeyStore> ApiKeyManager<S> {
         // Check key limit
         let count = self.store.count_user_keys(user_id).await?;
         if count >= self.config.max_keys_per_user {
-            return Err(Error::validation(
-                format!("Maximum {} API keys per user", self.config.max_keys_per_user)
-            ));
+            return Err(Error::validation(format!(
+                "Maximum {} API keys per user",
+                self.config.max_keys_per_user
+            )));
         }
 
         let raw_key = self.generate_key();
@@ -223,9 +222,7 @@ impl<S: ApiKeyStore> ApiKeyManager<S> {
         let prefix = raw_key.chars().take(12).collect();
         let now = Utc::now();
 
-        let expiry = expires_at.or_else(|| {
-            self.config.default_expiry.map(|d| now + d)
-        });
+        let expiry = expires_at.or_else(|| self.config.default_expiry.map(|d| now + d));
 
         let api_key = ApiKey {
             id: Uuid::now_v7(),
@@ -257,12 +254,13 @@ impl<S: ApiKeyStore> ApiKeyManager<S> {
     pub async fn validate(&self, key: &str, ip: Option<&str>) -> Result<ApiKey> {
         let key_hash = Self::hash_key(key);
 
-        let mut api_key = self.store
-            .get_by_hash(&key_hash)
-            .await?
-            .ok_or_else(|| Error::Authentication {
-                message: "Invalid API key".to_string(),
-            })?;
+        let mut api_key =
+            self.store
+                .get_by_hash(&key_hash)
+                .await?
+                .ok_or_else(|| Error::Authentication {
+                    message: "Invalid API key".to_string(),
+                })?;
 
         if !api_key.is_valid() {
             return Err(Error::Authentication {
@@ -327,7 +325,8 @@ impl<S: ApiKeyStore> ApiKeyManager<S> {
 
     /// Rotate an API key (create new, revoke old)
     pub async fn rotate(&self, old_key_id: Uuid) -> Result<(String, ApiKey)> {
-        let old_key = self.store
+        let old_key = self
+            .store
             .get_by_id(old_key_id)
             .await?
             .ok_or_else(|| Error::NotFound {
@@ -336,15 +335,17 @@ impl<S: ApiKeyStore> ApiKeyManager<S> {
             })?;
 
         // Create new key with same settings
-        let (new_raw_key, new_key) = self.create(
-            old_key.user_id,
-            format!("{} (rotated)", old_key.name),
-            old_key.scopes,
-            old_key.site_id,
-            old_key.expires_at,
-            old_key.allowed_ips,
-            old_key.rate_limit,
-        ).await?;
+        let (new_raw_key, new_key) = self
+            .create(
+                old_key.user_id,
+                format!("{} (rotated)", old_key.name),
+                old_key.scopes,
+                old_key.site_id,
+                old_key.expires_at,
+                old_key.allowed_ips,
+                old_key.rate_limit,
+            )
+            .await?;
 
         // Revoke old key
         self.revoke(old_key_id, Some("Rotated".to_string())).await?;
@@ -404,7 +405,11 @@ impl ApiKeyStore for InMemoryApiKeyStore {
             message: "Lock poisoned".to_string(),
             request_id: None,
         })?;
-        Ok(keys.values().filter(|k| k.user_id == user_id).cloned().collect())
+        Ok(keys
+            .values()
+            .filter(|k| k.user_id == user_id)
+            .cloned()
+            .collect())
     }
 
     async fn update(&self, key: &ApiKey) -> Result<()> {
@@ -447,7 +452,10 @@ impl ApiKeyStore for InMemoryApiKeyStore {
             message: "Lock poisoned".to_string(),
             request_id: None,
         })?;
-        Ok(keys.values().filter(|k| k.user_id == user_id && k.is_active).count())
+        Ok(keys
+            .values()
+            .filter(|k| k.user_id == user_id && k.is_active)
+            .count())
     }
 }
 
@@ -464,7 +472,15 @@ mod tests {
         let scopes = [ApiKeyScope::read_only()].into_iter().collect();
 
         let (raw_key, api_key) = manager
-            .create(user_id, "Test Key".to_string(), scopes, None, None, None, None)
+            .create(
+                user_id,
+                "Test Key".to_string(),
+                scopes,
+                None,
+                None,
+                None,
+                None,
+            )
             .await
             .unwrap();
 
@@ -481,7 +497,15 @@ mod tests {
         let scopes = [ApiKeyScope::full_access()].into_iter().collect();
 
         let (raw_key, _) = manager
-            .create(user_id, "Test Key".to_string(), scopes, None, None, None, None)
+            .create(
+                user_id,
+                "Test Key".to_string(),
+                scopes,
+                None,
+                None,
+                None,
+                None,
+            )
             .await
             .unwrap();
 

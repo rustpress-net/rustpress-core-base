@@ -19,8 +19,8 @@ use std::collections::HashMap;
 use tracing::{debug, info, warn};
 
 use crate::{
-    CacheRule, CacheSettings, CdnClient, CdnConfiguration, CdnError, CdnStats,
-    DnsRecord, PurgeResult, Result, default_cache_rules,
+    default_cache_rules, CacheRule, CacheSettings, CdnClient, CdnConfiguration, CdnError, CdnStats,
+    DnsRecord, PurgeResult, Result,
 };
 
 /// Cloudflare configuration
@@ -91,14 +91,12 @@ impl CloudflareClient {
         if self.config.use_token {
             headers.insert(
                 AUTHORIZATION,
-                HeaderValue::from_str(&format!("Bearer {}", self.config.api_token))
-                    .unwrap(),
+                HeaderValue::from_str(&format!("Bearer {}", self.config.api_token)).unwrap(),
             );
         } else {
             headers.insert(
                 "X-Auth-Email",
-                HeaderValue::from_str(self.config.email.as_deref().unwrap_or(""))
-                    .unwrap(),
+                HeaderValue::from_str(self.config.email.as_deref().unwrap_or("")).unwrap(),
             );
             headers.insert(
                 "X-Auth-Key",
@@ -118,7 +116,10 @@ impl CloudflareClient {
     ) -> Result<T> {
         let url = format!("{}{}", self.config.api_url, endpoint);
 
-        let mut request = self.client.request(method, &url).headers(self.auth_headers());
+        let mut request = self
+            .client
+            .request(method, &url)
+            .headers(self.auth_headers());
 
         if let Some(body) = body {
             request = request.json(&body);
@@ -144,7 +145,8 @@ impl CloudflareClient {
             return Err(CdnError::Api(errors.join(", ")));
         }
 
-        body.result.ok_or_else(|| CdnError::Api("Empty response".to_string()))
+        body.result
+            .ok_or_else(|| CdnError::Api("Empty response".to_string()))
     }
 
     /// Get zone details
@@ -174,16 +176,20 @@ impl CloudflareClient {
     /// Configure SSL/TLS
     pub async fn configure_ssl(&self, mode: &str) -> Result<()> {
         // Set SSL mode (off, flexible, full, strict)
-        self.update_zone_setting("ssl", serde_json::json!(mode)).await?;
+        self.update_zone_setting("ssl", serde_json::json!(mode))
+            .await?;
 
         // Enable Always Use HTTPS
-        self.update_zone_setting("always_use_https", serde_json::json!("on")).await?;
+        self.update_zone_setting("always_use_https", serde_json::json!("on"))
+            .await?;
 
         // Enable Automatic HTTPS Rewrites
-        self.update_zone_setting("automatic_https_rewrites", serde_json::json!("on")).await?;
+        self.update_zone_setting("automatic_https_rewrites", serde_json::json!("on"))
+            .await?;
 
         // Enable TLS 1.3
-        self.update_zone_setting("min_tls_version", serde_json::json!("1.2")).await?;
+        self.update_zone_setting("min_tls_version", serde_json::json!("1.2"))
+            .await?;
 
         info!("SSL/TLS configured with mode: {}", mode);
         Ok(())
@@ -197,14 +203,12 @@ impl CloudflareClient {
             "basic" => "basic",
             _ => "standard",
         };
-        self.update_zone_setting("cache_level", serde_json::json!(cache_level)).await?;
+        self.update_zone_setting("cache_level", serde_json::json!(cache_level))
+            .await?;
 
         // Set browser cache TTL
-        self.update_zone_setting(
-            "browser_cache_ttl",
-            serde_json::json!(settings.browser_ttl),
-        )
-        .await?;
+        self.update_zone_setting("browser_cache_ttl", serde_json::json!(settings.browser_ttl))
+            .await?;
 
         // Configure minification
         self.update_zone_setting(
@@ -218,7 +222,8 @@ impl CloudflareClient {
         .await?;
 
         // Enable Brotli compression
-        self.update_zone_setting("brotli", serde_json::json!("on")).await?;
+        self.update_zone_setting("brotli", serde_json::json!("on"))
+            .await?;
 
         info!("Caching settings configured");
         Ok(())
@@ -227,19 +232,24 @@ impl CloudflareClient {
     /// Configure security settings
     pub async fn configure_security(&self) -> Result<()> {
         // Security level
-        self.update_zone_setting("security_level", serde_json::json!("medium")).await?;
+        self.update_zone_setting("security_level", serde_json::json!("medium"))
+            .await?;
 
         // Enable WAF
-        self.update_zone_setting("waf", serde_json::json!("on")).await?;
+        self.update_zone_setting("waf", serde_json::json!("on"))
+            .await?;
 
         // Enable Bot Fight Mode
-        self.update_zone_setting("bot_fight_mode", serde_json::json!("on")).await?;
+        self.update_zone_setting("bot_fight_mode", serde_json::json!("on"))
+            .await?;
 
         // Enable Email Obfuscation
-        self.update_zone_setting("email_obfuscation", serde_json::json!("on")).await?;
+        self.update_zone_setting("email_obfuscation", serde_json::json!("on"))
+            .await?;
 
         // Enable Hotlink Protection
-        self.update_zone_setting("hotlink_protection", serde_json::json!("on")).await?;
+        self.update_zone_setting("hotlink_protection", serde_json::json!("on"))
+            .await?;
 
         info!("Security settings configured");
         Ok(())

@@ -201,7 +201,11 @@ impl Metrics {
 
         // Job metrics
         let jobs_total = Family::<JobLabels, Counter>::default();
-        registry.register("jobs_total", "Total jobs by type and status", jobs_total.clone());
+        registry.register(
+            "jobs_total",
+            "Total jobs by type and status",
+            jobs_total.clone(),
+        );
 
         let job_duration_seconds = Family::<JobLabels, Histogram>::new_with_constructor(|| {
             Histogram::new(exponential_buckets(0.1, 2.0, 12))
@@ -213,7 +217,11 @@ impl Metrics {
         );
 
         let jobs_queued = Gauge::default();
-        registry.register("jobs_queued", "Jobs currently in queue", jobs_queued.clone());
+        registry.register(
+            "jobs_queued",
+            "Jobs currently in queue",
+            jobs_queued.clone(),
+        );
 
         let jobs_processing = Gauge::default();
         registry.register(
@@ -245,11 +253,7 @@ impl Metrics {
         );
 
         let total_users = Gauge::default();
-        registry.register(
-            "total_users",
-            "Total registered users",
-            total_users.clone(),
-        );
+        registry.register("total_users", "Total registered users", total_users.clone());
 
         let total_posts = Gauge::default();
         registry.register("total_posts", "Total posts", total_posts.clone());

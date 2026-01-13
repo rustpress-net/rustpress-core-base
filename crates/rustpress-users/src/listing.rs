@@ -304,14 +304,19 @@ impl ListColumn {
 /// Default columns for user list
 pub fn default_user_columns() -> Vec<ListColumn> {
     vec![
-        ListColumn::new("cb", "").not_sortable().width("2.2em").order(0),
+        ListColumn::new("cb", "")
+            .not_sortable()
+            .width("2.2em")
+            .order(0),
         ListColumn::new("username", "Username").order(1),
         ListColumn::new("name", "Name").order(2),
         ListColumn::new("email", "Email").order(3),
         ListColumn::new("role", "Role").not_sortable().order(4),
         ListColumn::new("posts", "Posts").order(5),
         ListColumn::new("registered", "Registered").order(6),
-        ListColumn::new("last_login", "Last Login").hidden().order(7),
+        ListColumn::new("last_login", "Last Login")
+            .hidden()
+            .order(7),
     ]
 }
 
@@ -499,7 +504,10 @@ impl BulkExecutor {
 
         // Prevent self-actions
         if request.user_ids.contains(&request.requested_by) {
-            if matches!(request.action, BulkAction::Delete | BulkAction::Suspend | BulkAction::Deactivate) {
+            if matches!(
+                request.action,
+                BulkAction::Delete | BulkAction::Suspend | BulkAction::Deactivate
+            ) {
                 return Err("Cannot perform this action on yourself".to_string());
             }
         }
@@ -653,31 +661,33 @@ impl FilterPreset {
 /// Default filter presets
 pub fn default_filter_presets() -> Vec<FilterPreset> {
     vec![
-        FilterPreset::new(
-            "all",
-            "All Users",
-            UserListQuery::new()
-        ).system(),
+        FilterPreset::new("all", "All Users", UserListQuery::new()).system(),
         FilterPreset::new(
             "administrators",
             "Administrators",
-            UserListQuery::new().role("administrator")
-        ).system(),
+            UserListQuery::new().role("administrator"),
+        )
+        .system(),
         FilterPreset::new(
             "pending",
             "Pending",
-            UserListQuery::new().status(UserStatus::Pending)
-        ).system(),
+            UserListQuery::new().status(UserStatus::Pending),
+        )
+        .system(),
         FilterPreset::new(
             "suspended",
             "Suspended",
-            UserListQuery::new().status(UserStatus::Suspended)
-        ).system(),
+            UserListQuery::new().status(UserStatus::Suspended),
+        )
+        .system(),
         FilterPreset::new(
             "recent",
             "Recently Registered",
-            UserListQuery::new().order_by(UserOrderBy::RegisteredDate).order(SortOrder::Desc)
-        ).system(),
+            UserListQuery::new()
+                .order_by(UserOrderBy::RegisteredDate)
+                .order(SortOrder::Desc),
+        )
+        .system(),
     ]
 }
 
@@ -703,11 +713,7 @@ mod tests {
     #[test]
     fn test_pagination() {
         let users = vec![];
-        let result = UserListResult::new(
-            users,
-            45,
-            UserListQuery::new().page(2).per_page(10)
-        );
+        let result = UserListResult::new(users, 45, UserListQuery::new().page(2).per_page(10));
 
         assert_eq!(result.total_pages, 5);
         assert!(result.has_next_page());
@@ -718,11 +724,7 @@ mod tests {
     fn test_bulk_validation() {
         let executor = BulkExecutor::new();
 
-        let request = BulkActionRequest::new(
-            BulkAction::Delete,
-            vec![2, 3, 4],
-            5
-        );
+        let request = BulkActionRequest::new(BulkAction::Delete, vec![2, 3, 4], 5);
 
         assert!(executor.validate(&request).is_ok());
 
@@ -730,7 +732,7 @@ mod tests {
         let request = BulkActionRequest::new(
             BulkAction::Delete,
             vec![1], // Protected
-            5
+            5,
         );
 
         assert!(executor.validate(&request).is_err());
@@ -740,9 +742,18 @@ mod tests {
     fn test_search_pattern() {
         let search = UserSearch::new();
 
-        assert!(matches!(search.build_pattern("john"), SearchPattern::Wildcard(_)));
-        assert!(matches!(search.build_pattern("john@example.com"), SearchPattern::Exact(_)));
-        assert!(matches!(search.build_pattern("123"), SearchPattern::Id(123)));
+        assert!(matches!(
+            search.build_pattern("john"),
+            SearchPattern::Wildcard(_)
+        ));
+        assert!(matches!(
+            search.build_pattern("john@example.com"),
+            SearchPattern::Exact(_)
+        ));
+        assert!(matches!(
+            search.build_pattern("123"),
+            SearchPattern::Id(123)
+        ));
     }
 
     #[test]

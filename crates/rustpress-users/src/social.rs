@@ -213,70 +213,105 @@ impl FollowManager {
     /// Unfollow a user
     pub fn unfollow(&mut self, follower_id: i64, following_id: i64) -> bool {
         let initial_len = self.follows.len();
-        self.follows.retain(|f| !(f.follower_id == follower_id && f.following_id == following_id));
+        self.follows
+            .retain(|f| !(f.follower_id == follower_id && f.following_id == following_id));
         self.follows.len() < initial_len
     }
 
     /// Check if following
     pub fn is_following(&self, follower_id: i64, following_id: i64) -> bool {
-        self.follows.iter().any(|f| f.follower_id == follower_id && f.following_id == following_id)
+        self.follows
+            .iter()
+            .any(|f| f.follower_id == follower_id && f.following_id == following_id)
     }
 
     /// Get followers of a user
     pub fn get_followers(&self, user_id: i64) -> Vec<&Follow> {
-        self.follows.iter()
+        self.follows
+            .iter()
             .filter(|f| f.following_id == user_id)
             .collect()
     }
 
     /// Get users that a user follows
     pub fn get_following(&self, user_id: i64) -> Vec<&Follow> {
-        self.follows.iter()
+        self.follows
+            .iter()
             .filter(|f| f.follower_id == user_id)
             .collect()
     }
 
     /// Get follower count
     pub fn follower_count(&self, user_id: i64) -> usize {
-        self.follows.iter().filter(|f| f.following_id == user_id).count()
+        self.follows
+            .iter()
+            .filter(|f| f.following_id == user_id)
+            .count()
     }
 
     /// Get following count
     pub fn following_count(&self, user_id: i64) -> usize {
-        self.follows.iter().filter(|f| f.follower_id == user_id).count()
+        self.follows
+            .iter()
+            .filter(|f| f.follower_id == user_id)
+            .count()
     }
 
     /// Subscribe to content
     pub fn subscribe(&mut self, subscription: Subscription) {
-        if !self.is_subscribed(subscription.user_id, &subscription.subscription_type, subscription.target_id) {
+        if !self.is_subscribed(
+            subscription.user_id,
+            &subscription.subscription_type,
+            subscription.target_id,
+        ) {
             self.subscriptions.push(subscription);
         }
     }
 
     /// Unsubscribe
-    pub fn unsubscribe(&mut self, user_id: i64, subscription_type: &SubscriptionType, target_id: i64) {
+    pub fn unsubscribe(
+        &mut self,
+        user_id: i64,
+        subscription_type: &SubscriptionType,
+        target_id: i64,
+    ) {
         self.subscriptions.retain(|s| {
-            !(s.user_id == user_id && s.subscription_type == *subscription_type && s.target_id == target_id)
+            !(s.user_id == user_id
+                && s.subscription_type == *subscription_type
+                && s.target_id == target_id)
         });
     }
 
     /// Check subscription
-    pub fn is_subscribed(&self, user_id: i64, subscription_type: &SubscriptionType, target_id: i64) -> bool {
+    pub fn is_subscribed(
+        &self,
+        user_id: i64,
+        subscription_type: &SubscriptionType,
+        target_id: i64,
+    ) -> bool {
         self.subscriptions.iter().any(|s| {
-            s.user_id == user_id && s.subscription_type == *subscription_type && s.target_id == target_id
+            s.user_id == user_id
+                && s.subscription_type == *subscription_type
+                && s.target_id == target_id
         })
     }
 
     /// Get subscriptions for user
     pub fn get_subscriptions(&self, user_id: i64) -> Vec<&Subscription> {
-        self.subscriptions.iter()
+        self.subscriptions
+            .iter()
             .filter(|s| s.user_id == user_id)
             .collect()
     }
 
     /// Get subscribers for content
-    pub fn get_subscribers(&self, subscription_type: &SubscriptionType, target_id: i64) -> Vec<i64> {
-        self.subscriptions.iter()
+    pub fn get_subscribers(
+        &self,
+        subscription_type: &SubscriptionType,
+        target_id: i64,
+    ) -> Vec<i64> {
+        self.subscriptions
+            .iter()
             .filter(|s| s.subscription_type == *subscription_type && s.target_id == target_id)
             .map(|s| s.user_id)
             .collect()
@@ -366,9 +401,7 @@ impl MessageThread {
     }
 
     pub fn get_other_participant(&self, user_id: i64) -> Option<i64> {
-        self.participants.iter()
-            .find(|&&p| p != user_id)
-            .copied()
+        self.participants.iter().find(|&&p| p != user_id).copied()
     }
 
     pub fn last_message(&self) -> Option<&Message> {
@@ -376,7 +409,8 @@ impl MessageThread {
     }
 
     pub fn unread_count(&self, user_id: i64) -> usize {
-        self.messages.iter()
+        self.messages
+            .iter()
             .filter(|m| m.sender_id != user_id && m.read_at.is_none() && !m.deleted)
             .count()
     }
@@ -405,7 +439,12 @@ impl InboxManager {
     }
 
     /// Start a new conversation
-    pub fn start_thread(&mut self, sender_id: i64, recipient_id: i64, message: &str) -> Result<&MessageThread, String> {
+    pub fn start_thread(
+        &mut self,
+        sender_id: i64,
+        recipient_id: i64,
+        message: &str,
+    ) -> Result<&MessageThread, String> {
         // Check if blocked
         if self.is_blocked(recipient_id, sender_id) {
             return Err("You cannot message this user".to_string());
@@ -426,10 +465,12 @@ impl InboxManager {
         self.threads.insert(thread_id, thread);
 
         // Update user thread lists
-        self.user_threads.entry(sender_id)
+        self.user_threads
+            .entry(sender_id)
             .or_insert_with(Vec::new)
             .push(thread_id);
-        self.user_threads.entry(recipient_id)
+        self.user_threads
+            .entry(recipient_id)
             .or_insert_with(Vec::new)
             .push(thread_id);
 
@@ -451,8 +492,15 @@ impl InboxManager {
     }
 
     /// Send message to existing thread
-    pub fn send_message(&mut self, thread_id: Uuid, sender_id: i64, content: &str) -> Result<(), String> {
-        let thread = self.threads.get_mut(&thread_id)
+    pub fn send_message(
+        &mut self,
+        thread_id: Uuid,
+        sender_id: i64,
+        content: &str,
+    ) -> Result<(), String> {
+        let thread = self
+            .threads
+            .get_mut(&thread_id)
             .ok_or_else(|| "Thread not found".to_string())?;
 
         if !thread.participants.contains(&sender_id) {
@@ -465,9 +513,11 @@ impl InboxManager {
 
     /// Get threads for user
     pub fn get_threads(&self, user_id: i64) -> Vec<&MessageThread> {
-        self.user_threads.get(&user_id)
+        self.user_threads
+            .get(&user_id)
             .map(|thread_ids| {
-                let mut threads: Vec<_> = thread_ids.iter()
+                let mut threads: Vec<_> = thread_ids
+                    .iter()
                     .filter_map(|id| self.threads.get(id))
                     .collect();
                 threads.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
@@ -494,14 +544,16 @@ impl InboxManager {
 
     /// Get unread count
     pub fn get_unread_count(&self, user_id: i64) -> usize {
-        self.get_threads(user_id).iter()
+        self.get_threads(user_id)
+            .iter()
             .map(|t| t.unread_count(user_id))
             .sum()
     }
 
     /// Block user
     pub fn block_user(&mut self, user_id: i64, blocked_id: i64) {
-        self.blocked_users.entry(user_id)
+        self.blocked_users
+            .entry(user_id)
             .or_insert_with(Vec::new)
             .push(blocked_id);
     }
@@ -515,7 +567,8 @@ impl InboxManager {
 
     /// Check if blocked
     pub fn is_blocked(&self, user_id: i64, by_user_id: i64) -> bool {
-        self.blocked_users.get(&user_id)
+        self.blocked_users
+            .get(&user_id)
             .map(|blocked| blocked.contains(&by_user_id))
             .unwrap_or(false)
     }
@@ -856,26 +909,34 @@ impl BadgeManager {
     }
 
     pub fn get_earned(&self, user_id: i64) -> Vec<&EarnedBadge> {
-        self.earned.get(&user_id)
+        self.earned
+            .get(&user_id)
             .map(|badges| badges.iter().collect())
             .unwrap_or_default()
     }
 
     pub fn has_badge(&self, user_id: i64, badge_id: &str) -> bool {
-        self.earned.get(&user_id)
+        self.earned
+            .get(&user_id)
             .map(|badges| badges.iter().any(|b| b.badge_id == badge_id))
             .unwrap_or(false)
     }
 
     pub fn update_progress(&mut self, user_id: i64, criteria_type: CriteriaType, value: i64) {
-        let progress = self.user_progress.entry(user_id)
+        let progress = self
+            .user_progress
+            .entry(user_id)
             .or_insert_with(HashMap::new);
         progress.insert(criteria_type, value);
     }
 
     pub fn check_and_award(&mut self, user_id: i64) -> Vec<&Badge> {
         let mut awarded = Vec::new();
-        let progress = self.user_progress.get(&user_id).cloned().unwrap_or_default();
+        let progress = self
+            .user_progress
+            .get(&user_id)
+            .cloned()
+            .unwrap_or_default();
 
         for badge in self.badges.values() {
             // Skip if already earned
@@ -884,10 +945,14 @@ impl BadgeManager {
             }
 
             // Check criteria
-            let current = progress.get(&badge.criteria.criteria_type).copied().unwrap_or(0);
+            let current = progress
+                .get(&badge.criteria.criteria_type)
+                .copied()
+                .unwrap_or(0);
             if current >= badge.criteria.threshold {
                 // Award badge
-                self.earned.entry(user_id)
+                self.earned
+                    .entry(user_id)
                     .or_insert_with(Vec::new)
                     .push(EarnedBadge {
                         badge_id: badge.id.clone(),
@@ -901,7 +966,8 @@ impl BadgeManager {
         }
 
         // Return awarded badges
-        awarded.iter()
+        awarded
+            .iter()
             .filter_map(|id| self.badges.get(*id))
             .collect()
     }
@@ -909,7 +975,10 @@ impl BadgeManager {
     pub fn get_progress(&self, user_id: i64, badge_id: &str) -> Option<(i64, i64)> {
         let badge = self.badges.get(badge_id)?;
         let progress = self.user_progress.get(&user_id)?;
-        let current = progress.get(&badge.criteria.criteria_type).copied().unwrap_or(0);
+        let current = progress
+            .get(&badge.criteria.criteria_type)
+            .copied()
+            .unwrap_or(0);
         Some((current, badge.criteria.threshold))
     }
 }
@@ -963,7 +1032,10 @@ mod tests {
     #[test]
     fn test_reputation_levels() {
         assert_eq!(ReputationLevel::from_points(0), ReputationLevel::Newcomer);
-        assert_eq!(ReputationLevel::from_points(100), ReputationLevel::Contributor);
+        assert_eq!(
+            ReputationLevel::from_points(100),
+            ReputationLevel::Contributor
+        );
         assert_eq!(ReputationLevel::from_points(10000), ReputationLevel::Legend);
     }
 

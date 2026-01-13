@@ -2,12 +2,12 @@
 //!
 //! Advanced plugin features for configuration management and experimentation.
 
+use parking_lot::RwLock;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use parking_lot::RwLock;
 use tracing::{debug, info};
-use rand::Rng;
 
 // ============================================================================
 // Configuration Export/Import (Point 182)
@@ -57,7 +57,9 @@ impl ConfigManager {
 
     /// Store configuration
     pub fn store(&self, config: PluginConfig) {
-        self.configs.write().insert(config.plugin_id.clone(), config);
+        self.configs
+            .write()
+            .insert(config.plugin_id.clone(), config);
     }
 
     /// Export plugin configuration
@@ -71,14 +73,10 @@ impl ConfigManager {
         export_config.exported_at = Some(chrono::Utc::now());
 
         match format {
-            ExportFormat::Json => {
-                serde_json::to_string_pretty(&export_config)
-                    .map_err(|e| ConfigError::SerializationFailed(e.to_string()))
-            }
-            ExportFormat::Toml => {
-                toml::to_string_pretty(&export_config)
-                    .map_err(|e| ConfigError::SerializationFailed(e.to_string()))
-            }
+            ExportFormat::Json => serde_json::to_string_pretty(&export_config)
+                .map_err(|e| ConfigError::SerializationFailed(e.to_string())),
+            ExportFormat::Toml => toml::to_string_pretty(&export_config)
+                .map_err(|e| ConfigError::SerializationFailed(e.to_string())),
             ExportFormat::Yaml => {
                 // Would use serde_yaml in real implementation
                 Err(ConfigError::UnsupportedFormat("yaml".to_string()))
@@ -87,7 +85,11 @@ impl ConfigManager {
     }
 
     /// Export multiple plugins
-    pub fn export_all(&self, plugin_ids: &[String], format: ExportFormat) -> Result<String, ConfigError> {
+    pub fn export_all(
+        &self,
+        plugin_ids: &[String],
+        format: ExportFormat,
+    ) -> Result<String, ConfigError> {
         let configs = self.configs.read();
         let mut export_data: HashMap<String, PluginConfig> = HashMap::new();
 
@@ -100,31 +102,21 @@ impl ConfigManager {
         }
 
         match format {
-            ExportFormat::Json => {
-                serde_json::to_string_pretty(&export_data)
-                    .map_err(|e| ConfigError::SerializationFailed(e.to_string()))
-            }
-            ExportFormat::Toml => {
-                toml::to_string_pretty(&export_data)
-                    .map_err(|e| ConfigError::SerializationFailed(e.to_string()))
-            }
-            ExportFormat::Yaml => {
-                Err(ConfigError::UnsupportedFormat("yaml".to_string()))
-            }
+            ExportFormat::Json => serde_json::to_string_pretty(&export_data)
+                .map_err(|e| ConfigError::SerializationFailed(e.to_string())),
+            ExportFormat::Toml => toml::to_string_pretty(&export_data)
+                .map_err(|e| ConfigError::SerializationFailed(e.to_string())),
+            ExportFormat::Yaml => Err(ConfigError::UnsupportedFormat("yaml".to_string())),
         }
     }
 
     /// Import plugin configuration
     pub fn import(&self, data: &str, format: ExportFormat) -> Result<ImportResult, ConfigError> {
         let config: PluginConfig = match format {
-            ExportFormat::Json => {
-                serde_json::from_str(data)
-                    .map_err(|e| ConfigError::DeserializationFailed(e.to_string()))?
-            }
-            ExportFormat::Toml => {
-                toml::from_str(data)
-                    .map_err(|e| ConfigError::DeserializationFailed(e.to_string()))?
-            }
+            ExportFormat::Json => serde_json::from_str(data)
+                .map_err(|e| ConfigError::DeserializationFailed(e.to_string()))?,
+            ExportFormat::Toml => toml::from_str(data)
+                .map_err(|e| ConfigError::DeserializationFailed(e.to_string()))?,
             ExportFormat::Yaml => {
                 return Err(ConfigError::UnsupportedFormat("yaml".to_string()));
             }
@@ -319,7 +311,11 @@ impl ABTestManager {
         if let Some(variant_id) = self.get_assignment(experiment_id, user_id) {
             let experiments = self.experiments.read();
             if let Some(experiment) = experiments.get(experiment_id) {
-                return experiment.variants.iter().find(|v| v.id == variant_id).cloned();
+                return experiment
+                    .variants
+                    .iter()
+                    .find(|v| v.id == variant_id)
+                    .cloned();
             }
         }
 
@@ -535,19 +531,19 @@ impl FeatureFlagManager {
         match &condition.condition_type {
             FlagConditionType::UserRole => {
                 if let Some(roles) = condition.value.as_array() {
-                    let role_strings: Vec<&str> = roles
+                    let role_strings: Vec<&str> = roles.iter().filter_map(|r| r.as_str()).collect();
+                    return context
+                        .user_roles
                         .iter()
-                        .filter_map(|r| r.as_str())
-                        .collect();
-                    return context.user_roles.iter().any(|r| role_strings.contains(&r.as_str()));
+                        .any(|r| role_strings.contains(&r.as_str()));
                 }
                 false
             }
             FlagConditionType::UserId => {
                 if let Some(ids) = condition.value.as_array() {
                     return ids.iter().any(|id| {
-                        id.as_str() == Some(&context.user_id) ||
-                        id.as_i64().map(|i| i.to_string()) == Some(context.user_id.clone())
+                        id.as_str() == Some(&context.user_id)
+                            || id.as_i64().map(|i| i.to_string()) == Some(context.user_id.clone())
                     });
                 }
                 false
@@ -580,11 +576,7 @@ impl FeatureFlagManager {
 
     /// Get user override
     fn get_override(&self, flag_id: &str, user_id: &str) -> Option<bool> {
-        self.overrides
-            .read()
-            .get(user_id)?
-            .get(flag_id)
-            .copied()
+        self.overrides.read().get(user_id)?.get(flag_id).copied()
     }
 
     /// Clear user override
@@ -709,7 +701,12 @@ impl PluginHub {
     }
 
     /// Publish message to channel
-    pub fn publish(&self, from_plugin: &str, channel: &str, payload: serde_json::Value) -> Vec<String> {
+    pub fn publish(
+        &self,
+        from_plugin: &str,
+        channel: &str,
+        payload: serde_json::Value,
+    ) -> Vec<String> {
         let message = Message {
             id: uuid::Uuid::new_v4().to_string(),
             from_plugin: from_plugin.to_string(),
@@ -777,7 +774,11 @@ impl PluginHub {
     pub fn get_history(&self, channel: Option<&str>, limit: usize) -> Vec<Message> {
         let history = self.history.read();
         let filtered: Vec<_> = if let Some(ch) = channel {
-            history.iter().filter(|m| m.channel == ch).cloned().collect()
+            history
+                .iter()
+                .filter(|m| m.channel == ch)
+                .cloned()
+                .collect()
         } else {
             history.iter().cloned().collect()
         };
@@ -841,11 +842,7 @@ mod tests {
         let hub = PluginHub::new();
 
         hub.subscribe("events", "plugin-b", "on_event");
-        let callbacks = hub.publish(
-            "plugin-a",
-            "events",
-            serde_json::json!({"type": "test"}),
-        );
+        let callbacks = hub.publish("plugin-a", "events", serde_json::json!({"type": "test"}));
 
         assert_eq!(callbacks.len(), 1);
         assert_eq!(callbacks[0], "on_event");

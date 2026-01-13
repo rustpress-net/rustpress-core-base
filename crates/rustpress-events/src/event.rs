@@ -256,11 +256,7 @@ pub mod events {
     }
 
     /// Create a comment created event
-    pub fn comment_created(
-        comment_id: Uuid,
-        post_id: Uuid,
-        author_name: &str,
-    ) -> DomainEvent {
+    pub fn comment_created(comment_id: Uuid, post_id: Uuid, author_name: &str) -> DomainEvent {
         DomainEvent::new(
             COMMENT_CREATED,
             serde_json::json!({
@@ -297,11 +293,7 @@ mod tests {
 
     #[test]
     fn test_predefined_events() {
-        let event = events::user_created(
-            Uuid::now_v7(),
-            "test@example.com",
-            "testuser",
-        );
+        let event = events::user_created(Uuid::now_v7(), "test@example.com", "testuser");
         assert_eq!(event.event_type, events::USER_CREATED);
     }
 }

@@ -96,7 +96,9 @@ impl Block {
                 r#"<figure class="wp-block-image"><img src="{}" alt="{}"/>{}</figure>"#,
                 url,
                 alt,
-                caption.map(|c| format!("<figcaption>{}</figcaption>", c)).unwrap_or_default()
+                caption
+                    .map(|c| format!("<figcaption>{}</figcaption>", c))
+                    .unwrap_or_default()
             ),
             inner_content: vec![],
         }
@@ -136,7 +138,9 @@ impl Block {
             inner_html: format!(
                 r#"<blockquote class="wp-block-quote"><p>{}</p>{}</blockquote>"#,
                 content,
-                citation.map(|c| format!("<cite>{}</cite>", c)).unwrap_or_default()
+                citation
+                    .map(|c| format!("<cite>{}</cite>", c))
+                    .unwrap_or_default()
             ),
             inner_content: vec![],
         }
@@ -154,7 +158,9 @@ impl Block {
             inner_blocks: Vec::new(),
             inner_html: format!(
                 r#"<pre class="wp-block-code"><code{}>{}</code></pre>"#,
-                language.map(|l| format!(r#" class="language-{}""#, l)).unwrap_or_default(),
+                language
+                    .map(|l| format!(r#" class="language-{}""#, l))
+                    .unwrap_or_default(),
                 ammonia::clean(content)
             ),
             inner_content: vec![],
@@ -255,8 +261,7 @@ impl Block {
             inner_blocks: Vec::new(),
             inner_html: format!(
                 r#"<figure class="wp-block-embed is-type-video is-provider-{}"><div class="wp-block-embed__wrapper">{}</div></figure>"#,
-                provider,
-                url
+                provider, url
             ),
             inner_content: vec![],
         }
@@ -371,7 +376,8 @@ impl BlockRenderer {
     where
         F: Fn(&Block) -> String + Send + Sync + 'static,
     {
-        self.renderers.insert(block_type.to_string(), Box::new(renderer));
+        self.renderers
+            .insert(block_type.to_string(), Box::new(renderer));
     }
 
     /// Render a single block to HTML
@@ -410,10 +416,14 @@ impl BlockRenderer {
     }
 
     fn render_paragraph(&self, block: &Block) -> String {
-        let content = block.attributes.get("content")
+        let content = block
+            .attributes
+            .get("content")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let align = block.attributes.get("align")
+        let align = block
+            .attributes
+            .get("align")
             .and_then(|v| v.as_str())
             .map(|a| format!(r#" class="has-text-align-{}""#, a))
             .unwrap_or_default();
@@ -422,10 +432,14 @@ impl BlockRenderer {
     }
 
     fn render_heading(&self, block: &Block) -> String {
-        let content = block.attributes.get("content")
+        let content = block
+            .attributes
+            .get("content")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let level = block.attributes.get("level")
+        let level = block
+            .attributes
+            .get("level")
             .and_then(|v| v.as_u64())
             .unwrap_or(2)
             .clamp(1, 6);
@@ -434,15 +448,20 @@ impl BlockRenderer {
     }
 
     fn render_image(&self, block: &Block) -> String {
-        let url = block.attributes.get("url")
+        let url = block
+            .attributes
+            .get("url")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let alt = block.attributes.get("alt")
+        let alt = block
+            .attributes
+            .get("alt")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let caption = block.attributes.get("caption")
-            .and_then(|v| v.as_str());
-        let align = block.attributes.get("align")
+        let caption = block.attributes.get("caption").and_then(|v| v.as_str());
+        let align = block
+            .attributes
+            .get("align")
             .and_then(|v| v.as_str())
             .map(|a| format!(" align{}", a))
             .unwrap_or_default();
@@ -461,10 +480,14 @@ impl BlockRenderer {
     }
 
     fn render_list(&self, block: &Block) -> String {
-        let _ordered = block.attributes.get("ordered")
+        let _ordered = block
+            .attributes
+            .get("ordered")
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
-        let values = block.attributes.get("values")
+        let values = block
+            .attributes
+            .get("values")
             .and_then(|v| v.as_str())
             .unwrap_or("");
 
@@ -476,10 +499,14 @@ impl BlockRenderer {
     }
 
     fn render_quote(&self, block: &Block) -> String {
-        let value = block.attributes.get("value")
+        let value = block
+            .attributes
+            .get("value")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let citation = block.attributes.get("citation")
+        let citation = block
+            .attributes
+            .get("citation")
             .and_then(|v| v.as_str())
             .filter(|c| !c.is_empty());
 
@@ -494,10 +521,14 @@ impl BlockRenderer {
     }
 
     fn render_code(&self, block: &Block) -> String {
-        let content = block.attributes.get("content")
+        let content = block
+            .attributes
+            .get("content")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let language = block.attributes.get("language")
+        let language = block
+            .attributes
+            .get("language")
             .and_then(|v| v.as_str())
             .filter(|l| !l.is_empty());
 
@@ -523,13 +554,19 @@ impl BlockRenderer {
     }
 
     fn render_button(&self, block: &Block) -> String {
-        let text = block.attributes.get("text")
+        let text = block
+            .attributes
+            .get("text")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let url = block.attributes.get("url")
+        let url = block
+            .attributes
+            .get("url")
             .and_then(|v| v.as_str())
             .unwrap_or("#");
-        let class = block.attributes.get("className")
+        let class = block
+            .attributes
+            .get("className")
             .and_then(|v| v.as_str())
             .unwrap_or("is-style-fill");
 
@@ -540,7 +577,9 @@ impl BlockRenderer {
     }
 
     fn render_separator(&self, block: &Block) -> String {
-        let class = block.attributes.get("className")
+        let class = block
+            .attributes
+            .get("className")
             .and_then(|v| v.as_str())
             .unwrap_or("is-style-default");
 
@@ -548,7 +587,9 @@ impl BlockRenderer {
     }
 
     fn render_spacer(&self, block: &Block) -> String {
-        let height = block.attributes.get("height")
+        let height = block
+            .attributes
+            .get("height")
             .and_then(|v| v.as_u64())
             .unwrap_or(100);
 
@@ -559,11 +600,15 @@ impl BlockRenderer {
     }
 
     fn render_gallery(&self, block: &Block) -> String {
-        let columns = block.attributes.get("columns")
+        let columns = block
+            .attributes
+            .get("columns")
             .and_then(|v| v.as_u64())
             .unwrap_or(3);
 
-        let images = block.attributes.get("images")
+        let images = block
+            .attributes
+            .get("images")
             .and_then(|v| v.as_array())
             .map(|arr| {
                 arr.iter()
@@ -625,10 +670,14 @@ impl BlockRenderer {
     }
 
     fn render_cover(&self, block: &Block) -> String {
-        let url = block.attributes.get("url")
+        let url = block
+            .attributes
+            .get("url")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let dim_ratio = block.attributes.get("dimRatio")
+        let dim_ratio = block
+            .attributes
+            .get("dimRatio")
             .and_then(|v| v.as_u64())
             .unwrap_or(50);
 
@@ -650,17 +699,23 @@ impl BlockRenderer {
 
     fn render_html(&self, block: &Block) -> String {
         // Raw HTML block - be careful with sanitization
-        block.attributes.get("content")
+        block
+            .attributes
+            .get("content")
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string()
     }
 
     fn render_embed(&self, block: &Block) -> String {
-        let url = block.attributes.get("url")
+        let url = block
+            .attributes
+            .get("url")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let provider = block.attributes.get("providerNameSlug")
+        let provider = block
+            .attributes
+            .get("providerNameSlug")
             .and_then(|v| v.as_str())
             .unwrap_or("video");
 
@@ -738,15 +793,18 @@ fn generate_twitter_embed(url: &str) -> String {
 /// Extract YouTube video ID from URL
 fn extract_youtube_id(url: &str) -> Option<String> {
     let re = regex::Regex::new(
-        r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})"
-    ).ok()?;
-    re.captures(url).and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
+        r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})",
+    )
+    .ok()?;
+    re.captures(url)
+        .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
 }
 
 /// Extract Vimeo video ID from URL
 fn extract_vimeo_id(url: &str) -> Option<String> {
     let re = regex::Regex::new(r"vimeo\.com/(\d+)").ok()?;
-    re.captures(url).and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
+    re.captures(url)
+        .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
 }
 
 /// Block parser for converting block JSON to Block structs
@@ -772,8 +830,8 @@ impl BlockParser {
             let attrs_json = cap.get(3).map(|m| m.as_str()).unwrap_or("{}");
             let inner_html = cap.get(5).map(|m| m.as_str()).unwrap_or("");
 
-            let attributes: serde_json::Value = serde_json::from_str(attrs_json)
-                .unwrap_or(serde_json::json!({}));
+            let attributes: serde_json::Value =
+                serde_json::from_str(attrs_json).unwrap_or(serde_json::json!({}));
 
             blocks.push(Block {
                 id: Uuid::new_v4().to_string(),
@@ -799,31 +857,46 @@ impl BlockParser {
 
     /// Serialize blocks to WordPress block HTML format
     pub fn to_block_html(blocks: &[Block]) -> String {
-        blocks.iter().map(|block| {
-            let attrs = if block.attributes.as_object().map(|o| o.is_empty()).unwrap_or(true) {
-                String::new()
-            } else {
-                format!(" {}", serde_json::to_string(&block.attributes).unwrap_or_default())
-            };
-
-            if block.inner_blocks.is_empty() && block.inner_html.is_empty() {
-                format!("<!-- wp:{}{} /-->\n", block.block_type.replace("core/", ""), attrs)
-            } else {
-                let inner = if !block.inner_blocks.is_empty() {
-                    Self::to_block_html(&block.inner_blocks)
+        blocks
+            .iter()
+            .map(|block| {
+                let attrs = if block
+                    .attributes
+                    .as_object()
+                    .map(|o| o.is_empty())
+                    .unwrap_or(true)
+                {
+                    String::new()
                 } else {
-                    block.inner_html.clone()
+                    format!(
+                        " {}",
+                        serde_json::to_string(&block.attributes).unwrap_or_default()
+                    )
                 };
 
-                format!(
-                    "<!-- wp:{}{} -->\n{}\n<!-- /wp:{} -->\n",
-                    block.block_type.replace("core/", ""),
-                    attrs,
-                    inner,
-                    block.block_type.replace("core/", "")
-                )
-            }
-        }).collect()
+                if block.inner_blocks.is_empty() && block.inner_html.is_empty() {
+                    format!(
+                        "<!-- wp:{}{} /-->\n",
+                        block.block_type.replace("core/", ""),
+                        attrs
+                    )
+                } else {
+                    let inner = if !block.inner_blocks.is_empty() {
+                        Self::to_block_html(&block.inner_blocks)
+                    } else {
+                        block.inner_html.clone()
+                    };
+
+                    format!(
+                        "<!-- wp:{}{} -->\n{}\n<!-- /wp:{} -->\n",
+                        block.block_type.replace("core/", ""),
+                        attrs,
+                        inner,
+                        block.block_type.replace("core/", "")
+                    )
+                }
+            })
+            .collect()
     }
 }
 

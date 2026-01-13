@@ -2,14 +2,14 @@
 //!
 //! Multi-tier object caching with local memory cache and Redis backend.
 
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::Duration;
 use async_trait::async_trait;
 use moka::future::Cache as MokaCache;
 use parking_lot::RwLock;
 use redis::AsyncCommands;
 use serde::{de::DeserializeOwned, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::Duration;
 use thiserror::Error;
 
 /// Object cache errors
@@ -38,7 +38,12 @@ pub trait CacheBackend: Send + Sync {
     async fn get(&self, key: &str) -> Result<Option<Vec<u8>>, ObjectCacheError>;
 
     /// Set value in cache
-    async fn set(&self, key: &str, value: &[u8], ttl: Option<Duration>) -> Result<(), ObjectCacheError>;
+    async fn set(
+        &self,
+        key: &str,
+        value: &[u8],
+        ttl: Option<Duration>,
+    ) -> Result<(), ObjectCacheError>;
 
     /// Delete value from cache
     async fn delete(&self, key: &str) -> Result<bool, ObjectCacheError>;
@@ -59,7 +64,11 @@ pub trait CacheBackend: Send + Sync {
     async fn mget(&self, keys: &[String]) -> Result<Vec<Option<Vec<u8>>>, ObjectCacheError>;
 
     /// Set multiple values
-    async fn mset(&self, pairs: &[(String, Vec<u8>)], ttl: Option<Duration>) -> Result<(), ObjectCacheError>;
+    async fn mset(
+        &self,
+        pairs: &[(String, Vec<u8>)],
+        ttl: Option<Duration>,
+    ) -> Result<(), ObjectCacheError>;
 }
 
 /// Redis cache backend
@@ -97,7 +106,12 @@ impl CacheBackend for RedisBackend {
         Ok(result)
     }
 
-    async fn set(&self, key: &str, value: &[u8], ttl: Option<Duration>) -> Result<(), ObjectCacheError> {
+    async fn set(
+        &self,
+        key: &str,
+        value: &[u8],
+        ttl: Option<Duration>,
+    ) -> Result<(), ObjectCacheError> {
         let mut conn = self.get_connection().await?;
         let prefixed = self.prefixed_key(key);
 
@@ -162,7 +176,11 @@ impl CacheBackend for RedisBackend {
         Ok(results)
     }
 
-    async fn mset(&self, pairs: &[(String, Vec<u8>)], ttl: Option<Duration>) -> Result<(), ObjectCacheError> {
+    async fn mset(
+        &self,
+        pairs: &[(String, Vec<u8>)],
+        ttl: Option<Duration>,
+    ) -> Result<(), ObjectCacheError> {
         if pairs.is_empty() {
             return Ok(());
         }
@@ -208,7 +226,12 @@ impl CacheBackend for MemoryBackend {
         Ok(self.cache.get(key).await)
     }
 
-    async fn set(&self, key: &str, value: &[u8], _ttl: Option<Duration>) -> Result<(), ObjectCacheError> {
+    async fn set(
+        &self,
+        key: &str,
+        value: &[u8],
+        _ttl: Option<Duration>,
+    ) -> Result<(), ObjectCacheError> {
         self.cache.insert(key.to_string(), value.to_vec()).await;
         Ok(())
     }
@@ -239,7 +262,10 @@ impl CacheBackend for MemoryBackend {
     }
 
     async fn incr(&self, key: &str, delta: i64) -> Result<i64, ObjectCacheError> {
-        let current = self.cache.get(key).await
+        let current = self
+            .cache
+            .get(key)
+            .await
             .and_then(|v| {
                 if v.len() == 8 {
                     Some(i64::from_le_bytes(v.try_into().ok()?))
@@ -250,7 +276,9 @@ impl CacheBackend for MemoryBackend {
             .unwrap_or(0);
 
         let new_value = current + delta;
-        self.cache.insert(key.to_string(), new_value.to_le_bytes().to_vec()).await;
+        self.cache
+            .insert(key.to_string(), new_value.to_le_bytes().to_vec())
+            .await;
         Ok(new_value)
     }
 
@@ -262,7 +290,11 @@ impl CacheBackend for MemoryBackend {
         Ok(results)
     }
 
-    async fn mset(&self, pairs: &[(String, Vec<u8>)], _ttl: Option<Duration>) -> Result<(), ObjectCacheError> {
+    async fn mset(
+        &self,
+        pairs: &[(String, Vec<u8>)],
+        _ttl: Option<Duration>,
+    ) -> Result<(), ObjectCacheError> {
         for (key, value) in pairs {
             self.cache.insert(key.clone(), value.clone()).await;
         }
@@ -419,7 +451,11 @@ impl ObjectCache {
     }
 
     /// Get value from cache
-    pub async fn get<T: DeserializeOwned>(&self, group: &str, key: &str) -> Result<Option<T>, ObjectCacheError> {
+    pub async fn get<T: DeserializeOwned>(
+        &self,
+        group: &str,
+        key: &str,
+    ) -> Result<Option<T>, ObjectCacheError> {
         let full_key = self.build_key(group, key);
 
         // Try local cache first
@@ -449,15 +485,17 @@ impl ObjectCache {
     }
 
     /// Set value in cache
-    pub async fn set<T: Serialize>(&self, group: &str, key: &str, value: &T) -> Result<(), ObjectCacheError> {
+    pub async fn set<T: Serialize>(
+        &self,
+        group: &str,
+        key: &str,
+        value: &T,
+    ) -> Result<(), ObjectCacheError> {
         let full_key = self.build_key(group, key);
         let data = serde_json::to_vec(value)
             .map_err(|e| ObjectCacheError::Serialization(e.to_string()))?;
 
-        let group_config = self.groups.read()
-            .get(group)
-            .cloned()
-            .unwrap_or_default();
+        let group_config = self.groups.read().get(group).cloned().unwrap_or_default();
 
         // Store in local cache
         self.local.insert(full_key.clone(), data.clone()).await;
@@ -543,12 +581,17 @@ impl ObjectCache {
             let result = remote.incr(&full_key, delta).await?;
 
             // Update local cache
-            self.local.insert(full_key, result.to_le_bytes().to_vec()).await;
+            self.local
+                .insert(full_key, result.to_le_bytes().to_vec())
+                .await;
 
             Ok(result)
         } else {
             // Local only increment
-            let current = self.local.get(&full_key).await
+            let current = self
+                .local
+                .get(&full_key)
+                .await
                 .and_then(|v| {
                     if v.len() == 8 {
                         Some(i64::from_le_bytes(v.try_into().ok()?))
@@ -559,7 +602,9 @@ impl ObjectCache {
                 .unwrap_or(0);
 
             let new_value = current + delta;
-            self.local.insert(full_key, new_value.to_le_bytes().to_vec()).await;
+            self.local
+                .insert(full_key, new_value.to_le_bytes().to_vec())
+                .await;
             Ok(new_value)
         }
     }
@@ -591,9 +636,7 @@ impl ObjectCache {
         group: &str,
         keys: &[String],
     ) -> Result<Vec<Option<T>>, ObjectCacheError> {
-        let full_keys: Vec<String> = keys.iter()
-            .map(|k| self.build_key(group, k))
-            .collect();
+        let full_keys: Vec<String> = keys.iter().map(|k| self.build_key(group, k)).collect();
 
         // Try local first
         let mut results = Vec::with_capacity(keys.len());
@@ -618,7 +661,9 @@ impl ObjectCache {
                 for (idx, data) in missing_indices.iter().zip(remote_results.into_iter()) {
                     if let Some(data) = data {
                         // Update local cache
-                        self.local.insert(full_keys[*idx].clone(), data.clone()).await;
+                        self.local
+                            .insert(full_keys[*idx].clone(), data.clone())
+                            .await;
 
                         results[*idx] = serde_json::from_slice(&data).ok();
                     }
@@ -659,9 +704,7 @@ impl ObjectCache {
 /// Convert glob pattern to regex
 fn glob_to_regex(pattern: &str) -> regex::Regex {
     let escaped = regex::escape(pattern);
-    let regex_pattern = escaped
-        .replace(r"\*", ".*")
-        .replace(r"\?", ".");
+    let regex_pattern = escaped.replace(r"\*", ".*").replace(r"\?", ".");
     regex::Regex::new(&format!("^{}$", regex_pattern)).unwrap()
 }
 
@@ -687,7 +730,11 @@ impl CacheLock {
         let existing: Option<String> = cache.get(group, &lock_key).await.ok().flatten();
 
         if existing.is_none() {
-            if cache.set_with_ttl(group, &lock_key, &token, ttl).await.is_ok() {
+            if cache
+                .set_with_ttl(group, &lock_key, &token, ttl)
+                .await
+                .is_ok()
+            {
                 return Some(Self {
                     cache,
                     group: group.to_string(),
@@ -721,7 +768,10 @@ mod tests {
         let config = ObjectCacheConfig::default();
         let cache = ObjectCache::memory_only(config);
 
-        cache.set("test", "key1", &"value1".to_string()).await.unwrap();
+        cache
+            .set("test", "key1", &"value1".to_string())
+            .await
+            .unwrap();
 
         let result: Option<String> = cache.get("test", "key1").await.unwrap();
         assert_eq!(result, Some("value1".to_string()));

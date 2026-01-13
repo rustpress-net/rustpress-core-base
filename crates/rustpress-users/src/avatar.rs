@@ -9,7 +9,7 @@
 //! - Avatar size variations
 //! - Avatar caching
 
-use md5::{Md5, Digest as Md5Digest};
+use md5::{Digest as Md5Digest, Md5};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -166,9 +166,10 @@ impl Avatar {
         }
 
         match self.avatar_type {
-            AvatarType::Custom => {
-                self.custom_url.clone().unwrap_or_else(|| self.gravatar_url(size))
-            }
+            AvatarType::Custom => self
+                .custom_url
+                .clone()
+                .unwrap_or_else(|| self.gravatar_url(size)),
             AvatarType::Gravatar => self.gravatar_url(size),
             AvatarType::Generated => self.generated_url(size),
             AvatarType::Default => self.default_url(size),
@@ -205,7 +206,8 @@ impl Avatar {
 
     /// Get srcset for responsive images
     pub fn get_srcset(&self, sizes: &[u32]) -> String {
-        sizes.iter()
+        sizes
+            .iter()
             .map(|&size| format!("{} {}w", self.get_url(size), size))
             .collect::<Vec<_>>()
             .join(", ")
@@ -215,7 +217,9 @@ impl Avatar {
     pub fn get_html(&self, size: u32, alt: &str, class: Option<&str>) -> String {
         let sizes = [size, size * 2];
         let srcset = self.get_srcset(&sizes);
-        let class_attr = class.map(|c| format!(r#" class="{}""#, c)).unwrap_or_default();
+        let class_attr = class
+            .map(|c| format!(r#" class="{}""#, c))
+            .unwrap_or_default();
 
         format!(
             r#"<img src="{}" srcset="{}" width="{}" height="{}" alt="{}"{} loading="lazy">"#,
@@ -320,7 +324,8 @@ impl AvatarManager {
 
     /// Get or create avatar for user
     pub fn get_or_create_avatar(&mut self, user_id: i64, email: &str) -> &mut Avatar {
-        self.avatars.entry(user_id)
+        self.avatars
+            .entry(user_id)
             .or_insert_with(|| Avatar::new(user_id, email))
     }
 
@@ -331,7 +336,8 @@ impl AvatarManager {
 
     /// Get avatar URL
     pub fn get_avatar_url(&self, user_id: i64, size: u32) -> String {
-        self.avatars.get(&user_id)
+        self.avatars
+            .get(&user_id)
             .map(|a| a.get_url(size))
             .unwrap_or_else(|| Avatar::new(0, "").default_url(size))
     }
@@ -397,11 +403,9 @@ pub mod helpers {
 
     /// Generate color from string (for backgrounds)
     pub fn string_to_color(s: &str) -> String {
-        let hash: u32 = s.chars()
-            .enumerate()
-            .fold(0u32, |acc, (i, c)| {
-                acc.wrapping_add((c as u32).wrapping_mul(i as u32 + 1))
-            });
+        let hash: u32 = s.chars().enumerate().fold(0u32, |acc, (i, c)| {
+            acc.wrapping_add((c as u32).wrapping_mul(i as u32 + 1))
+        });
 
         // Generate HSL color with good saturation and lightness
         let hue = hash % 360;
@@ -428,10 +432,7 @@ pub mod helpers {
 
     /// Get data URI for SVG
     pub fn svg_to_data_uri(svg: &str) -> String {
-        format!(
-            "data:image/svg+xml,{}",
-            urlencoding::encode(svg)
-        )
+        format!("data:image/svg+xml,{}", urlencoding::encode(svg))
     }
 }
 
@@ -445,14 +446,21 @@ pub struct AvatarFallbackChain {
 #[derive(Debug, Clone)]
 pub enum AvatarSource {
     Custom(String),
-    Gravatar { email_hash: String, default: GravatarDefault },
-    Generated { name: String },
+    Gravatar {
+        email_hash: String,
+        default: GravatarDefault,
+    },
+    Generated {
+        name: String,
+    },
     Static(String),
 }
 
 impl AvatarFallbackChain {
     pub fn new() -> Self {
-        Self { sources: Vec::new() }
+        Self {
+            sources: Vec::new(),
+        }
     }
 
     pub fn add_custom(mut self, url: &str) -> Self {
@@ -469,7 +477,9 @@ impl AvatarFallbackChain {
     }
 
     pub fn add_generated(mut self, name: &str) -> Self {
-        self.sources.push(AvatarSource::Generated { name: name.to_string() });
+        self.sources.push(AvatarSource::Generated {
+            name: name.to_string(),
+        });
         self
     }
 
@@ -483,7 +493,10 @@ impl AvatarFallbackChain {
         for source in &self.sources {
             match source {
                 AvatarSource::Custom(url) => return url.clone(),
-                AvatarSource::Gravatar { email_hash, default } => {
+                AvatarSource::Gravatar {
+                    email_hash,
+                    default,
+                } => {
                     return format!(
                         "https://www.gravatar.com/avatar/{}?s={}&d={}",
                         email_hash,
@@ -499,19 +512,29 @@ impl AvatarFallbackChain {
         }
 
         // Final fallback
-        format!("https://www.gravatar.com/avatar/00000000000000000000000000000000?s={}&d=mp", size)
+        format!(
+            "https://www.gravatar.com/avatar/00000000000000000000000000000000?s={}&d=mp",
+            size
+        )
     }
 
     /// Generate onerror fallback chain JavaScript
     pub fn get_onerror_chain(&self, size: u32) -> String {
-        let urls: Vec<String> = self.sources.iter()
+        let urls: Vec<String> = self
+            .sources
+            .iter()
             .skip(1) // Skip first since it's in src
             .map(|source| match source {
                 AvatarSource::Custom(url) => url.clone(),
-                AvatarSource::Gravatar { email_hash, default } => {
+                AvatarSource::Gravatar {
+                    email_hash,
+                    default,
+                } => {
                     format!(
                         "https://www.gravatar.com/avatar/{}?s={}&d={}",
-                        email_hash, size, default.as_str()
+                        email_hash,
+                        size,
+                        default.as_str()
                     )
                 }
                 AvatarSource::Generated { name } => {
@@ -525,7 +548,8 @@ impl AvatarFallbackChain {
             return String::new();
         }
 
-        let fallbacks: String = urls.iter()
+        let fallbacks: String = urls
+            .iter()
             .enumerate()
             .map(|(i, url)| {
                 if i == urls.len() - 1 {
@@ -587,7 +611,9 @@ mod tests {
         let manager = AvatarManager::new("/uploads");
 
         assert!(manager.validate_upload(1024, "image/jpeg").is_ok());
-        assert!(manager.validate_upload(10 * 1024 * 1024, "image/jpeg").is_err());
+        assert!(manager
+            .validate_upload(10 * 1024 * 1024, "image/jpeg")
+            .is_err());
         assert!(manager.validate_upload(1024, "application/exe").is_err());
     }
 

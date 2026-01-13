@@ -149,16 +149,16 @@ impl UserExporter {
 
         // Header
         if config.include_header {
-            let headers: Vec<&str> = config.fields.iter()
-                .map(|f| f.as_str())
-                .collect();
+            let headers: Vec<&str> = config.fields.iter().map(|f| f.as_str()).collect();
             output.push_str(&headers.join(","));
             output.push('\n');
         }
 
         // Data rows
         for user in users {
-            let values: Vec<String> = config.fields.iter()
+            let values: Vec<String> = config
+                .fields
+                .iter()
                 .map(|field| Self::get_field_value(user, field, config))
                 .map(|v| Self::escape_csv(&v))
                 .collect();
@@ -171,7 +171,8 @@ impl UserExporter {
 
     /// Export users to JSON format
     pub fn to_json(users: &[ExportableUser], config: &ExportConfig) -> String {
-        let filtered: Vec<serde_json::Value> = users.iter()
+        let filtered: Vec<serde_json::Value> = users
+            .iter()
             .map(|user| {
                 let mut obj = serde_json::Map::new();
                 for field in &config.fields {
@@ -182,7 +183,9 @@ impl UserExporter {
                     let meta_value = if config.meta_keys.is_empty() {
                         serde_json::to_value(&user.meta).unwrap_or_default()
                     } else {
-                        let filtered_meta: HashMap<_, _> = user.meta.iter()
+                        let filtered_meta: HashMap<_, _> = user
+                            .meta
+                            .iter()
                             .filter(|(k, _)| config.meta_keys.contains(k))
                             .map(|(k, v)| (k.clone(), v.clone()))
                             .collect();
@@ -214,7 +217,8 @@ impl UserExporter {
             "status" => user.status.clone(),
             _ => {
                 // Check meta
-                user.meta.get(field)
+                user.meta
+                    .get(field)
                     .map(|v| match v {
                         serde_json::Value::String(s) => s.clone(),
                         _ => v.to_string(),
@@ -299,7 +303,8 @@ impl ImportConfig {
     }
 
     pub fn map_field(&mut self, source: &str, target: &str) {
-        self.field_mapping.insert(source.to_string(), target.to_string());
+        self.field_mapping
+            .insert(source.to_string(), target.to_string());
     }
 
     pub fn with_mapping(mut self, mapping: HashMap<String, String>) -> Self {
@@ -358,7 +363,9 @@ impl ImportableUser {
             "url" => self.url = Some(value),
             "description" => self.description = Some(value),
             "role" => self.role = Some(value),
-            _ => { self.meta.insert(field.to_string(), value); }
+            _ => {
+                self.meta.insert(field.to_string(), value);
+            }
         }
     }
 }
@@ -466,8 +473,7 @@ impl UserImporter {
         let mut lines = content.lines();
 
         // Parse header
-        let header = lines.next()
-            .ok_or_else(|| "Empty CSV file".to_string())?;
+        let header = lines.next().ok_or_else(|| "Empty CSV file".to_string())?;
         let columns: Vec<&str> = Self::parse_csv_line(header);
 
         // Parse data rows
@@ -482,7 +488,9 @@ impl UserImporter {
             for (i, value) in values.iter().enumerate() {
                 if let Some(column) = columns.get(i) {
                     // Apply field mapping
-                    let target_field = self.config.field_mapping
+                    let target_field = self
+                        .config
+                        .field_mapping
                         .get(*column)
                         .map(|s| s.as_str())
                         .unwrap_or(*column);
@@ -527,7 +535,7 @@ impl UserImporter {
     fn unescape_csv(value: &str) -> &str {
         let trimmed = value.trim();
         if trimmed.starts_with('"') && trimmed.ends_with('"') {
-            &trimmed[1..trimmed.len()-1]
+            &trimmed[1..trimmed.len() - 1]
         } else {
             trimmed
         }
@@ -645,7 +653,8 @@ impl UserImporter {
 pub fn generate_password(length: usize) -> String {
     use rand::Rng;
 
-    const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+    const CHARSET: &[u8] =
+        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
     let mut rng = rand::thread_rng();
 
     (0..length)
@@ -662,23 +671,21 @@ mod tests {
 
     #[test]
     fn test_csv_export() {
-        let users = vec![
-            ExportableUser {
-                id: 1,
-                username: "john".to_string(),
-                email: "john@example.com".to_string(),
-                display_name: "John Doe".to_string(),
-                first_name: "John".to_string(),
-                last_name: "Doe".to_string(),
-                nickname: "johnny".to_string(),
-                url: "".to_string(),
-                description: "".to_string(),
-                roles: vec!["editor".to_string()],
-                registered: Utc::now(),
-                status: "active".to_string(),
-                meta: HashMap::new(),
-            }
-        ];
+        let users = vec![ExportableUser {
+            id: 1,
+            username: "john".to_string(),
+            email: "john@example.com".to_string(),
+            display_name: "John Doe".to_string(),
+            first_name: "John".to_string(),
+            last_name: "Doe".to_string(),
+            nickname: "johnny".to_string(),
+            url: "".to_string(),
+            description: "".to_string(),
+            roles: vec!["editor".to_string()],
+            registered: Utc::now(),
+            status: "active".to_string(),
+            meta: HashMap::new(),
+        }];
 
         let config = ExportConfig::new(ExportFormat::Csv)
             .with_fields(vec!["username".to_string(), "email".to_string()]);
@@ -726,7 +733,7 @@ mod tests {
         let mut importer = UserImporter::new(ImportConfig::default());
         importer.set_existing_users(
             vec!["existing_user".to_string()],
-            vec!["existing@example.com".to_string()]
+            vec!["existing@example.com".to_string()],
         );
 
         let user = ImportableUser {

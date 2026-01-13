@@ -1,5 +1,7 @@
 //! OAuth API handlers for Cloudflare SSO
 
+use crate::error::CloudflareResult;
+use crate::services::{CloudflareServices, TokenResources};
 use axum::{
     extract::{Query, State},
     response::{IntoResponse, Redirect},
@@ -7,9 +9,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use crate::error::CloudflareResult;
-use crate::services::{CloudflareServices, TokenResources};
-use tracing::{info, error};
+use tracing::{error, info};
 
 /// OAuth callback query parameters
 #[derive(Debug, Deserialize)]
@@ -120,7 +120,9 @@ pub async fn oauth_callback(
     let code = match params.code {
         Some(c) => c,
         None => {
-            return Redirect::to("/admin/cloudflare/settings?error=No%20authorization%20code%20received");
+            return Redirect::to(
+                "/admin/cloudflare/settings?error=No%20authorization%20code%20received",
+            );
         }
     };
 
@@ -139,7 +141,11 @@ pub async fn oauth_callback(
     info!("OAuth code exchanged successfully");
 
     // Get resources (accounts and zones) using the access token
-    let resources = match services.oauth.get_token_resources(&tokens.access_token).await {
+    let resources = match services
+        .oauth
+        .get_token_resources(&tokens.access_token)
+        .await
+    {
         Ok(r) => r,
         Err(e) => {
             error!("Failed to get token resources: {}", e);
@@ -166,7 +172,10 @@ pub async fn oauth_callback(
 
         match services.settings.save_credentials(&credentials).await {
             Ok(_) => {
-                info!("SSO credentials saved automatically for zone: {}", zone.name);
+                info!(
+                    "SSO credentials saved automatically for zone: {}",
+                    zone.name
+                );
                 Redirect::to(&format!(
                     "/admin/cloudflare/settings?sso_success=true&zone={}",
                     urlencoding::encode(&zone.name)
@@ -216,7 +225,10 @@ pub async fn sso_complete(
     }
 
     // Get resources to validate selection
-    let resources = services.oauth.get_token_resources(&req.access_token).await?;
+    let resources = services
+        .oauth
+        .get_token_resources(&req.access_token)
+        .await?;
 
     // Determine account and zone IDs
     let account_id = req.account_id.or_else(|| {
@@ -378,11 +390,19 @@ pub async fn get_connection_status(
     let creds = services.settings.get_credentials().await?;
 
     if let Some(creds) = creds {
-        let valid = services.oauth.verify_token(&creds.api_token).await.unwrap_or(false);
+        let valid = services
+            .oauth
+            .verify_token(&creds.api_token)
+            .await
+            .unwrap_or(false);
 
         if valid {
             // Get zone info
-            match services.oauth.list_zones(&creds.api_token, Some(&creds.account_id)).await {
+            match services
+                .oauth
+                .list_zones(&creds.api_token, Some(&creds.account_id))
+                .await
+            {
                 Ok(zones) => {
                     let zone = zones.iter().find(|z| z.id == creds.zone_id);
                     Ok(Json(serde_json::json!({
@@ -454,7 +474,10 @@ pub async fn list_zones(
     State(services): State<Arc<CloudflareServices>>,
     Json(req): Json<ListZonesRequest>,
 ) -> CloudflareResult<Json<serde_json::Value>> {
-    let zones = services.oauth.list_zones(&req.api_token, req.account_id.as_deref()).await?;
+    let zones = services
+        .oauth
+        .list_zones(&req.api_token, req.account_id.as_deref())
+        .await?;
 
     Ok(Json(serde_json::json!({
         "success": true,

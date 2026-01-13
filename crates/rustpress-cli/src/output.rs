@@ -4,7 +4,7 @@ use colored::Colorize;
 use serde::Serialize;
 use std::fmt::Display;
 use tabled::{
-    settings::{Style, object::Columns, Modify, Width},
+    settings::{object::Columns, Modify, Style, Width},
     Table, Tabled,
 };
 
@@ -81,11 +81,9 @@ impl OutputFormatter for OutputFormat {
 
     fn format_one<T: Serialize>(&self, data: &T) -> String {
         match self {
-            OutputFormat::Table | OutputFormat::Plain => {
-                serde_json::to_value(data)
-                    .map(|v| format_key_value(&v))
-                    .unwrap_or_else(|e| format!("Error: {}", e))
-            }
+            OutputFormat::Table | OutputFormat::Plain => serde_json::to_value(data)
+                .map(|v| format_key_value(&v))
+                .unwrap_or_else(|e| format!("Error: {}", e)),
             OutputFormat::Json => {
                 serde_json::to_string_pretty(data).unwrap_or_else(|e| format!("Error: {}", e))
             }
@@ -182,7 +180,9 @@ impl ProgressBar {
         let bar = indicatif::ProgressBar::new(len);
         bar.set_style(
             indicatif::ProgressStyle::default_bar()
-                .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}")
+                .template(
+                    "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}",
+                )
                 .unwrap()
                 .progress_chars("#>-"),
         );

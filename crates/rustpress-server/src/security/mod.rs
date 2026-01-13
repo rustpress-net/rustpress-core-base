@@ -15,7 +15,13 @@ pub mod security_audit;
 
 // Re-export commonly used types
 pub use bot_detection::{BotDetectionConfig, BotDetectionMiddleware, BotScore, BotSignal};
-pub use content_security::{ContentSecurityConfig, ContentSecurityMiddleware, ContentSecurityError};
-pub use fingerprint::{ClientProfile, FingerprintConfig, FingerprintMiddleware, RequestFingerprint};
+pub use content_security::{
+    ContentSecurityConfig, ContentSecurityError, ContentSecurityMiddleware,
+};
+pub use fingerprint::{
+    ClientProfile, FingerprintConfig, FingerprintMiddleware, RequestFingerprint,
+};
 pub use request_validation::{SecurityConfig, SecurityMiddleware, ThreatType, ValidationResult};
-pub use security_audit::{SecurityAuditConfig, SecurityAuditLogger, SecurityEvent, SecurityEventRecord, SecuritySeverity};
+pub use security_audit::{
+    SecurityAuditConfig, SecurityAuditLogger, SecurityEvent, SecurityEventRecord, SecuritySeverity,
+};

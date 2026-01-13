@@ -118,7 +118,10 @@ impl CloudflareClient {
                     let status = response.status();
                     if Self::is_retryable_error(status) && attempt < MAX_RETRIES - 1 {
                         let delay = Self::calculate_backoff(attempt);
-                        warn!("Retryable error {} for GET {}, retrying in {:?}", status, url, delay);
+                        warn!(
+                            "Retryable error {} for GET {}, retrying in {:?}",
+                            status, url, delay
+                        );
                         sleep(delay).await;
                         continue;
                     }
@@ -134,7 +137,9 @@ impl CloudflareClient {
             }
         }
 
-        Err(CloudflareError::NetworkError("Max retries exceeded".to_string()))
+        Err(CloudflareError::NetworkError(
+            "Max retries exceeded".to_string(),
+        ))
     }
 
     /// Make a POST request with retry logic
@@ -144,7 +149,8 @@ impl CloudflareClient {
         body: &B,
     ) -> CloudflareResult<ApiResponse<T>> {
         let url = format!("{}{}", API_BASE_URL, endpoint);
-        let body_json = serde_json::to_value(body).map_err(|e| CloudflareError::Internal(e.to_string()))?;
+        let body_json =
+            serde_json::to_value(body).map_err(|e| CloudflareError::Internal(e.to_string()))?;
 
         for attempt in 0..MAX_RETRIES {
             debug!("POST {} (attempt {})", url, attempt + 1);
@@ -154,7 +160,10 @@ impl CloudflareClient {
                     let status = response.status();
                     if Self::is_retryable_error(status) && attempt < MAX_RETRIES - 1 {
                         let delay = Self::calculate_backoff(attempt);
-                        warn!("Retryable error {} for POST {}, retrying in {:?}", status, url, delay);
+                        warn!(
+                            "Retryable error {} for POST {}, retrying in {:?}",
+                            status, url, delay
+                        );
                         sleep(delay).await;
                         continue;
                     }
@@ -170,7 +179,9 @@ impl CloudflareClient {
             }
         }
 
-        Err(CloudflareError::NetworkError("Max retries exceeded".to_string()))
+        Err(CloudflareError::NetworkError(
+            "Max retries exceeded".to_string(),
+        ))
     }
 
     /// Make a PUT request with retry logic
@@ -180,7 +191,8 @@ impl CloudflareClient {
         body: &B,
     ) -> CloudflareResult<ApiResponse<T>> {
         let url = format!("{}{}", API_BASE_URL, endpoint);
-        let body_json = serde_json::to_value(body).map_err(|e| CloudflareError::Internal(e.to_string()))?;
+        let body_json =
+            serde_json::to_value(body).map_err(|e| CloudflareError::Internal(e.to_string()))?;
 
         for attempt in 0..MAX_RETRIES {
             debug!("PUT {} (attempt {})", url, attempt + 1);
@@ -190,7 +202,10 @@ impl CloudflareClient {
                     let status = response.status();
                     if Self::is_retryable_error(status) && attempt < MAX_RETRIES - 1 {
                         let delay = Self::calculate_backoff(attempt);
-                        warn!("Retryable error {} for PUT {}, retrying in {:?}", status, url, delay);
+                        warn!(
+                            "Retryable error {} for PUT {}, retrying in {:?}",
+                            status, url, delay
+                        );
                         sleep(delay).await;
                         continue;
                     }
@@ -206,7 +221,9 @@ impl CloudflareClient {
             }
         }
 
-        Err(CloudflareError::NetworkError("Max retries exceeded".to_string()))
+        Err(CloudflareError::NetworkError(
+            "Max retries exceeded".to_string(),
+        ))
     }
 
     /// Make a PATCH request with retry logic
@@ -216,7 +233,8 @@ impl CloudflareClient {
         body: &B,
     ) -> CloudflareResult<ApiResponse<T>> {
         let url = format!("{}{}", API_BASE_URL, endpoint);
-        let body_json = serde_json::to_value(body).map_err(|e| CloudflareError::Internal(e.to_string()))?;
+        let body_json =
+            serde_json::to_value(body).map_err(|e| CloudflareError::Internal(e.to_string()))?;
 
         for attempt in 0..MAX_RETRIES {
             debug!("PATCH {} (attempt {})", url, attempt + 1);
@@ -226,7 +244,10 @@ impl CloudflareClient {
                     let status = response.status();
                     if Self::is_retryable_error(status) && attempt < MAX_RETRIES - 1 {
                         let delay = Self::calculate_backoff(attempt);
-                        warn!("Retryable error {} for PATCH {}, retrying in {:?}", status, url, delay);
+                        warn!(
+                            "Retryable error {} for PATCH {}, retrying in {:?}",
+                            status, url, delay
+                        );
                         sleep(delay).await;
                         continue;
                     }
@@ -242,11 +263,16 @@ impl CloudflareClient {
             }
         }
 
-        Err(CloudflareError::NetworkError("Max retries exceeded".to_string()))
+        Err(CloudflareError::NetworkError(
+            "Max retries exceeded".to_string(),
+        ))
     }
 
     /// Make a DELETE request with retry logic
-    async fn delete<T: DeserializeOwned>(&self, endpoint: &str) -> CloudflareResult<ApiResponse<T>> {
+    async fn delete<T: DeserializeOwned>(
+        &self,
+        endpoint: &str,
+    ) -> CloudflareResult<ApiResponse<T>> {
         let url = format!("{}{}", API_BASE_URL, endpoint);
 
         for attempt in 0..MAX_RETRIES {
@@ -257,7 +283,10 @@ impl CloudflareClient {
                     let status = response.status();
                     if Self::is_retryable_error(status) && attempt < MAX_RETRIES - 1 {
                         let delay = Self::calculate_backoff(attempt);
-                        warn!("Retryable error {} for DELETE {}, retrying in {:?}", status, url, delay);
+                        warn!(
+                            "Retryable error {} for DELETE {}, retrying in {:?}",
+                            status, url, delay
+                        );
                         sleep(delay).await;
                         continue;
                     }
@@ -273,7 +302,9 @@ impl CloudflareClient {
             }
         }
 
-        Err(CloudflareError::NetworkError("Max retries exceeded".to_string()))
+        Err(CloudflareError::NetworkError(
+            "Max retries exceeded".to_string(),
+        ))
     }
 
     /// Handle API response
@@ -318,10 +349,10 @@ impl CloudflareClient {
 
     /// Get zone details
     pub async fn get_zone(&self) -> CloudflareResult<Zone> {
-        let response: ApiResponse<Zone> = self
-            .get(&format!("/zones/{}", self.zone_id))
-            .await?;
-        response.result.ok_or(CloudflareError::ZoneNotFound(self.zone_id.clone()))
+        let response: ApiResponse<Zone> = self.get(&format!("/zones/{}", self.zone_id)).await?;
+        response
+            .result
+            .ok_or(CloudflareError::ZoneNotFound(self.zone_id.clone()))
     }
 
     /// Get zone settings
@@ -345,7 +376,9 @@ impl CloudflareClient {
                 &body,
             )
             .await?;
-        response.result.ok_or(CloudflareError::NotFound(setting_id.to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::NotFound(setting_id.to_string()))
     }
 
     /// Toggle development mode
@@ -367,7 +400,9 @@ impl CloudflareClient {
         let response: ApiResponse<PurgeResponse> = self
             .post(&format!("/zones/{}/purge_cache", self.zone_id), &body)
             .await?;
-        response.result.ok_or(CloudflareError::CacheError("Purge failed".to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::CacheError("Purge failed".to_string()))
     }
 
     /// Purge cache by URLs
@@ -376,7 +411,9 @@ impl CloudflareClient {
         let response: ApiResponse<PurgeResponse> = self
             .post(&format!("/zones/{}/purge_cache", self.zone_id), &body)
             .await?;
-        response.result.ok_or(CloudflareError::CacheError("Purge failed".to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::CacheError("Purge failed".to_string()))
     }
 
     /// Purge cache by tags
@@ -385,16 +422,23 @@ impl CloudflareClient {
         let response: ApiResponse<PurgeResponse> = self
             .post(&format!("/zones/{}/purge_cache", self.zone_id), &body)
             .await?;
-        response.result.ok_or(CloudflareError::CacheError("Purge failed".to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::CacheError("Purge failed".to_string()))
     }
 
     /// Purge cache by prefix
-    pub async fn purge_cache_by_prefix(&self, prefixes: Vec<String>) -> CloudflareResult<PurgeResponse> {
+    pub async fn purge_cache_by_prefix(
+        &self,
+        prefixes: Vec<String>,
+    ) -> CloudflareResult<PurgeResponse> {
         let body = serde_json::json!({ "prefixes": prefixes });
         let response: ApiResponse<PurgeResponse> = self
             .post(&format!("/zones/{}/purge_cache", self.zone_id), &body)
             .await?;
-        response.result.ok_or(CloudflareError::CacheError("Purge failed".to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::CacheError("Purge failed".to_string()))
     }
 
     // =========================================================================
@@ -424,7 +468,9 @@ impl CloudflareClient {
         let response: ApiResponse<DnsRecord> = self
             .post(&format!("/zones/{}/dns_records", self.zone_id), &record)
             .await?;
-        response.result.ok_or(CloudflareError::DnsError("Create failed".to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::DnsError("Create failed".to_string()))
     }
 
     /// Update DNS record
@@ -434,9 +480,14 @@ impl CloudflareClient {
         record: UpdateDnsRecord,
     ) -> CloudflareResult<DnsRecord> {
         let response: ApiResponse<DnsRecord> = self
-            .put(&format!("/zones/{}/dns_records/{}", self.zone_id, id), &record)
+            .put(
+                &format!("/zones/{}/dns_records/{}", self.zone_id, id),
+                &record,
+            )
             .await?;
-        response.result.ok_or(CloudflareError::DnsError("Update failed".to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::DnsError("Update failed".to_string()))
     }
 
     /// Delete DNS record
@@ -444,7 +495,9 @@ impl CloudflareClient {
         let response: ApiResponse<DeleteResponse> = self
             .delete(&format!("/zones/{}/dns_records/{}", self.zone_id, id))
             .await?;
-        response.result.ok_or(CloudflareError::DnsError("Delete failed".to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::DnsError("Delete failed".to_string()))
     }
 
     // =========================================================================
@@ -456,7 +509,9 @@ impl CloudflareClient {
         let response: ApiResponse<SslSettings> = self
             .get(&format!("/zones/{}/settings/ssl", self.zone_id))
             .await?;
-        response.result.ok_or(CloudflareError::SslError("Failed to get SSL settings".to_string()))
+        response.result.ok_or(CloudflareError::SslError(
+            "Failed to get SSL settings".to_string(),
+        ))
     }
 
     /// Update SSL mode
@@ -465,7 +520,9 @@ impl CloudflareClient {
         let response: ApiResponse<SslSettings> = self
             .patch(&format!("/zones/{}/settings/ssl", self.zone_id), &body)
             .await?;
-        response.result.ok_or(CloudflareError::SslError("Failed to update SSL".to_string()))
+        response.result.ok_or(CloudflareError::SslError(
+            "Failed to update SSL".to_string(),
+        ))
     }
 
     /// List SSL certificates
@@ -485,7 +542,9 @@ impl CloudflareClient {
         let response: ApiResponse<ZoneSetting> = self
             .get(&format!("/zones/{}/settings/security_level", self.zone_id))
             .await?;
-        response.result.ok_or(CloudflareError::NotFound("security_level".to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::NotFound("security_level".to_string()))
     }
 
     /// Set security level
@@ -533,7 +592,10 @@ impl CloudflareClient {
     /// List IP access rules
     pub async fn list_ip_access_rules(&self) -> CloudflareResult<Vec<IpAccessRule>> {
         let response: ApiResponse<Vec<IpAccessRule>> = self
-            .get(&format!("/zones/{}/firewall/access_rules/rules", self.zone_id))
+            .get(&format!(
+                "/zones/{}/firewall/access_rules/rules",
+                self.zone_id
+            ))
             .await?;
         Ok(response.result.unwrap_or_default())
     }
@@ -549,7 +611,9 @@ impl CloudflareClient {
                 &rule,
             )
             .await?;
-        response.result.ok_or(CloudflareError::WafError("Create failed".to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::WafError("Create failed".to_string()))
     }
 
     // =========================================================================
@@ -569,7 +633,9 @@ impl CloudflareClient {
         let response: ApiResponse<PageRule> = self
             .post(&format!("/zones/{}/pagerules", self.zone_id), &rule)
             .await?;
-        response.result.ok_or(CloudflareError::NotFound("Page rule".to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::NotFound("Page rule".to_string()))
     }
 
     /// Update page rule
@@ -581,7 +647,9 @@ impl CloudflareClient {
         let response: ApiResponse<PageRule> = self
             .put(&format!("/zones/{}/pagerules/{}", self.zone_id, id), &rule)
             .await?;
-        response.result.ok_or(CloudflareError::NotFound(id.to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::NotFound(id.to_string()))
     }
 
     /// Delete page rule
@@ -589,7 +657,9 @@ impl CloudflareClient {
         let response: ApiResponse<DeleteResponse> = self
             .delete(&format!("/zones/{}/pagerules/{}", self.zone_id, id))
             .await?;
-        response.result.ok_or(CloudflareError::NotFound(id.to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::NotFound(id.to_string()))
     }
 
     // =========================================================================
@@ -626,18 +696,14 @@ impl CloudflareClient {
             API_BASE_URL, self.account_id, name
         );
 
-        let form = reqwest::multipart::Form::new()
-            .text("script", script.to_string());
+        let form = reqwest::multipart::Form::new().text("script", script.to_string());
 
-        let response = self
-            .client
-            .put(&url)
-            .multipart(form)
-            .send()
-            .await?;
+        let response = self.client.put(&url).multipart(form).send().await?;
 
         let api_response: ApiResponse<Worker> = self.handle_response(response).await?;
-        api_response.result.ok_or(CloudflareError::WorkerError("Deploy failed".to_string()))
+        api_response
+            .result
+            .ok_or(CloudflareError::WorkerError("Deploy failed".to_string()))
     }
 
     /// Delete Worker
@@ -648,7 +714,9 @@ impl CloudflareClient {
                 self.account_id, name
             ))
             .await?;
-        response.result.ok_or(CloudflareError::WorkerError("Delete failed".to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::WorkerError("Delete failed".to_string()))
     }
 
     /// List Worker routes
@@ -672,7 +740,9 @@ impl CloudflareClient {
         let response: ApiResponse<WorkerRoute> = self
             .post(&format!("/zones/{}/workers/routes", self.zone_id), &body)
             .await?;
-        response.result.ok_or(CloudflareError::WorkerError("Create route failed".to_string()))
+        response.result.ok_or(CloudflareError::WorkerError(
+            "Create route failed".to_string(),
+        ))
     }
 
     // =========================================================================
@@ -699,7 +769,9 @@ impl CloudflareClient {
                 &body,
             )
             .await?;
-        response.result.ok_or(CloudflareError::KvError("Create failed".to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::KvError("Create failed".to_string()))
     }
 
     /// List KV keys
@@ -762,7 +834,9 @@ impl CloudflareClient {
         if response.status().is_success() {
             Ok(())
         } else {
-            Err(CloudflareError::KvError("Failed to delete value".to_string()))
+            Err(CloudflareError::KvError(
+                "Failed to delete value".to_string(),
+            ))
         }
     }
 
@@ -778,7 +852,9 @@ impl CloudflareClient {
                 self.zone_id, since, until
             ))
             .await?;
-        response.result.ok_or(CloudflareError::NotFound("Analytics".to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::NotFound("Analytics".to_string()))
     }
 
     // =========================================================================
@@ -799,15 +875,13 @@ impl CloudflareClient {
         let response: ApiResponse<D1Database> = self
             .post(&format!("/accounts/{}/d1/database", self.account_id), &body)
             .await?;
-        response.result.ok_or(CloudflareError::D1Error("Create failed".to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::D1Error("Create failed".to_string()))
     }
 
     /// Query D1 database
-    pub async fn query_d1(
-        &self,
-        database_id: &str,
-        sql: &str,
-    ) -> CloudflareResult<D1QueryResult> {
+    pub async fn query_d1(&self, database_id: &str, sql: &str) -> CloudflareResult<D1QueryResult> {
         let body = serde_json::json!({ "sql": sql });
         let response: ApiResponse<Vec<D1QueryResult>> = self
             .post(
@@ -839,7 +913,10 @@ impl CloudflareClient {
     /// Get Stream video
     pub async fn get_stream_video(&self, video_id: &str) -> CloudflareResult<StreamVideo> {
         let response: ApiResponse<StreamVideo> = self
-            .get(&format!("/accounts/{}/stream/{}", self.account_id, video_id))
+            .get(&format!(
+                "/accounts/{}/stream/{}",
+                self.account_id, video_id
+            ))
             .await?;
         response.result.ok_or(CloudflareError::StreamError(format!(
             "Video '{}' not found",
@@ -850,7 +927,10 @@ impl CloudflareClient {
     /// Delete Stream video
     pub async fn delete_stream_video(&self, video_id: &str) -> CloudflareResult<()> {
         let _: ApiResponse<serde_json::Value> = self
-            .delete(&format!("/accounts/{}/stream/{}", self.account_id, video_id))
+            .delete(&format!(
+                "/accounts/{}/stream/{}",
+                self.account_id, video_id
+            ))
             .await?;
         Ok(())
     }
@@ -871,6 +951,8 @@ impl CloudflareClient {
                 &input,
             )
             .await?;
-        response.result.ok_or(CloudflareError::StreamError("Create failed".to_string()))
+        response
+            .result
+            .ok_or(CloudflareError::StreamError("Create failed".to_string()))
     }
 }

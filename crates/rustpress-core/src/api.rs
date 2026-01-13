@@ -227,7 +227,10 @@ impl ApiError {
     }
 
     pub fn rate_limited(retry_after: u64) -> Self {
-        Self::new("RATE_LIMITED", format!("Rate limit exceeded. Retry after {} seconds", retry_after))
+        Self::new(
+            "RATE_LIMITED",
+            format!("Rate limit exceeded. Retry after {} seconds", retry_after),
+        )
     }
 }
 
@@ -410,10 +413,7 @@ mod tests {
     fn test_api_version_parsing() {
         assert_eq!("v1".parse::<ApiVersion>().unwrap(), ApiVersion::V1);
         assert_eq!("v1.0".parse::<ApiVersion>().unwrap(), ApiVersion::V1);
-        assert_eq!(
-            "v2.1".parse::<ApiVersion>().unwrap(),
-            ApiVersion::new(2, 1)
-        );
+        assert_eq!("v2.1".parse::<ApiVersion>().unwrap(), ApiVersion::new(2, 1));
     }
 
     #[test]

@@ -117,7 +117,10 @@ impl TotpManager {
             id: Uuid::now_v7(),
             user_id,
             secret,
-            recovery_codes: recovery_codes.iter().map(|c| hash_recovery_code(c)).collect(),
+            recovery_codes: recovery_codes
+                .iter()
+                .map(|c| hash_recovery_code(c))
+                .collect(),
             used_recovery_codes: Vec::new(),
             enabled_at: Utc::now(),
             last_used_at: None,
@@ -177,11 +180,10 @@ impl TotpManager {
 
         let counter_bytes = counter.to_be_bytes();
 
-        let mut mac = HmacSha1::new_from_slice(&secret_bytes)
-            .map_err(|_| Error::Internal {
-                message: "HMAC error".to_string(),
-                request_id: None,
-            })?;
+        let mut mac = HmacSha1::new_from_slice(&secret_bytes).map_err(|_| Error::Internal {
+            message: "HMAC error".to_string(),
+            request_id: None,
+        })?;
         mac.update(&counter_bytes);
         let result = mac.finalize().into_bytes();
 
@@ -194,7 +196,11 @@ impl TotpManager {
 
         let otp = binary % 10u32.pow(self.config.digits);
 
-        Ok(format!("{:0>width$}", otp, width = self.config.digits as usize))
+        Ok(format!(
+            "{:0>width$}",
+            otp,
+            width = self.config.digits as usize
+        ))
     }
 
     /// Get current counter value
@@ -234,13 +240,10 @@ impl TotpManager {
     /// Verify a recovery code
     pub fn verify_recovery_code(&self, secret: &mut TotpSecret, code: &str) -> Result<bool> {
         let normalized = code.to_uppercase().replace("-", "");
-        let hashed = hash_recovery_code(&format!(
-            "{}-{}",
-            &normalized[0..4],
-            &normalized[4..8]
-        ));
+        let hashed = hash_recovery_code(&format!("{}-{}", &normalized[0..4], &normalized[4..8]));
 
-        if secret.recovery_codes.contains(&hashed) && !secret.used_recovery_codes.contains(&hashed) {
+        if secret.recovery_codes.contains(&hashed) && !secret.used_recovery_codes.contains(&hashed)
+        {
             secret.used_recovery_codes.push(hashed);
             return Ok(true);
         }
@@ -320,7 +323,7 @@ fn base32_decode(input: &str) -> Option<Vec<u8>> {
 
 /// Hash a recovery code
 fn hash_recovery_code(code: &str) -> String {
-    use sha2::{Sha256, Digest};
+    use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(code.as_bytes());
     hex::encode(hasher.finalize())

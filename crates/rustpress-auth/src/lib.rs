@@ -31,18 +31,18 @@
 
 // Core authentication modules
 pub mod jwt;
-pub mod session;
 pub mod password;
-pub mod tokens;
 pub mod refresh_token;
+pub mod session;
+pub mod tokens;
 
 // OAuth2 modules
-pub mod oauth2_provider;
 pub mod oauth2_client;
+pub mod oauth2_provider;
 
 // Authorization modules
-pub mod permission;
 pub mod middleware;
+pub mod permission;
 
 // Two-factor authentication
 pub mod totp;
@@ -52,10 +52,10 @@ pub mod webauthn;
 pub mod api_key;
 
 // Security modules
-pub mod rate_limit;
 pub mod brute_force;
-pub mod ip_filter;
 pub mod csrf;
+pub mod ip_filter;
+pub mod rate_limit;
 
 // Audit and monitoring
 pub mod audit;
@@ -64,36 +64,47 @@ pub mod audit;
 pub mod impersonation;
 
 // Re-exports for convenience
-pub use jwt::{JwtManager, JwtConfig, Claims, TokenPair, TokenType};
-pub use session::{Session, SessionManager, SessionConfig, SessionStore, SameSite};
-pub use password::{PasswordHasher, PasswordValidator, PasswordRules, PasswordStrength};
-pub use tokens::{TokenManager, TokenStore, SecureToken, PasswordResetToken, VerificationToken, TokenType as SecureTokenType};
-pub use refresh_token::{RefreshTokenManager, RefreshToken, RefreshTokenConfig, RefreshTokenStore, RevokeReason};
-pub use permission::{Permission, Role, PermissionChecker};
-pub use middleware::{AuthMiddleware, AuthContext, AuthRequest, AuthRequirement, RouteProtection, AuthMethod};
-pub use oauth2_provider::{OAuth2Provider, OAuth2Client as OAuth2RegisteredClient, OAuth2ProviderConfig, GrantType};
-pub use oauth2_client::{OAuth2Client, OAuth2ClientProvider, OAuth2UserInfo, SocialConnection};
-pub use totp::{TotpManager, TotpConfig, TotpSecret};
-pub use webauthn::{WebAuthnManager, WebAuthnConfig, WebAuthnCredential, CredentialType};
-pub use api_key::{ApiKeyManager, ApiKey, ApiKeyScope, ApiKeyConfig};
-pub use rate_limit::{RateLimiter, RateLimitConfig, RateLimitResult};
-pub use brute_force::{BruteForceProtection, BruteForceConfig, LockoutStatus, LoginAttempt};
+pub use api_key::{ApiKey, ApiKeyConfig, ApiKeyManager, ApiKeyScope};
+pub use audit::{AuditLogger, AuthAuditEvent, AuthEventBuilder, AuthEventType, EventSeverity};
+pub use brute_force::{BruteForceConfig, BruteForceProtection, LockoutStatus, LoginAttempt};
+pub use csrf::{CsrfConfig, CsrfProtection, CsrfToken};
+pub use impersonation::{
+    ImpersonationConfig, ImpersonationManager, ImpersonationRestrictions, ImpersonationSession,
+};
 pub use ip_filter::{IpFilter, IpFilterConfig, IpPattern, IpRule, IpRuleType};
-pub use csrf::{CsrfProtection, CsrfConfig, CsrfToken};
-pub use audit::{AuditLogger, AuthAuditEvent, AuthEventType, AuthEventBuilder, EventSeverity};
-pub use impersonation::{ImpersonationManager, ImpersonationSession, ImpersonationConfig, ImpersonationRestrictions};
+pub use jwt::{Claims, JwtConfig, JwtManager, TokenPair, TokenType};
+pub use middleware::{
+    AuthContext, AuthMethod, AuthMiddleware, AuthRequest, AuthRequirement, RouteProtection,
+};
+pub use oauth2_client::{OAuth2Client, OAuth2ClientProvider, OAuth2UserInfo, SocialConnection};
+pub use oauth2_provider::{
+    GrantType, OAuth2Client as OAuth2RegisteredClient, OAuth2Provider, OAuth2ProviderConfig,
+};
+pub use password::{PasswordHasher, PasswordRules, PasswordStrength, PasswordValidator};
+pub use permission::{Permission, PermissionChecker, Role};
+pub use rate_limit::{RateLimitConfig, RateLimitResult, RateLimiter};
+pub use refresh_token::{
+    RefreshToken, RefreshTokenConfig, RefreshTokenManager, RefreshTokenStore, RevokeReason,
+};
+pub use session::{SameSite, Session, SessionConfig, SessionManager, SessionStore};
+pub use tokens::{
+    PasswordResetToken, SecureToken, TokenManager, TokenStore, TokenType as SecureTokenType,
+    VerificationToken,
+};
+pub use totp::{TotpConfig, TotpManager, TotpSecret};
+pub use webauthn::{CredentialType, WebAuthnConfig, WebAuthnCredential, WebAuthnManager};
 
 /// Prelude module for common imports
 pub mod prelude {
-    pub use crate::jwt::{JwtManager, Claims};
-    pub use crate::session::{Session, SessionManager};
-    pub use crate::password::{PasswordHasher, PasswordValidator};
-    pub use crate::permission::{Permission, Role, PermissionChecker};
-    pub use crate::middleware::{AuthMiddleware, AuthContext, AuthRequirement};
-    pub use crate::totp::TotpManager;
     pub use crate::api_key::ApiKeyManager;
-    pub use crate::rate_limit::RateLimiter;
+    pub use crate::audit::AuditLogger;
     pub use crate::brute_force::BruteForceProtection;
     pub use crate::csrf::CsrfProtection;
-    pub use crate::audit::AuditLogger;
+    pub use crate::jwt::{Claims, JwtManager};
+    pub use crate::middleware::{AuthContext, AuthMiddleware, AuthRequirement};
+    pub use crate::password::{PasswordHasher, PasswordValidator};
+    pub use crate::permission::{Permission, PermissionChecker, Role};
+    pub use crate::rate_limit::RateLimiter;
+    pub use crate::session::{Session, SessionManager};
+    pub use crate::totp::TotpManager;
 }

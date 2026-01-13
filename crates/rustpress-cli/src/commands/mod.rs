@@ -2,8 +2,8 @@
 //!
 //! This module contains all CLI command definitions and their implementations.
 
-use clap::{Parser, Subcommand};
 use crate::output::OutputFormat;
+use clap::{Parser, Subcommand};
 
 pub mod artifacts;
 pub mod auth;

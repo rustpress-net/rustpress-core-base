@@ -1,13 +1,13 @@
 //! Analytics API handlers
 
+use crate::error::CloudflareResult;
+use crate::services::CloudflareServices;
 use axum::{
     extract::{Query, State},
     Json,
 };
 use serde::Deserialize;
 use std::sync::Arc;
-use crate::error::CloudflareResult;
-use crate::services::CloudflareServices;
 
 #[derive(Debug, Deserialize)]
 pub struct AnalyticsQuery {

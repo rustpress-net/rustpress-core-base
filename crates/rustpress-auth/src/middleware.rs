@@ -215,7 +215,8 @@ impl AuthRequest {
             }
 
             let encoded = &header[6..];
-            let decoded = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, encoded).ok()?;
+            let decoded =
+                base64::Engine::decode(&base64::engine::general_purpose::STANDARD, encoded).ok()?;
             let decoded_str = String::from_utf8(decoded).ok()?;
             let parts: Vec<&str> = decoded_str.splitn(2, ':').collect();
 
@@ -314,7 +315,11 @@ impl AuthMiddleware {
     }
 
     /// Check if context meets requirement
-    pub fn check_requirement(&self, context: &AuthContext, requirement: &AuthRequirement) -> Result<()> {
+    pub fn check_requirement(
+        &self,
+        context: &AuthContext,
+        requirement: &AuthRequirement,
+    ) -> Result<()> {
         match requirement {
             AuthRequirement::None => Ok(()),
             AuthRequirement::Authenticated => Ok(()),
@@ -366,7 +371,11 @@ impl AuthMiddleware {
                 }
                 Err(Error::Authorization {
                     action: "Insufficient permissions".to_string(),
-                    required: permissions.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(","),
+                    required: permissions
+                        .iter()
+                        .map(|p| p.to_string())
+                        .collect::<Vec<_>>()
+                        .join(","),
                 })
             }
             AuthRequirement::AllPermissions(permissions) => {
@@ -402,11 +411,12 @@ impl AuthMiddleware {
         }
 
         // Authenticate
-        let context = self.authenticate(request).await?.ok_or_else(|| {
-            Error::Authentication {
+        let context = self
+            .authenticate(request)
+            .await?
+            .ok_or_else(|| Error::Authentication {
                 message: "Authentication required".to_string(),
-            }
-        })?;
+            })?;
 
         // Check auth method is allowed
         if !self.config.allowed_methods.is_empty()
@@ -514,7 +524,11 @@ mod tests {
     fn test_auth_context() {
         let context = AuthContext::new(Uuid::now_v7(), AuthMethod::JwtBearer)
             .with_roles(vec!["admin".to_string(), "editor".to_string()])
-            .with_permissions(["posts:read".to_string(), "posts:write".to_string()].into_iter().collect());
+            .with_permissions(
+                ["posts:read".to_string(), "posts:write".to_string()]
+                    .into_iter()
+                    .collect(),
+            );
 
         assert!(context.has_role("admin"));
         assert!(context.has_role("editor"));
@@ -526,8 +540,7 @@ mod tests {
 
     #[test]
     fn test_auth_request_bearer_extraction() {
-        let request = AuthRequest::new("127.0.0.1")
-            .with_authorization("Bearer test_token_here");
+        let request = AuthRequest::new("127.0.0.1").with_authorization("Bearer test_token_here");
 
         let token = request.extract_bearer_token();
         assert_eq!(token, Some("test_token_here".to_string()));
@@ -536,9 +549,12 @@ mod tests {
     #[test]
     fn test_auth_request_basic_extraction() {
         // user:password base64 encoded
-        let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, "testuser:testpass");
-        let request = AuthRequest::new("127.0.0.1")
-            .with_authorization(format!("Basic {}", encoded));
+        let encoded = base64::Engine::encode(
+            &base64::engine::general_purpose::STANDARD,
+            "testuser:testpass",
+        );
+        let request =
+            AuthRequest::new("127.0.0.1").with_authorization(format!("Basic {}", encoded));
 
         let (user, pass) = request.extract_basic_auth().unwrap();
         assert_eq!(user, "testuser");

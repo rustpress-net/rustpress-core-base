@@ -221,8 +221,7 @@ async fn upload_media(
         .mime_str(mime_type)
         .map_err(|e| CliError::InvalidInput(format!("Invalid mime type: {}", e)))?;
 
-    let mut form = reqwest::multipart::Form::new()
-        .part("file", part);
+    let mut form = reqwest::multipart::Form::new().part("file", part);
 
     if let Some(ref t) = title {
         form = form.text("title", t.clone());
@@ -255,12 +254,16 @@ async fn upload_media(
         .await
         .map_err(|e| CliError::Serialization(format!("Failed to parse response: {}", e)))?;
 
-    let id = created.get("id").and_then(|v| v.as_str()).unwrap_or("unknown");
+    let id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unknown");
 
     println!();
     println!(
         "{}",
-        ctx.output_format.success(&format!("Media uploaded with ID: {}", id))
+        ctx.output_format
+            .success(&format!("Media uploaded with ID: {}", id))
     );
 
     Ok(())
@@ -363,7 +366,11 @@ async fn optimize_media(ctx: &CliContext, all: bool, id: Option<String>) -> CliR
     let url = if all {
         format!("{}/api/v1/media/optimize", ctx.server_url())
     } else {
-        format!("{}/api/v1/media/{}/optimize", ctx.server_url(), id.as_ref().unwrap())
+        format!(
+            "{}/api/v1/media/{}/optimize",
+            ctx.server_url(),
+            id.as_ref().unwrap()
+        )
     };
 
     let response = client
@@ -379,7 +386,11 @@ async fn optimize_media(ctx: &CliContext, all: bool, id: Option<String>) -> CliR
         let status = response.status();
         // If endpoint doesn't exist, provide info
         if status == reqwest::StatusCode::NOT_FOUND {
-            println!("{}", ctx.output_format.info("Media optimization is not available via API"));
+            println!(
+                "{}",
+                ctx.output_format
+                    .info("Media optimization is not available via API")
+            );
             return Ok(());
         }
         let body = response.text().await.unwrap_or_default();
@@ -390,12 +401,16 @@ async fn optimize_media(ctx: &CliContext, all: bool, id: Option<String>) -> CliR
     }
 
     let result: serde_json::Value = response.json().await.unwrap_or_default();
-    let count = result.get("optimized").and_then(|v| v.as_i64()).unwrap_or(1);
+    let count = result
+        .get("optimized")
+        .and_then(|v| v.as_i64())
+        .unwrap_or(1);
 
     println!();
     println!(
         "{}",
-        ctx.output_format.success(&format!("Optimized {} file(s)", count))
+        ctx.output_format
+            .success(&format!("Optimized {} file(s)", count))
     );
 
     Ok(())
@@ -416,7 +431,11 @@ async fn regenerate_thumbnails(ctx: &CliContext, all: bool, id: Option<String>) 
     let url = if all {
         format!("{}/api/v1/media/regenerate-thumbnails", ctx.server_url())
     } else {
-        format!("{}/api/v1/media/{}/regenerate-thumbnails", ctx.server_url(), id.as_ref().unwrap())
+        format!(
+            "{}/api/v1/media/{}/regenerate-thumbnails",
+            ctx.server_url(),
+            id.as_ref().unwrap()
+        )
     };
 
     let response = client
@@ -432,7 +451,11 @@ async fn regenerate_thumbnails(ctx: &CliContext, all: bool, id: Option<String>) 
         let status = response.status();
         // If endpoint doesn't exist, provide info
         if status == reqwest::StatusCode::NOT_FOUND {
-            println!("{}", ctx.output_format.info("Thumbnail regeneration is not available via API"));
+            println!(
+                "{}",
+                ctx.output_format
+                    .info("Thumbnail regeneration is not available via API")
+            );
             return Ok(());
         }
         let body = response.text().await.unwrap_or_default();
@@ -443,12 +466,16 @@ async fn regenerate_thumbnails(ctx: &CliContext, all: bool, id: Option<String>) 
     }
 
     let result: serde_json::Value = response.json().await.unwrap_or_default();
-    let count = result.get("regenerated").and_then(|v| v.as_i64()).unwrap_or(1);
+    let count = result
+        .get("regenerated")
+        .and_then(|v| v.as_i64())
+        .unwrap_or(1);
 
     println!();
     println!(
         "{}",
-        ctx.output_format.success(&format!("Regenerated thumbnails for {} file(s)", count))
+        ctx.output_format
+            .success(&format!("Regenerated thumbnails for {} file(s)", count))
     );
 
     Ok(())

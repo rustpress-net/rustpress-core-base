@@ -222,7 +222,7 @@ impl Default for AuthConfig {
     fn default() -> Self {
         Self {
             jwt_secret: "change-me-in-production".to_string(),
-            jwt_access_expiry_secs: 900, // 15 minutes
+            jwt_access_expiry_secs: 900,     // 15 minutes
             jwt_refresh_expiry_secs: 604800, // 7 days
             jwt_issuer: "rustpress".to_string(),
             password_min_length: 8,
@@ -231,7 +231,7 @@ impl Default for AuthConfig {
             password_require_digit: true,
             password_require_special: false,
             max_login_attempts: 5,
-            lockout_duration_secs: 900, // 15 minutes
+            lockout_duration_secs: 900,  // 15 minutes
             session_timeout_secs: 86400, // 24 hours
         }
     }
@@ -380,7 +380,12 @@ impl Default for RateLimitConfig {
             by_ip: true,
             by_user: true,
             by_api_key: true,
-            exempt_paths: vec!["/health".to_string(), "/metrics".to_string(), "/api/v4".to_string(), "/admin".to_string()],
+            exempt_paths: vec![
+                "/health".to_string(),
+                "/metrics".to_string(),
+                "/api/v4".to_string(),
+                "/admin".to_string(),
+            ],
         }
     }
 }

@@ -161,21 +161,36 @@ struct ApiResponse<T> {
 
 pub async fn execute(ctx: &CliContext, cmd: UsersCommand) -> CliResult<()> {
     match cmd.command {
-        UsersSubcommand::List { role, status, limit } => list_users(ctx, role, status, limit).await,
-        UsersSubcommand::Create { email, password, name, role } => {
-            create_user(ctx, email, password, name, role).await
-        }
-        UsersSubcommand::CreateAdmin { email, password, name } => {
-            create_user(ctx, email, password, name, "administrator".to_string()).await
-        }
+        UsersSubcommand::List {
+            role,
+            status,
+            limit,
+        } => list_users(ctx, role, status, limit).await,
+        UsersSubcommand::Create {
+            email,
+            password,
+            name,
+            role,
+        } => create_user(ctx, email, password, name, role).await,
+        UsersSubcommand::CreateAdmin {
+            email,
+            password,
+            name,
+        } => create_user(ctx, email, password, name, "administrator".to_string()).await,
         UsersSubcommand::Get { user } => get_user(ctx, &user).await,
-        UsersSubcommand::Update { user, email, name, role, status } => {
-            update_user(ctx, &user, email, name, role, status).await
-        }
+        UsersSubcommand::Update {
+            user,
+            email,
+            name,
+            role,
+            status,
+        } => update_user(ctx, &user, email, name, role, status).await,
         UsersSubcommand::Delete { user, force } => delete_user(ctx, &user, force).await,
-        UsersSubcommand::ResetPassword { user, password, generate } => {
-            reset_password(ctx, &user, password, generate).await
-        }
+        UsersSubcommand::ResetPassword {
+            user,
+            password,
+            generate,
+        } => reset_password(ctx, &user, password, generate).await,
     }
 }
 
@@ -429,7 +444,8 @@ async fn reset_password(
     let new_password = if generate {
         // Generate a random password
         use rand::Rng;
-        const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+        const CHARSET: &[u8] =
+            b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
         let mut rng = rand::thread_rng();
         let password: String = (0..16)
             .map(|_| {
@@ -441,9 +457,7 @@ async fn reset_password(
         password
     } else {
         password.ok_or_else(|| {
-            CliError::InvalidInput(
-                "Password required. Use --password or --generate".to_string(),
-            )
+            CliError::InvalidInput("Password required. Use --password or --generate".to_string())
         })?
     };
 

@@ -2,11 +2,11 @@
 //!
 //! Browse, search, and install themes from remote repositories.
 
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use parking_lot::RwLock;
 use thiserror::Error;
 use tokio::fs;
 
@@ -220,11 +220,7 @@ impl MarketplaceClient {
 
         let url = format!("{}/search", self.config.api_url);
 
-        let response = self.client
-            .get(&url)
-            .query(&query_params)
-            .send()
-            .await?;
+        let response = self.client.get(&url).query(&query_params).send().await?;
 
         if !response.status().is_success() {
             return Err(MarketplaceError::InvalidResponse(
@@ -249,10 +245,7 @@ impl MarketplaceClient {
 
         let url = format!("{}/{}", self.config.api_url, slug);
 
-        let response = self.client
-            .get(&url)
-            .send()
-            .await?;
+        let response = self.client.get(&url).send().await?;
 
         if response.status() == reqwest::StatusCode::NOT_FOUND {
             return Err(MarketplaceError::NotFound(slug.to_string()));
@@ -285,10 +278,7 @@ impl MarketplaceClient {
         }
 
         // Download file
-        let response = self.client
-            .get(&theme.download_url)
-            .send()
-            .await?;
+        let response = self.client.get(&theme.download_url).send().await?;
 
         if !response.status().is_success() {
             return Err(MarketplaceError::DownloadFailed(
@@ -313,7 +303,9 @@ impl MarketplaceClient {
 
         // Extract to themes directory
         let importer = crate::export::ThemeImporter::new(themes_dir.to_path_buf());
-        let theme_id = importer.import_zip(&zip_path).await
+        let theme_id = importer
+            .import_zip(&zip_path)
+            .await
             .map_err(|e| MarketplaceError::InstallFailed(e.to_string()))?;
 
         // Clean up download
@@ -326,10 +318,7 @@ impl MarketplaceClient {
     pub async fn get_featured(&self) -> Result<Vec<ThemeListing>, MarketplaceError> {
         let url = format!("{}/featured", self.config.api_url);
 
-        let response = self.client
-            .get(&url)
-            .send()
-            .await?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             return Err(MarketplaceError::InvalidResponse(
@@ -367,10 +356,7 @@ impl MarketplaceClient {
     pub async fn get_tags(&self) -> Result<Vec<TagInfo>, MarketplaceError> {
         let url = format!("{}/tags", self.config.api_url);
 
-        let response = self.client
-            .get(&url)
-            .send()
-            .await?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             return Err(MarketplaceError::InvalidResponse(
@@ -386,10 +372,7 @@ impl MarketplaceClient {
     pub async fn get_features(&self) -> Result<Vec<FeatureInfo>, MarketplaceError> {
         let url = format!("{}/features", self.config.api_url);
 
-        let response = self.client
-            .get(&url)
-            .send()
-            .await?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             return Err(MarketplaceError::InvalidResponse(
@@ -410,11 +393,7 @@ impl MarketplaceClient {
 
         let body: HashMap<String, String> = installed.iter().cloned().collect();
 
-        let response = self.client
-            .post(&url)
-            .json(&body)
-            .send()
-            .await?;
+        let response = self.client.post(&url).json(&body).send().await?;
 
         if !response.status().is_success() {
             return Err(MarketplaceError::InvalidResponse(
@@ -438,13 +417,12 @@ impl MarketplaceClient {
     }
 
     fn cache_search(&self, key: String, data: SearchResults) {
-        let expires_at = std::time::Instant::now() +
-            std::time::Duration::from_secs(self.config.cache_duration);
+        let expires_at =
+            std::time::Instant::now() + std::time::Duration::from_secs(self.config.cache_duration);
 
-        self.search_cache.write().insert(key, CachedResult {
-            data,
-            expires_at,
-        });
+        self.search_cache
+            .write()
+            .insert(key, CachedResult { data, expires_at });
     }
 
     fn get_cached_theme(&self, slug: &str) -> Option<ThemeListing> {
@@ -459,13 +437,12 @@ impl MarketplaceClient {
     }
 
     fn cache_theme(&self, slug: String, data: ThemeListing) {
-        let expires_at = std::time::Instant::now() +
-            std::time::Duration::from_secs(self.config.cache_duration);
+        let expires_at =
+            std::time::Instant::now() + std::time::Duration::from_secs(self.config.cache_duration);
 
-        self.theme_cache.write().insert(slug, CachedResult {
-            data,
-            expires_at,
-        });
+        self.theme_cache
+            .write()
+            .insert(slug, CachedResult { data, expires_at });
     }
 
     /// Clear all caches

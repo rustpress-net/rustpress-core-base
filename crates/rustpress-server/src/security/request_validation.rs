@@ -98,10 +98,7 @@ impl Default for SecurityConfig {
             enable_path_traversal_detection: true,
             enable_command_injection_detection: true,
             custom_blocked_patterns: Vec::new(),
-            excluded_paths: vec![
-                "/health".to_string(),
-                "/metrics".to_string(),
-            ],
+            excluded_paths: vec!["/health".to_string(), "/metrics".to_string()],
             blocking_mode: true,
         }
     }
@@ -174,7 +171,10 @@ impl SecurityMiddleware {
 
     /// Check if path is excluded from validation
     pub fn is_excluded(&self, path: &str) -> bool {
-        self.config.excluded_paths.iter().any(|p| path.starts_with(p))
+        self.config
+            .excluded_paths
+            .iter()
+            .any(|p| path.starts_with(p))
     }
 }
 
@@ -333,10 +333,7 @@ fn percent_decode(input: &[u8]) -> String {
 
     while i < input.len() {
         if input[i] == b'%' && i + 2 < input.len() {
-            if let (Some(h), Some(l)) = (
-                hex_to_byte(input[i + 1]),
-                hex_to_byte(input[i + 2]),
-            ) {
+            if let (Some(h), Some(l)) = (hex_to_byte(input[i + 1]), hex_to_byte(input[i + 2])) {
                 result.push(h * 16 + l);
                 i += 3;
                 continue;

@@ -37,11 +37,7 @@ pub async fn require_admin_auth(request: Request, next: Next) -> Response {
 }
 
 /// IP whitelist middleware
-pub async fn ip_whitelist(
-    allowed_ips: &[String],
-    request: Request,
-    next: Next,
-) -> Response {
+pub async fn ip_whitelist(allowed_ips: &[String], request: Request, next: Next) -> Response {
     // If no whitelist configured, allow all
     if allowed_ips.is_empty() {
         return next.run(request).await;

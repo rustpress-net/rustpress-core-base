@@ -2,10 +2,10 @@
 //!
 //! Provides integration with Content Delivery Networks for asset distribution.
 
-use std::collections::HashMap;
-use std::sync::Arc;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
 use thiserror::Error;
 
 /// CDN errors
@@ -117,14 +117,14 @@ impl AssetType {
 impl Default for CdnConfig {
     fn default() -> Self {
         let mut ttl_config = HashMap::new();
-        ttl_config.insert(AssetType::Image, 31536000);      // 1 year
+        ttl_config.insert(AssetType::Image, 31536000); // 1 year
         ttl_config.insert(AssetType::JavaScript, 31536000); // 1 year
-        ttl_config.insert(AssetType::Css, 31536000);        // 1 year
-        ttl_config.insert(AssetType::Font, 31536000);       // 1 year
-        ttl_config.insert(AssetType::Video, 604800);        // 1 week
-        ttl_config.insert(AssetType::Audio, 604800);        // 1 week
-        ttl_config.insert(AssetType::Document, 86400);      // 1 day
-        ttl_config.insert(AssetType::Other, 3600);          // 1 hour
+        ttl_config.insert(AssetType::Css, 31536000); // 1 year
+        ttl_config.insert(AssetType::Font, 31536000); // 1 year
+        ttl_config.insert(AssetType::Video, 604800); // 1 week
+        ttl_config.insert(AssetType::Audio, 604800); // 1 week
+        ttl_config.insert(AssetType::Document, 86400); // 1 day
+        ttl_config.insert(AssetType::Other, 3600); // 1 hour
 
         Self {
             provider: CdnProvider::Custom,
@@ -221,43 +221,49 @@ impl CdnRewriter {
 
         // Rewrite src attributes
         let src_re = regex::Regex::new(r#"src=["']([^"']+)["']"#).unwrap();
-        result = src_re.replace_all(&result, |caps: &regex::Captures| {
-            let url = &caps[1];
-            let new_url = self.rewrite_url(url, is_authenticated);
-            format!("src=\"{}\"", new_url)
-        }).to_string();
+        result = src_re
+            .replace_all(&result, |caps: &regex::Captures| {
+                let url = &caps[1];
+                let new_url = self.rewrite_url(url, is_authenticated);
+                format!("src=\"{}\"", new_url)
+            })
+            .to_string();
 
         // Rewrite href attributes for stylesheets
         let href_re = regex::Regex::new(r#"href=["']([^"']+\.css[^"']*)["']"#).unwrap();
-        result = href_re.replace_all(&result, |caps: &regex::Captures| {
-            let url = &caps[1];
-            let new_url = self.rewrite_url(url, is_authenticated);
-            format!("href=\"{}\"", new_url)
-        }).to_string();
+        result = href_re
+            .replace_all(&result, |caps: &regex::Captures| {
+                let url = &caps[1];
+                let new_url = self.rewrite_url(url, is_authenticated);
+                format!("href=\"{}\"", new_url)
+            })
+            .to_string();
 
         // Rewrite srcset attributes
         let srcset_re = regex::Regex::new(r#"srcset=["']([^"']+)["']"#).unwrap();
-        result = srcset_re.replace_all(&result, |caps: &regex::Captures| {
-            let srcset = &caps[1];
-            let new_srcset: String = srcset
-                .split(',')
-                .map(|part| {
-                    let trimmed = part.trim();
-                    let parts: Vec<&str> = trimmed.split_whitespace().collect();
-                    if parts.is_empty() {
-                        return trimmed.to_string();
-                    }
-                    let url = self.rewrite_url(parts[0], is_authenticated);
-                    if parts.len() > 1 {
-                        format!("{} {}", url, parts[1..].join(" "))
-                    } else {
-                        url
-                    }
-                })
-                .collect::<Vec<_>>()
-                .join(", ");
-            format!("srcset=\"{}\"", new_srcset)
-        }).to_string();
+        result = srcset_re
+            .replace_all(&result, |caps: &regex::Captures| {
+                let srcset = &caps[1];
+                let new_srcset: String = srcset
+                    .split(',')
+                    .map(|part| {
+                        let trimmed = part.trim();
+                        let parts: Vec<&str> = trimmed.split_whitespace().collect();
+                        if parts.is_empty() {
+                            return trimmed.to_string();
+                        }
+                        let url = self.rewrite_url(parts[0], is_authenticated);
+                        if parts.len() > 1 {
+                            format!("{} {}", url, parts[1..].join(" "))
+                        } else {
+                            url
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("srcset=\"{}\"", new_srcset)
+            })
+            .to_string();
 
         result
     }
@@ -383,11 +389,15 @@ impl CdnPurger {
     }
 
     async fn purge_cloudflare(&self, request: &PurgeRequest) -> Result<(), CdnError> {
-        let zone_id = self.config.zone_id.as_ref()
-            .ok_or_else(|| CdnError::ConfigError("Cloudflare zone_id is required".to_string()))?;
+        let zone_id =
+            self.config.zone_id.as_ref().ok_or_else(|| {
+                CdnError::ConfigError("Cloudflare zone_id is required".to_string())
+            })?;
 
-        let api_key = self.config.api_key.as_ref()
-            .ok_or_else(|| CdnError::ConfigError("Cloudflare api_key is required".to_string()))?;
+        let api_key =
+            self.config.api_key.as_ref().ok_or_else(|| {
+                CdnError::ConfigError("Cloudflare api_key is required".to_string())
+            })?;
 
         let url = format!(
             "https://api.cloudflare.com/client/v4/zones/{}/purge_cache",
@@ -403,25 +413,22 @@ impl CdnPurger {
 
         // In production, this would use reqwest or similar
         // For now, we log the purge request
-        tracing::info!(
-            "Cloudflare purge request: URL={}, body={:?}",
-            url,
-            body
-        );
+        tracing::info!("Cloudflare purge request: URL={}, body={:?}", url, body);
 
         Ok(())
     }
 
     async fn purge_cloudfront(&self, request: &PurgeRequest) -> Result<(), CdnError> {
-        let distribution_id = self.config.zone_id.as_ref()
-            .ok_or_else(|| CdnError::ConfigError("CloudFront distribution_id is required".to_string()))?;
+        let distribution_id = self.config.zone_id.as_ref().ok_or_else(|| {
+            CdnError::ConfigError("CloudFront distribution_id is required".to_string())
+        })?;
 
         let paths: Vec<String> = match request.purge_type {
             PurgeType::Everything => vec!["/*".to_string()],
             PurgeType::Urls | PurgeType::Prefix => request.targets.clone(),
             PurgeType::Tags => {
                 return Err(CdnError::ConfigError(
-                    "CloudFront does not support tag-based purging".to_string()
+                    "CloudFront does not support tag-based purging".to_string(),
                 ));
             }
         };
@@ -436,10 +443,15 @@ impl CdnPurger {
     }
 
     async fn purge_fastly(&self, request: &PurgeRequest) -> Result<(), CdnError> {
-        let service_id = self.config.zone_id.as_ref()
-            .ok_or_else(|| CdnError::ConfigError("Fastly service_id is required".to_string()))?;
+        let service_id =
+            self.config.zone_id.as_ref().ok_or_else(|| {
+                CdnError::ConfigError("Fastly service_id is required".to_string())
+            })?;
 
-        let api_key = self.config.api_key.as_ref()
+        let api_key = self
+            .config
+            .api_key
+            .as_ref()
             .ok_or_else(|| CdnError::ConfigError("Fastly api_key is required".to_string()))?;
 
         match request.purge_type {
@@ -465,7 +477,10 @@ impl CdnPurger {
     }
 
     async fn purge_bunny(&self, request: &PurgeRequest) -> Result<(), CdnError> {
-        let api_key = self.config.api_key.as_ref()
+        let api_key = self
+            .config
+            .api_key
+            .as_ref()
             .ok_or_else(|| CdnError::ConfigError("BunnyCDN api_key is required".to_string()))?;
 
         tracing::info!("BunnyCDN purge request: {:?}", request.targets);
@@ -473,10 +488,17 @@ impl CdnPurger {
     }
 
     async fn purge_keycdn(&self, request: &PurgeRequest) -> Result<(), CdnError> {
-        let zone_id = self.config.zone_id.as_ref()
+        let zone_id = self
+            .config
+            .zone_id
+            .as_ref()
             .ok_or_else(|| CdnError::ConfigError("KeyCDN zone_id is required".to_string()))?;
 
-        tracing::info!("KeyCDN purge request: zone={}, targets={:?}", zone_id, request.targets);
+        tracing::info!(
+            "KeyCDN purge request: zone={}, targets={:?}",
+            zone_id,
+            request.targets
+        );
         Ok(())
     }
 

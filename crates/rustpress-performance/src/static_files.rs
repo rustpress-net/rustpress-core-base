@@ -2,10 +2,6 @@
 //!
 //! Efficient static file serving with content hashing, compression, and cache busting.
 
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use std::time::{Duration, SystemTime};
 use axum::{
     body::Body,
     http::{header, Response, StatusCode},
@@ -13,6 +9,10 @@ use axum::{
 };
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::time::{Duration, SystemTime};
 use thiserror::Error;
 use tokio::fs;
 use tokio::io::AsyncReadExt;
@@ -75,8 +75,7 @@ impl AssetManifest {
     /// Load manifest from file
     pub async fn load(path: &Path) -> Result<Self, StaticFileError> {
         let content = fs::read_to_string(path).await?;
-        serde_json::from_str(&content)
-            .map_err(|e| StaticFileError::InvalidPath(e.to_string()))
+        serde_json::from_str(&content).map_err(|e| StaticFileError::InvalidPath(e.to_string()))
     }
 
     /// Save manifest to file
@@ -89,7 +88,9 @@ impl AssetManifest {
 
     /// Get hashed URL for asset
     pub fn get_url(&self, original_path: &str) -> Option<String> {
-        self.assets.get(original_path).map(|a| a.hashed_path.clone())
+        self.assets
+            .get(original_path)
+            .map(|a| a.hashed_path.clone())
     }
 
     /// Get integrity hash for asset (for SRI)
@@ -185,13 +186,18 @@ impl StaticFileServer {
     pub async fn build_manifest(&self) -> Result<AssetManifest, StaticFileError> {
         let mut manifest = AssetManifest::new();
 
-        self.scan_directory(&self.config.root_dir, &mut manifest).await?;
+        self.scan_directory(&self.config.root_dir, &mut manifest)
+            .await?;
 
         *self.manifest.write() = manifest.clone();
         Ok(manifest)
     }
 
-    async fn scan_directory(&self, dir: &Path, manifest: &mut AssetManifest) -> Result<(), StaticFileError> {
+    async fn scan_directory(
+        &self,
+        dir: &Path,
+        manifest: &mut AssetManifest,
+    ) -> Result<(), StaticFileError> {
         let mut entries = fs::read_dir(dir).await?;
 
         while let Some(entry) = entries.next_entry().await? {
@@ -212,30 +218,27 @@ impl StaticFileServer {
         Ok(())
     }
 
-    async fn process_asset(&self, path: &Path, manifest: &mut AssetManifest) -> Result<(), StaticFileError> {
+    async fn process_asset(
+        &self,
+        path: &Path,
+        manifest: &mut AssetManifest,
+    ) -> Result<(), StaticFileError> {
         let content = fs::read(path).await?;
         let hash = blake3::hash(&content);
         let hash_str = &hash.to_hex()[..8];
 
         // Generate hashed filename
-        let file_stem = path.file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("file");
-        let extension = path.extension()
-            .and_then(|s| s.to_str())
-            .unwrap_or("");
+        let file_stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("file");
+        let extension = path.extension().and_then(|s| s.to_str()).unwrap_or("");
 
         let hashed_filename = format!("{}.{}.{}", file_stem, hash_str, extension);
 
         // Calculate relative paths
-        let relative_path = path.strip_prefix(&self.config.root_dir)
+        let relative_path = path
+            .strip_prefix(&self.config.root_dir)
             .map_err(|_| StaticFileError::InvalidPath(path.display().to_string()))?;
 
-        let original_url = format!(
-            "{}/{}",
-            self.config.url_prefix,
-            relative_path.display()
-        );
+        let original_url = format!("{}/{}", self.config.url_prefix, relative_path.display());
 
         let hashed_dir = relative_path.parent().unwrap_or(Path::new(""));
         let hashed_url = format!(
@@ -249,56 +252,71 @@ impl StaticFileServer {
         let mime_type = get_mime_type(extension, &self.config.mime_overrides);
 
         // Compress if enabled
-        let gzip_size = if self.config.precompress && content.len() >= self.config.compression_threshold {
-            let gzip_content = compress_gzip(&content, self.config.compression_level)?;
-            let gzip_path = path.with_extension(format!("{}.gz", extension));
-            fs::write(&gzip_path, &gzip_content).await?;
-            Some(gzip_content.len() as u64)
-        } else {
-            None
-        };
+        let gzip_size =
+            if self.config.precompress && content.len() >= self.config.compression_threshold {
+                let gzip_content = compress_gzip(&content, self.config.compression_level)?;
+                let gzip_path = path.with_extension(format!("{}.gz", extension));
+                fs::write(&gzip_path, &gzip_content).await?;
+                Some(gzip_content.len() as u64)
+            } else {
+                None
+            };
 
-        let brotli_size = if self.config.precompress && content.len() >= self.config.compression_threshold {
-            let brotli_content = compress_brotli(&content, self.config.compression_level)?;
-            let brotli_path = path.with_extension(format!("{}.br", extension));
-            fs::write(&brotli_path, &brotli_content).await?;
-            Some(brotli_content.len() as u64)
-        } else {
-            None
-        };
+        let brotli_size =
+            if self.config.precompress && content.len() >= self.config.compression_threshold {
+                let brotli_content = compress_brotli(&content, self.config.compression_level)?;
+                let brotli_path = path.with_extension(format!("{}.br", extension));
+                fs::write(&brotli_path, &brotli_content).await?;
+                Some(brotli_content.len() as u64)
+            } else {
+                None
+            };
 
         // Write hashed file
         if self.config.cache_busting {
-            let hashed_path = path.parent()
+            let hashed_path = path
+                .parent()
                 .unwrap_or(Path::new(""))
                 .join(&hashed_filename);
             fs::copy(path, &hashed_path).await?;
         }
 
         // Integrity hash for SRI
-        let integrity = format!("sha384-{}", base64_encode(&blake3::hash(&content).as_bytes()[..32]));
+        let integrity = format!(
+            "sha384-{}",
+            base64_encode(&blake3::hash(&content).as_bytes()[..32])
+        );
 
-        manifest.assets.insert(original_url.clone(), HashedAsset {
-            hashed_path: hashed_url,
-            hash: hash_str.to_string(),
-            size: content.len() as u64,
-            gzip_size,
-            brotli_size,
-            mime_type,
-            integrity,
-        });
+        manifest.assets.insert(
+            original_url.clone(),
+            HashedAsset {
+                hashed_path: hashed_url,
+                hash: hash_str.to_string(),
+                size: content.len() as u64,
+                gzip_size,
+                brotli_size,
+                mime_type,
+                integrity,
+            },
+        );
 
         Ok(())
     }
 
     /// Serve static file
-    pub async fn serve(&self, path: &str, accept_encoding: Option<&str>) -> Result<StaticFileResponse, StaticFileError> {
+    pub async fn serve(
+        &self,
+        path: &str,
+        accept_encoding: Option<&str>,
+    ) -> Result<StaticFileResponse, StaticFileError> {
         // Normalize path
         let normalized = normalize_path(path);
 
         // Security check
         if normalized.contains("..") {
-            return Err(StaticFileError::InvalidPath("Path traversal not allowed".to_string()));
+            return Err(StaticFileError::InvalidPath(
+                "Path traversal not allowed".to_string(),
+            ));
         }
 
         // Remove URL prefix
@@ -322,20 +340,21 @@ impl StaticFileServer {
         let content = fs::read(&file_path).await?;
         let metadata = fs::metadata(&file_path).await?;
 
-        let extension = file_path.extension()
-            .and_then(|s| s.to_str())
-            .unwrap_or("");
+        let extension = file_path.extension().and_then(|s| s.to_str()).unwrap_or("");
 
         let mime_type = get_mime_type(extension, &self.config.mime_overrides);
         let etag = format!("\"{}\"", &blake3::hash(&content).to_hex()[..16]);
-        let last_modified = metadata.modified()
+        let last_modified = metadata
+            .modified()
             .ok()
             .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
             .map(|d| d.as_secs() as i64)
             .unwrap_or(0);
 
         // Compress if needed
-        let gzip_content = if self.config.enable_compression && content.len() >= self.config.compression_threshold {
+        let gzip_content = if self.config.enable_compression
+            && content.len() >= self.config.compression_threshold
+        {
             // Try precompressed first
             let gzip_path = file_path.with_extension(format!("{}.gz", extension));
             if gzip_path.exists() {
@@ -347,7 +366,9 @@ impl StaticFileServer {
             None
         };
 
-        let brotli_content = if self.config.enable_compression && content.len() >= self.config.compression_threshold {
+        let brotli_content = if self.config.enable_compression
+            && content.len() >= self.config.compression_threshold
+        {
             let brotli_path = file_path.with_extension(format!("{}.br", extension));
             if brotli_path.exists() {
                 Some(fs::read(&brotli_path).await?)
@@ -369,7 +390,9 @@ impl StaticFileServer {
         };
 
         // Cache the file
-        self.file_cache.write().insert(relative_path.to_string(), cached);
+        self.file_cache
+            .write()
+            .insert(relative_path.to_string(), cached);
 
         // Get from cache and return
         let cached = self.file_cache.read().get(relative_path).cloned();
@@ -380,7 +403,11 @@ impl StaticFileServer {
         }
     }
 
-    fn build_response(&self, file: &CachedFile, accept_encoding: Option<&str>) -> Result<StaticFileResponse, StaticFileError> {
+    fn build_response(
+        &self,
+        file: &CachedFile,
+        accept_encoding: Option<&str>,
+    ) -> Result<StaticFileResponse, StaticFileError> {
         let encodings = parse_accept_encoding(accept_encoding);
 
         // Choose best encoding
@@ -419,7 +446,8 @@ impl StaticFileServer {
 
     /// Get URL for asset with cache busting
     pub fn asset_url(&self, path: &str) -> String {
-        self.manifest.read()
+        self.manifest
+            .read()
             .get_url(path)
             .unwrap_or_else(|| path.to_string())
     }
@@ -470,7 +498,7 @@ impl IntoResponse for StaticFileResponse {
         // Last-Modified
         if self.last_modified > 0 {
             let datetime = httpdate::HttpDate::from(
-                std::time::UNIX_EPOCH + Duration::from_secs(self.last_modified as u64)
+                std::time::UNIX_EPOCH + Duration::from_secs(self.last_modified as u64),
             );
             builder = builder.header(header::LAST_MODIFIED, datetime.to_string());
         }
@@ -488,10 +516,27 @@ impl IntoResponse for StaticFileResponse {
 fn is_static_asset(ext: &str) -> bool {
     matches!(
         ext,
-        "css" | "js" | "mjs" | "json" |
-        "png" | "jpg" | "jpeg" | "gif" | "svg" | "webp" | "ico" | "avif" |
-        "woff" | "woff2" | "ttf" | "eot" | "otf" |
-        "pdf" | "xml" | "txt" | "map"
+        "css"
+            | "js"
+            | "mjs"
+            | "json"
+            | "png"
+            | "jpg"
+            | "jpeg"
+            | "gif"
+            | "svg"
+            | "webp"
+            | "ico"
+            | "avif"
+            | "woff"
+            | "woff2"
+            | "ttf"
+            | "eot"
+            | "otf"
+            | "pdf"
+            | "xml"
+            | "txt"
+            | "map"
     )
 }
 
@@ -523,14 +568,13 @@ fn get_mime_type(ext: &str, overrides: &HashMap<String, String>) -> String {
         "pdf" => "application/pdf",
         "map" => "application/json",
         _ => "application/octet-stream",
-    }.to_string()
+    }
+    .to_string()
 }
 
 /// Normalize URL path
 fn normalize_path(path: &str) -> String {
-    path.replace("//", "/")
-        .trim_end_matches('/')
-        .to_string()
+    path.replace("//", "/").trim_end_matches('/').to_string()
 }
 
 /// Parse Accept-Encoding header
@@ -551,9 +595,11 @@ fn compress_gzip(data: &[u8], level: u32) -> Result<Vec<u8>, StaticFileError> {
     use std::io::Write;
 
     let mut encoder = GzEncoder::new(Vec::new(), Compression::new(level));
-    encoder.write_all(data)
+    encoder
+        .write_all(data)
         .map_err(|e| StaticFileError::Compression(e.to_string()))?;
-    encoder.finish()
+    encoder
+        .finish()
         .map_err(|e| StaticFileError::Compression(e.to_string()))
 }
 
@@ -604,7 +650,10 @@ mod tests {
     fn test_mime_types() {
         let overrides = HashMap::new();
         assert_eq!(get_mime_type("css", &overrides), "text/css; charset=utf-8");
-        assert_eq!(get_mime_type("js", &overrides), "application/javascript; charset=utf-8");
+        assert_eq!(
+            get_mime_type("js", &overrides),
+            "application/javascript; charset=utf-8"
+        );
         assert_eq!(get_mime_type("png", &overrides), "image/png");
     }
 

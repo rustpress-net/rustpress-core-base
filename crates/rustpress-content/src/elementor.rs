@@ -108,18 +108,24 @@ impl ElementorElement {
 
     /// Create a heading widget
     pub fn heading(text: &str, tag: &str, align: &str) -> Self {
-        Self::widget("heading", serde_json::json!({
-            "title": text,
-            "header_size": tag,
-            "align": align
-        }))
+        Self::widget(
+            "heading",
+            serde_json::json!({
+                "title": text,
+                "header_size": tag,
+                "align": align
+            }),
+        )
     }
 
     /// Create a text editor widget
     pub fn text_editor(content: &str) -> Self {
-        Self::widget("text-editor", serde_json::json!({
-            "editor": content
-        }))
+        Self::widget(
+            "text-editor",
+            serde_json::json!({
+                "editor": content
+            }),
+        )
     }
 
     /// Create an image widget
@@ -142,40 +148,52 @@ impl ElementorElement {
 
     /// Create a button widget
     pub fn button(text: &str, url: &str, button_type: &str) -> Self {
-        Self::widget("button", serde_json::json!({
-            "text": text,
-            "link": {
-                "url": url
-            },
-            "button_type": button_type
-        }))
+        Self::widget(
+            "button",
+            serde_json::json!({
+                "text": text,
+                "link": {
+                    "url": url
+                },
+                "button_type": button_type
+            }),
+        )
     }
 
     /// Create a video widget
     pub fn video(url: &str, provider: &str) -> Self {
-        Self::widget("video", serde_json::json!({
-            "video_type": provider,
-            "youtube_url": if provider == "youtube" { url } else { "" },
-            "vimeo_url": if provider == "vimeo" { url } else { "" },
-            "hosted_url": if provider == "hosted" { serde_json::json!({"url": url}) } else { serde_json::json!({}) }
-        }))
+        Self::widget(
+            "video",
+            serde_json::json!({
+                "video_type": provider,
+                "youtube_url": if provider == "youtube" { url } else { "" },
+                "vimeo_url": if provider == "vimeo" { url } else { "" },
+                "hosted_url": if provider == "hosted" { serde_json::json!({"url": url}) } else { serde_json::json!({}) }
+            }),
+        )
     }
 
     /// Create a divider widget
     pub fn divider(style: &str) -> Self {
-        Self::widget("divider", serde_json::json!({
-            "style": style
-        }))
+        Self::widget(
+            "divider",
+            serde_json::json!({
+                "style": style
+            }),
+        )
     }
 
     /// Create a spacer widget
     pub fn spacer(space: u32) -> Self {
-        Self::widget("spacer", serde_json::json!({
-            "space": {
-                "size": space,
-                "unit": "px"
-            }
-        }))
+        Self::widget(
+            "spacer",
+            serde_json::json!({
+                "space": {
+                    "size": space,
+                    "unit": "px"
+                }
+            }),
+        )
     }
 
     /// Create an icon widget
@@ -215,26 +233,35 @@ impl ElementorElement {
             })
             .collect();
 
-        Self::widget("icon-list", serde_json::json!({
-            "icon_list": icon_list
-        }))
+        Self::widget(
+            "icon-list",
+            serde_json::json!({
+                "icon_list": icon_list
+            }),
+        )
     }
 
     /// Create a counter widget
     pub fn counter(starting: u64, ending: u64, title: &str) -> Self {
-        Self::widget("counter", serde_json::json!({
-            "starting_number": starting,
-            "ending_number": ending,
-            "title": title
-        }))
+        Self::widget(
+            "counter",
+            serde_json::json!({
+                "starting_number": starting,
+                "ending_number": ending,
+                "title": title
+            }),
+        )
     }
 
     /// Create a progress bar widget
     pub fn progress_bar(title: &str, percent: u8) -> Self {
-        Self::widget("progress", serde_json::json!({
-            "title": title,
-            "percent": percent
-        }))
+        Self::widget(
+            "progress",
+            serde_json::json!({
+                "title": title,
+                "percent": percent
+            }),
+        )
     }
 
     /// Create a testimonial widget
@@ -266,9 +293,12 @@ impl ElementorElement {
             })
             .collect();
 
-        Self::widget("tabs", serde_json::json!({
-            "tabs": tab_items
-        }))
+        Self::widget(
+            "tabs",
+            serde_json::json!({
+                "tabs": tab_items
+            }),
+        )
     }
 
     /// Create an accordion widget
@@ -283,9 +313,12 @@ impl ElementorElement {
             })
             .collect();
 
-        Self::widget("accordion", serde_json::json!({
-            "tabs": accordion_items
-        }))
+        Self::widget(
+            "accordion",
+            serde_json::json!({
+                "tabs": accordion_items
+            }),
+        )
     }
 
     /// Create a toggle widget
@@ -300,9 +333,12 @@ impl ElementorElement {
             })
             .collect();
 
-        Self::widget("toggle", serde_json::json!({
-            "tabs": toggle_items
-        }))
+        Self::widget(
+            "toggle",
+            serde_json::json!({
+                "tabs": toggle_items
+            }),
+        )
     }
 
     /// Create a social icons widget
@@ -322,46 +358,55 @@ impl ElementorElement {
             })
             .collect();
 
-        Self::widget("social-icons", serde_json::json!({
-            "social_icon_list": social_items
-        }))
+        Self::widget(
+            "social-icons",
+            serde_json::json!({
+                "social_icon_list": social_items
+            }),
+        )
     }
 
     /// Create an alert widget
     pub fn alert(title: &str, description: &str, alert_type: &str) -> Self {
-        Self::widget("alert", serde_json::json!({
-            "alert_title": title,
-            "alert_description": description,
-            "alert_type": alert_type
-        }))
+        Self::widget(
+            "alert",
+            serde_json::json!({
+                "alert_title": title,
+                "alert_description": description,
+                "alert_type": alert_type
+            }),
+        )
     }
 
     /// Create a google maps widget
     pub fn google_maps(address: &str, zoom: u8, height: u32) -> Self {
-        Self::widget("google_maps", serde_json::json!({
-            "address": address,
-            "zoom": {
-                "size": zoom
-            },
-            "height": {
-                "size": height,
-                "unit": "px"
-            }
-        }))
+        Self::widget(
+            "google_maps",
+            serde_json::json!({
+                "address": address,
+                "zoom": {
+                    "size": zoom
+                },
+                "height": {
+                    "size": height,
+                    "unit": "px"
+                }
+            }),
+        )
     }
 
     /// Create a form widget
     pub fn form(form_name: &str, fields: Vec<ElementorFormField>) -> Self {
-        let form_fields: Vec<serde_json::Value> = fields
-            .iter()
-            .map(|f| f.to_json())
-            .collect();
+        let form_fields: Vec<serde_json::Value> = fields.iter().map(|f| f.to_json()).collect();
 
-        Self::widget("form", serde_json::json!({
-            "form_name": form_name,
-            "form_fields": form_fields,
-            "submit_actions": ["email"]
-        }))
+        Self::widget(
+            "form",
+            serde_json::json!({
+                "form_name": form_name,
+                "form_fields": form_fields,
+                "submit_actions": ["email"]
+            }),
+        )
     }
 }
 
@@ -463,7 +508,8 @@ impl ElementorRenderer {
     where
         F: Fn(&ElementorElement) -> String + Send + Sync + 'static,
     {
-        self.widget_renderers.insert(widget_type.to_string(), Box::new(renderer));
+        self.widget_renderers
+            .insert(widget_type.to_string(), Box::new(renderer));
     }
 
     /// Render Elementor JSON content to HTML
@@ -472,9 +518,7 @@ impl ElementorRenderer {
         let doc: Result<ElementorDocument, _> = serde_json::from_str(content);
 
         match doc {
-            Ok(document) => {
-                self.render_elements(&document.content)
-            }
+            Ok(document) => self.render_elements(&document.content),
             Err(_) => {
                 // Try parsing as array of elements directly
                 let elements: Result<Vec<ElementorElement>, _> = serde_json::from_str(content);
@@ -488,10 +532,7 @@ impl ElementorRenderer {
 
     /// Render elements to HTML
     pub fn render_elements(&self, elements: &[ElementorElement]) -> String {
-        elements
-            .iter()
-            .map(|el| self.render_element(el))
-            .collect()
+        elements.iter().map(|el| self.render_element(el)).collect()
     }
 
     /// Render a single element
@@ -521,7 +562,9 @@ impl ElementorRenderer {
     fn render_column(&self, element: &ElementorElement) -> String {
         let inner = self.render_elements(&element.elements);
         let classes = self.get_element_classes(element, "elementor-column");
-        let width = element.settings.get("_column_size")
+        let width = element
+            .settings
+            .get("_column_size")
             .and_then(|v| v.as_u64())
             .unwrap_or(100);
 
@@ -537,10 +580,7 @@ impl ElementorRenderer {
         let inner = self.render_elements(&element.elements);
         let classes = self.get_element_classes(element, "elementor-container");
 
-        format!(
-            r#"<div class="{}">{}</div>"#,
-            classes, inner
-        )
+        format!(r#"<div class="{}">{}</div>"#, classes, inner)
     }
 
     fn render_widget(&self, element: &ElementorElement) -> String {
@@ -576,7 +616,8 @@ impl ElementorRenderer {
             _ => format!("<!-- Widget: {} -->", widget_type),
         };
 
-        let classes = self.get_element_classes(element, &format!("elementor-widget-{}", widget_type));
+        let classes =
+            self.get_element_classes(element, &format!("elementor-widget-{}", widget_type));
 
         format!(
             r#"<div class="elementor-widget {}">
@@ -597,13 +638,19 @@ impl ElementorRenderer {
     }
 
     fn render_heading_widget(&self, element: &ElementorElement) -> String {
-        let title = element.settings.get("title")
+        let title = element
+            .settings
+            .get("title")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let tag = element.settings.get("header_size")
+        let tag = element
+            .settings
+            .get("header_size")
             .and_then(|v| v.as_str())
             .unwrap_or("h2");
-        let align = element.settings.get("align")
+        let align = element
+            .settings
+            .get("align")
             .and_then(|v| v.as_str())
             .unwrap_or("left");
 
@@ -614,7 +661,9 @@ impl ElementorRenderer {
     }
 
     fn render_text_editor_widget(&self, element: &ElementorElement) -> String {
-        element.settings.get("editor")
+        element
+            .settings
+            .get("editor")
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string()
@@ -631,7 +680,9 @@ impl ElementorRenderer {
             .and_then(|v| v.as_str())
             .unwrap_or("");
 
-        let link = element.settings.get("link")
+        let link = element
+            .settings
+            .get("link")
             .and_then(|l| l.get("url"))
             .and_then(|v| v.as_str());
 
@@ -645,14 +696,20 @@ impl ElementorRenderer {
     }
 
     fn render_button_widget(&self, element: &ElementorElement) -> String {
-        let text = element.settings.get("text")
+        let text = element
+            .settings
+            .get("text")
             .and_then(|v| v.as_str())
             .unwrap_or("Button");
-        let url = element.settings.get("link")
+        let url = element
+            .settings
+            .get("link")
             .and_then(|l| l.get("url"))
             .and_then(|v| v.as_str())
             .unwrap_or("#");
-        let btn_type = element.settings.get("button_type")
+        let btn_type = element
+            .settings
+            .get("button_type")
             .and_then(|v| v.as_str())
             .unwrap_or("default");
 
@@ -663,14 +720,18 @@ impl ElementorRenderer {
     }
 
     fn render_video_widget(&self, element: &ElementorElement) -> String {
-        let video_type = element.settings.get("video_type")
+        let video_type = element
+            .settings
+            .get("video_type")
             .and_then(|v| v.as_str())
             .unwrap_or("youtube");
 
         let url = match video_type {
             "youtube" => element.settings.get("youtube_url").and_then(|v| v.as_str()),
             "vimeo" => element.settings.get("vimeo_url").and_then(|v| v.as_str()),
-            _ => element.settings.get("hosted_url")
+            _ => element
+                .settings
+                .get("hosted_url")
                 .and_then(|v| v.get("url"))
                 .and_then(|v| v.as_str()),
         };
@@ -705,29 +766,43 @@ impl ElementorRenderer {
     }
 
     fn render_divider_widget(&self, element: &ElementorElement) -> String {
-        let style = element.settings.get("style")
+        let style = element
+            .settings
+            .get("style")
             .and_then(|v| v.as_str())
             .unwrap_or("solid");
 
-        format!(r#"<div class="elementor-divider"><span class="elementor-divider-separator" style="border-style: {}"></span></div>"#, style)
+        format!(
+            r#"<div class="elementor-divider"><span class="elementor-divider-separator" style="border-style: {}"></span></div>"#,
+            style
+        )
     }
 
     fn render_spacer_widget(&self, element: &ElementorElement) -> String {
-        let space = element.settings.get("space")
+        let space = element
+            .settings
+            .get("space")
             .and_then(|v| v.get("size"))
             .and_then(|v| v.as_u64())
             .unwrap_or(50);
 
-        format!(r#"<div class="elementor-spacer" style="height: {}px"></div>"#, space)
+        format!(
+            r#"<div class="elementor-spacer" style="height: {}px"></div>"#,
+            space
+        )
     }
 
     fn render_icon_widget(&self, element: &ElementorElement) -> String {
-        let icon = element.settings.get("selected_icon")
+        let icon = element
+            .settings
+            .get("selected_icon")
             .and_then(|v| v.get("value"))
             .and_then(|v| v.as_str())
             .unwrap_or("");
 
-        let link = element.settings.get("link")
+        let link = element
+            .settings
+            .get("link")
             .and_then(|l| l.get("url"))
             .and_then(|v| v.as_str());
 
@@ -741,19 +816,21 @@ impl ElementorRenderer {
     }
 
     fn render_icon_list_widget(&self, element: &ElementorElement) -> String {
-        let items = element.settings.get("icon_list")
+        let items = element
+            .settings
+            .get("icon_list")
             .and_then(|v| v.as_array())
             .map(|arr| {
                 arr.iter()
                     .map(|item| {
-                        let icon = item.get("selected_icon")
+                        let icon = item
+                            .get("selected_icon")
                             .and_then(|v| v.get("value"))
                             .and_then(|v| v.as_str())
                             .unwrap_or("");
-                        let text = item.get("text")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or("");
-                        let link = item.get("link")
+                        let text = item.get("text").and_then(|v| v.as_str()).unwrap_or("");
+                        let link = item
+                            .get("link")
                             .and_then(|l| l.get("url"))
                             .and_then(|v| v.as_str());
 
@@ -773,10 +850,14 @@ impl ElementorRenderer {
     }
 
     fn render_counter_widget(&self, element: &ElementorElement) -> String {
-        let ending = element.settings.get("ending_number")
+        let ending = element
+            .settings
+            .get("ending_number")
             .and_then(|v| v.as_u64())
             .unwrap_or(100);
-        let title = element.settings.get("title")
+        let title = element
+            .settings
+            .get("title")
             .and_then(|v| v.as_str())
             .unwrap_or("");
 
@@ -790,10 +871,14 @@ impl ElementorRenderer {
     }
 
     fn render_progress_widget(&self, element: &ElementorElement) -> String {
-        let title = element.settings.get("title")
+        let title = element
+            .settings
+            .get("title")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let percent = element.settings.get("percent")
+        let percent = element
+            .settings
+            .get("percent")
             .and_then(|v| v.as_u64())
             .unwrap_or(50);
 
@@ -810,16 +895,24 @@ impl ElementorRenderer {
     }
 
     fn render_testimonial_widget(&self, element: &ElementorElement) -> String {
-        let content = element.settings.get("testimonial_content")
+        let content = element
+            .settings
+            .get("testimonial_content")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let name = element.settings.get("testimonial_name")
+        let name = element
+            .settings
+            .get("testimonial_name")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let job = element.settings.get("testimonial_job")
+        let job = element
+            .settings
+            .get("testimonial_job")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let image = element.settings.get("testimonial_image")
+        let image = element
+            .settings
+            .get("testimonial_image")
             .and_then(|v| v.get("url"))
             .and_then(|v| v.as_str());
 
@@ -839,15 +932,14 @@ impl ElementorRenderer {
     }
 
     fn render_tabs_widget(&self, element: &ElementorElement) -> String {
-        let tabs = element.settings.get("tabs")
-            .and_then(|v| v.as_array());
+        let tabs = element.settings.get("tabs").and_then(|v| v.as_array());
 
         if let Some(tabs) = tabs {
-            let nav: String = tabs.iter().enumerate()
+            let nav: String = tabs
+                .iter()
+                .enumerate()
                 .map(|(i, tab)| {
-                    let title = tab.get("tab_title")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("");
+                    let title = tab.get("tab_title").and_then(|v| v.as_str()).unwrap_or("");
                     format!(
                         r#"<li class="elementor-tab-title{}" data-tab="{}">{}</li>"#,
                         if i == 0 { " elementor-active" } else { "" },
@@ -857,9 +949,12 @@ impl ElementorRenderer {
                 })
                 .collect();
 
-            let content: String = tabs.iter().enumerate()
+            let content: String = tabs
+                .iter()
+                .enumerate()
                 .map(|(i, tab)| {
-                    let content = tab.get("tab_content")
+                    let content = tab
+                        .get("tab_content")
                         .and_then(|v| v.as_str())
                         .unwrap_or("");
                     format!(
@@ -884,16 +979,16 @@ impl ElementorRenderer {
     }
 
     fn render_accordion_widget(&self, element: &ElementorElement) -> String {
-        let items = element.settings.get("tabs")
-            .and_then(|v| v.as_array());
+        let items = element.settings.get("tabs").and_then(|v| v.as_array());
 
         if let Some(items) = items {
-            let content: String = items.iter().enumerate()
+            let content: String = items
+                .iter()
+                .enumerate()
                 .map(|(i, item)| {
-                    let title = item.get("tab_title")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("");
-                    let content = item.get("tab_content")
+                    let title = item.get("tab_title").and_then(|v| v.as_str()).unwrap_or("");
+                    let content = item
+                        .get("tab_content")
                         .and_then(|v| v.as_str())
                         .unwrap_or("");
                     format!(
@@ -916,17 +1011,22 @@ impl ElementorRenderer {
     }
 
     fn render_social_icons_widget(&self, element: &ElementorElement) -> String {
-        let icons = element.settings.get("social_icon_list")
+        let icons = element
+            .settings
+            .get("social_icon_list")
             .and_then(|v| v.as_array());
 
         if let Some(icons) = icons {
-            let content: String = icons.iter()
+            let content: String = icons
+                .iter()
                 .map(|icon| {
-                    let icon_class = icon.get("social_icon")
+                    let icon_class = icon
+                        .get("social_icon")
                         .and_then(|v| v.get("value"))
                         .and_then(|v| v.as_str())
                         .unwrap_or("");
-                    let url = icon.get("link")
+                    let url = icon
+                        .get("link")
                         .and_then(|l| l.get("url"))
                         .and_then(|v| v.as_str())
                         .unwrap_or("#");
@@ -945,13 +1045,19 @@ impl ElementorRenderer {
     }
 
     fn render_alert_widget(&self, element: &ElementorElement) -> String {
-        let title = element.settings.get("alert_title")
+        let title = element
+            .settings
+            .get("alert_title")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let description = element.settings.get("alert_description")
+        let description = element
+            .settings
+            .get("alert_description")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let alert_type = element.settings.get("alert_type")
+        let alert_type = element
+            .settings
+            .get("alert_type")
             .and_then(|v| v.as_str())
             .unwrap_or("info");
 
@@ -965,14 +1071,20 @@ impl ElementorRenderer {
     }
 
     fn render_maps_widget(&self, element: &ElementorElement) -> String {
-        let address = element.settings.get("address")
+        let address = element
+            .settings
+            .get("address")
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let zoom = element.settings.get("zoom")
+        let zoom = element
+            .settings
+            .get("zoom")
             .and_then(|v| v.get("size"))
             .and_then(|v| v.as_u64())
             .unwrap_or(10);
-        let height = element.settings.get("height")
+        let height = element
+            .settings
+            .get("height")
             .and_then(|v| v.get("size"))
             .and_then(|v| v.as_u64())
             .unwrap_or(300);
@@ -981,37 +1093,46 @@ impl ElementorRenderer {
             r#"<div class="elementor-custom-embed" style="height: {}px">
                 <iframe src="https://maps.google.com/maps?q={}&z={}&output=embed" frameborder="0" allowfullscreen></iframe>
             </div>"#,
-            height, urlencoding::encode(address), zoom
+            height,
+            urlencoding::encode(address),
+            zoom
         )
     }
 
     fn render_form_widget(&self, element: &ElementorElement) -> String {
-        let form_name = element.settings.get("form_name")
+        let form_name = element
+            .settings
+            .get("form_name")
             .and_then(|v| v.as_str())
             .unwrap_or("Contact Form");
-        let fields = element.settings.get("form_fields")
+        let fields = element
+            .settings
+            .get("form_fields")
             .and_then(|v| v.as_array());
 
         let fields_html: String = fields
             .map(|fields| {
-                fields.iter()
+                fields
+                    .iter()
                     .map(|field| {
-                        let field_type = field.get("field_type")
+                        let field_type = field
+                            .get("field_type")
                             .and_then(|v| v.as_str())
                             .unwrap_or("text");
-                        let label = field.get("field_label")
+                        let label = field
+                            .get("field_label")
                             .and_then(|v| v.as_str())
                             .unwrap_or("");
-                        let placeholder = field.get("placeholder")
+                        let placeholder = field
+                            .get("placeholder")
                             .and_then(|v| v.as_str())
                             .unwrap_or("");
-                        let required = field.get("required")
+                        let required = field
+                            .get("required")
                             .and_then(|v| v.as_str())
                             .map(|v| v == "true")
                             .unwrap_or(false);
-                        let width = field.get("width")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or("100");
+                        let width = field.get("width").and_then(|v| v.as_str()).unwrap_or("100");
 
                         let req_attr = if required { "required" } else { "" };
 
@@ -1052,14 +1173,18 @@ impl ElementorRenderer {
     }
 
     fn render_html_widget(&self, element: &ElementorElement) -> String {
-        element.settings.get("html")
+        element
+            .settings
+            .get("html")
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string()
     }
 
     fn render_shortcode_widget(&self, element: &ElementorElement) -> String {
-        let shortcode = element.settings.get("shortcode")
+        let shortcode = element
+            .settings
+            .get("shortcode")
             .and_then(|v| v.as_str())
             .unwrap_or("");
 
@@ -1080,25 +1205,32 @@ pub struct ElementorToBlocksConverter;
 impl ElementorToBlocksConverter {
     /// Convert Elementor elements to blocks
     pub fn convert(elements: &[ElementorElement]) -> Vec<Block> {
-        elements.iter().flat_map(|el| Self::convert_element(el)).collect()
+        elements
+            .iter()
+            .flat_map(|el| Self::convert_element(el))
+            .collect()
     }
 
     fn convert_element(element: &ElementorElement) -> Vec<Block> {
         match element.el_type.as_str() {
             "section" => {
-                let inner_blocks: Vec<Block> = element.elements.iter()
+                let inner_blocks: Vec<Block> = element
+                    .elements
+                    .iter()
                     .flat_map(|el| Self::convert_element(el))
                     .collect();
 
                 vec![Block::group(inner_blocks, Some("constrained"))]
             }
-            "column" => {
-                element.elements.iter()
-                    .flat_map(|el| Self::convert_element(el))
-                    .collect()
-            }
+            "column" => element
+                .elements
+                .iter()
+                .flat_map(|el| Self::convert_element(el))
+                .collect(),
             "widget" => Self::convert_widget(element),
-            _ => element.elements.iter()
+            _ => element
+                .elements
+                .iter()
                 .flat_map(|el| Self::convert_element(el))
                 .collect(),
         }
@@ -1109,10 +1241,14 @@ impl ElementorToBlocksConverter {
 
         match widget_type {
             "heading" => {
-                let text = element.settings.get("title")
+                let text = element
+                    .settings
+                    .get("title")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
-                let level = element.settings.get("header_size")
+                let level = element
+                    .settings
+                    .get("header_size")
                     .and_then(|v| v.as_str())
                     .and_then(|s| s.chars().last())
                     .and_then(|c| c.to_digit(10))
@@ -1121,18 +1257,24 @@ impl ElementorToBlocksConverter {
                 vec![Block::heading(text, level)]
             }
             "text-editor" => {
-                let content = element.settings.get("editor")
+                let content = element
+                    .settings
+                    .get("editor")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
 
                 vec![Block::paragraph(content)]
             }
             "image" => {
-                let url = element.settings.get("image")
+                let url = element
+                    .settings
+                    .get("image")
                     .and_then(|i| i.get("url"))
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
-                let alt = element.settings.get("image")
+                let alt = element
+                    .settings
+                    .get("image")
                     .and_then(|i| i.get("alt"))
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
@@ -1140,10 +1282,14 @@ impl ElementorToBlocksConverter {
                 vec![Block::image(url, alt, None)]
             }
             "button" => {
-                let text = element.settings.get("text")
+                let text = element
+                    .settings
+                    .get("text")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
-                let url = element.settings.get("link")
+                let url = element
+                    .settings
+                    .get("link")
                     .and_then(|l| l.get("url"))
                     .and_then(|v| v.as_str())
                     .unwrap_or("#");
@@ -1152,7 +1298,9 @@ impl ElementorToBlocksConverter {
             }
             "divider" => vec![Block::separator(None)],
             "spacer" => {
-                let height = element.settings.get("space")
+                let height = element
+                    .settings
+                    .get("space")
                     .and_then(|v| v.get("size"))
                     .and_then(|v| v.as_u64())
                     .unwrap_or(50) as u32;
@@ -1160,7 +1308,9 @@ impl ElementorToBlocksConverter {
                 vec![Block::spacer(height)]
             }
             "video" => {
-                let video_type = element.settings.get("video_type")
+                let video_type = element
+                    .settings
+                    .get("video_type")
                     .and_then(|v| v.as_str())
                     .unwrap_or("youtube");
                 let url = match video_type {
@@ -1185,63 +1335,86 @@ impl BlocksToElementorConverter {
     /// Convert blocks to Elementor elements
     pub fn convert(blocks: &[Block]) -> Vec<ElementorElement> {
         // Wrap blocks in a section with column
-        let widgets: Vec<ElementorElement> = blocks.iter()
+        let widgets: Vec<ElementorElement> = blocks
+            .iter()
             .flat_map(|block| Self::convert_block(block))
             .collect();
 
-        vec![
-            ElementorElement::section(vec![
-                ElementorElement::column(widgets, 100)
-            ])
-        ]
+        vec![ElementorElement::section(vec![ElementorElement::column(
+            widgets, 100,
+        )])]
     }
 
     fn convert_block(block: &Block) -> Vec<ElementorElement> {
         match block.block_type.as_str() {
             "core/paragraph" => {
-                let content = block.attributes.get("content")
+                let content = block
+                    .attributes
+                    .get("content")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
                 vec![ElementorElement::text_editor(content)]
             }
             "core/heading" => {
-                let content = block.attributes.get("content")
+                let content = block
+                    .attributes
+                    .get("content")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
-                let level = block.attributes.get("level")
+                let level = block
+                    .attributes
+                    .get("level")
                     .and_then(|v| v.as_u64())
                     .unwrap_or(2);
-                vec![ElementorElement::heading(content, &format!("h{}", level), "left")]
+                vec![ElementorElement::heading(
+                    content,
+                    &format!("h{}", level),
+                    "left",
+                )]
             }
             "core/image" => {
-                let url = block.attributes.get("url")
+                let url = block
+                    .attributes
+                    .get("url")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
-                let alt = block.attributes.get("alt")
+                let alt = block
+                    .attributes
+                    .get("alt")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
                 vec![ElementorElement::image(url, alt, None)]
             }
             "core/button" => {
-                let text = block.attributes.get("text")
+                let text = block
+                    .attributes
+                    .get("text")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
-                let url = block.attributes.get("url")
+                let url = block
+                    .attributes
+                    .get("url")
                     .and_then(|v| v.as_str())
                     .unwrap_or("#");
                 vec![ElementorElement::button(text, url, "default")]
             }
             "core/separator" => vec![ElementorElement::divider("solid")],
             "core/spacer" => {
-                let height = block.attributes.get("height")
+                let height = block
+                    .attributes
+                    .get("height")
                     .and_then(|v| v.as_u64())
                     .unwrap_or(50) as u32;
                 vec![ElementorElement::spacer(height)]
             }
             "core/columns" => {
-                let columns: Vec<ElementorElement> = block.inner_blocks.iter()
+                let columns: Vec<ElementorElement> = block
+                    .inner_blocks
+                    .iter()
                     .map(|col| {
-                        let col_widgets: Vec<ElementorElement> = col.inner_blocks.iter()
+                        let col_widgets: Vec<ElementorElement> = col
+                            .inner_blocks
+                            .iter()
                             .flat_map(|b| Self::convert_block(b))
                             .collect();
                         ElementorElement::column(col_widgets, 50)
@@ -1250,15 +1423,19 @@ impl BlocksToElementorConverter {
                 vec![ElementorElement::section(columns)]
             }
             "core/group" => {
-                let inner: Vec<ElementorElement> = block.inner_blocks.iter()
+                let inner: Vec<ElementorElement> = block
+                    .inner_blocks
+                    .iter()
                     .flat_map(|b| Self::convert_block(b))
                     .collect();
-                vec![ElementorElement::section(vec![
-                    ElementorElement::column(inner, 100)
-                ])]
+                vec![ElementorElement::section(vec![ElementorElement::column(
+                    inner, 100,
+                )])]
             }
             _ if block.block_type.starts_with("core-embed/") => {
-                let url = block.attributes.get("url")
+                let url = block
+                    .attributes
+                    .get("url")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
                 let provider = block.block_type.replace("core-embed/", "");
@@ -1272,14 +1449,17 @@ impl BlocksToElementorConverter {
 // Helper functions for video URL extraction
 fn extract_youtube_id(url: &str) -> Option<String> {
     let re = regex::Regex::new(
-        r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})"
-    ).ok()?;
-    re.captures(url).and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
+        r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})",
+    )
+    .ok()?;
+    re.captures(url)
+        .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
 }
 
 fn extract_vimeo_id(url: &str) -> Option<String> {
     let re = regex::Regex::new(r"vimeo\.com/(\d+)").ok()?;
-    re.captures(url).and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
+    re.captures(url)
+        .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
 }
 
 #[cfg(test)]
@@ -1298,11 +1478,10 @@ mod tests {
 
     #[test]
     fn test_render_section() {
-        let section = ElementorElement::section(vec![
-            ElementorElement::column(vec![
-                ElementorElement::heading("Hello", "h1", "left")
-            ], 100)
-        ]);
+        let section = ElementorElement::section(vec![ElementorElement::column(
+            vec![ElementorElement::heading("Hello", "h1", "left")],
+            100,
+        )]);
 
         let renderer = ElementorRenderer::new();
         let html = renderer.render_element(&section);
@@ -1313,14 +1492,13 @@ mod tests {
 
     #[test]
     fn test_elementor_to_blocks() {
-        let elements = vec![
-            ElementorElement::section(vec![
-                ElementorElement::column(vec![
-                    ElementorElement::heading("Test", "h1", "left"),
-                    ElementorElement::text_editor("<p>Content</p>")
-                ], 100)
-            ])
-        ];
+        let elements = vec![ElementorElement::section(vec![ElementorElement::column(
+            vec![
+                ElementorElement::heading("Test", "h1", "left"),
+                ElementorElement::text_editor("<p>Content</p>"),
+            ],
+            100,
+        )])];
 
         let blocks = ElementorToBlocksConverter::convert(&elements);
         assert!(!blocks.is_empty());

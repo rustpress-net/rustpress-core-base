@@ -171,7 +171,10 @@ pub struct PageService {
 impl PageService {
     /// Create a new page service
     pub fn new(pool: PgPool) -> Self {
-        Self { pool, site_id: None }
+        Self {
+            pool,
+            site_id: None,
+        }
     }
 
     /// Set the site ID for multi-site support
@@ -200,7 +203,9 @@ impl PageService {
         }
 
         // Generate slug if not provided
-        let slug = request.slug.unwrap_or_else(|| self.generate_slug(&request.title));
+        let slug = request
+            .slug
+            .unwrap_or_else(|| self.generate_slug(&request.title));
 
         // Check if slug is unique
         if let Some(_) = self.find_by_slug(&slug).await? {
@@ -282,13 +287,14 @@ impl PageService {
 
         let where_clause = conditions.join(" AND ");
         let order_by = params.sort_by.as_deref().unwrap_or("menu_order");
-        let order_dir = if sort_order == SortOrder::Desc { "DESC" } else { "ASC" };
+        let order_dir = if sort_order == SortOrder::Desc {
+            "DESC"
+        } else {
+            "ASC"
+        };
 
         // Count query
-        let count_query = format!(
-            "SELECT COUNT(*) as count FROM posts WHERE {}",
-            where_clause
-        );
+        let count_query = format!("SELECT COUNT(*) as count FROM posts WHERE {}", where_clause);
         let total: (i64,) = sqlx::query_as(&count_query)
             .fetch_one(&self.pool)
             .await
@@ -298,7 +304,12 @@ impl PageService {
         let offset = (page - 1) * per_page;
         let data_query = format!(
             "SELECT {} FROM posts WHERE {} ORDER BY {} {} LIMIT {} OFFSET {}",
-            PageRow::COLUMNS, where_clause, order_by, order_dir, per_page, offset
+            PageRow::COLUMNS,
+            where_clause,
+            order_by,
+            order_dir,
+            per_page,
+            offset
         );
 
         let rows: Vec<PageRow> = sqlx::query_as(&data_query)
@@ -356,7 +367,9 @@ impl PageService {
 
     /// Update a page
     pub async fn update_page(&self, id: Uuid, request: UpdatePageRequest) -> Result<PageResponse> {
-        let existing = self.find_by_id(id).await?
+        let existing = self
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| Error::not_found("Page", id.to_string()))?;
 
         // Check slug uniqueness if changed
@@ -413,7 +426,9 @@ impl PageService {
 
     /// Delete a page (soft delete)
     pub async fn delete_page(&self, id: Uuid) -> Result<bool> {
-        let _ = self.find_by_id(id).await?
+        let _ = self
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| Error::not_found("Page", id.to_string()))?;
 
         self.soft_delete(id).await?;
@@ -468,34 +483,34 @@ impl PageService {
             PageRow::COLUMNS
         );
         sqlx::query_as::<_, PageRow>(&query)
-        .bind(page.id)
-        .bind(page.site_id)
-        .bind(&page.post_type)
-        .bind(page.author_id)
-        .bind(&page.title)
-        .bind(&page.slug)
-        .bind(&page.content)
-        .bind(&page.excerpt)
-        .bind(&page.status)
-        .bind(&page.visibility)
-        .bind(&page.password)
-        .bind(page.parent_id)
-        .bind(page.menu_order)
-        .bind(&page.template)
-        .bind(page.featured_image_id)
-        .bind(&page.comment_status)
-        .bind(page.comment_count)
-        .bind(&page.ping_status)
-        .bind(&page.meta_title)
-        .bind(&page.meta_description)
-        .bind(&page.canonical_url)
-        .bind(page.published_at)
-        .bind(page.scheduled_at)
-        .bind(page.created_at)
-        .bind(page.updated_at)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| Error::database_with_source("Failed to create page", e))
+            .bind(page.id)
+            .bind(page.site_id)
+            .bind(&page.post_type)
+            .bind(page.author_id)
+            .bind(&page.title)
+            .bind(&page.slug)
+            .bind(&page.content)
+            .bind(&page.excerpt)
+            .bind(&page.status)
+            .bind(&page.visibility)
+            .bind(&page.password)
+            .bind(page.parent_id)
+            .bind(page.menu_order)
+            .bind(&page.template)
+            .bind(page.featured_image_id)
+            .bind(&page.comment_status)
+            .bind(page.comment_count)
+            .bind(&page.ping_status)
+            .bind(&page.meta_title)
+            .bind(&page.meta_description)
+            .bind(&page.canonical_url)
+            .bind(page.published_at)
+            .bind(page.scheduled_at)
+            .bind(page.created_at)
+            .bind(page.updated_at)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| Error::database_with_source("Failed to create page", e))
     }
 
     async fn update(&self, page: &PageRow) -> Result<PageRow> {
@@ -524,25 +539,25 @@ impl PageService {
             PageRow::COLUMNS
         );
         sqlx::query_as::<_, PageRow>(&query)
-        .bind(page.id)
-        .bind(&page.title)
-        .bind(&page.slug)
-        .bind(&page.content)
-        .bind(&page.excerpt)
-        .bind(&page.status)
-        .bind(&page.visibility)
-        .bind(&page.password)
-        .bind(page.parent_id)
-        .bind(page.menu_order)
-        .bind(&page.template)
-        .bind(page.featured_image_id)
-        .bind(&page.meta_title)
-        .bind(&page.meta_description)
-        .bind(&page.canonical_url)
-        .bind(page.published_at)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| Error::database_with_source("Failed to update page", e))
+            .bind(page.id)
+            .bind(&page.title)
+            .bind(&page.slug)
+            .bind(&page.content)
+            .bind(&page.excerpt)
+            .bind(&page.status)
+            .bind(&page.visibility)
+            .bind(&page.password)
+            .bind(page.parent_id)
+            .bind(page.menu_order)
+            .bind(&page.template)
+            .bind(page.featured_image_id)
+            .bind(&page.meta_title)
+            .bind(&page.meta_description)
+            .bind(&page.canonical_url)
+            .bind(page.published_at)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| Error::database_with_source("Failed to update page", e))
     }
 
     async fn soft_delete(&self, id: Uuid) -> Result<()> {
@@ -596,9 +611,8 @@ impl PageService {
             }
 
             // Sort children by menu_order
-            page.children.sort_by(|a, b| {
-                a.menu_order.unwrap_or(0).cmp(&b.menu_order.unwrap_or(0))
-            });
+            page.children
+                .sort_by(|a, b| a.menu_order.unwrap_or(0).cmp(&b.menu_order.unwrap_or(0)));
 
             Some(page)
         }
@@ -623,12 +637,14 @@ impl PageService {
             .await
             .map_err(|e| Error::database_with_source("Failed to get author", e))?;
 
-        Ok(row.map(|(id, display_name, email, avatar_url)| PageAuthorResponse {
-            id,
-            name: display_name.unwrap_or_else(|| "Unknown".to_string()),
-            email: Some(email),
-            avatar_url,
-        }))
+        Ok(
+            row.map(|(id, display_name, email, avatar_url)| PageAuthorResponse {
+                id,
+                name: display_name.unwrap_or_else(|| "Unknown".to_string()),
+                email: Some(email),
+                avatar_url,
+            }),
+        )
     }
 }
 
@@ -658,7 +674,10 @@ mod tests {
     #[test]
     fn test_generate_slug() {
         assert_eq!(generate_page_slug_impl("About Us"), "about-us");
-        assert_eq!(generate_page_slug_impl("Contact & Support"), "contact-support");
+        assert_eq!(
+            generate_page_slug_impl("Contact & Support"),
+            "contact-support"
+        );
     }
 
     #[test]

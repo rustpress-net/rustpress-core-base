@@ -62,21 +62,17 @@ impl ImageEditor {
 
     /// Resize image maintaining aspect ratio
     pub fn resize(&mut self, max_width: u32, max_height: u32) -> &mut Self {
-        self.image = self.image.resize(
-            max_width,
-            max_height,
-            image::imageops::FilterType::Lanczos3,
-        );
+        self.image =
+            self.image
+                .resize(max_width, max_height, image::imageops::FilterType::Lanczos3);
         self
     }
 
     /// Resize to exact dimensions
     pub fn resize_exact(&mut self, width: u32, height: u32) -> &mut Self {
-        self.image = self.image.resize_exact(
-            width,
-            height,
-            image::imageops::FilterType::Lanczos3,
-        );
+        self.image = self
+            .image
+            .resize_exact(width, height, image::imageops::FilterType::Lanczos3);
         self
     }
 
@@ -208,41 +204,23 @@ impl ImageEditor {
     pub fn apply_preset(&mut self, preset: FilterPreset) -> &mut Self {
         match preset {
             FilterPreset::Original => self,
-            FilterPreset::Vintage => {
-                self.contrast(0.9)
-                    .sepia()
-                    .brightness(-10)
-            }
-            FilterPreset::Dramatic => {
-                self.contrast(1.4)
-                    .brightness(-20)
-                    .vignette(0.5)
-            }
-            FilterPreset::BW => {
-                self.grayscale()
-                    .contrast(1.1)
-            }
-            FilterPreset::Warm => {
-                self.hue_rotate(15)
-                    .brightness(10)
-            }
-            FilterPreset::Cool => {
-                self.hue_rotate(-15)
-                    .brightness(5)
-            }
-            FilterPreset::Vivid => {
-                self.contrast(1.3)
-                    .brightness(10)
-            }
-            FilterPreset::Muted => {
-                self.contrast(0.8)
-                    .brightness(5)
-            }
+            FilterPreset::Vintage => self.contrast(0.9).sepia().brightness(-10),
+            FilterPreset::Dramatic => self.contrast(1.4).brightness(-20).vignette(0.5),
+            FilterPreset::BW => self.grayscale().contrast(1.1),
+            FilterPreset::Warm => self.hue_rotate(15).brightness(10),
+            FilterPreset::Cool => self.hue_rotate(-15).brightness(5),
+            FilterPreset::Vivid => self.contrast(1.3).brightness(10),
+            FilterPreset::Muted => self.contrast(0.8).brightness(5),
         }
     }
 
     /// Apply watermark
-    pub fn watermark(&mut self, watermark_data: &[u8], position: WatermarkPosition, opacity: f32) -> MediaResult<&mut Self> {
+    pub fn watermark(
+        &mut self,
+        watermark_data: &[u8],
+        position: WatermarkPosition,
+        opacity: f32,
+    ) -> MediaResult<&mut Self> {
         let watermark = image::load_from_memory(watermark_data)?;
         let (img_w, img_h) = self.dimensions();
         let (wm_w, wm_h) = watermark.dimensions();
@@ -256,10 +234,7 @@ impl ImageEditor {
                 (img_w - wm_w).saturating_sub(10),
                 (img_h - wm_h).saturating_sub(10),
             ),
-            WatermarkPosition::Center => (
-                (img_w - wm_w) / 2,
-                (img_h - wm_h) / 2,
-            ),
+            WatermarkPosition::Center => ((img_w - wm_w) / 2, (img_h - wm_h) / 2),
             WatermarkPosition::Custom(cx, cy) => (cx, cy),
         };
 
@@ -276,10 +251,8 @@ impl ImageEditor {
                 let alpha = (wm_pixel[3] as f32 / 255.0) * opacity;
 
                 for i in 0..3 {
-                    img_pixel[i] = (
-                        (1.0 - alpha) * img_pixel[i] as f32 +
-                        alpha * wm_pixel[i] as f32
-                    ) as u8;
+                    img_pixel[i] =
+                        ((1.0 - alpha) * img_pixel[i] as f32 + alpha * wm_pixel[i] as f32) as u8;
                 }
             }
         }
@@ -349,11 +322,26 @@ pub enum WatermarkPosition {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum EditOperation {
-    Crop { x: u32, y: u32, width: u32, height: u32 },
-    CropToAspect { ratio: f64 },
-    Resize { width: u32, height: u32 },
-    ResizeExact { width: u32, height: u32 },
-    Scale { percent: f32 },
+    Crop {
+        x: u32,
+        y: u32,
+        width: u32,
+        height: u32,
+    },
+    CropToAspect {
+        ratio: f64,
+    },
+    Resize {
+        width: u32,
+        height: u32,
+    },
+    ResizeExact {
+        width: u32,
+        height: u32,
+    },
+    Scale {
+        percent: f32,
+    },
     Rotate90,
     Rotate180,
     Rotate270,
@@ -361,21 +349,41 @@ pub enum EditOperation {
     FlipVertical,
     Grayscale,
     Invert,
-    Brightness { value: i32 },
-    Contrast { factor: f32 },
-    Blur { sigma: f32 },
-    Sharpen { sigma: f32, threshold: i32 },
-    HueRotate { degrees: i32 },
+    Brightness {
+        value: i32,
+    },
+    Contrast {
+        factor: f32,
+    },
+    Blur {
+        sigma: f32,
+    },
+    Sharpen {
+        sigma: f32,
+        threshold: i32,
+    },
+    HueRotate {
+        degrees: i32,
+    },
     Sepia,
-    Vignette { strength: f32 },
-    Preset { preset: FilterPreset },
+    Vignette {
+        strength: f32,
+    },
+    Preset {
+        preset: FilterPreset,
+    },
 }
 
 impl EditOperation {
     /// Apply operation to editor
     pub fn apply(&self, editor: &mut ImageEditor) {
         match self {
-            EditOperation::Crop { x, y, width, height } => {
+            EditOperation::Crop {
+                x,
+                y,
+                width,
+                height,
+            } => {
                 editor.crop(*x, *y, *width, *height);
             }
             EditOperation::CropToAspect { ratio } => {

@@ -4,7 +4,7 @@ use crate::error::{CloudflareError, CloudflareResult};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
-use tracing::{info, error};
+use tracing::{error, info};
 
 /// Cloudflare OAuth configuration
 #[derive(Debug, Clone)]
@@ -119,9 +119,10 @@ impl OAuthService {
 
     /// Generate OAuth authorization URL
     pub fn get_auth_url(&self, state: &str) -> CloudflareResult<String> {
-        let config = self.config.as_ref().ok_or_else(|| {
-            CloudflareError::ConfigError("OAuth not configured".to_string())
-        })?;
+        let config = self
+            .config
+            .as_ref()
+            .ok_or_else(|| CloudflareError::ConfigError("OAuth not configured".to_string()))?;
 
         let url = format!(
             "https://dash.cloudflare.com/oauth2/authorize?client_id={}&redirect_uri={}&response_type=code&state={}&scope=account:read%20zone:read%20user:read",
@@ -135,11 +136,13 @@ impl OAuthService {
 
     /// Exchange authorization code for tokens
     pub async fn exchange_code(&self, code: &str) -> CloudflareResult<OAuthTokenResponse> {
-        let config = self.config.as_ref().ok_or_else(|| {
-            CloudflareError::ConfigError("OAuth not configured".to_string())
-        })?;
+        let config = self
+            .config
+            .as_ref()
+            .ok_or_else(|| CloudflareError::ConfigError("OAuth not configured".to_string()))?;
 
-        let response = self.client
+        let response = self
+            .client
             .post("https://api.cloudflare.com/client/v4/oauth/token")
             .form(&[
                 ("grant_type", "authorization_code"),
@@ -156,12 +159,13 @@ impl OAuthService {
             let error_text = response.text().await.unwrap_or_default();
             error!("OAuth token exchange failed: {}", error_text);
             return Err(CloudflareError::AuthenticationError(
-                "Failed to exchange authorization code".to_string()
+                "Failed to exchange authorization code".to_string(),
             ));
         }
 
-        let token: OAuthTokenResponse = response.json().await
-            .map_err(|e| CloudflareError::Internal(format!("Failed to parse token response: {}", e)))?;
+        let token: OAuthTokenResponse = response.json().await.map_err(|e| {
+            CloudflareError::Internal(format!("Failed to parse token response: {}", e))
+        })?;
 
         info!("Successfully exchanged OAuth code for tokens");
         Ok(token)
@@ -169,7 +173,8 @@ impl OAuthService {
 
     /// Get user info using access token
     pub async fn get_user_info(&self, access_token: &str) -> CloudflareResult<CloudflareUserInfo> {
-        let response = self.client
+        let response = self
+            .client
             .get("https://api.cloudflare.com/client/v4/user")
             .bearer_auth(access_token)
             .send()
@@ -178,7 +183,7 @@ impl OAuthService {
 
         if !response.status().is_success() {
             return Err(CloudflareError::AuthenticationError(
-                "Failed to get user info".to_string()
+                "Failed to get user info".to_string(),
             ));
         }
 
@@ -187,15 +192,21 @@ impl OAuthService {
             result: CloudflareUserInfo,
         }
 
-        let user_response: UserResponse = response.json().await
+        let user_response: UserResponse = response
+            .json()
+            .await
             .map_err(|e| CloudflareError::Internal(format!("Failed to parse user info: {}", e)))?;
 
         Ok(user_response.result)
     }
 
     /// List user's accounts
-    pub async fn list_accounts(&self, access_token: &str) -> CloudflareResult<Vec<CloudflareAccount>> {
-        let response = self.client
+    pub async fn list_accounts(
+        &self,
+        access_token: &str,
+    ) -> CloudflareResult<Vec<CloudflareAccount>> {
+        let response = self
+            .client
             .get("https://api.cloudflare.com/client/v4/accounts")
             .bearer_auth(access_token)
             .send()
@@ -204,7 +215,7 @@ impl OAuthService {
 
         if !response.status().is_success() {
             return Err(CloudflareError::AuthenticationError(
-                "Failed to list accounts".to_string()
+                "Failed to list accounts".to_string(),
             ));
         }
 
@@ -213,7 +224,9 @@ impl OAuthService {
             result: Vec<CloudflareAccount>,
         }
 
-        let accounts_response: AccountsResponse = response.json().await
+        let accounts_response: AccountsResponse = response
+            .json()
+            .await
             .map_err(|e| CloudflareError::Internal(format!("Failed to parse accounts: {}", e)))?;
 
         Ok(accounts_response.result)
@@ -223,7 +236,7 @@ impl OAuthService {
     pub async fn list_zones(
         &self,
         access_token: &str,
-        account_id: Option<&str>
+        account_id: Option<&str>,
     ) -> CloudflareResult<Vec<CloudflareZoneInfo>> {
         let mut url = "https://api.cloudflare.com/client/v4/zones".to_string();
 
@@ -231,7 +244,8 @@ impl OAuthService {
             url = format!("{}?account.id={}", url, account);
         }
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .bearer_auth(access_token)
             .send()
@@ -240,7 +254,7 @@ impl OAuthService {
 
         if !response.status().is_success() {
             return Err(CloudflareError::AuthenticationError(
-                "Failed to list zones".to_string()
+                "Failed to list zones".to_string(),
             ));
         }
 
@@ -249,7 +263,9 @@ impl OAuthService {
             result: Vec<CloudflareZoneInfo>,
         }
 
-        let zones_response: ZonesResponse = response.json().await
+        let zones_response: ZonesResponse = response
+            .json()
+            .await
             .map_err(|e| CloudflareError::Internal(format!("Failed to parse zones: {}", e)))?;
 
         Ok(zones_response.result)
@@ -257,7 +273,8 @@ impl OAuthService {
 
     /// Verify an API token
     pub async fn verify_token(&self, api_token: &str) -> CloudflareResult<bool> {
-        let response = self.client
+        let response = self
+            .client
             .get("https://api.cloudflare.com/client/v4/user/tokens/verify")
             .bearer_auth(api_token)
             .send()
@@ -273,8 +290,9 @@ impl OAuthService {
             success: bool,
         }
 
-        let verify: VerifyResponse = response.json().await
-            .map_err(|e| CloudflareError::Internal(format!("Failed to parse verify response: {}", e)))?;
+        let verify: VerifyResponse = response.json().await.map_err(|e| {
+            CloudflareError::Internal(format!("Failed to parse verify response: {}", e))
+        })?;
 
         Ok(verify.success)
     }

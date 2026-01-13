@@ -413,126 +413,305 @@ pub enum EventType {
 impl EventType {
     pub fn category(&self) -> &'static str {
         match self {
-            Self::PostCreated | Self::PostUpdated | Self::PostDeleted |
-            Self::PostPublished | Self::PostUnpublished | Self::PostScheduled |
-            Self::PostTrashed | Self::PostRestored | Self::PostViewed |
-            Self::PostSlugChanged | Self::PostCategoryChanged | Self::PostTagsChanged |
-            Self::PostFeaturedImageSet | Self::PostFeaturedImageRemoved | Self::PostStatusChanged => "Posts",
+            Self::PostCreated
+            | Self::PostUpdated
+            | Self::PostDeleted
+            | Self::PostPublished
+            | Self::PostUnpublished
+            | Self::PostScheduled
+            | Self::PostTrashed
+            | Self::PostRestored
+            | Self::PostViewed
+            | Self::PostSlugChanged
+            | Self::PostCategoryChanged
+            | Self::PostTagsChanged
+            | Self::PostFeaturedImageSet
+            | Self::PostFeaturedImageRemoved
+            | Self::PostStatusChanged => "Posts",
 
-            Self::PageCreated | Self::PageUpdated | Self::PageDeleted |
-            Self::PagePublished | Self::PageUnpublished | Self::PageViewed |
-            Self::PageTemplateChanged | Self::PageParentChanged | Self::PageOrderChanged |
-            Self::PageSlugChanged | Self::PageTrashed | Self::PageRestored | Self::PageStatusChanged => "Pages",
+            Self::PageCreated
+            | Self::PageUpdated
+            | Self::PageDeleted
+            | Self::PagePublished
+            | Self::PageUnpublished
+            | Self::PageViewed
+            | Self::PageTemplateChanged
+            | Self::PageParentChanged
+            | Self::PageOrderChanged
+            | Self::PageSlugChanged
+            | Self::PageTrashed
+            | Self::PageRestored
+            | Self::PageStatusChanged => "Pages",
 
-            Self::UserRegistered | Self::UserLoggedIn | Self::UserLoggedOut |
-            Self::UserUpdated | Self::UserDeleted | Self::UserRoleChanged |
-            Self::UserPasswordChanged | Self::UserPasswordReset | Self::UserEmailVerified |
-            Self::UserProfileUpdated | Self::UserAvatarChanged | Self::UserActivated |
-            Self::UserDeactivated | Self::UserLocked | Self::UserUnlocked |
-            Self::UserSessionCreated | Self::UserSessionDestroyed | Self::UserPreferencesUpdated |
-            Self::User2FAEnabled | Self::User2FADisabled => "Users",
+            Self::UserRegistered
+            | Self::UserLoggedIn
+            | Self::UserLoggedOut
+            | Self::UserUpdated
+            | Self::UserDeleted
+            | Self::UserRoleChanged
+            | Self::UserPasswordChanged
+            | Self::UserPasswordReset
+            | Self::UserEmailVerified
+            | Self::UserProfileUpdated
+            | Self::UserAvatarChanged
+            | Self::UserActivated
+            | Self::UserDeactivated
+            | Self::UserLocked
+            | Self::UserUnlocked
+            | Self::UserSessionCreated
+            | Self::UserSessionDestroyed
+            | Self::UserPreferencesUpdated
+            | Self::User2FAEnabled
+            | Self::User2FADisabled => "Users",
 
-            Self::CommentCreated | Self::CommentUpdated | Self::CommentDeleted |
-            Self::CommentApproved | Self::CommentUnapproved | Self::CommentSpamMarked |
-            Self::CommentSpamUnmarked | Self::CommentReplied | Self::CommentEdited |
-            Self::CommentTrashed | Self::CommentRestored | Self::CommentReported |
-            Self::CommentLiked | Self::CommentPinned => "Comments",
+            Self::CommentCreated
+            | Self::CommentUpdated
+            | Self::CommentDeleted
+            | Self::CommentApproved
+            | Self::CommentUnapproved
+            | Self::CommentSpamMarked
+            | Self::CommentSpamUnmarked
+            | Self::CommentReplied
+            | Self::CommentEdited
+            | Self::CommentTrashed
+            | Self::CommentRestored
+            | Self::CommentReported
+            | Self::CommentLiked
+            | Self::CommentPinned => "Comments",
 
-            Self::MediaUploaded | Self::MediaDeleted | Self::MediaUpdated |
-            Self::MediaViewed | Self::MediaDownloaded | Self::MediaThumbnailGenerated |
-            Self::MediaOptimized | Self::MediaMoved | Self::MediaCopied |
-            Self::MediaRenamed | Self::MediaMetadataUpdated | Self::MediaAltTextChanged |
-            Self::MediaCaptionChanged | Self::MediaFolderCreated | Self::MediaFolderDeleted |
-            Self::MediaBulkDeleted => "Media",
+            Self::MediaUploaded
+            | Self::MediaDeleted
+            | Self::MediaUpdated
+            | Self::MediaViewed
+            | Self::MediaDownloaded
+            | Self::MediaThumbnailGenerated
+            | Self::MediaOptimized
+            | Self::MediaMoved
+            | Self::MediaCopied
+            | Self::MediaRenamed
+            | Self::MediaMetadataUpdated
+            | Self::MediaAltTextChanged
+            | Self::MediaCaptionChanged
+            | Self::MediaFolderCreated
+            | Self::MediaFolderDeleted
+            | Self::MediaBulkDeleted => "Media",
 
-            Self::ThemeInstalled | Self::ThemeActivated | Self::ThemeDeactivated |
-            Self::ThemeDeleted | Self::ThemeUpdated | Self::ThemeCustomized |
-            Self::ThemeExported | Self::ThemeImported | Self::ThemeOptionsUpdated |
-            Self::ThemeMenuAssigned | Self::ThemeSidebarAssigned | Self::ThemeWidgetAdded |
-            Self::ThemeWidgetRemoved | Self::ThemeColorChanged => "Themes",
+            Self::ThemeInstalled
+            | Self::ThemeActivated
+            | Self::ThemeDeactivated
+            | Self::ThemeDeleted
+            | Self::ThemeUpdated
+            | Self::ThemeCustomized
+            | Self::ThemeExported
+            | Self::ThemeImported
+            | Self::ThemeOptionsUpdated
+            | Self::ThemeMenuAssigned
+            | Self::ThemeSidebarAssigned
+            | Self::ThemeWidgetAdded
+            | Self::ThemeWidgetRemoved
+            | Self::ThemeColorChanged => "Themes",
 
-            Self::PluginInstalled | Self::PluginActivated | Self::PluginDeactivated |
-            Self::PluginDeleted | Self::PluginUpdated | Self::PluginSettingsChanged |
-            Self::PluginHookRegistered | Self::PluginHookUnregistered | Self::PluginErrorOccurred |
-            Self::PluginLicenseActivated | Self::PluginLicenseDeactivated | Self::PluginDependencyMissing |
-            Self::PluginConflictDetected | Self::PluginDataExported => "Plugins",
+            Self::PluginInstalled
+            | Self::PluginActivated
+            | Self::PluginDeactivated
+            | Self::PluginDeleted
+            | Self::PluginUpdated
+            | Self::PluginSettingsChanged
+            | Self::PluginHookRegistered
+            | Self::PluginHookUnregistered
+            | Self::PluginErrorOccurred
+            | Self::PluginLicenseActivated
+            | Self::PluginLicenseDeactivated
+            | Self::PluginDependencyMissing
+            | Self::PluginConflictDetected
+            | Self::PluginDataExported => "Plugins",
 
-            Self::MenuCreated | Self::MenuUpdated | Self::MenuDeleted |
-            Self::MenuItemAdded | Self::MenuItemRemoved | Self::MenuItemMoved |
-            Self::MenuAssigned | Self::MenuUnassigned | Self::MenuExported |
-            Self::MenuImported => "Menus",
+            Self::MenuCreated
+            | Self::MenuUpdated
+            | Self::MenuDeleted
+            | Self::MenuItemAdded
+            | Self::MenuItemRemoved
+            | Self::MenuItemMoved
+            | Self::MenuAssigned
+            | Self::MenuUnassigned
+            | Self::MenuExported
+            | Self::MenuImported => "Menus",
 
-            Self::CategoryCreated | Self::CategoryUpdated | Self::CategoryDeleted |
-            Self::CategoryMerged | Self::TagCreated | Self::TagUpdated |
-            Self::TagDeleted | Self::TagMerged | Self::TaxonomyTermCreated |
-            Self::TaxonomyTermUpdated | Self::TaxonomyTermDeleted | Self::TaxonomyReordered => "Taxonomies",
+            Self::CategoryCreated
+            | Self::CategoryUpdated
+            | Self::CategoryDeleted
+            | Self::CategoryMerged
+            | Self::TagCreated
+            | Self::TagUpdated
+            | Self::TagDeleted
+            | Self::TagMerged
+            | Self::TaxonomyTermCreated
+            | Self::TaxonomyTermUpdated
+            | Self::TaxonomyTermDeleted
+            | Self::TaxonomyReordered => "Taxonomies",
 
-            Self::SettingsUpdated | Self::SiteNameChanged | Self::SiteDescriptionChanged |
-            Self::SiteUrlChanged | Self::PermalinkStructureChanged | Self::TimezoneChanged |
-            Self::DateFormatChanged | Self::EmailSettingsChanged | Self::ReadingSettingsChanged |
-            Self::WritingSettingsChanged | Self::DiscussionSettingsChanged | Self::PrivacySettingsChanged |
-            Self::SecuritySettingsChanged | Self::PerformanceSettingsChanged => "Settings",
+            Self::SettingsUpdated
+            | Self::SiteNameChanged
+            | Self::SiteDescriptionChanged
+            | Self::SiteUrlChanged
+            | Self::PermalinkStructureChanged
+            | Self::TimezoneChanged
+            | Self::DateFormatChanged
+            | Self::EmailSettingsChanged
+            | Self::ReadingSettingsChanged
+            | Self::WritingSettingsChanged
+            | Self::DiscussionSettingsChanged
+            | Self::PrivacySettingsChanged
+            | Self::SecuritySettingsChanged
+            | Self::PerformanceSettingsChanged => "Settings",
 
-            Self::BackupCreated | Self::BackupRestored | Self::BackupDeleted |
-            Self::BackupScheduled | Self::BackupFailed | Self::BackupCompleted |
-            Self::BackupDownloaded | Self::BackupUploaded | Self::BackupVerified |
-            Self::BackupExpired => "Backup",
+            Self::BackupCreated
+            | Self::BackupRestored
+            | Self::BackupDeleted
+            | Self::BackupScheduled
+            | Self::BackupFailed
+            | Self::BackupCompleted
+            | Self::BackupDownloaded
+            | Self::BackupUploaded
+            | Self::BackupVerified
+            | Self::BackupExpired => "Backup",
 
-            Self::SeoMetaUpdated | Self::SitemapGenerated | Self::SitemapUpdated |
-            Self::RobotsFileUpdated | Self::SchemaMarkupUpdated | Self::CanonicalUrlSet |
-            Self::RedirectCreated | Self::RedirectDeleted | Self::SeoScoreCalculated |
-            Self::BrokenLinkDetected => "SEO",
+            Self::SeoMetaUpdated
+            | Self::SitemapGenerated
+            | Self::SitemapUpdated
+            | Self::RobotsFileUpdated
+            | Self::SchemaMarkupUpdated
+            | Self::CanonicalUrlSet
+            | Self::RedirectCreated
+            | Self::RedirectDeleted
+            | Self::SeoScoreCalculated
+            | Self::BrokenLinkDetected => "SEO",
 
-            Self::PageViewRecorded | Self::UniqueVisitorRecorded | Self::BounceRecorded |
-            Self::ConversionRecorded | Self::GoalCompleted | Self::EventTracked |
-            Self::SearchPerformed | Self::ExternalLinkClicked | Self::FileDownloadTracked |
-            Self::VideoPlayTracked => "Analytics",
+            Self::PageViewRecorded
+            | Self::UniqueVisitorRecorded
+            | Self::BounceRecorded
+            | Self::ConversionRecorded
+            | Self::GoalCompleted
+            | Self::EventTracked
+            | Self::SearchPerformed
+            | Self::ExternalLinkClicked
+            | Self::FileDownloadTracked
+            | Self::VideoPlayTracked => "Analytics",
 
-            Self::EmailSent | Self::EmailFailed | Self::EmailBounced |
-            Self::EmailOpened | Self::EmailClicked | Self::EmailUnsubscribed |
-            Self::NewsletterSubscribed | Self::NewsletterUnsubscribed | Self::ContactFormSubmitted |
-            Self::EmailTemplateUpdated => "Email",
+            Self::EmailSent
+            | Self::EmailFailed
+            | Self::EmailBounced
+            | Self::EmailOpened
+            | Self::EmailClicked
+            | Self::EmailUnsubscribed
+            | Self::NewsletterSubscribed
+            | Self::NewsletterUnsubscribed
+            | Self::ContactFormSubmitted
+            | Self::EmailTemplateUpdated => "Email",
 
-            Self::LoginAttemptFailed | Self::BruteForceDetected | Self::IpBlocked |
-            Self::IpUnblocked | Self::SuspiciousActivityDetected | Self::MalwareDetected |
-            Self::FileIntegrityViolation | Self::PermissionDenied | Self::UnauthorizedAccess |
-            Self::CsrfTokenInvalid | Self::SqlInjectionAttempt | Self::XssAttempt |
-            Self::SecurityScanCompleted | Self::VulnerabilityFound => "Security",
+            Self::LoginAttemptFailed
+            | Self::BruteForceDetected
+            | Self::IpBlocked
+            | Self::IpUnblocked
+            | Self::SuspiciousActivityDetected
+            | Self::MalwareDetected
+            | Self::FileIntegrityViolation
+            | Self::PermissionDenied
+            | Self::UnauthorizedAccess
+            | Self::CsrfTokenInvalid
+            | Self::SqlInjectionAttempt
+            | Self::XssAttempt
+            | Self::SecurityScanCompleted
+            | Self::VulnerabilityFound => "Security",
 
-            Self::SchedulerMinutely | Self::SchedulerEvery5Minutes | Self::SchedulerEvery10Minutes |
-            Self::SchedulerEvery15Minutes | Self::SchedulerEvery30Minutes | Self::SchedulerHourly |
-            Self::SchedulerEvery2Hours | Self::SchedulerEvery4Hours | Self::SchedulerEvery6Hours |
-            Self::SchedulerEvery12Hours | Self::SchedulerDaily | Self::SchedulerDailyMorning |
-            Self::SchedulerDailyNoon | Self::SchedulerDailyEvening | Self::SchedulerDailyMidnight |
-            Self::SchedulerWeekly | Self::SchedulerWeeklyMonday | Self::SchedulerWeeklyFriday |
-            Self::SchedulerBiweekly | Self::SchedulerMonthly | Self::SchedulerMonthlyFirst |
-            Self::SchedulerMonthlyLast | Self::SchedulerQuarterly | Self::SchedulerYearly => "Scheduler",
+            Self::SchedulerMinutely
+            | Self::SchedulerEvery5Minutes
+            | Self::SchedulerEvery10Minutes
+            | Self::SchedulerEvery15Minutes
+            | Self::SchedulerEvery30Minutes
+            | Self::SchedulerHourly
+            | Self::SchedulerEvery2Hours
+            | Self::SchedulerEvery4Hours
+            | Self::SchedulerEvery6Hours
+            | Self::SchedulerEvery12Hours
+            | Self::SchedulerDaily
+            | Self::SchedulerDailyMorning
+            | Self::SchedulerDailyNoon
+            | Self::SchedulerDailyEvening
+            | Self::SchedulerDailyMidnight
+            | Self::SchedulerWeekly
+            | Self::SchedulerWeeklyMonday
+            | Self::SchedulerWeeklyFriday
+            | Self::SchedulerBiweekly
+            | Self::SchedulerMonthly
+            | Self::SchedulerMonthlyFirst
+            | Self::SchedulerMonthlyLast
+            | Self::SchedulerQuarterly
+            | Self::SchedulerYearly => "Scheduler",
 
-            Self::SystemStartup | Self::SystemShutdown | Self::SystemError |
-            Self::SystemWarning | Self::CacheCleared | Self::CacheWarmed |
-            Self::DatabaseOptimized | Self::DatabaseBackedUp | Self::LogsRotated |
-            Self::TempFilesCleared | Self::UpdateAvailable | Self::UpdateInstalled |
-            Self::MaintenanceModeEnabled | Self::MaintenanceModeDisabled | Self::CronJobExecuted |
-            Self::QueueJobProcessed | Self::QueueJobFailed | Self::RateLimitExceeded |
-            Self::ApiKeyCreated | Self::ApiKeyRevoked => "System",
+            Self::SystemStartup
+            | Self::SystemShutdown
+            | Self::SystemError
+            | Self::SystemWarning
+            | Self::CacheCleared
+            | Self::CacheWarmed
+            | Self::DatabaseOptimized
+            | Self::DatabaseBackedUp
+            | Self::LogsRotated
+            | Self::TempFilesCleared
+            | Self::UpdateAvailable
+            | Self::UpdateInstalled
+            | Self::MaintenanceModeEnabled
+            | Self::MaintenanceModeDisabled
+            | Self::CronJobExecuted
+            | Self::QueueJobProcessed
+            | Self::QueueJobFailed
+            | Self::RateLimitExceeded
+            | Self::ApiKeyCreated
+            | Self::ApiKeyRevoked => "System",
 
-            Self::WebhookReceived | Self::WebhookSent | Self::WebhookFailed |
-            Self::WebhookRetried | Self::WebhookVerified | Self::ExternalApiCalled |
-            Self::ExternalApiFailed | Self::IntegrationConnected | Self::IntegrationDisconnected |
-            Self::SyncCompleted => "Webhooks",
+            Self::WebhookReceived
+            | Self::WebhookSent
+            | Self::WebhookFailed
+            | Self::WebhookRetried
+            | Self::WebhookVerified
+            | Self::ExternalApiCalled
+            | Self::ExternalApiFailed
+            | Self::IntegrationConnected
+            | Self::IntegrationDisconnected
+            | Self::SyncCompleted => "Webhooks",
 
-            Self::OrderCreated | Self::OrderUpdated | Self::OrderCompleted |
-            Self::OrderCancelled | Self::OrderRefunded | Self::PaymentReceived |
-            Self::PaymentFailed | Self::CartCreated | Self::CartUpdated |
-            Self::CartAbandoned | Self::ProductCreated | Self::ProductUpdated |
-            Self::ProductDeleted | Self::ProductOutOfStock | Self::ProductBackInStock |
-            Self::CouponCreated | Self::CouponUsed | Self::CouponExpired |
-            Self::ShippingCalculated | Self::InvoiceGenerated => "E-Commerce",
+            Self::OrderCreated
+            | Self::OrderUpdated
+            | Self::OrderCompleted
+            | Self::OrderCancelled
+            | Self::OrderRefunded
+            | Self::PaymentReceived
+            | Self::PaymentFailed
+            | Self::CartCreated
+            | Self::CartUpdated
+            | Self::CartAbandoned
+            | Self::ProductCreated
+            | Self::ProductUpdated
+            | Self::ProductDeleted
+            | Self::ProductOutOfStock
+            | Self::ProductBackInStock
+            | Self::CouponCreated
+            | Self::CouponUsed
+            | Self::CouponExpired
+            | Self::ShippingCalculated
+            | Self::InvoiceGenerated => "E-Commerce",
 
-            Self::FormSubmitted | Self::FormValidationFailed | Self::FormFieldUpdated |
-            Self::FormCreated | Self::FormDeleted | Self::FormEntryCreated |
-            Self::FormEntryDeleted | Self::FormEntryExported | Self::FormSpamDetected |
-            Self::FormFileUploaded => "Forms",
+            Self::FormSubmitted
+            | Self::FormValidationFailed
+            | Self::FormFieldUpdated
+            | Self::FormCreated
+            | Self::FormDeleted
+            | Self::FormEntryCreated
+            | Self::FormEntryDeleted
+            | Self::FormEntryExported
+            | Self::FormSpamDetected
+            | Self::FormFileUploaded => "Forms",
 
             _ => "Custom",
         }
@@ -553,7 +732,9 @@ impl EventType {
             Self::PostCategoryChanged => "Triggered when a post's categories are modified",
             Self::PostTagsChanged => "Triggered when a post's tags are modified",
             Self::PostFeaturedImageSet => "Triggered when a featured image is set for a post",
-            Self::PostFeaturedImageRemoved => "Triggered when a featured image is removed from a post",
+            Self::PostFeaturedImageRemoved => {
+                "Triggered when a featured image is removed from a post"
+            }
             Self::PostStatusChanged => "Triggered when a post's status changes",
 
             Self::UserLoggedIn => "Triggered when a user logs in",
@@ -635,7 +816,10 @@ impl EventType {
             EventInfo::new(Self::PostCategoryChanged, "post_category_changed"),
             EventInfo::new(Self::PostTagsChanged, "post_tags_changed"),
             EventInfo::new(Self::PostFeaturedImageSet, "post_featured_image_set"),
-            EventInfo::new(Self::PostFeaturedImageRemoved, "post_featured_image_removed"),
+            EventInfo::new(
+                Self::PostFeaturedImageRemoved,
+                "post_featured_image_removed",
+            ),
             EventInfo::new(Self::PostStatusChanged, "post_status_changed"),
             // Pages
             EventInfo::new(Self::PageCreated, "page_created"),
@@ -763,16 +947,25 @@ impl EventType {
             EventInfo::new(Self::SiteNameChanged, "site_name_changed"),
             EventInfo::new(Self::SiteDescriptionChanged, "site_description_changed"),
             EventInfo::new(Self::SiteUrlChanged, "site_url_changed"),
-            EventInfo::new(Self::PermalinkStructureChanged, "permalink_structure_changed"),
+            EventInfo::new(
+                Self::PermalinkStructureChanged,
+                "permalink_structure_changed",
+            ),
             EventInfo::new(Self::TimezoneChanged, "timezone_changed"),
             EventInfo::new(Self::DateFormatChanged, "date_format_changed"),
             EventInfo::new(Self::EmailSettingsChanged, "email_settings_changed"),
             EventInfo::new(Self::ReadingSettingsChanged, "reading_settings_changed"),
             EventInfo::new(Self::WritingSettingsChanged, "writing_settings_changed"),
-            EventInfo::new(Self::DiscussionSettingsChanged, "discussion_settings_changed"),
+            EventInfo::new(
+                Self::DiscussionSettingsChanged,
+                "discussion_settings_changed",
+            ),
             EventInfo::new(Self::PrivacySettingsChanged, "privacy_settings_changed"),
             EventInfo::new(Self::SecuritySettingsChanged, "security_settings_changed"),
-            EventInfo::new(Self::PerformanceSettingsChanged, "performance_settings_changed"),
+            EventInfo::new(
+                Self::PerformanceSettingsChanged,
+                "performance_settings_changed",
+            ),
             // Backup
             EventInfo::new(Self::BackupCreated, "backup_created"),
             EventInfo::new(Self::BackupRestored, "backup_restored"),
@@ -822,7 +1015,10 @@ impl EventType {
             EventInfo::new(Self::BruteForceDetected, "brute_force_detected"),
             EventInfo::new(Self::IpBlocked, "ip_blocked"),
             EventInfo::new(Self::IpUnblocked, "ip_unblocked"),
-            EventInfo::new(Self::SuspiciousActivityDetected, "suspicious_activity_detected"),
+            EventInfo::new(
+                Self::SuspiciousActivityDetected,
+                "suspicious_activity_detected",
+            ),
             EventInfo::new(Self::MalwareDetected, "malware_detected"),
             EventInfo::new(Self::FileIntegrityViolation, "file_integrity_violation"),
             EventInfo::new(Self::PermissionDenied, "permission_denied"),
@@ -1041,11 +1237,11 @@ pub struct Function {
     pub trigger_events: serde_json::Value, // Vec<String>
     pub status: String,
     pub hook_timing: String, // "before", "after", or "both"
-    pub priority: i32, // Lower = runs first (default 10)
+    pub priority: i32,       // Lower = runs first (default 10)
     pub timeout_ms: i32,
     pub max_retries: i32,
     pub retry_delay_ms: i32,
-    pub config: serde_json::Value, // HashMap<String, Value>
+    pub config: serde_json::Value,           // HashMap<String, Value>
     pub environment_vars: serde_json::Value, // HashMap<String, String>
     pub is_template: bool,
     pub template_category: Option<String>,
@@ -1098,7 +1294,7 @@ pub struct CreateFunctionRequest {
     pub code: String,
     pub trigger_events: Vec<String>,
     pub hook_timing: Option<String>, // "before", "after", "both" (default: "after")
-    pub priority: Option<i32>, // Lower = runs first (default: 10)
+    pub priority: Option<i32>,       // Lower = runs first (default: 10)
     pub timeout_ms: Option<i32>,
     pub max_retries: Option<i32>,
     pub config: Option<HashMap<String, serde_json::Value>>,
@@ -1261,7 +1457,10 @@ async fn list_functions(
     }
 
     if let Some(search) = &query.search {
-        let search_cond = format!(" AND (name ILIKE '%{}%' OR description ILIKE '%{}%')", search, search);
+        let search_cond = format!(
+            " AND (name ILIKE '%{}%' OR description ILIKE '%{}%')",
+            search, search
+        );
         sql.push_str(&search_cond);
         count_sql.push_str(&search_cond);
     }
@@ -1269,10 +1468,7 @@ async fn list_functions(
     sql.push_str(" ORDER BY created_at DESC");
     sql.push_str(&format!(" LIMIT {} OFFSET {}", per_page, offset));
 
-    let functions: Vec<Function> = match sqlx::query_as(&sql)
-        .fetch_all(&state.pool)
-        .await
-    {
+    let functions: Vec<Function> = match sqlx::query_as(&sql).fetch_all(&state.pool).await {
         Ok(f) => f,
         Err(e) => {
             return (
@@ -1280,8 +1476,9 @@ async fn list_functions(
                 Json(serde_json::json!({
                     "success": false,
                     "error": format!("Database error: {}", e)
-                }))
-            ).into_response();
+                })),
+            )
+                .into_response();
         }
     };
 
@@ -1299,7 +1496,8 @@ async fn list_functions(
             "total": total.0,
             "total_pages": (total.0 as f64 / per_page as f64).ceil() as i64
         }
-    })).into_response()
+    }))
+    .into_response()
 }
 
 /// Create a new function
@@ -1311,7 +1509,10 @@ async fn create_function(
     let slug = req.name.to_lowercase().replace(' ', "-");
     let now = Utc::now();
 
-    let hook_timing = req.hook_timing.clone().unwrap_or_else(|| "after".to_string());
+    let hook_timing = req
+        .hook_timing
+        .clone()
+        .unwrap_or_else(|| "after".to_string());
     let priority = req.priority.unwrap_or(10);
 
     let result = sqlx::query(
@@ -1341,25 +1542,23 @@ async fn create_function(
     .await;
 
     match result {
-        Ok(_) => {
+        Ok(_) => Json(serde_json::json!({
+            "success": true,
+            "data": {
+                "id": id,
+                "name": req.name,
+                "slug": slug
+            }
+        }))
+        .into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({
-                "success": true,
-                "data": {
-                    "id": id,
-                    "name": req.name,
-                    "slug": slug
-                }
-            })).into_response()
-        }
-        Err(e) => {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({
-                    "success": false,
-                    "error": format!("Failed to create function: {}", e)
-                }))
-            ).into_response()
-        }
+                "success": false,
+                "error": format!("Failed to create function: {}", e)
+            })),
+        )
+            .into_response(),
     }
 }
 
@@ -1377,14 +1576,16 @@ async fn get_function(
         Ok(function) => Json(serde_json::json!({
             "success": true,
             "data": function
-        })).into_response(),
+        }))
+        .into_response(),
         Err(_) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({
                 "success": false,
                 "error": "Function not found"
-            }))
-        ).into_response()
+            })),
+        )
+            .into_response(),
     }
 }
 
@@ -1398,7 +1599,10 @@ async fn update_function(
 
     if let Some(name) = &req.name {
         updates.push(format!("name = '{}'", name));
-        updates.push(format!("slug = '{}'", name.to_lowercase().replace(' ', "-")));
+        updates.push(format!(
+            "slug = '{}'",
+            name.to_lowercase().replace(' ', "-")
+        ));
     }
     if let Some(desc) = &req.description {
         updates.push(format!("description = '{}'", desc));
@@ -1410,7 +1614,10 @@ async fn update_function(
         updates.push(format!("code = '{}'", code.replace('\'', "''")));
     }
     if let Some(events) = &req.trigger_events {
-        updates.push(format!("trigger_events = '{}'", serde_json::to_string(events).unwrap_or_default()));
+        updates.push(format!(
+            "trigger_events = '{}'",
+            serde_json::to_string(events).unwrap_or_default()
+        ));
     }
     if let Some(hook_timing) = &req.hook_timing {
         updates.push(format!("hook_timing = '{}'", hook_timing));
@@ -1434,14 +1641,16 @@ async fn update_function(
         Ok(_) => Json(serde_json::json!({
             "success": true,
             "message": "Function updated successfully"
-        })).into_response(),
+        }))
+        .into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({
                 "success": false,
                 "error": format!("Failed to update function: {}", e)
-            }))
-        ).into_response()
+            })),
+        )
+            .into_response(),
     }
 }
 
@@ -1458,14 +1667,16 @@ async fn delete_function(
         Ok(_) => Json(serde_json::json!({
             "success": true,
             "message": "Function deleted successfully"
-        })).into_response(),
+        }))
+        .into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({
                 "success": false,
                 "error": format!("Failed to delete function: {}", e)
-            }))
-        ).into_response()
+            })),
+        )
+            .into_response(),
     }
 }
 
@@ -1517,14 +1728,16 @@ async fn duplicate_function(
                         "name": new_name,
                         "slug": new_slug
                     }
-                })).into_response(),
+                }))
+                .into_response(),
                 Err(e) => (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(serde_json::json!({
                         "success": false,
                         "error": format!("Failed to duplicate function: {}", e)
-                    }))
-                ).into_response()
+                    })),
+                )
+                    .into_response(),
             }
         }
         Err(_) => (
@@ -1532,8 +1745,9 @@ async fn duplicate_function(
             Json(serde_json::json!({
                 "success": false,
                 "error": "Function not found"
-            }))
-        ).into_response()
+            })),
+        )
+            .into_response(),
     }
 }
 
@@ -1547,7 +1761,7 @@ async fn toggle_function_status(
             status = CASE WHEN status = 'active' THEN 'inactive' ELSE 'active' END,
             updated_at = NOW()
         WHERE id = $1
-        RETURNING status"#
+        RETURNING status"#,
     )
     .bind(id)
     .fetch_one(&state.pool)
@@ -1561,15 +1775,17 @@ async fn toggle_function_status(
                 "data": {
                     "status": new_status
                 }
-            })).into_response()
+            }))
+            .into_response()
         }
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({
                 "success": false,
                 "error": format!("Failed to toggle status: {}", e)
-            }))
-        ).into_response()
+            })),
+        )
+            .into_response(),
     }
 }
 
@@ -1593,7 +1809,7 @@ async fn execute_function(
             let _ = sqlx::query(
                 r#"INSERT INTO function_executions (
                     id, function_id, trigger_event, event_data, status, started_at, retry_count
-                ) VALUES ($1, $2, $3, $4, 'running', $5, 0)"#
+                ) VALUES ($1, $2, $3, $4, 'running', $5, 0)"#,
             )
             .bind(execution_id)
             .bind(id)
@@ -1614,7 +1830,7 @@ async fn execute_function(
                     let _ = sqlx::query(
                         r#"UPDATE function_executions SET
                             status = 'success', completed_at = $1, duration_ms = $2, output = $3
-                        WHERE id = $4"#
+                        WHERE id = $4"#,
                     )
                     .bind(completed_at)
                     .bind(duration_ms)
@@ -1629,7 +1845,7 @@ async fn execute_function(
                             execution_count = execution_count + 1,
                             last_executed_at = $1,
                             last_error = NULL
-                        WHERE id = $2"#
+                        WHERE id = $2"#,
                     )
                     .bind(completed_at)
                     .bind(id)
@@ -1644,14 +1860,15 @@ async fn execute_function(
                             "duration_ms": duration_ms,
                             "output": output
                         }
-                    })).into_response()
+                    }))
+                    .into_response()
                 }
                 Err(error) => {
                     // Update execution log with error
                     let _ = sqlx::query(
                         r#"UPDATE function_executions SET
                             status = 'error', completed_at = $1, duration_ms = $2, error = $3
-                        WHERE id = $4"#
+                        WHERE id = $4"#,
                     )
                     .bind(completed_at)
                     .bind(duration_ms)
@@ -1666,7 +1883,7 @@ async fn execute_function(
                             execution_count = execution_count + 1,
                             last_executed_at = $1,
                             last_error = $2
-                        WHERE id = $3"#
+                        WHERE id = $3"#,
                     )
                     .bind(completed_at)
                     .bind(&error)
@@ -1682,7 +1899,8 @@ async fn execute_function(
                             "duration_ms": duration_ms,
                             "error": error
                         }
-                    })).into_response()
+                    }))
+                    .into_response()
                 }
             }
         }
@@ -1691,8 +1909,9 @@ async fn execute_function(
             Json(serde_json::json!({
                 "success": false,
                 "error": "Function not found"
-            }))
-        ).into_response()
+            })),
+        )
+            .into_response(),
     }
 }
 
@@ -1722,7 +1941,8 @@ async fn test_function(
                         "duration_ms": duration_ms,
                         "output": output
                     }
-                })).into_response(),
+                }))
+                .into_response(),
                 Err(error) => Json(serde_json::json!({
                     "success": false,
                     "data": {
@@ -1730,7 +1950,8 @@ async fn test_function(
                         "duration_ms": duration_ms,
                         "error": error
                     }
-                })).into_response()
+                }))
+                .into_response(),
             }
         }
         Err(_) => (
@@ -1738,8 +1959,9 @@ async fn test_function(
             Json(serde_json::json!({
                 "success": false,
                 "error": "Function not found"
-            }))
-        ).into_response()
+            })),
+        )
+            .into_response(),
     }
 }
 
@@ -1753,7 +1975,7 @@ async fn trigger_event(
     let functions: Vec<Function> = sqlx::query_as(
         r#"SELECT * FROM functions
         WHERE status = 'active'
-        AND trigger_events @> $1::jsonb"#
+        AND trigger_events @> $1::jsonb"#,
     )
     .bind(serde_json::json!([event]))
     .fetch_all(&state.pool)
@@ -1770,7 +1992,7 @@ async fn trigger_event(
         let _ = sqlx::query(
             r#"INSERT INTO function_executions (
                 id, function_id, trigger_event, event_data, status, started_at, retry_count
-            ) VALUES ($1, $2, $3, $4, 'running', $5, 0)"#
+            ) VALUES ($1, $2, $3, $4, 'running', $5, 0)"#,
         )
         .bind(execution_id)
         .bind(func.id)
@@ -1791,7 +2013,7 @@ async fn trigger_event(
             r#"UPDATE function_executions SET
                 status = $1, completed_at = $2, duration_ms = $3,
                 output = $4, error = $5
-            WHERE id = $6"#
+            WHERE id = $6"#,
         )
         .bind(status)
         .bind(completed_at)
@@ -1832,7 +2054,7 @@ async fn list_executions(
 
     let mut sql = String::from(
         "SELECT e.*, f.name as function_name FROM function_executions e
-        LEFT JOIN functions f ON e.function_id = f.id WHERE 1=1"
+        LEFT JOIN functions f ON e.function_id = f.id WHERE 1=1",
     );
 
     if let Some(function_id) = query.function_id {
@@ -1880,25 +2102,26 @@ async fn get_execution(
     State(state): State<FunctionsState>,
     Path(id): Path<Uuid>,
 ) -> impl IntoResponse {
-    let result: Result<FunctionExecution, _> = sqlx::query_as(
-        "SELECT * FROM function_executions WHERE id = $1"
-    )
-    .bind(id)
-    .fetch_one(&state.pool)
-    .await;
+    let result: Result<FunctionExecution, _> =
+        sqlx::query_as("SELECT * FROM function_executions WHERE id = $1")
+            .bind(id)
+            .fetch_one(&state.pool)
+            .await;
 
     match result {
         Ok(execution) => Json(serde_json::json!({
             "success": true,
             "data": execution
-        })).into_response(),
+        }))
+        .into_response(),
         Err(_) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({
                 "success": false,
                 "error": "Execution not found"
-            }))
-        ).into_response()
+            })),
+        )
+            .into_response(),
     }
 }
 
@@ -1907,21 +2130,19 @@ async fn retry_execution(
     State(state): State<FunctionsState>,
     Path(id): Path<Uuid>,
 ) -> impl IntoResponse {
-    let execution: Result<FunctionExecution, _> = sqlx::query_as(
-        "SELECT * FROM function_executions WHERE id = $1"
-    )
-    .bind(id)
-    .fetch_one(&state.pool)
-    .await;
+    let execution: Result<FunctionExecution, _> =
+        sqlx::query_as("SELECT * FROM function_executions WHERE id = $1")
+            .bind(id)
+            .fetch_one(&state.pool)
+            .await;
 
     match execution {
         Ok(exec) => {
-            let function: Result<Function, _> = sqlx::query_as(
-                "SELECT * FROM functions WHERE id = $1"
-            )
-            .bind(exec.function_id)
-            .fetch_one(&state.pool)
-            .await;
+            let function: Result<Function, _> =
+                sqlx::query_as("SELECT * FROM functions WHERE id = $1")
+                    .bind(exec.function_id)
+                    .fetch_one(&state.pool)
+                    .await;
 
             match function {
                 Ok(func) => {
@@ -1952,7 +2173,7 @@ async fn retry_execution(
                         r#"UPDATE function_executions SET
                             status = $1, completed_at = $2, duration_ms = $3,
                             output = $4, error = $5
-                        WHERE id = $6"#
+                        WHERE id = $6"#,
                     )
                     .bind(status)
                     .bind(completed_at)
@@ -1970,15 +2191,17 @@ async fn retry_execution(
                             "status": status,
                             "duration_ms": duration_ms
                         }
-                    })).into_response()
+                    }))
+                    .into_response()
                 }
                 Err(_) => (
                     StatusCode::NOT_FOUND,
                     Json(serde_json::json!({
                         "success": false,
                         "error": "Function not found"
-                    }))
-                ).into_response()
+                    })),
+                )
+                    .into_response(),
             }
         }
         Err(_) => (
@@ -1986,17 +2209,16 @@ async fn retry_execution(
             Json(serde_json::json!({
                 "success": false,
                 "error": "Execution not found"
-            }))
-        ).into_response()
+            })),
+        )
+            .into_response(),
     }
 }
 
 /// Get function templates
-async fn get_function_templates(
-    State(state): State<FunctionsState>,
-) -> impl IntoResponse {
+async fn get_function_templates(State(state): State<FunctionsState>) -> impl IntoResponse {
     let templates: Vec<Function> = sqlx::query_as(
-        "SELECT * FROM functions WHERE is_template = true ORDER BY template_category, name"
+        "SELECT * FROM functions WHERE is_template = true ORDER BY template_category, name",
     )
     .fetch_all(&state.pool)
     .await
@@ -2005,8 +2227,14 @@ async fn get_function_templates(
     // Group by category
     let mut categories: HashMap<String, Vec<&Function>> = HashMap::new();
     for template in &templates {
-        let category = template.template_category.clone().unwrap_or_else(|| "General".to_string());
-        categories.entry(category).or_insert_with(Vec::new).push(template);
+        let category = template
+            .template_category
+            .clone()
+            .unwrap_or_else(|| "General".to_string());
+        categories
+            .entry(category)
+            .or_insert_with(Vec::new)
+            .push(template);
     }
 
     Json(serde_json::json!({
@@ -2022,25 +2250,26 @@ async fn get_template_by_slug(
     State(state): State<FunctionsState>,
     Path(slug): Path<String>,
 ) -> impl IntoResponse {
-    let template: Result<Function, _> = sqlx::query_as(
-        "SELECT * FROM functions WHERE slug = $1 AND is_template = true"
-    )
-    .bind(&slug)
-    .fetch_one(&state.pool)
-    .await;
+    let template: Result<Function, _> =
+        sqlx::query_as("SELECT * FROM functions WHERE slug = $1 AND is_template = true")
+            .bind(&slug)
+            .fetch_one(&state.pool)
+            .await;
 
     match template {
         Ok(t) => Json(serde_json::json!({
             "success": true,
             "data": t
-        })).into_response(),
+        }))
+        .into_response(),
         Err(_) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({
                 "success": false,
                 "error": "Template not found"
-            }))
-        ).into_response()
+            })),
+        )
+            .into_response(),
     }
 }
 
@@ -2049,12 +2278,11 @@ async fn use_template(
     State(state): State<FunctionsState>,
     Path(slug): Path<String>,
 ) -> impl IntoResponse {
-    let template: Result<Function, _> = sqlx::query_as(
-        "SELECT * FROM functions WHERE slug = $1 AND is_template = true"
-    )
-    .bind(&slug)
-    .fetch_one(&state.pool)
-    .await;
+    let template: Result<Function, _> =
+        sqlx::query_as("SELECT * FROM functions WHERE slug = $1 AND is_template = true")
+            .bind(&slug)
+            .fetch_one(&state.pool)
+            .await;
 
     match template {
         Ok(t) => {
@@ -2094,14 +2322,16 @@ async fn use_template(
                         "name": new_name,
                         "slug": new_slug
                     }
-                })).into_response(),
+                }))
+                .into_response(),
                 Err(e) => (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(serde_json::json!({
                         "success": false,
                         "error": format!("Failed to create from template: {}", e)
-                    }))
-                ).into_response()
+                    })),
+                )
+                    .into_response(),
             }
         }
         Err(_) => (
@@ -2109,50 +2339,49 @@ async fn use_template(
             Json(serde_json::json!({
                 "success": false,
                 "error": "Template not found"
-            }))
-        ).into_response()
+            })),
+        )
+            .into_response(),
     }
 }
 
 /// Get function statistics
-async fn get_function_stats(
-    State(state): State<FunctionsState>,
-) -> impl IntoResponse {
-    let total_functions: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM functions WHERE is_template = false")
-        .fetch_one(&state.pool)
-        .await
-        .unwrap_or((0,));
+async fn get_function_stats(State(state): State<FunctionsState>) -> impl IntoResponse {
+    let total_functions: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM functions WHERE is_template = false")
+            .fetch_one(&state.pool)
+            .await
+            .unwrap_or((0,));
 
     let active_functions: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM functions WHERE status = 'active' AND is_template = false"
+        "SELECT COUNT(*) FROM functions WHERE status = 'active' AND is_template = false",
     )
     .fetch_one(&state.pool)
     .await
     .unwrap_or((0,));
 
-    let total_templates: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM functions WHERE is_template = true")
-        .fetch_one(&state.pool)
-        .await
-        .unwrap_or((0,));
+    let total_templates: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM functions WHERE is_template = true")
+            .fetch_one(&state.pool)
+            .await
+            .unwrap_or((0,));
 
     let total_executions: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM function_executions")
         .fetch_one(&state.pool)
         .await
         .unwrap_or((0,));
 
-    let successful_executions: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM function_executions WHERE status = 'success'"
-    )
-    .fetch_one(&state.pool)
-    .await
-    .unwrap_or((0,));
+    let successful_executions: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM function_executions WHERE status = 'success'")
+            .fetch_one(&state.pool)
+            .await
+            .unwrap_or((0,));
 
-    let failed_executions: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM function_executions WHERE status = 'error'"
-    )
-    .fetch_one(&state.pool)
-    .await
-    .unwrap_or((0,));
+    let failed_executions: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM function_executions WHERE status = 'error'")
+            .fetch_one(&state.pool)
+            .await
+            .unwrap_or((0,));
 
     Json(serde_json::json!({
         "success": true,
@@ -2174,9 +2403,7 @@ async fn get_function_stats(
 }
 
 /// Get execution statistics
-async fn get_execution_stats(
-    State(state): State<FunctionsState>,
-) -> impl IntoResponse {
+async fn get_execution_stats(State(state): State<FunctionsState>) -> impl IntoResponse {
     // Executions by hour (last 24 hours)
     let hourly_stats: Vec<(DateTime<Utc>, i64, i64)> = sqlx::query_as(
         r#"SELECT
@@ -2186,7 +2413,7 @@ async fn get_execution_stats(
         FROM function_executions
         WHERE started_at > NOW() - INTERVAL '24 hours'
         GROUP BY hour
-        ORDER BY hour"#
+        ORDER BY hour"#,
     )
     .fetch_all(&state.pool)
     .await
@@ -2198,19 +2425,18 @@ async fn get_execution_stats(
         FROM functions f
         WHERE is_template = false
         ORDER BY execution_count DESC
-        LIMIT 10"#
+        LIMIT 10"#,
     )
     .fetch_all(&state.pool)
     .await
     .unwrap_or_default();
 
     // Average execution time
-    let avg_duration: (Option<f64>,) = sqlx::query_as(
-        "SELECT AVG(duration_ms) FROM function_executions WHERE status = 'success'"
-    )
-    .fetch_one(&state.pool)
-    .await
-    .unwrap_or((None,));
+    let avg_duration: (Option<f64>,) =
+        sqlx::query_as("SELECT AVG(duration_ms) FROM function_executions WHERE status = 'success'")
+            .fetch_one(&state.pool)
+            .await
+            .unwrap_or((None,));
 
     Json(serde_json::json!({
         "success": true,
@@ -2235,15 +2461,12 @@ async fn get_execution_stats(
 }
 
 /// List scheduled runs
-async fn list_scheduled_runs(
-    State(state): State<FunctionsState>,
-) -> impl IntoResponse {
-    let runs: Vec<ScheduledRun> = sqlx::query_as(
-        "SELECT * FROM scheduled_runs ORDER BY scheduled_for"
-    )
-    .fetch_all(&state.pool)
-    .await
-    .unwrap_or_default();
+async fn list_scheduled_runs(State(state): State<FunctionsState>) -> impl IntoResponse {
+    let runs: Vec<ScheduledRun> =
+        sqlx::query_as("SELECT * FROM scheduled_runs ORDER BY scheduled_for")
+            .fetch_all(&state.pool)
+            .await
+            .unwrap_or_default();
 
     Json(serde_json::json!({
         "success": true,
@@ -2265,12 +2488,14 @@ async fn create_scheduled_run(
 ) -> impl IntoResponse {
     let id = Uuid::new_v4();
     let now = Utc::now();
-    let scheduled_for = req.scheduled_for.unwrap_or_else(|| now + Duration::hours(1));
+    let scheduled_for = req
+        .scheduled_for
+        .unwrap_or_else(|| now + Duration::hours(1));
 
     let result = sqlx::query(
         r#"INSERT INTO scheduled_runs (
             id, function_id, scheduled_for, cron_expression, status, created_at
-        ) VALUES ($1, $2, $3, $4, 'pending', $5)"#
+        ) VALUES ($1, $2, $3, $4, 'pending', $5)"#,
     )
     .bind(id)
     .bind(req.function_id)
@@ -2287,14 +2512,16 @@ async fn create_scheduled_run(
                 "id": id,
                 "scheduled_for": scheduled_for
             }
-        })).into_response(),
+        }))
+        .into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({
                 "success": false,
                 "error": format!("Failed to create scheduled run: {}", e)
-            }))
-        ).into_response()
+            })),
+        )
+            .into_response(),
     }
 }
 
@@ -2311,14 +2538,16 @@ async fn delete_scheduled_run(
         Ok(_) => Json(serde_json::json!({
             "success": true,
             "message": "Scheduled run deleted"
-        })).into_response(),
+        }))
+        .into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({
                 "success": false,
                 "error": format!("Failed to delete: {}", e)
-            }))
-        ).into_response()
+            })),
+        )
+            .into_response(),
     }
 }
 
@@ -2436,8 +2665,12 @@ async fn execute_builtin_function(
     match name {
         // Content functions
         "generate_slug" => {
-            let title = event_data.get("title").and_then(|v| v.as_str()).unwrap_or("");
-            let slug = title.to_lowercase()
+            let title = event_data
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let slug = title
+                .to_lowercase()
                 .chars()
                 .map(|c| if c.is_alphanumeric() { c } else { '-' })
                 .collect::<String>()
@@ -2451,7 +2684,10 @@ async fn execute_builtin_function(
             }))
         }
         "calculate_reading_time" => {
-            let content = event_data.get("content").and_then(|v| v.as_str()).unwrap_or("");
+            let content = event_data
+                .get("content")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let word_count = content.split_whitespace().count();
             let reading_time = (word_count as f64 / 200.0).ceil() as u32;
             Ok(serde_json::json!({
@@ -2461,15 +2697,26 @@ async fn execute_builtin_function(
             }))
         }
         "generate_excerpt" => {
-            let content = event_data.get("content").and_then(|v| v.as_str()).unwrap_or("");
+            let content = event_data
+                .get("content")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             // Strip HTML tags (simple regex-free approach)
-            let plain_text: String = content.chars()
+            let plain_text: String = content
+                .chars()
                 .fold((String::new(), false), |(mut acc, in_tag), c| {
-                    if c == '<' { (acc, true) }
-                    else if c == '>' { (acc, false) }
-                    else if !in_tag { acc.push(c); (acc, false) }
-                    else { (acc, true) }
-                }).0;
+                    if c == '<' {
+                        (acc, true)
+                    } else if c == '>' {
+                        (acc, false)
+                    } else if !in_tag {
+                        acc.push(c);
+                        (acc, false)
+                    } else {
+                        (acc, true)
+                    }
+                })
+                .0;
             let excerpt: String = plain_text.chars().take(160).collect();
             let excerpt = if plain_text.len() > 160 {
                 format!("{}...", excerpt.trim())
@@ -2483,7 +2730,10 @@ async fn execute_builtin_function(
         }
         // Validation functions
         "validate_not_empty" => {
-            let title = event_data.get("title").and_then(|v| v.as_str()).unwrap_or("");
+            let title = event_data
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             if title.trim().is_empty() {
                 Ok(serde_json::json!({
                     "proceed": false,
@@ -2494,7 +2744,10 @@ async fn execute_builtin_function(
             }
         }
         "validate_slug_format" => {
-            let slug = event_data.get("slug").and_then(|v| v.as_str()).unwrap_or("");
+            let slug = event_data
+                .get("slug")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let is_valid = slug.chars().all(|c| c.is_alphanumeric() || c == '-');
             if !is_valid {
                 Ok(serde_json::json!({
@@ -2507,7 +2760,10 @@ async fn execute_builtin_function(
         }
         // Security functions
         "sanitize_html" => {
-            let content = event_data.get("content").and_then(|v| v.as_str()).unwrap_or("");
+            let content = event_data
+                .get("content")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             // Simple XSS prevention - remove script tags
             let sanitized = content
                 .replace("<script", "&lt;script")
@@ -2521,8 +2777,19 @@ async fn execute_builtin_function(
             }))
         }
         "check_spam" => {
-            let content = event_data.get("content").and_then(|v| v.as_str()).unwrap_or("").to_lowercase();
-            let spam_keywords = ["viagra", "casino", "lottery", "winner", "click here", "free money"];
+            let content = event_data
+                .get("content")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_lowercase();
+            let spam_keywords = [
+                "viagra",
+                "casino",
+                "lottery",
+                "winner",
+                "click here",
+                "free money",
+            ];
             let is_spam = spam_keywords.iter().any(|kw| content.contains(kw));
             if is_spam {
                 Ok(serde_json::json!({
@@ -2547,22 +2814,34 @@ async fn execute_builtin_function(
 }
 
 /// Execute a simple data transformation
-fn execute_transform(transform: &str, event_data: &serde_json::Value) -> Result<serde_json::Value, String> {
+fn execute_transform(
+    transform: &str,
+    event_data: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
     match transform {
         "uppercase_title" => {
-            let title = event_data.get("title").and_then(|v| v.as_str()).unwrap_or("");
+            let title = event_data
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             Ok(serde_json::json!({
                 "modified_data": { "title": title.to_uppercase() }
             }))
         }
         "lowercase_slug" => {
-            let slug = event_data.get("slug").and_then(|v| v.as_str()).unwrap_or("");
+            let slug = event_data
+                .get("slug")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             Ok(serde_json::json!({
                 "modified_data": { "slug": slug.to_lowercase() }
             }))
         }
         "trim_content" => {
-            let content = event_data.get("content").and_then(|v| v.as_str()).unwrap_or("");
+            let content = event_data
+                .get("content")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             Ok(serde_json::json!({
                 "modified_data": { "content": content.trim() }
             }))
@@ -2572,7 +2851,10 @@ fn execute_transform(transform: &str, event_data: &serde_json::Value) -> Result<
 }
 
 /// Execute a validation rule
-fn execute_validation(validation: &str, event_data: &serde_json::Value) -> Result<serde_json::Value, String> {
+fn execute_validation(
+    validation: &str,
+    event_data: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
     let parts: Vec<&str> = validation.split(':').collect();
     if parts.len() < 2 {
         return Err("Invalid validation format. Use: field:rule".to_string());
@@ -2698,7 +2980,11 @@ impl EventDispatcher {
     /// // After creating the post, run "after" hooks
     /// let after_result = dispatcher.dispatch_after("post_created", &final_data).await;
     /// ```
-    pub async fn dispatch(&self, event_type: &str, event_data: &serde_json::Value) -> (BeforeHookResult, AfterHookResult) {
+    pub async fn dispatch(
+        &self,
+        event_type: &str,
+        event_data: &serde_json::Value,
+    ) -> (BeforeHookResult, AfterHookResult) {
         let before_result = self.dispatch_before(event_type, event_data).await;
         let after_result = self.dispatch_after(event_type, event_data).await;
         (before_result, after_result)
@@ -2709,7 +2995,11 @@ impl EventDispatcher {
     /// Call this BEFORE performing the action. Hooks can:
     /// - Modify the event data
     /// - Cancel the action by returning proceed=false
-    pub async fn dispatch_before(&self, event_type: &str, event_data: &serde_json::Value) -> BeforeHookResult {
+    pub async fn dispatch_before(
+        &self,
+        event_type: &str,
+        event_data: &serde_json::Value,
+    ) -> BeforeHookResult {
         let functions = self.get_functions_for_event(event_type, "before").await;
 
         let mut result = BeforeHookResult {
@@ -2729,7 +3019,8 @@ impl EventDispatcher {
                 if let Some(proceed) = output.get("proceed").and_then(|v| v.as_bool()) {
                     if !proceed {
                         result.proceed = false;
-                        result.cancel_reason = output.get("reason")
+                        result.cancel_reason = output
+                            .get("reason")
                             .and_then(|v| v.as_str())
                             .map(|s| s.to_string())
                             .or_else(|| Some(format!("Cancelled by function: {}", func.name)));
@@ -2760,7 +3051,11 @@ impl EventDispatcher {
     /// - Sending notifications
     /// - Logging/auditing
     /// - Triggering external integrations
-    pub async fn dispatch_after(&self, event_type: &str, event_data: &serde_json::Value) -> AfterHookResult {
+    pub async fn dispatch_after(
+        &self,
+        event_type: &str,
+        event_data: &serde_json::Value,
+    ) -> AfterHookResult {
         let functions = self.get_functions_for_event(event_type, "after").await;
 
         let mut result = AfterHookResult {
@@ -2806,7 +3101,12 @@ impl EventDispatcher {
     }
 
     /// Execute a function and log the execution
-    async fn execute_and_log(&self, func: &Function, event_type: &str, event_data: &serde_json::Value) -> FunctionExecutionResult {
+    async fn execute_and_log(
+        &self,
+        func: &Function,
+        event_type: &str,
+        event_data: &serde_json::Value,
+    ) -> FunctionExecutionResult {
         let execution_id = Uuid::new_v4();
         let started_at = Utc::now();
 
@@ -2814,7 +3114,7 @@ impl EventDispatcher {
         let _ = sqlx::query(
             r#"INSERT INTO function_executions (
                 id, function_id, trigger_event, event_data, status, started_at, retry_count
-            ) VALUES ($1, $2, $3, $4, 'running', $5, 0)"#
+            ) VALUES ($1, $2, $3, $4, 'running', $5, 0)"#,
         )
         .bind(execution_id)
         .bind(func.id)
@@ -2839,7 +3139,7 @@ impl EventDispatcher {
             r#"UPDATE function_executions SET
                 status = $1, completed_at = $2, duration_ms = $3,
                 output = $4, error = $5
-            WHERE id = $6"#
+            WHERE id = $6"#,
         )
         .bind(status)
         .bind(completed_at)
@@ -2856,7 +3156,7 @@ impl EventDispatcher {
                 execution_count = execution_count + 1,
                 last_executed_at = $1,
                 last_error = $2
-            WHERE id = $3"#
+            WHERE id = $3"#,
         )
         .bind(completed_at)
         .bind(&error)
@@ -2886,7 +3186,8 @@ pub fn create_dispatcher(pool: PgPool) -> EventDispatcher {
 
 pub async fn init_functions_tables(pool: &PgPool) -> Result<(), sqlx::Error> {
     // Functions table
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE TABLE IF NOT EXISTS functions (
             id UUID PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
@@ -2912,16 +3213,23 @@ pub async fn init_functions_tables(pool: &PgPool) -> Result<(), sqlx::Error> {
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
-    "#).execute(pool).await?;
+    "#,
+    )
+    .execute(pool)
+    .await?;
 
     // Add hook_timing column if it doesn't exist (for migration)
     let _ = sqlx::query("ALTER TABLE functions ADD COLUMN IF NOT EXISTS hook_timing VARCHAR(20) NOT NULL DEFAULT 'after'")
         .execute(pool).await;
-    let _ = sqlx::query("ALTER TABLE functions ADD COLUMN IF NOT EXISTS priority INTEGER NOT NULL DEFAULT 10")
-        .execute(pool).await;
+    let _ = sqlx::query(
+        "ALTER TABLE functions ADD COLUMN IF NOT EXISTS priority INTEGER NOT NULL DEFAULT 10",
+    )
+    .execute(pool)
+    .await;
 
     // Function executions table
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE TABLE IF NOT EXISTS function_executions (
             id UUID PRIMARY KEY,
             function_id UUID NOT NULL REFERENCES functions(id) ON DELETE CASCADE,
@@ -2935,10 +3243,14 @@ pub async fn init_functions_tables(pool: &PgPool) -> Result<(), sqlx::Error> {
             error TEXT,
             retry_count INTEGER NOT NULL DEFAULT 0
         )
-    "#).execute(pool).await?;
+    "#,
+    )
+    .execute(pool)
+    .await?;
 
     // Scheduled runs table
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE TABLE IF NOT EXISTS scheduled_runs (
             id UUID PRIMARY KEY,
             function_id UUID NOT NULL REFERENCES functions(id) ON DELETE CASCADE,
@@ -2949,17 +3261,34 @@ pub async fn init_functions_tables(pool: &PgPool) -> Result<(), sqlx::Error> {
             next_run_at TIMESTAMPTZ,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
-    "#).execute(pool).await?;
+    "#,
+    )
+    .execute(pool)
+    .await?;
 
     // Create indexes
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_functions_status ON functions(status)").execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_functions_runtime ON functions(runtime)").execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_functions_is_template ON functions(is_template)").execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_functions_status ON functions(status)")
+        .execute(pool)
+        .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_functions_runtime ON functions(runtime)")
+        .execute(pool)
+        .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_functions_is_template ON functions(is_template)")
+        .execute(pool)
+        .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_functions_trigger_events ON functions USING GIN(trigger_events)").execute(pool).await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_function_executions_function_id ON function_executions(function_id)").execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_function_executions_status ON function_executions(status)").execute(pool).await?;
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_function_executions_status ON function_executions(status)",
+    )
+    .execute(pool)
+    .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_function_executions_started_at ON function_executions(started_at)").execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_scheduled_runs_function_id ON scheduled_runs(function_id)").execute(pool).await?;
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_scheduled_runs_function_id ON scheduled_runs(function_id)",
+    )
+    .execute(pool)
+    .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_scheduled_runs_scheduled_for ON scheduled_runs(scheduled_for)").execute(pool).await?;
 
     // Insert default templates (200 ready-to-use functions)

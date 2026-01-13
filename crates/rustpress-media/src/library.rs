@@ -26,7 +26,11 @@ impl MediaLibrary {
     // ========================================================================
 
     /// Create a new folder
-    pub async fn create_folder(&self, name: &str, parent_id: Option<Uuid>) -> MediaResult<MediaFolder> {
+    pub async fn create_folder(
+        &self,
+        name: &str,
+        parent_id: Option<Uuid>,
+    ) -> MediaResult<MediaFolder> {
         // Build path
         let path = if let Some(pid) = parent_id {
             let parent = self.get_folder(pid).await?;
@@ -40,7 +44,7 @@ impl MediaLibrary {
             INSERT INTO media_folders (name, parent_id, path)
             VALUES ($1, $2, $3)
             RETURNING id, name, parent_id, path, created_at, updated_at
-            "#
+            "#,
         )
         .bind(name)
         .bind(parent_id)
@@ -106,7 +110,7 @@ impl MediaLibrary {
             SET name = $2, path = $3, updated_at = NOW()
             WHERE id = $1
             RETURNING id, name, parent_id, path, created_at, updated_at
-            "#
+            "#,
         )
         .bind(id)
         .bind(new_name)
@@ -129,18 +133,26 @@ impl MediaLibrary {
     }
 
     /// Move folder to new parent
-    pub async fn move_folder(&self, id: Uuid, new_parent_id: Option<Uuid>) -> MediaResult<MediaFolder> {
+    pub async fn move_folder(
+        &self,
+        id: Uuid,
+        new_parent_id: Option<Uuid>,
+    ) -> MediaResult<MediaFolder> {
         let folder = self.get_folder(id).await?;
 
         // Prevent moving to self or descendant
         if let Some(new_pid) = new_parent_id {
             if new_pid == id {
-                return Err(MediaError::ProcessingError("Cannot move folder to itself".to_string()));
+                return Err(MediaError::ProcessingError(
+                    "Cannot move folder to itself".to_string(),
+                ));
             }
 
             let new_parent = self.get_folder(new_pid).await?;
             if new_parent.path.starts_with(&folder.path) {
-                return Err(MediaError::ProcessingError("Cannot move folder to its descendant".to_string()));
+                return Err(MediaError::ProcessingError(
+                    "Cannot move folder to its descendant".to_string(),
+                ));
             }
         }
 
@@ -161,7 +173,7 @@ impl MediaLibrary {
             SET parent_id = $2, path = $3, updated_at = NOW()
             WHERE id = $1
             RETURNING id, name, parent_id, path, created_at, updated_at
-            "#
+            "#,
         )
         .bind(id)
         .bind(new_parent_id)
@@ -236,7 +248,8 @@ impl MediaLibrary {
 
         // Build tree structure
         let mut tree = Vec::new();
-        let mut folder_map: std::collections::HashMap<Uuid, Vec<MediaFolder>> = std::collections::HashMap::new();
+        let mut folder_map: std::collections::HashMap<Uuid, Vec<MediaFolder>> =
+            std::collections::HashMap::new();
 
         // Group by parent
         for folder in folders {
@@ -248,14 +261,20 @@ impl MediaLibrary {
         }
 
         // Convert to FolderNode tree
-        fn build_tree(folders: Vec<MediaFolder>, folder_map: &std::collections::HashMap<Uuid, Vec<MediaFolder>>) -> Vec<FolderNode> {
-            folders.into_iter().map(|folder| {
-                let children = folder_map.get(&folder.id).cloned().unwrap_or_default();
-                FolderNode {
-                    folder,
-                    children: build_tree(children, folder_map),
-                }
-            }).collect()
+        fn build_tree(
+            folders: Vec<MediaFolder>,
+            folder_map: &std::collections::HashMap<Uuid, Vec<MediaFolder>>,
+        ) -> Vec<FolderNode> {
+            folders
+                .into_iter()
+                .map(|folder| {
+                    let children = folder_map.get(&folder.id).cloned().unwrap_or_default();
+                    FolderNode {
+                        folder,
+                        children: build_tree(children, folder_map),
+                    }
+                })
+                .collect()
         }
 
         Ok(build_tree(tree, &folder_map))
@@ -266,7 +285,10 @@ impl MediaLibrary {
     // ========================================================================
 
     /// Get folder contents (folders + media)
-    pub async fn get_folder_contents(&self, folder_id: Option<Uuid>) -> MediaResult<FolderContents> {
+    pub async fn get_folder_contents(
+        &self,
+        folder_id: Option<Uuid>,
+    ) -> MediaResult<FolderContents> {
         let folders = if let Some(fid) = folder_id {
             self.list_child_folders(fid).await?
         } else {
@@ -283,7 +305,7 @@ impl MediaLibrary {
             FROM media_items
             WHERE ($1::uuid IS NULL AND folder_id IS NULL) OR folder_id = $1
             ORDER BY created_at DESC
-            "#
+            "#,
         )
         .bind(folder_id)
         .fetch_all(&self.pool)
@@ -330,7 +352,7 @@ impl MediaLibrary {
                 AND (m.folder_id = $3 OR f.path LIKE $4)
                 ORDER BY m.created_at DESC
                 LIMIT $5 OFFSET $6
-                "#
+                "#,
             )
             .bind(&search_pattern)
             .bind(media_type.map(|t| t.to_string()))
@@ -354,7 +376,7 @@ impl MediaLibrary {
                 AND ($3::uuid IS NULL OR folder_id = $3)
                 ORDER BY created_at DESC
                 LIMIT $4 OFFSET $5
-                "#
+                "#,
             )
             .bind(&search_pattern)
             .bind(media_type.map(|t| t.to_string()))
@@ -379,7 +401,7 @@ impl MediaLibrary {
     /// Bulk move media to folder
     pub async fn bulk_move(&self, media_ids: &[Uuid], folder_id: Option<Uuid>) -> MediaResult<u64> {
         let result = sqlx::query(
-            "UPDATE media_items SET folder_id = $1, updated_at = NOW() WHERE id = ANY($2)"
+            "UPDATE media_items SET folder_id = $1, updated_at = NOW() WHERE id = ANY($2)",
         )
         .bind(folder_id)
         .bind(media_ids)
@@ -411,7 +433,7 @@ impl MediaLibrary {
                 COUNT(*) FILTER (WHERE media_type = 'audio') as audio_count,
                 COUNT(*) FILTER (WHERE media_type = 'document') as document_count
             FROM media_items
-            "#
+            "#,
         )
         .fetch_one(&self.pool)
         .await?;
@@ -443,7 +465,7 @@ impl MediaLibrary {
             FROM media_items
             ORDER BY created_at DESC
             LIMIT $1
-            "#
+            "#,
         )
         .bind(limit)
         .fetch_all(&self.pool)
@@ -460,7 +482,7 @@ impl MediaLibrary {
             FROM media_items
             GROUP BY file_hash
             HAVING COUNT(*) > 1
-            "#
+            "#,
         )
         .fetch_all(&self.pool)
         .await?;
@@ -478,7 +500,7 @@ impl MediaLibrary {
                 FROM media_items
                 WHERE file_hash = $1
                 ORDER BY created_at
-                "#
+                "#,
             )
             .bind(&file_hash)
             .fetch_all(&self.pool)

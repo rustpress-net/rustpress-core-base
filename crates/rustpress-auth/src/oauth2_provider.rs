@@ -7,7 +7,7 @@ use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
 use rustpress_core::error::{Error, Result};
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use std::sync::RwLock;
 use uuid::Uuid;
@@ -281,7 +281,8 @@ impl<S: OAuth2ProviderStore> OAuth2Provider<S> {
         client_id: &str,
         client_secret: Option<&str>,
     ) -> Result<OAuth2Client> {
-        let client = self.store
+        let client = self
+            .store
             .get_client_by_id(client_id)
             .await?
             .ok_or_else(|| Error::Authentication {
@@ -391,12 +392,13 @@ impl<S: OAuth2ProviderStore> OAuth2Provider<S> {
         }
 
         let code_hash = Self::hash_token(code);
-        let auth_code = self.store
-            .get_auth_code(&code_hash)
-            .await?
-            .ok_or_else(|| Error::Authentication {
-                message: "Invalid authorization code".to_string(),
-            })?;
+        let auth_code =
+            self.store
+                .get_auth_code(&code_hash)
+                .await?
+                .ok_or_else(|| Error::Authentication {
+                    message: "Invalid authorization code".to_string(),
+                })?;
 
         if !auth_code.is_valid() {
             return Err(Error::Authentication {
@@ -444,7 +446,8 @@ impl<S: OAuth2ProviderStore> OAuth2Provider<S> {
         self.store.mark_auth_code_used(auth_code.id).await?;
 
         // Generate tokens
-        self.generate_tokens(&client, Some(auth_code.user_id), &auth_code.scopes).await
+        self.generate_tokens(&client, Some(auth_code.user_id), &auth_code.scopes)
+            .await
     }
 
     /// Generate access and refresh tokens
@@ -515,7 +518,8 @@ impl<S: OAuth2ProviderStore> OAuth2Provider<S> {
         }
 
         let token_hash = Self::hash_token(refresh_token);
-        let stored_token = self.store
+        let stored_token = self
+            .store
             .get_refresh_token(&token_hash)
             .await?
             .ok_or_else(|| Error::Authentication {
@@ -536,13 +540,15 @@ impl<S: OAuth2ProviderStore> OAuth2Provider<S> {
         self.store.revoke_refresh_token(stored_token.id).await?;
 
         // Generate new tokens
-        self.generate_tokens(&client, stored_token.user_id, &stored_token.scopes).await
+        self.generate_tokens(&client, stored_token.user_id, &stored_token.scopes)
+            .await
     }
 
     /// Validate access token
     pub async fn validate_access_token(&self, token: &str) -> Result<OAuth2AccessToken> {
         let token_hash = Self::hash_token(token);
-        let stored_token = self.store
+        let stored_token = self
+            .store
             .get_access_token(&token_hash)
             .await?
             .ok_or_else(|| Error::Authentication {
@@ -582,7 +588,9 @@ impl<S: OAuth2ProviderStore> OAuth2Provider<S> {
         client_secret: &str,
         scopes: HashSet<String>,
     ) -> Result<TokenResponse> {
-        let client = self.authenticate_client(client_id, Some(client_secret)).await?;
+        let client = self
+            .authenticate_client(client_id, Some(client_secret))
+            .await?;
 
         if !client.supports_grant_type(&GrantType::ClientCredentials) {
             return Err(Error::InvalidInput {
@@ -852,7 +860,9 @@ mod tests {
                 "Test App".to_string(),
                 vec!["https://example.com/callback".to_string()],
                 ["read".to_string()].into_iter().collect(),
-                [GrantType::AuthorizationCode, GrantType::RefreshToken].into_iter().collect(),
+                [GrantType::AuthorizationCode, GrantType::RefreshToken]
+                    .into_iter()
+                    .collect(),
                 true,
                 None,
             )

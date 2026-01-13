@@ -7,7 +7,7 @@ use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
 use rustpress_core::error::{Error, Result};
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::sync::RwLock;
 use uuid::Uuid;
@@ -138,9 +138,7 @@ impl<S: CsrfStore> CsrfProtection<S> {
     /// Generate a new CSRF token
     fn generate_token_string(&self) -> String {
         let mut rng = rand::thread_rng();
-        let bytes: Vec<u8> = (0..self.config.token_length)
-            .map(|_| rng.gen())
-            .collect();
+        let bytes: Vec<u8> = (0..self.config.token_length).map(|_| rng.gen()).collect();
         base64_url_encode(&bytes)
     }
 
@@ -189,7 +187,9 @@ impl<S: CsrfStore> CsrfProtection<S> {
             None => Ok(CsrfValidation::invalid("Invalid CSRF token")),
             Some(csrf_token) => {
                 if !csrf_token.is_valid() {
-                    return Ok(CsrfValidation::invalid("CSRF token expired or already used"));
+                    return Ok(CsrfValidation::invalid(
+                        "CSRF token expired or already used",
+                    ));
                 }
 
                 // Validate session binding if session is provided
@@ -213,7 +213,11 @@ impl<S: CsrfStore> CsrfProtection<S> {
 
     /// Check if method requires CSRF protection
     pub fn requires_protection(&self, method: &str) -> bool {
-        !self.config.safe_methods.iter().any(|m| m.eq_ignore_ascii_case(method))
+        !self
+            .config
+            .safe_methods
+            .iter()
+            .any(|m| m.eq_ignore_ascii_case(method))
     }
 
     /// Check if path is excluded from protection
@@ -467,10 +471,7 @@ mod tests {
     #[test]
     fn test_excluded_paths() {
         let config = CsrfConfig {
-            excluded_paths: vec![
-                "/api/webhook".to_string(),
-                "/api/public/*".to_string(),
-            ],
+            excluded_paths: vec!["/api/webhook".to_string(), "/api/public/*".to_string()],
             ..Default::default()
         };
         let protection = CsrfProtection::new(InMemoryCsrfStore::new(), config);

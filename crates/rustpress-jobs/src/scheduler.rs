@@ -44,9 +44,7 @@ impl ScheduledTask {
         if !self.enabled {
             return false;
         }
-        self.next_run
-            .map(|t| Utc::now() >= t)
-            .unwrap_or(false)
+        self.next_run.map(|t| Utc::now() >= t).unwrap_or(false)
     }
 
     pub fn update_schedule(&mut self) {
@@ -121,8 +119,8 @@ impl Schedule {
             Schedule::EveryHours(hours) => now + Duration::hours(*hours as i64),
             Schedule::DailyAt(hour) => {
                 let today = now.date_naive();
-                let time = chrono::NaiveTime::from_hms_opt(*hour, 0, 0)
-                    .unwrap_or(chrono::NaiveTime::MIN);
+                let time =
+                    chrono::NaiveTime::from_hms_opt(*hour, 0, 0).unwrap_or(chrono::NaiveTime::MIN);
                 let datetime = today.and_time(time);
                 let scheduled = datetime.and_utc();
                 if scheduled <= now {
@@ -133,8 +131,8 @@ impl Schedule {
             }
             Schedule::WeeklyAt(day, hour) => {
                 let today = now.date_naive();
-                let time = chrono::NaiveTime::from_hms_opt(*hour, 0, 0)
-                    .unwrap_or(chrono::NaiveTime::MIN);
+                let time =
+                    chrono::NaiveTime::from_hms_opt(*hour, 0, 0).unwrap_or(chrono::NaiveTime::MIN);
                 let current_weekday = today.weekday().num_days_from_sunday();
                 let target_day = *day;
                 let days_until = if target_day >= current_weekday {
