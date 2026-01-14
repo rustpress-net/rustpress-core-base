@@ -9,8 +9,23 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
+use clap::Parser;
 use tracing::{error, info, warn};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+/// RustPress CMS Server - A Modern WordPress Alternative in Rust
+#[derive(Parser, Debug)]
+#[command(name = "rustpress")]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    /// Port to run the server on (overrides config and environment)
+    #[arg(short, long)]
+    port: Option<u16>,
+
+    /// Host to bind the server to
+    #[arg(long)]
+    host: Option<String>,
+}
 
 use rustpress_auth::{JwtConfig, JwtManager, PermissionChecker};
 use rustpress_cache::{Cache, CacheConfig, MemoryBackend};
@@ -310,12 +325,21 @@ fn print_banner() {
 }
 
 /// Run the main application
-async fn run_app() -> Result<(), Box<dyn std::error::Error>> {
+async fn run_app(cli: &Cli) -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting RustPress CMS Server");
     info!("Version: {}", env!("CARGO_PKG_VERSION"));
 
     // Load configuration
-    let config = load_config();
+    let mut config = load_config();
+
+    // CLI arguments override config
+    if let Some(port) = cli.port {
+        config.server.port = port;
+    }
+    if let Some(ref host) = cli.host {
+        config.server.host = host.clone();
+    }
+
     info!(host = %config.server.host, port = config.server.port, "Configuration loaded");
 
     // Ensure required directories exist
@@ -397,7 +421,7 @@ async fn run_app() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Helper to run the setup wizard
-async fn start_setup_wizard() -> Result<(), Box<dyn std::error::Error>> {
+async fn start_setup_wizard(cli: &Cli) -> Result<(), Box<dyn std::error::Error>> {
     info!("Setup required - starting setup wizard");
     println!();
     println!("  *** SETUP WIZARD ***");
@@ -411,9 +435,12 @@ async fn start_setup_wizard() -> Result<(), Box<dyn std::error::Error>> {
         std::fs::create_dir_all(parent)?;
     }
 
-    let addr: SocketAddr = "0.0.0.0:8080".parse()?;
+    // Use CLI port if provided, otherwise default to 8080
+    let port = cli.port.unwrap_or(8080);
+    let host = cli.host.as_deref().unwrap_or("0.0.0.0");
+    let addr: SocketAddr = format!("{}:{}", host, port).parse()?;
 
-    println!("  Open http://localhost:8080 in your browser to complete setup.");
+    println!("  Open http://localhost:{} in your browser to complete setup.", port);
     println!();
 
     match setup::run_setup_wizard(addr, config_path).await {
@@ -424,7 +451,7 @@ async fn start_setup_wizard() -> Result<(), Box<dyn std::error::Error>> {
             println!();
 
             // Run the main application
-            run_app().await
+            run_app(cli).await
         }
         Ok(false) => {
             info!("Setup was cancelled");
@@ -439,6 +466,9 @@ async fn start_setup_wizard() -> Result<(), Box<dyn std::error::Error>> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Parse CLI arguments first
+    let cli = Cli::parse();
+
     // Initialize tracing first
     init_tracing();
 
@@ -447,18 +477,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Check if setup is needed (no config file)
     if needs_setup() {
-        return start_setup_wizard().await;
+        return start_setup_wizard(&cli).await;
     }
 
     // Config exists, but test if database connection works
     info!("Testing database connection...");
     if !test_database_connection().await {
         error!("Database connection failed - starting setup wizard");
-        return start_setup_wizard().await;
+        return start_setup_wizard(&cli).await;
     }
 
     // Run the main application directly
-    run_app().await
+    run_app(&cli).await
 }
 
 #[cfg(test)]
