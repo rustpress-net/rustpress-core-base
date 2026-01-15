@@ -440,7 +440,10 @@ async fn start_setup_wizard(cli: &Cli) -> Result<(), Box<dyn std::error::Error>>
     let host = cli.host.as_deref().unwrap_or("0.0.0.0");
     let addr: SocketAddr = format!("{}:{}", host, port).parse()?;
 
-    println!("  Open http://localhost:{} in your browser to complete setup.", port);
+    println!(
+        "  Open http://localhost:{} in your browser to complete setup.",
+        port
+    );
     println!();
 
     match setup::run_setup_wizard(addr, config_path).await {
