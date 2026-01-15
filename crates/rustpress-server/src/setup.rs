@@ -828,32 +828,6 @@ const SETUP_PAGE_HTML: &str = r#"<!DOCTYPE html>
             100% { background-position: 0% 50%; }
         }
 
-        /* Floating particles */
-        .particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            overflow: hidden;
-            z-index: 0;
-        }
-
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            animation: float linear infinite;
-        }
-
-        @keyframes float {
-            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
-        }
-
         .container {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 16px;
@@ -1243,9 +1217,6 @@ const SETUP_PAGE_HTML: &str = r#"<!DOCTYPE html>
     </style>
 </head>
 <body>
-    <!-- Floating particles background -->
-    <div class="particles" id="particles"></div>
-
     <div class="container">
         <div class="logo">
             <h1>RustPress</h1>
@@ -1378,37 +1349,6 @@ const SETUP_PAGE_HTML: &str = r#"<!DOCTYPE html>
 
     <script>
         let connectionVerified = false;
-
-        // Create floating particles
-        function createParticles() {
-            const container = document.getElementById('particles');
-            const particleCount = 20;
-
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-
-                // Random size between 5 and 20 pixels
-                const size = Math.random() * 15 + 5;
-                particle.style.width = size + 'px';
-                particle.style.height = size + 'px';
-
-                // Random horizontal position
-                particle.style.left = Math.random() * 100 + '%';
-
-                // Random animation duration between 15 and 30 seconds
-                const duration = Math.random() * 15 + 15;
-                particle.style.animationDuration = duration + 's';
-
-                // Random delay so they don't all start at once
-                particle.style.animationDelay = Math.random() * duration + 's';
-
-                container.appendChild(particle);
-            }
-        }
-
-        // Initialize particles on page load
-        createParticles();
 
         // Progress bar functions
         function showProgress(percent, message) {
