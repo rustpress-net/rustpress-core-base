@@ -348,7 +348,7 @@ async fn run_schema_installation(
     req: &InstallSchemaRequest,
     password_hash: &str,
 ) -> Result<(), sqlx::Error> {
-    // Execute schema using raw_sql which supports multiple statements
+    // Execute consolidated schema using raw_sql which supports multiple statements
     sqlx::raw_sql(SCHEMA_SQL).execute(pool).await?;
 
     // Insert admin user
@@ -368,12 +368,12 @@ async fn run_schema_installation(
     .execute(pool)
     .await?;
 
-    // Insert default theme
+    // Insert default theme (using migration schema: id is VARCHAR primary key)
     sqlx::query(
         r#"
-        INSERT INTO themes (theme_id, name, version, description, author, is_active, is_installed, activated_at)
-        VALUES ('rustpress-enterprise', 'RustPress Enterprise', '1.0.0', 'Default RustPress theme', 'RustPress Team', true, true, NOW())
-        ON CONFLICT (theme_id, site_id) DO UPDATE SET
+        INSERT INTO themes (id, name, version, description, author, is_active, settings, installed_at)
+        VALUES ('rustpress-enterprise', 'RustPress Enterprise', '1.0.0', 'Default RustPress theme', 'RustPress Team', true, '{}', NOW())
+        ON CONFLICT (id) DO UPDATE SET
             is_active = true,
             updated_at = NOW()
         "#,
@@ -381,18 +381,13 @@ async fn run_schema_installation(
     .execute(pool)
     .await?;
 
-    // Insert default options
+    // Update settings with site title
     sqlx::query(
         r#"
-        INSERT INTO options (option_name, option_value, autoload) VALUES
-            ('site_title', $1, true),
-            ('site_tagline', '"A Modern CMS Built with Rust"', true),
-            ('site_url', '"http://localhost:8080"', true),
-            ('posts_per_page', '10', true)
-        ON CONFLICT (site_id, option_name) DO NOTHING
+        UPDATE settings SET value = $1 WHERE key = 'site_title'
         "#,
     )
-    .bind(serde_json::json!(req.site_title))
+    .bind(&req.site_title)
     .execute(pool)
     .await?;
 
@@ -442,199 +437,361 @@ pub async fn run_setup_wizard(
     Ok(completed)
 }
 
-/// The SQL schema for initial installation
+/// Consolidated SQL schema from migration files (00001, 00023, 00024)
+/// This schema matches the official RustPress migration files exactly
 const SCHEMA_SQL: &str = r#"
+-- ============================================
+-- Migration 00001: Initial Schema
+-- ============================================
+
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) NOT NULL UNIQUE,
     username VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     display_name VARCHAR(255),
-    bio TEXT,
-    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    avatar_url VARCHAR(500),
     role VARCHAR(50) NOT NULL DEFAULT 'subscriber',
-    avatar_url TEXT,
-    locale VARCHAR(10) DEFAULT 'en',
-    timezone VARCHAR(50) DEFAULT 'UTC',
-    email_verified_at TIMESTAMPTZ,
-    last_login_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ
+    status VARCHAR(50) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    last_login_at TIMESTAMP WITH TIME ZONE,
+    email_verified_at TIMESTAMP WITH TIME ZONE,
+    meta JSONB DEFAULT '{}'::jsonb
 );
 
 -- Posts table
-DO $$ BEGIN
-    CREATE TYPE post_type_enum AS ENUM ('post', 'page', 'custom');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE post_status_enum AS ENUM ('draft', 'pending', 'published', 'scheduled', 'private', 'trash');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
 CREATE TABLE IF NOT EXISTS posts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    site_id UUID,
-    post_type post_type_enum NOT NULL DEFAULT 'post',
-    author_id UUID NOT NULL REFERENCES users(id),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(500) NOT NULL,
-    slug VARCHAR(500) NOT NULL,
+    slug VARCHAR(500) NOT NULL UNIQUE,
     content TEXT,
     excerpt TEXT,
-    status post_status_enum NOT NULL DEFAULT 'draft',
-    visibility VARCHAR(50) DEFAULT 'public',
-    password VARCHAR(255),
-    parent_id UUID REFERENCES posts(id),
-    menu_order INT DEFAULT 0,
-    template VARCHAR(255),
+    status VARCHAR(50) NOT NULL DEFAULT 'draft',
+    post_type VARCHAR(50) NOT NULL DEFAULT 'post',
+    author_id UUID REFERENCES users(id) ON DELETE SET NULL,
     featured_image_id UUID,
-    comment_status VARCHAR(50) DEFAULT 'open',
-    comment_count INT DEFAULT 0,
-    ping_status VARCHAR(50) DEFAULT 'open',
-    meta_title VARCHAR(500),
-    meta_description TEXT,
-    canonical_url TEXT,
-    published_at TIMESTAMPTZ,
-    scheduled_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ,
-    CONSTRAINT unique_slug_per_site UNIQUE (site_id, slug)
+    published_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    meta JSONB DEFAULT '{}'::jsonb
 );
 
--- Themes table
-CREATE TABLE IF NOT EXISTS themes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    site_id UUID,
-    theme_id VARCHAR(100) NOT NULL,
+-- Pages table (similar to posts but for static pages)
+CREATE TABLE IF NOT EXISTS pages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title VARCHAR(500) NOT NULL,
+    slug VARCHAR(500) NOT NULL UNIQUE,
+    content TEXT,
+    status VARCHAR(50) NOT NULL DEFAULT 'draft',
+    author_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    parent_id UUID REFERENCES pages(id) ON DELETE SET NULL,
+    template VARCHAR(100),
+    menu_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    meta JSONB DEFAULT '{}'::jsonb
+);
+
+-- Categories table
+CREATE TABLE IF NOT EXISTS categories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL UNIQUE,
     description TEXT,
-    version VARCHAR(50),
-    author VARCHAR(255),
-    author_url VARCHAR(500),
-    license VARCHAR(100),
-    is_active BOOLEAN NOT NULL DEFAULT FALSE,
-    is_installed BOOLEAN NOT NULL DEFAULT TRUE,
-    parent_theme_id VARCHAR(100),
-    screenshot_url VARCHAR(500),
-    homepage_url VARCHAR(500),
-    tags TEXT[],
-    supports JSONB DEFAULT '{}',
-    menu_locations JSONB DEFAULT '{}',
-    widget_areas JSONB DEFAULT '{}',
-    customizer_schema JSONB DEFAULT '{}',
-    settings JSONB DEFAULT '{}',
-    template_count INT DEFAULT 0,
-    activated_at TIMESTAMPTZ,
-    installed_at TIMESTAMPTZ DEFAULT NOW(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE(theme_id, site_id)
+    parent_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
--- Options table
-CREATE TABLE IF NOT EXISTS options (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    site_id UUID,
-    option_name VARCHAR(255) NOT NULL,
-    option_value JSONB,
-    autoload BOOLEAN DEFAULT TRUE,
-    CONSTRAINT unique_option_per_site UNIQUE (site_id, option_name)
+-- Tags table
+CREATE TABLE IF NOT EXISTS tags (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
--- Sessions table
-CREATE TABLE IF NOT EXISTS sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token_hash VARCHAR(255) NOT NULL UNIQUE,
-    ip_address VARCHAR(45),
-    user_agent TEXT,
-    last_active_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    expires_at TIMESTAMPTZ NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- Post categories junction table
+CREATE TABLE IF NOT EXISTS post_categories (
+    post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    category_id UUID NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+    PRIMARY KEY (post_id, category_id)
+);
+
+-- Post tags junction table
+CREATE TABLE IF NOT EXISTS post_tags (
+    post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    tag_id UUID NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (post_id, tag_id)
 );
 
 -- Media table
 CREATE TABLE IF NOT EXISTS media (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    site_id UUID,
-    uploader_id UUID REFERENCES users(id),
-    filename VARCHAR(255) NOT NULL,
-    original_filename VARCHAR(255) NOT NULL,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    filename VARCHAR(500) NOT NULL,
+    original_filename VARCHAR(500) NOT NULL,
     mime_type VARCHAR(100) NOT NULL,
     file_size BIGINT NOT NULL,
-    storage_path TEXT NOT NULL,
-    storage_backend VARCHAR(50) DEFAULT 'local',
-    alt_text TEXT,
-    title VARCHAR(500),
-    description TEXT,
-    width INT,
-    height INT,
-    duration INT,
-    metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ
+    width INTEGER,
+    height INTEGER,
+    alt_text VARCHAR(500),
+    caption TEXT,
+    uploaded_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    meta JSONB DEFAULT '{}'::jsonb
 );
 
 -- Comments table
 CREATE TABLE IF NOT EXISTS comments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    site_id UUID,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-    parent_id UUID REFERENCES comments(id),
-    author_id UUID REFERENCES users(id),
+    parent_id UUID REFERENCES comments(id) ON DELETE CASCADE,
+    author_id UUID REFERENCES users(id) ON DELETE SET NULL,
     author_name VARCHAR(255),
     author_email VARCHAR(255),
-    author_url TEXT,
-    author_ip VARCHAR(45),
+    author_url VARCHAR(500),
     content TEXT NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'pending',
-    user_agent TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
--- Taxonomies and terms
-CREATE TABLE IF NOT EXISTS taxonomies (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    site_id UUID,
-    name VARCHAR(100) NOT NULL,
-    slug VARCHAR(100) NOT NULL,
-    description TEXT,
-    hierarchical BOOLEAN DEFAULT FALSE,
-    CONSTRAINT unique_taxonomy_slug_per_site UNIQUE (site_id, slug)
+-- Settings table
+CREATE TABLE IF NOT EXISTS settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    key VARCHAR(255) NOT NULL UNIQUE,
+    value TEXT,
+    type VARCHAR(50) NOT NULL DEFAULT 'string',
+    group_name VARCHAR(100) NOT NULL DEFAULT 'general',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS terms (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    taxonomy_id UUID NOT NULL REFERENCES taxonomies(id) ON DELETE CASCADE,
-    parent_id UUID REFERENCES terms(id),
+-- Themes table
+CREATE TABLE IF NOT EXISTS themes (
+    id VARCHAR(100) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    slug VARCHAR(255) NOT NULL,
+    version VARCHAR(50) NOT NULL,
     description TEXT,
-    term_order INT DEFAULT 0,
-    count INT DEFAULT 0,
-    CONSTRAINT unique_term_slug_per_taxonomy UNIQUE (taxonomy_id, slug)
+    author VARCHAR(255),
+    author_url VARCHAR(500),
+    screenshot_url VARCHAR(500),
+    is_active BOOLEAN NOT NULL DEFAULT FALSE,
+    settings JSONB DEFAULT '{}'::jsonb,
+    installed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-CREATE INDEX IF NOT EXISTS idx_posts_author ON posts(author_id);
+-- Menus table
+CREATE TABLE IF NOT EXISTS menus (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL UNIQUE,
+    location VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Menu items table
+CREATE TABLE IF NOT EXISTS menu_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    menu_id UUID NOT NULL REFERENCES menus(id) ON DELETE CASCADE,
+    parent_id UUID REFERENCES menu_items(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    url VARCHAR(500),
+    target VARCHAR(50) DEFAULT '_self',
+    object_type VARCHAR(50),
+    object_id UUID,
+    menu_order INTEGER NOT NULL DEFAULT 0,
+    css_classes VARCHAR(500),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Widgets table
+CREATE TABLE IF NOT EXISTS widgets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    sidebar VARCHAR(100) NOT NULL,
+    widget_type VARCHAR(100) NOT NULL,
+    title VARCHAR(255),
+    content TEXT,
+    settings JSONB DEFAULT '{}'::jsonb,
+    widget_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_posts_status ON posts(status);
+CREATE INDEX IF NOT EXISTS idx_posts_author ON posts(author_id);
+CREATE INDEX IF NOT EXISTS idx_posts_published_at ON posts(published_at);
 CREATE INDEX IF NOT EXISTS idx_posts_slug ON posts(slug);
-CREATE INDEX IF NOT EXISTS idx_posts_published ON posts(published_at);
-CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
-CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
-CREATE INDEX IF NOT EXISTS idx_media_uploader ON media(uploader_id);
+CREATE INDEX IF NOT EXISTS idx_pages_slug ON pages(slug);
 CREATE INDEX IF NOT EXISTS idx_comments_post ON comments(post_id);
 CREATE INDEX IF NOT EXISTS idx_comments_status ON comments(status);
+CREATE INDEX IF NOT EXISTS idx_media_uploaded_by ON media(uploaded_by);
+CREATE INDEX IF NOT EXISTS idx_settings_key ON settings(key);
+CREATE INDEX IF NOT EXISTS idx_menu_items_menu ON menu_items(menu_id);
+
+-- Insert default settings
+INSERT INTO settings (key, value, type, group_name) VALUES
+    ('site_title', 'RustPress', 'string', 'general'),
+    ('site_tagline', 'A Modern CMS Built with Rust', 'string', 'general'),
+    ('site_url', 'http://localhost:8080', 'string', 'general'),
+    ('admin_email', 'admin@rustpress.local', 'string', 'general'),
+    ('posts_per_page', '10', 'integer', 'reading'),
+    ('date_format', 'F j, Y', 'string', 'general'),
+    ('time_format', 'g:i a', 'string', 'general'),
+    ('timezone', 'UTC', 'string', 'general'),
+    ('comments_enabled', 'true', 'boolean', 'discussion'),
+    ('comment_moderation', 'true', 'boolean', 'discussion')
+ON CONFLICT (key) DO NOTHING;
+
+-- Insert default category
+INSERT INTO categories (name, slug, description) VALUES
+    ('Uncategorized', 'uncategorized', 'Default category for posts')
+ON CONFLICT (slug) DO NOTHING;
+
+-- ============================================
+-- Migration 00023: Password Reset Tokens
+-- ============================================
+
+-- Password reset tokens table
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash VARCHAR(255) NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    used_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Index for fast token lookups
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_hash ON password_reset_tokens(token_hash);
+
+-- Index for finding unexpired tokens by user
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_expires ON password_reset_tokens(user_id, expires_at);
+
+-- Email verification tokens table
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL,
+    token_hash VARCHAR(255) NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    verified_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Index for fast token lookups
+CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_hash ON email_verification_tokens(token_hash);
+
+-- Index for finding unexpired tokens by user
+CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_user ON email_verification_tokens(user_id, expires_at);
+
+-- ============================================
+-- Migration 00024: Add Missing Schema
+-- ============================================
+
+-- Add missing columns to users table
+ALTER TABLE users ADD COLUMN IF NOT EXISTS locale VARCHAR(50);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone VARCHAR(100);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+
+-- Create sessions table for user session management
+CREATE TABLE IF NOT EXISTS sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash VARCHAR(255) NOT NULL,
+    user_agent TEXT,
+    ip_address VARCHAR(45),
+    last_activity_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    revoked_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash);
+
+-- Create options table (distinct from settings, used by OptionsRepository)
+CREATE TABLE IF NOT EXISTS options (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    site_id UUID,
+    option_name VARCHAR(255) NOT NULL,
+    option_value JSONB,
+    option_group VARCHAR(100) NOT NULL DEFAULT 'general',
+    autoload BOOLEAN NOT NULL DEFAULT TRUE,
+    is_system BOOLEAN NOT NULL DEFAULT FALSE,
+    value_type VARCHAR(50),
+    validation JSONB,
+    display_name VARCHAR(255),
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    UNIQUE(site_id, option_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_options_site_id ON options(site_id);
+CREATE INDEX IF NOT EXISTS idx_options_option_name ON options(option_name);
+CREATE INDEX IF NOT EXISTS idx_options_option_group ON options(option_group);
+CREATE INDEX IF NOT EXISTS idx_options_autoload ON options(autoload);
+
+-- Migrate existing settings to options table
+INSERT INTO options (option_name, option_value, option_group, autoload, is_system)
+SELECT
+    key as option_name,
+    CASE
+        WHEN type = 'boolean' THEN to_jsonb(value = 'true')
+        WHEN type = 'integer' THEN to_jsonb(value::integer)
+        ELSE to_jsonb(value)
+    END as option_value,
+    group_name as option_group,
+    TRUE as autoload,
+    TRUE as is_system
+FROM settings
+ON CONFLICT (site_id, option_name) DO NOTHING;
+
+-- Add missing columns to media table if needed
+ALTER TABLE media ADD COLUMN IF NOT EXISTS folder_id UUID;
+ALTER TABLE media ADD COLUMN IF NOT EXISTS title VARCHAR(500);
+ALTER TABLE media ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE media ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+
+-- Create media_folders table
+CREATE TABLE IF NOT EXISTS media_folders (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    parent_id UUID REFERENCES media_folders(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_media_folders_parent_id ON media_folders(parent_id);
+
+-- Add missing columns to comments table
+ALTER TABLE comments ADD COLUMN IF NOT EXISTS likes_count INTEGER DEFAULT 0;
+ALTER TABLE comments ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+
+-- Create comment_likes table
+CREATE TABLE IF NOT EXISTS comment_likes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    comment_id UUID NOT NULL REFERENCES comments(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_comment_likes_comment_id ON comment_likes(comment_id);
 "#;
 
 /// The setup page HTML
@@ -653,12 +810,48 @@ const SETUP_PAGE_HTML: &str = r#"<!DOCTYPE html>
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background: linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460, #1a1a2e);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Floating particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float linear infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
         }
 
         .container {
@@ -668,6 +861,9 @@ const SETUP_PAGE_HTML: &str = r#"<!DOCTYPE html>
             max-width: 600px;
             width: 100%;
             padding: 40px;
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(10px);
         }
 
         .logo {
@@ -686,6 +882,64 @@ const SETUP_PAGE_HTML: &str = r#"<!DOCTYPE html>
         .logo p {
             color: #64748b;
             margin-top: 8px;
+        }
+
+        /* Main progress bar */
+        .main-progress {
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .main-progress.show {
+            display: block;
+        }
+
+        .main-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #06b6d4);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+            position: relative;
+            width: 0%;
+        }
+
+        .main-progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.4),
+                transparent
+            );
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-message {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            min-height: 20px;
+            display: none;
+        }
+
+        .progress-message.show {
+            display: block;
         }
 
         .step {
@@ -826,11 +1080,18 @@ const SETUP_PAGE_HTML: &str = r#"<!DOCTYPE html>
             justify-content: center;
             font-weight: 600;
             position: relative;
+            transition: all 0.3s ease;
         }
 
         .progress-step.active {
             background: linear-gradient(135deg, #6366f1, #4f46e5);
             color: white;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
         }
 
         .progress-step.done {
@@ -847,6 +1108,7 @@ const SETUP_PAGE_HTML: &str = r#"<!DOCTYPE html>
             height: 3px;
             background: #e5e7eb;
             transform: translateY(-50%);
+            transition: background 0.3s ease;
         }
 
         .progress-step.done:not(:last-child)::after {
@@ -877,6 +1139,13 @@ const SETUP_PAGE_HTML: &str = r#"<!DOCTYPE html>
             align-items: center;
             justify-content: center;
             margin: 0 auto 24px;
+            animation: successPop 0.5s ease-out;
+        }
+
+        @keyframes successPop {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
         }
 
         /* Error page styles */
@@ -974,11 +1243,20 @@ const SETUP_PAGE_HTML: &str = r#"<!DOCTYPE html>
     </style>
 </head>
 <body>
+    <!-- Floating particles background -->
+    <div class="particles" id="particles"></div>
+
     <div class="container">
         <div class="logo">
             <h1>RustPress</h1>
             <p>Setup Wizard</p>
         </div>
+
+        <!-- Main progress bar -->
+        <div class="main-progress" id="main-progress">
+            <div class="main-progress-bar" id="main-progress-bar"></div>
+        </div>
+        <div class="progress-message" id="progress-message"></div>
 
         <div class="progress-steps">
             <div class="progress-step active" id="step1-indicator">1</div>
@@ -1101,6 +1379,54 @@ const SETUP_PAGE_HTML: &str = r#"<!DOCTYPE html>
     <script>
         let connectionVerified = false;
 
+        // Create floating particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const particleCount = 20;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+
+                // Random size between 5 and 20 pixels
+                const size = Math.random() * 15 + 5;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+
+                // Random horizontal position
+                particle.style.left = Math.random() * 100 + '%';
+
+                // Random animation duration between 15 and 30 seconds
+                const duration = Math.random() * 15 + 15;
+                particle.style.animationDuration = duration + 's';
+
+                // Random delay so they don't all start at once
+                particle.style.animationDelay = Math.random() * duration + 's';
+
+                container.appendChild(particle);
+            }
+        }
+
+        // Initialize particles on page load
+        createParticles();
+
+        // Progress bar functions
+        function showProgress(percent, message) {
+            const progressContainer = document.getElementById('main-progress');
+            const progressBar = document.getElementById('main-progress-bar');
+            const progressMessage = document.getElementById('progress-message');
+
+            progressContainer.classList.add('show');
+            progressMessage.classList.add('show');
+            progressBar.style.width = percent + '%';
+            progressMessage.textContent = message;
+        }
+
+        function hideProgress() {
+            document.getElementById('main-progress').classList.remove('show');
+            document.getElementById('progress-message').classList.remove('show');
+        }
+
         function showAlert(elementId, message, type) {
             const alert = document.getElementById(elementId);
             alert.textContent = message;
@@ -1112,6 +1438,7 @@ const SETUP_PAGE_HTML: &str = r#"<!DOCTYPE html>
         }
 
         function showError(message) {
+            hideProgress();
             document.getElementById('error-message').textContent = message;
             document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
             document.getElementById('step4').classList.add('active');
@@ -1174,6 +1501,9 @@ const SETUP_PAGE_HTML: &str = r#"<!DOCTYPE html>
             btn.disabled = true;
             btn.innerHTML = '<span class="loading"></span>Installing...';
 
+            // Show progress bar
+            showProgress(10, 'Connecting to database...');
+
             const data = {
                 host: document.getElementById('db-host').value,
                 port: parseInt(document.getElementById('db-port').value),
@@ -1187,15 +1517,32 @@ const SETUP_PAGE_HTML: &str = r#"<!DOCTYPE html>
             };
 
             try {
+                // Simulate progress steps
+                showProgress(20, 'Creating database tables...');
+                await new Promise(r => setTimeout(r, 300));
+
+                showProgress(40, 'Running migrations...');
+                await new Promise(r => setTimeout(r, 200));
+
                 const response = await fetch('/api/setup/install', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
 
+                showProgress(70, 'Creating admin account...');
+                await new Promise(r => setTimeout(r, 200));
+
                 const result = await response.json();
 
                 if (result.success) {
+                    showProgress(90, 'Saving configuration...');
+                    await new Promise(r => setTimeout(r, 300));
+
+                    showProgress(100, 'Installation complete!');
+                    await new Promise(r => setTimeout(r, 500));
+
+                    hideProgress();
                     goToStep(3);
                     // Reload after a short delay
                     setTimeout(() => window.location.reload(), 3000);
