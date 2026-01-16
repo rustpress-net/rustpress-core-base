@@ -1,0 +1,458 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hide Scrollbar Utility */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Sidebar scrollbar hidden */
+aside,
+nav,
+.sidebar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+aside::-webkit-scrollbar,
+nav::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom Animation Keyframes */
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.5); }
+}
+
+@keyframes slide-up {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes scale-in {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes blob {
+  0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+  50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes slide-in-left {
+  0% { transform: translateX(-100%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+/* Animation Utility Classes */
+.animate-gradient-x {
+  animation: gradient-x 3s ease infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out forwards;
+}
+
+.animate-blob {
+  animation: blob 7s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Stagger Animation Delays */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+
+/* Glassmorphism Utilities */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-dark {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+/* Gradient Borders - Indigo Theme */
+.gradient-border {
+  position: relative;
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(135deg, #6366f1, #4f46e5, #4338ca) border-box;
+  border: 2px solid transparent;
+}
+
+.dark .gradient-border {
+  background: linear-gradient(#1e293b, #1e293b) padding-box,
+              linear-gradient(135deg, #6366f1, #4f46e5, #4338ca) border-box;
+}
+
+/* Hover Lift Effect */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
+}
+
+/* Card Hover Effects */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.25);
+}
+
+/* Custom Scrollbar for Content Areas */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+}
+
+/* Sophisticated Scrollbar Utilities */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.scrollbar-thumb-neutral-300::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #d1d5db 0%, #e5e7eb 100%);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.scrollbar-thumb-neutral-300::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #9ca3af 0%, #d1d5db 100%);
+  background-clip: content-box;
+}
+
+.dark .scrollbar-thumb-neutral-600::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #525252 0%, #404040 100%);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.dark .scrollbar-thumb-neutral-600::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6b7280 0%, #525252 100%);
+  background-clip: content-box;
+}
+
+/* Premium Scrollbar with Glow Effect */
+.scrollbar-glow::-webkit-scrollbar {
+  width: 10px;
+}
+
+.scrollbar-glow::-webkit-scrollbar-track {
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: 10px;
+}
+
+.scrollbar-glow::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%);
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+}
+
+.scrollbar-glow::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #818cf8 0%, #6366f1 100%);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+}
+
+/* Text Gradient - Indigo Theme */
+.text-gradient {
+  background: linear-gradient(135deg, #6366f1, #818cf8, #a5b4fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Enterprise Dark Theme Base */
+html.dark {
+  background-color: #0f172a;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #ffffff;
+}
+
+html.dark body {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Enterprise Focus Styles */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.5);
+  outline-offset: 2px;
+}
+
+/* Smooth Transitions */
+*, *::before, *::after {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Selection Colors */
+::selection {
+  background: rgba(99, 102, 241, 0.3);
+  color: #f1f5f9;
+}
+
+/* ===============================================
+   IDE Dark Scrollbars - VS Code Style
+   =============================================== */
+
+/* IDE Container Scrollbars */
+.ide-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #4a4a5a #1e1e2e;
+}
+
+.ide-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.ide-scrollbar::-webkit-scrollbar-track {
+  background: #1e1e2e;
+  border-radius: 0;
+}
+
+.ide-scrollbar::-webkit-scrollbar-thumb {
+  background: #4a4a5a;
+  border-radius: 5px;
+  border: 2px solid #1e1e2e;
+}
+
+.ide-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #5a5a6a;
+}
+
+.ide-scrollbar::-webkit-scrollbar-corner {
+  background: #1e1e2e;
+}
+
+/* Slim IDE Scrollbar - for panels */
+.ide-scrollbar-slim {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a4a #1a1a2a;
+}
+
+.ide-scrollbar-slim::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.ide-scrollbar-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ide-scrollbar-slim::-webkit-scrollbar-thumb {
+  background: #3a3a4a;
+  border-radius: 3px;
+}
+
+.ide-scrollbar-slim::-webkit-scrollbar-thumb:hover {
+  background: #4a4a5a;
+}
+
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Auto-hide scrollbar on idle, show on hover */
+.scrollbar-auto-hide {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.scrollbar-auto-hide::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-auto-hide::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-auto-hide::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.scrollbar-auto-hide:hover {
+  scrollbar-color: #4a4a5a transparent;
+}
+
+.scrollbar-auto-hide:hover::-webkit-scrollbar-thumb {
+  background: #4a4a5a;
+}
+
+/* Dark scrollbar for file tree */
+.filetree-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.filetree-scrollbar::-webkit-scrollbar-track {
+  background: #1e1e2e;
+}
+
+.filetree-scrollbar::-webkit-scrollbar-thumb {
+  background: #3a3a4a;
+  border-radius: 4px;
+  border: 1px solid #1e1e2e;
+}
+
+.filetree-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #4a4a5a;
+}
+
+/* Editor scrollbar - VS Code style */
+.editor-scrollbar::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+.editor-scrollbar::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.editor-scrollbar::-webkit-scrollbar-thumb {
+  background: #424242;
+  border: 3px solid #1e1e1e;
+  border-radius: 7px;
+}
+
+.editor-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #4e4e4e;
+}
+
+.editor-scrollbar::-webkit-scrollbar-corner {
+  background: #1e1e1e;
+}
+
+/* Terminal scrollbar */
+.terminal-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.terminal-scrollbar::-webkit-scrollbar-track {
+  background: #0d0d0d;
+}
+
+.terminal-scrollbar::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 5px;
+  border: 2px solid #0d0d0d;
+}
+
+.terminal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
