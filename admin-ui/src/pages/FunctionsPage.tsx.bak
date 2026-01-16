@@ -1,0 +1,1031 @@
+'use client';
+
+import React, { useState, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import {
+  Code,
+  FolderTree,
+  GitBranch,
+  Play,
+  Bug,
+  Bot,
+  Puzzle,
+  Layout,
+  Settings,
+  Terminal,
+  AlertCircle,
+  FileOutput,
+  Search,
+  Bell,
+  Users,
+  BookOpen,
+  Activity,
+  Package,
+  Keyboard,
+  Palette,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  X,
+  Plus,
+  Maximize2,
+  Minimize2,
+  PanelLeftClose,
+  PanelLeft,
+  PanelBottomClose,
+  PanelBottom,
+  MoreHorizontal,
+  Save,
+  RefreshCw,
+  Zap,
+  Clock,
+  Shield,
+  Database,
+  Globe,
+  Layers,
+  Upload,
+  Download,
+  History,
+  Sparkles,
+  Command,
+} from 'lucide-react';
+
+// Import all function components
+import {
+  // Editor Components
+  MonacoEditor,
+  MultiTabEditor,
+  FileExplorer,
+  Minimap,
+  BreadcrumbNav,
+  CommandPalette,
+  SearchReplacePanel,
+  ProblemsPanel,
+  OutputPanel,
+  TerminalPanel,
+  sampleFileTree,
+  sampleEditorFile,
+  sampleDiagnostics,
+  sampleOutputs,
+  sampleTerminals,
+  type EditorFile,
+  type EditorTab,
+
+  // GitHub Components
+  GitHubConnector,
+  BranchSelector,
+  CommitHistory,
+  PullRequestPanel,
+  GitHubActionsDisplay,
+  DiffViewer,
+  sampleBranches,
+  sampleCommits,
+
+  // Sandbox Components
+  ErrorNotificationBanner,
+  AdminNotificationCenter,
+  SandboxContainerManager,
+  EnvironmentEditor,
+  SandboxConsole,
+  TestRunnerPanel,
+  ResourceMonitor,
+  sampleSandboxContainers,
+  sampleConsoleLogs,
+  sampleTestResults,
+  type SandboxError,
+
+  // Management Components
+  FunctionList,
+  FunctionDetails,
+  TriggerConfig,
+  DependenciesManager,
+  VersioningPanel,
+  MetricsDashboard,
+  LogsViewer,
+  CronEditor,
+  SecretsManager,
+  RateLimitingConfig,
+  sampleFunctions,
+  sampleLogs,
+  type FunctionItem,
+
+  // Advanced Components
+  AICodeAssistant,
+  SnippetsLibrary,
+  CollaborativeEditor,
+  TemplatesGallery,
+  APIDocGenerator,
+  PerformanceProfiler,
+  BreakpointsPanel,
+  ImportExportManager,
+  KeyboardShortcutsManager,
+  ThemeLayoutCustomizer,
+  GitProviderSync,
+  sampleBreakpoints,
+  type CodeSnippet,
+  type FunctionTemplate,
+  type Breakpoint,
+} from '@/components/functions';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+type SidebarView =
+  | 'explorer'
+  | 'search'
+  | 'git'
+  | 'debug'
+  | 'functions'
+  | 'templates'
+  | 'snippets';
+
+type PanelView =
+  | 'problems'
+  | 'output'
+  | 'terminal'
+  | 'console'
+  | 'tests';
+
+type RightPanelView =
+  | 'ai'
+  | 'collab'
+  | 'notifications'
+  | 'docs'
+  | 'profiler';
+
+type ModalView =
+  | 'settings'
+  | 'shortcuts'
+  | 'themes'
+  | 'import-export'
+  | 'git-sync'
+  | 'command-palette'
+  | null;
+
+// ============================================================================
+// MAIN FUNCTIONS PAGE COMPONENT
+// ============================================================================
+
+export const FunctionsPage: React.FC = () => {
+  // Layout State
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
+  const [leftSidebarWidth, setLeftSidebarWidth] = useState(280);
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const [rightPanelWidth, setRightPanelWidth] = useState(350);
+  const [bottomPanelOpen, setBottomPanelOpen] = useState(true);
+  const [bottomPanelHeight, setBottomPanelHeight] = useState(250);
+
+  // View State
+  const [sidebarView, setSidebarView] = useState<SidebarView>('explorer');
+  const [panelView, setPanelView] = useState<PanelView>('terminal');
+  const [rightPanelView, setRightPanelView] = useState<RightPanelView>('ai');
+  const [modalView, setModalView] = useState<ModalView>(null);
+
+  // Editor State
+  const [openTabs, setOpenTabs] = useState<EditorTab[]>([
+    { id: 'tab-1', file: sampleEditorFile, isActive: true, isDirty: false },
+  ]);
+  const [activeTabId, setActiveTabId] = useState('tab-1');
+  const [currentFile, setCurrentFile] = useState<EditorFile>(sampleEditorFile);
+
+  // Function State
+  const [selectedFunction, setSelectedFunction] = useState<FunctionItem | null>(sampleFunctions[0]);
+  const [functions, setFunctions] = useState<FunctionItem[]>(sampleFunctions);
+
+  // Error State
+  const [errors, setErrors] = useState<SandboxError[]>([]);
+  const [showErrorBanner, setShowErrorBanner] = useState(false);
+
+  // Sync State
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Command Palette: Ctrl+Shift+P
+      if (e.ctrlKey && e.shiftKey && e.key === 'P') {
+        e.preventDefault();
+        setModalView('command-palette');
+      }
+      // Save: Ctrl+S
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+      // Toggle Terminal: Ctrl+`
+      if (e.ctrlKey && e.key === '`') {
+        e.preventDefault();
+        setBottomPanelOpen(!bottomPanelOpen);
+      }
+      // Toggle Sidebar: Ctrl+B
+      if (e.ctrlKey && e.key === 'b') {
+        e.preventDefault();
+        setLeftSidebarOpen(!leftSidebarOpen);
+      }
+      // Close Modal: Escape
+      if (e.key === 'Escape' && modalView) {
+        setModalView(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [bottomPanelOpen, leftSidebarOpen, modalView]);
+
+  // Handlers
+  const handleSave = useCallback(() => {
+    setIsSaving(true);
+    setTimeout(() => {
+      setIsSaving(false);
+      setLastSaved(new Date());
+      // Mark active tab as not dirty
+      setOpenTabs(tabs =>
+        tabs.map(tab =>
+          tab.id === activeTabId ? { ...tab, isDirty: false } : tab
+        )
+      );
+    }, 500);
+  }, [activeTabId]);
+
+  const handleFileSelect = useCallback((file: EditorFile) => {
+    setCurrentFile(file);
+    // Check if file is already open
+    const existingTab = openTabs.find(tab => tab.file.id === file.id);
+    if (existingTab) {
+      setActiveTabId(existingTab.id);
+      setOpenTabs(tabs => tabs.map(tab => ({ ...tab, isActive: tab.id === existingTab.id })));
+    } else {
+      // Open new tab
+      const newTab: EditorTab = {
+        id: `tab-${Date.now()}`,
+        file,
+        isActive: true,
+        isDirty: false,
+      };
+      setOpenTabs(tabs => [...tabs.map(t => ({ ...t, isActive: false })), newTab]);
+      setActiveTabId(newTab.id);
+    }
+  }, [openTabs]);
+
+  const handleTabClose = useCallback((tabId: string) => {
+    setOpenTabs(tabs => {
+      const newTabs = tabs.filter(t => t.id !== tabId);
+      if (newTabs.length > 0 && tabId === activeTabId) {
+        const lastTab = newTabs[newTabs.length - 1];
+        lastTab.isActive = true;
+        setActiveTabId(lastTab.id);
+        setCurrentFile(lastTab.file);
+      }
+      return newTabs;
+    });
+  }, [activeTabId]);
+
+  const handleCodeChange = useCallback((code: string) => {
+    setCurrentFile(prev => ({ ...prev, content: code }));
+    setOpenTabs(tabs =>
+      tabs.map(tab =>
+        tab.id === activeTabId ? { ...tab, isDirty: true, file: { ...tab.file, content: code } } : tab
+      )
+    );
+  }, [activeTabId]);
+
+  const handleFunctionSelect = useCallback((fn: FunctionItem) => {
+    setSelectedFunction(fn);
+    // Create a mock file for the function
+    const file: EditorFile = {
+      id: fn.id,
+      name: `${fn.name}.ts`,
+      path: `/functions/${fn.name}.ts`,
+      language: fn.language,
+      content: `// Function: ${fn.name}\n// Runtime: ${fn.runtime}\n// Status: ${fn.status}\n\nexport async function ${fn.name}(event: any, context: any) {\n  // Your function code here\n  console.log('Function executed:', event);\n  \n  return {\n    statusCode: 200,\n    body: JSON.stringify({ message: 'Success' })\n  };\n}`,
+    };
+    handleFileSelect(file);
+  }, [handleFileSelect]);
+
+  const handleInsertSnippet = useCallback((snippet: CodeSnippet) => {
+    const newContent = currentFile.content + '\n\n' + snippet.code;
+    handleCodeChange(newContent);
+  }, [currentFile, handleCodeChange]);
+
+  const handleUseTemplate = useCallback((template: FunctionTemplate) => {
+    const file: EditorFile = {
+      id: `template-${template.id}`,
+      name: `${template.name.toLowerCase().replace(/\s+/g, '-')}.ts`,
+      path: `/functions/${template.name.toLowerCase().replace(/\s+/g, '-')}.ts`,
+      language: template.language,
+      content: template.code,
+    };
+    handleFileSelect(file);
+  }, [handleFileSelect]);
+
+  const handleRunFunction = useCallback(() => {
+    if (!selectedFunction) return;
+    // Simulate running function
+    console.log('Running function:', selectedFunction.name);
+  }, [selectedFunction]);
+
+  const handleError = useCallback((error: SandboxError) => {
+    setErrors(prev => [...prev, error]);
+    setShowErrorBanner(true);
+  }, []);
+
+  const dismissError = useCallback((errorId: string) => {
+    setErrors(prev => prev.filter(e => e.id !== errorId));
+    if (errors.length <= 1) {
+      setShowErrorBanner(false);
+    }
+  }, [errors.length]);
+
+  // Sidebar items
+  const sidebarItems: { id: SidebarView; icon: React.ReactNode; label: string }[] = [
+    { id: 'explorer', icon: <FolderTree className="w-5 h-5" />, label: 'Explorer' },
+    { id: 'search', icon: <Search className="w-5 h-5" />, label: 'Search' },
+    { id: 'git', icon: <GitBranch className="w-5 h-5" />, label: 'Source Control' },
+    { id: 'debug', icon: <Bug className="w-5 h-5" />, label: 'Debug' },
+    { id: 'functions', icon: <Zap className="w-5 h-5" />, label: 'Functions' },
+    { id: 'templates', icon: <Layout className="w-5 h-5" />, label: 'Templates' },
+    { id: 'snippets', icon: <Puzzle className="w-5 h-5" />, label: 'Snippets' },
+  ];
+
+  const panelTabs: { id: PanelView; label: string; icon: React.ReactNode; count?: number }[] = [
+    { id: 'problems', label: 'Problems', icon: <AlertCircle className="w-4 h-4" />, count: sampleDiagnostics.length },
+    { id: 'output', label: 'Output', icon: <FileOutput className="w-4 h-4" /> },
+    { id: 'terminal', label: 'Terminal', icon: <Terminal className="w-4 h-4" /> },
+    { id: 'console', label: 'Console', icon: <Code className="w-4 h-4" /> },
+    { id: 'tests', label: 'Tests', icon: <Play className="w-4 h-4" />, count: sampleTestResults.length },
+  ];
+
+  const rightPanelTabs: { id: RightPanelView; icon: React.ReactNode; label: string }[] = [
+    { id: 'ai', icon: <Bot className="w-5 h-5" />, label: 'AI Assistant' },
+    { id: 'collab', icon: <Users className="w-5 h-5" />, label: 'Collaboration' },
+    { id: 'notifications', icon: <Bell className="w-5 h-5" />, label: 'Notifications' },
+    { id: 'docs', icon: <BookOpen className="w-5 h-5" />, label: 'API Docs' },
+    { id: 'profiler', icon: <Activity className="w-5 h-5" />, label: 'Profiler' },
+  ];
+
+  return (
+    <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: '#1e1e1e' }}>
+      {/* Error Banner */}
+      <AnimatePresence>
+        {showErrorBanner && errors.length > 0 && (
+          <ErrorNotificationBanner
+            errors={errors}
+            onDismiss={dismissError}
+            onDismissAll={() => {
+              setErrors([]);
+              setShowErrorBanner(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Top Bar */}
+      <div
+        className="flex items-center justify-between px-4 py-2 border-b select-none"
+        style={{ backgroundColor: '#323233', borderColor: '#3c3c3c' }}
+      >
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-yellow-400" />
+            <span className="font-semibold text-white">Functions</span>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleRunFunction}
+              disabled={!selectedFunction}
+              className="px-3 py-1 text-xs rounded bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white transition-colors flex items-center gap-1"
+            >
+              <Play className="w-3.5 h-3.5" />
+              Run
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-3 py-1 text-xs rounded bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white transition-colors flex items-center gap-1"
+            >
+              {isSaving ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Save className="w-3.5 h-3.5" />
+              )}
+              Save
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Status */}
+          {lastSaved && (
+            <span className="text-xs text-gray-500">
+              Saved {lastSaved.toLocaleTimeString()}
+            </span>
+          )}
+
+          {/* Right Panel Toggles */}
+          <div className="flex items-center gap-1 border-l border-gray-600 pl-2 ml-2">
+            {rightPanelTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (rightPanelView === tab.id && rightPanelOpen) {
+                    setRightPanelOpen(false);
+                  } else {
+                    setRightPanelView(tab.id);
+                    setRightPanelOpen(true);
+                  }
+                }}
+                className={cn(
+                  'p-1.5 rounded transition-colors',
+                  rightPanelOpen && rightPanelView === tab.id
+                    ? 'bg-blue-600/20 text-blue-400'
+                    : 'text-gray-400 hover:text-white hover:bg-white/10'
+                )}
+                title={tab.label}
+              >
+                {tab.icon}
+              </button>
+            ))}
+          </div>
+
+          {/* Settings */}
+          <div className="flex items-center gap-1 border-l border-gray-600 pl-2 ml-2">
+            <button
+              onClick={() => setModalView('command-palette')}
+              className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+              title="Command Palette (Ctrl+Shift+P)"
+            >
+              <Command className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setModalView('git-sync')}
+              className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+              title="Git Sync"
+            >
+              <GitBranch className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setModalView('settings')}
+              className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+              title="Settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Activity Bar (Icon Sidebar) */}
+        <div
+          className="w-12 flex flex-col items-center py-2 border-r"
+          style={{ backgroundColor: '#333333', borderColor: '#3c3c3c' }}
+        >
+          {sidebarItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                if (sidebarView === item.id && leftSidebarOpen) {
+                  setLeftSidebarOpen(false);
+                } else {
+                  setSidebarView(item.id);
+                  setLeftSidebarOpen(true);
+                }
+              }}
+              className={cn(
+                'w-10 h-10 flex items-center justify-center rounded mb-1 transition-colors relative',
+                leftSidebarOpen && sidebarView === item.id
+                  ? 'text-white bg-white/10'
+                  : 'text-gray-500 hover:text-white'
+              )}
+              title={item.label}
+            >
+              {item.icon}
+              {leftSidebarOpen && sidebarView === item.id && (
+                <div
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-white rounded-r"
+                />
+              )}
+            </button>
+          ))}
+
+          <div className="flex-1" />
+
+          {/* Bottom Actions */}
+          <button
+            onClick={() => setModalView('shortcuts')}
+            className="w-10 h-10 flex items-center justify-center rounded text-gray-500 hover:text-white transition-colors"
+            title="Keyboard Shortcuts"
+          >
+            <Keyboard className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setModalView('themes')}
+            className="w-10 h-10 flex items-center justify-center rounded text-gray-500 hover:text-white transition-colors"
+            title="Themes"
+          >
+            <Palette className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Left Sidebar */}
+        <AnimatePresence initial={false}>
+          {leftSidebarOpen && (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: leftSidebarWidth, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="border-r overflow-hidden flex flex-col"
+              style={{ backgroundColor: '#252526', borderColor: '#3c3c3c' }}
+            >
+              {/* Sidebar Header */}
+              <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: '#3c3c3c' }}>
+                <span className="text-xs font-medium text-gray-400 uppercase">
+                  {sidebarItems.find(i => i.id === sidebarView)?.label}
+                </span>
+                <button
+                  onClick={() => setLeftSidebarOpen(false)}
+                  className="p-1 rounded text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Sidebar Content */}
+              <div className="flex-1 overflow-hidden">
+                {sidebarView === 'explorer' && (
+                  <FileExplorer
+                    tree={sampleFileTree}
+                    onFileSelect={(node) => {
+                      if (node.type === 'file') {
+                        const file: EditorFile = {
+                          id: node.id,
+                          name: node.name,
+                          path: node.path,
+                          language: node.language || 'typescript',
+                          content: `// ${node.name}\n// Path: ${node.path}\n\nexport default function() {\n  // Your code here\n}`,
+                        };
+                        handleFileSelect(file);
+                      }
+                    }}
+                  />
+                )}
+
+                {sidebarView === 'search' && (
+                  <SearchReplacePanel
+                    onSearch={(query) => console.log('Search:', query)}
+                    onReplace={(query, replacement) => console.log('Replace:', query, replacement)}
+                  />
+                )}
+
+                {sidebarView === 'git' && (
+                  <div className="h-full flex flex-col">
+                    <div className="p-3 border-b" style={{ borderColor: '#3c3c3c' }}>
+                      <BranchSelector
+                        branches={sampleBranches}
+                        currentBranch="main"
+                        onBranchChange={(branch) => console.log('Branch:', branch)}
+                      />
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
+                      <CommitHistory
+                        commits={sampleCommits}
+                        onCommitSelect={(commit) => console.log('Commit:', commit)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {sidebarView === 'debug' && (
+                  <BreakpointsPanel
+                    onBreakpointChange={(bps) => console.log('Breakpoints:', bps)}
+                    onGoToBreakpoint={(bp) => console.log('Go to:', bp)}
+                  />
+                )}
+
+                {sidebarView === 'functions' && (
+                  <div className="h-full flex flex-col">
+                    <FunctionList
+                      functions={functions}
+                      selectedFunction={selectedFunction}
+                      onSelectFunction={handleFunctionSelect}
+                      onCreateFunction={() => console.log('Create function')}
+                    />
+                  </div>
+                )}
+
+                {sidebarView === 'templates' && (
+                  <TemplatesGallery onUseTemplate={handleUseTemplate} />
+                )}
+
+                {sidebarView === 'snippets' && (
+                  <SnippetsLibrary onInsertSnippet={handleInsertSnippet} />
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Editor Area */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {/* Tabs */}
+          <div
+            className="flex items-center border-b overflow-x-auto"
+            style={{ backgroundColor: '#252526', borderColor: '#3c3c3c' }}
+          >
+            {openTabs.map((tab) => (
+              <div
+                key={tab.id}
+                onClick={() => {
+                  setActiveTabId(tab.id);
+                  setCurrentFile(tab.file);
+                  setOpenTabs(tabs => tabs.map(t => ({ ...t, isActive: t.id === tab.id })));
+                }}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-2 border-r cursor-pointer group min-w-0',
+                  tab.isActive
+                    ? 'bg-[#1e1e1e] text-white'
+                    : 'text-gray-400 hover:text-white'
+                )}
+                style={{ borderColor: '#3c3c3c' }}
+              >
+                <Code className="w-4 h-4 flex-shrink-0 text-blue-400" />
+                <span className="text-sm truncate">{tab.file.name}</span>
+                {tab.isDirty && (
+                  <div className="w-2 h-2 rounded-full bg-white flex-shrink-0" />
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTabClose(tab.id);
+                  }}
+                  className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-white/20 transition-all flex-shrink-0"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+            <button
+              onClick={() => {
+                const newFile: EditorFile = {
+                  id: `new-${Date.now()}`,
+                  name: 'untitled.ts',
+                  path: '/untitled.ts',
+                  language: 'typescript',
+                  content: '// New file\n',
+                };
+                handleFileSelect(newFile);
+              }}
+              className="p-2 text-gray-500 hover:text-white transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Breadcrumb */}
+          <BreadcrumbNav
+            path={currentFile.path}
+            onNavigate={(path) => console.log('Navigate:', path)}
+          />
+
+          {/* Editor + Minimap */}
+          <div className="flex-1 flex min-h-0 overflow-hidden">
+            <div className="flex-1 overflow-hidden">
+              <MonacoEditor
+                file={currentFile}
+                onChange={handleCodeChange}
+                onSave={handleSave}
+              />
+            </div>
+            <Minimap
+              code={currentFile.content}
+              visibleRange={{ start: 1, end: 30 }}
+              onScroll={(line) => console.log('Scroll to:', line)}
+            />
+          </div>
+
+          {/* Bottom Panel */}
+          <AnimatePresence initial={false}>
+            {bottomPanelOpen && (
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: bottomPanelHeight }}
+                exit={{ height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="border-t flex flex-col overflow-hidden"
+                style={{ backgroundColor: '#1e1e1e', borderColor: '#3c3c3c' }}
+              >
+                {/* Panel Tabs */}
+                <div
+                  className="flex items-center justify-between px-2 border-b"
+                  style={{ borderColor: '#3c3c3c' }}
+                >
+                  <div className="flex items-center">
+                    {panelTabs.map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setPanelView(tab.id)}
+                        className={cn(
+                          'flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors border-b-2',
+                          panelView === tab.id
+                            ? 'text-white border-blue-400'
+                            : 'text-gray-400 hover:text-white border-transparent'
+                        )}
+                      >
+                        {tab.icon}
+                        {tab.label}
+                        {tab.count !== undefined && tab.count > 0 && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-blue-600 text-white">
+                            {tab.count}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setBottomPanelHeight(h => Math.min(h + 100, 500))}
+                      className="p-1 rounded text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setBottomPanelHeight(h => Math.max(h - 100, 150))}
+                      className="p-1 rounded text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
+                    >
+                      <Minimize2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setBottomPanelOpen(false)}
+                      className="p-1 rounded text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Panel Content */}
+                <div className="flex-1 overflow-hidden">
+                  {panelView === 'problems' && (
+                    <ProblemsPanel
+                      diagnostics={sampleDiagnostics}
+                      onDiagnosticClick={(d) => console.log('Diagnostic:', d)}
+                    />
+                  )}
+                  {panelView === 'output' && (
+                    <OutputPanel
+                      outputs={sampleOutputs}
+                      onClear={() => console.log('Clear output')}
+                    />
+                  )}
+                  {panelView === 'terminal' && (
+                    <TerminalPanel
+                      terminals={sampleTerminals}
+                      onCommand={(cmd) => console.log('Command:', cmd)}
+                    />
+                  )}
+                  {panelView === 'console' && (
+                    <SandboxConsole
+                      logs={sampleConsoleLogs}
+                      onClear={() => console.log('Clear console')}
+                    />
+                  )}
+                  {panelView === 'tests' && (
+                    <TestRunnerPanel
+                      results={sampleTestResults}
+                      onRunTests={() => console.log('Run tests')}
+                    />
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Right Panel */}
+        <AnimatePresence initial={false}>
+          {rightPanelOpen && (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: rightPanelWidth, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="border-l overflow-hidden flex flex-col"
+              style={{ backgroundColor: '#252526', borderColor: '#3c3c3c' }}
+            >
+              {/* Right Panel Header */}
+              <div
+                className="flex items-center justify-between px-4 py-2 border-b"
+                style={{ borderColor: '#3c3c3c' }}
+              >
+                <span className="text-xs font-medium text-gray-400 uppercase">
+                  {rightPanelTabs.find(t => t.id === rightPanelView)?.label}
+                </span>
+                <button
+                  onClick={() => setRightPanelOpen(false)}
+                  className="p-1 rounded text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Right Panel Content */}
+              <div className="flex-1 overflow-hidden">
+                {rightPanelView === 'ai' && (
+                  <AICodeAssistant
+                    context={{ currentFile: currentFile.path, selectedCode: '' }}
+                    onInsertCode={(code) => handleCodeChange(currentFile.content + '\n' + code)}
+                    onApplySuggestion={(s) => console.log('Apply suggestion:', s)}
+                  />
+                )}
+                {rightPanelView === 'collab' && (
+                  <CollaborativeEditor />
+                )}
+                {rightPanelView === 'notifications' && (
+                  <AdminNotificationCenter />
+                )}
+                {rightPanelView === 'docs' && (
+                  <APIDocGenerator
+                    functionCode={currentFile.content}
+                    onGenerateComplete={(docs) => console.log('Docs:', docs)}
+                  />
+                )}
+                {rightPanelView === 'profiler' && (
+                  <PerformanceProfiler
+                    functionId={selectedFunction?.id}
+                    onProfileComplete={(data) => console.log('Profile:', data)}
+                  />
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Status Bar */}
+      <div
+        className="flex items-center justify-between px-4 py-1 border-t text-xs select-none"
+        style={{ backgroundColor: '#007acc', borderColor: '#007acc' }}
+      >
+        <div className="flex items-center gap-4 text-white/90">
+          <button
+            onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+            className="flex items-center gap-1 hover:text-white transition-colors"
+          >
+            {leftSidebarOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeft className="w-4 h-4" />}
+          </button>
+          <span className="flex items-center gap-1">
+            <GitBranch className="w-3.5 h-3.5" />
+            main
+          </span>
+          <span className="flex items-center gap-1">
+            <RefreshCw className="w-3.5 h-3.5" />
+            Synced
+          </span>
+          {errors.length > 0 && (
+            <span className="flex items-center gap-1 text-yellow-300">
+              <AlertCircle className="w-3.5 h-3.5" />
+              {errors.length} error{errors.length !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-4 text-white/90">
+          <span>Ln {1}, Col {1}</span>
+          <span>Spaces: 2</span>
+          <span>UTF-8</span>
+          <span>{currentFile.language}</span>
+          <button
+            onClick={() => setBottomPanelOpen(!bottomPanelOpen)}
+            className="flex items-center gap-1 hover:text-white transition-colors"
+          >
+            {bottomPanelOpen ? <PanelBottomClose className="w-4 h-4" /> : <PanelBottom className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Modals */}
+      <AnimatePresence>
+        {modalView && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-start justify-center pt-20 z-50"
+            onClick={() => setModalView(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: -20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: -20 }}
+              className="w-full max-w-3xl max-h-[80vh] overflow-hidden rounded-lg shadow-2xl"
+              style={{ backgroundColor: '#252526' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {modalView === 'command-palette' && (
+                <CommandPalette
+                  onClose={() => setModalView(null)}
+                  onExecute={(cmd) => {
+                    console.log('Execute command:', cmd);
+                    setModalView(null);
+                  }}
+                />
+              )}
+
+              {modalView === 'settings' && (
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-medium text-white">Settings</h2>
+                    <button
+                      onClick={() => setModalView(null)}
+                      className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <button
+                      onClick={() => setModalView('themes')}
+                      className="p-4 rounded border border-gray-700 hover:border-gray-600 text-left transition-colors"
+                    >
+                      <Palette className="w-8 h-8 text-purple-400 mb-2" />
+                      <h3 className="text-sm font-medium text-white">Themes</h3>
+                      <p className="text-xs text-gray-500">Customize appearance</p>
+                    </button>
+                    <button
+                      onClick={() => setModalView('shortcuts')}
+                      className="p-4 rounded border border-gray-700 hover:border-gray-600 text-left transition-colors"
+                    >
+                      <Keyboard className="w-8 h-8 text-blue-400 mb-2" />
+                      <h3 className="text-sm font-medium text-white">Shortcuts</h3>
+                      <p className="text-xs text-gray-500">Keyboard bindings</p>
+                    </button>
+                    <button
+                      onClick={() => setModalView('import-export')}
+                      className="p-4 rounded border border-gray-700 hover:border-gray-600 text-left transition-colors"
+                    >
+                      <Package className="w-8 h-8 text-green-400 mb-2" />
+                      <h3 className="text-sm font-medium text-white">Import / Export</h3>
+                      <p className="text-xs text-gray-500">Backup functions</p>
+                    </button>
+                    <button
+                      onClick={() => setModalView('git-sync')}
+                      className="p-4 rounded border border-gray-700 hover:border-gray-600 text-left transition-colors"
+                    >
+                      <GitBranch className="w-8 h-8 text-orange-400 mb-2" />
+                      <h3 className="text-sm font-medium text-white">Git Sync</h3>
+                      <p className="text-xs text-gray-500">GitHub, GitLab, Bitbucket</p>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {modalView === 'shortcuts' && (
+                <div className="h-[70vh]">
+                  <KeyboardShortcutsManager
+                    onShortcutChange={(shortcuts) => console.log('Shortcuts:', shortcuts)}
+                  />
+                </div>
+              )}
+
+              {modalView === 'themes' && (
+                <div className="h-[70vh]">
+                  <ThemeLayoutCustomizer
+                    onThemeChange={(theme) => console.log('Theme:', theme)}
+                    onLayoutChange={(layout) => console.log('Layout:', layout)}
+                  />
+                </div>
+              )}
+
+              {modalView === 'import-export' && (
+                <div className="h-[70vh]">
+                  <ImportExportManager
+                    onImport={(result) => console.log('Import:', result)}
+                    onExport={(fns, config) => console.log('Export:', fns, config)}
+                  />
+                </div>
+              )}
+
+              {modalView === 'git-sync' && (
+                <div className="h-[70vh]">
+                  <GitProviderSync
+                    onSync={(provider, action) => console.log('Sync:', provider, action)}
+                    onConnect={(provider) => console.log('Connect:', provider)}
+                    onDisconnect={(provider) => console.log('Disconnect:', provider)}
+                  />
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export default FunctionsPage;
