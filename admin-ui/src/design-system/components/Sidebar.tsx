@@ -101,7 +101,7 @@ export interface SidebarProps {
 export function Sidebar({
   children,
   className,
-  width = 280,
+  width = 410,
   collapsedWidth = 72,
 }: SidebarProps) {
   const { isCollapsed, isMobileOpen, closeMobile } = useSidebar();
@@ -294,7 +294,8 @@ export function SidebarContent({
       className={cn(
         'flex-1 overflow-y-auto overflow-x-hidden',
         'py-4 px-3',
-        'scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700',
+        // Hide scrollbars while maintaining scroll functionality
+        '[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]',
         className
       )}
     >

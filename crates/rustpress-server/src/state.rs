@@ -14,6 +14,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::services::{EmailConfig, EmailService, RenderService, ThemeService};
+use crate::websocket::WebSocketHub;
 
 /// Application state shared across all requests
 #[derive(Clone)]
@@ -44,6 +45,8 @@ pub struct AppState {
     pub render_service: Arc<RenderService>,
     /// Email service for transactional emails
     pub email_service: Arc<EmailService>,
+    /// WebSocket hub for real-time collaboration
+    pub ws_hub: Arc<WebSocketHub>,
 }
 
 impl AppState {
@@ -105,6 +108,11 @@ impl AppState {
     /// Get the email service
     pub fn email(&self) -> &EmailService {
         &self.email_service
+    }
+
+    /// Get the WebSocket hub
+    pub fn ws_hub(&self) -> &Arc<WebSocketHub> {
+        &self.ws_hub
     }
 }
 
@@ -239,6 +247,7 @@ impl AppStateBuilder {
             theme_service,
             render_service,
             email_service,
+            ws_hub: WebSocketHub::new(),
         })
     }
 }

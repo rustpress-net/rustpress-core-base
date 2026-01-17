@@ -754,7 +754,7 @@ dependencies = [
  "sha1",
  "sync_wrapper 1.0.2",
  "tokio",
- "tokio-tungstenite",
+ "tokio-tungstenite 0.24.0",
  "tower 0.5.2",
  "tower-layer",
  "tower-service",
@@ -5891,7 +5891,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-api"
-version = "0.2.0"
+version = "0.3.4"
 dependencies = [
  "async-trait",
  "axum",
@@ -5918,7 +5918,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-auth"
-version = "0.2.0"
+version = "0.3.4"
 dependencies = [
  "argon2",
  "async-trait",
@@ -5943,7 +5943,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-cache"
-version = "0.2.0"
+version = "0.3.4"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5982,7 +5982,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-cli"
-version = "0.2.0"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -6038,7 +6038,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-core"
-version = "0.2.0"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6061,7 +6061,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-database"
-version = "0.2.0"
+version = "0.3.4"
 dependencies = [
  "async-trait",
  "chrono",
@@ -6083,7 +6083,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-events"
-version = "0.2.0"
+version = "0.3.4"
 dependencies = [
  "async-trait",
  "chrono",
@@ -6122,7 +6122,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-jobs"
-version = "0.2.0"
+version = "0.3.4"
 dependencies = [
  "async-trait",
  "chrono",
@@ -6168,7 +6168,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-performance"
-version = "0.2.0"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6209,7 +6209,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-plugins"
-version = "0.2.0"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6252,7 +6252,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-server"
-version = "0.2.0"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "argon2",
@@ -6262,6 +6262,7 @@ dependencies = [
  "bcrypt",
  "bytes",
  "chrono",
+ "clap",
  "criterion",
  "futures",
  "handlebars",
@@ -6291,6 +6292,7 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
+ "tokio-tungstenite 0.21.0",
  "toml 0.8.23",
  "tower 0.5.2",
  "tower-http",
@@ -6304,7 +6306,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-storage"
-version = "0.2.0"
+version = "0.3.4"
 dependencies = [
  "async-trait",
  "bytes",
@@ -6324,7 +6326,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-themes"
-version = "0.2.0"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6358,7 +6360,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-users"
-version = "0.2.0"
+version = "0.3.4"
 dependencies = [
  "argon2",
  "async-trait",
@@ -7640,6 +7642,18 @@ dependencies = [
 
 [[package]]
 name = "tokio-tungstenite"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c83b561d025642014097b66e6c1bb422783339e0909e4429cde4749d1990bc38"
+dependencies = [
+ "futures-util",
+ "log",
+ "tokio",
+ "tungstenite 0.21.0",
+]
+
+[[package]]
+name = "tokio-tungstenite"
 version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edc5f74e248dc973e0dbb7b74c7e0d6fcc301c694ff50049504004ef4d0cdcd9"
@@ -7647,7 +7661,7 @@ dependencies = [
  "futures-util",
  "log",
  "tokio",
- "tungstenite",
+ "tungstenite 0.24.0",
 ]
 
 [[package]]
@@ -7888,6 +7902,25 @@ name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
+
+[[package]]
+name = "tungstenite"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ef1a641ea34f399a848dea702823bbecfb4c486f911735368f1f137cb8257e1"
+dependencies = [
+ "byteorder",
+ "bytes",
+ "data-encoding",
+ "http 1.4.0",
+ "httparse",
+ "log",
+ "rand 0.8.5",
+ "sha1",
+ "thiserror 1.0.69",
+ "url",
+ "utf-8",
+]
 
 [[package]]
 name = "tungstenite"

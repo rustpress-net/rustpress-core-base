@@ -36,6 +36,8 @@ import {
   AppWindow,
   Store,
   UserCog,
+  Layers,
+  ExternalLink,
 } from 'lucide-react';
 import {
   ThemeProvider,
@@ -63,6 +65,9 @@ import {
   KeyboardShortcutsPanel,
 } from '../design-system';
 import { useNavigationStore } from '../store/navigationStore';
+import { useAppStore } from '../store/appStore';
+import { useChatStore } from '../store/chatStore';
+import { ChatSidebar } from '../components/ide/chat';
 
 // Logo component
 function RustPressLogo() {
@@ -92,14 +97,12 @@ const navigation = [
       { icon: Tag, iconName: 'Tag', label: 'Categories', href: '/categories' },
       { icon: Tag, iconName: 'Tag', label: 'Tags', href: '/tags' },
       { icon: MessageSquare, iconName: 'MessageSquare', label: 'Comments', href: '/comments', badge: '5' },
-      { icon: MenuIcon, iconName: 'Layout', label: 'Menus', href: '/menus' },
     ],
   },
   {
     id: 'appearance',
     title: 'Appearance',
     items: [
-      { icon: Palette, iconName: 'Palette', label: 'Themes', href: '/themes' },
       { icon: LayoutTemplate, iconName: 'LayoutTemplate', label: 'Header', href: '/appearance/header' },
       { icon: Layout, iconName: 'Layout', label: 'Footer', href: '/appearance/footer' },
       { icon: PanelLeft, iconName: 'PanelLeft', label: 'Sidebar', href: '/appearance/sidebar' },
@@ -113,7 +116,6 @@ const navigation = [
       { icon: Code2, iconName: 'Code2', label: 'IDE', href: '/ide' },
       { icon: Code, iconName: 'Code', label: 'Functions', href: '/functions' },
       { icon: Database, iconName: 'Database', label: 'Database', href: '/database' },
-      { icon: Globe, iconName: 'Globe', label: 'API', href: '/api' },
       { icon: AppWindow, iconName: 'AppWindow', label: 'Apps', href: '/apps' },
     ],
   },
@@ -138,7 +140,6 @@ const navigation = [
     title: 'Analytics',
     items: [
       { icon: BarChart3, iconName: 'BarChart3', label: 'Overview', href: '/analytics' },
-      { icon: TrendingUp, iconName: 'TrendingUp', label: 'SEO', href: '/seo' },
     ],
   },
   {
@@ -146,6 +147,7 @@ const navigation = [
     title: 'System',
     items: [
       { icon: Settings, iconName: 'Settings', label: 'Settings', href: '/settings' },
+      { icon: Layers, iconName: 'Layers', label: 'Site Mode', href: '/settings/site-mode' },
       { icon: Zap, iconName: 'Zap', label: 'Cache', href: '/cache' },
     ],
   },
@@ -196,6 +198,12 @@ export function EnterpriseLayout() {
     openShortcutsPanel,
     sidebarSearchQuery,
   } = useNavigationStore();
+  const { siteModeSettings } = useAppStore();
+  const { unreadCounts } = useChatStore();
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  // Calculate total unread count
+  const totalUnreadCount = Array.from(unreadCounts.values()).reduce((sum, count) => sum + count, 0);
 
   // Track recently visited pages
   useEffect(() => {
@@ -340,6 +348,34 @@ export function EnterpriseLayout() {
                 onSettingsClick={() => navigate('/settings')}
                 customContent={
                   <div className="flex items-center gap-2">
+                    {/* View Website/App Button */}
+                    <button
+                      onClick={() => {
+                        if (siteModeSettings.mode === 'app') {
+                          navigate('/app-selector');
+                        } else {
+                          // Open frontend in new tab (website/hybrid mode)
+                          window.open('/', '_blank');
+                        }
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-lg transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      {siteModeSettings.mode === 'app' ? 'View App' : 'View Website'}
+                    </button>
+                    {/* Chat Button */}
+                    <button
+                      onClick={() => setIsChatOpen(true)}
+                      className="relative flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-lg transition-colors"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      Chat
+                      {totalUnreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-primary-500 rounded-full text-[10px] text-white flex items-center justify-center font-medium">
+                          {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                        </span>
+                      )}
+                    </button>
                     <RecentlyVisited />
                     <Favorites />
                   </div>
@@ -366,6 +402,9 @@ export function EnterpriseLayout() {
 
             {/* Keyboard Shortcuts Panel (triggered by ?) */}
             <KeyboardShortcutsPanel />
+
+            {/* Chat Sidebar */}
+            <ChatSidebar isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
           </AdminLayout>
         </SidebarProvider>
       </ToastProvider>

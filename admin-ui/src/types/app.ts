@@ -3,6 +3,24 @@
  * Apps are applications that use RustPress as middleware between React/Rust apps
  */
 
+/**
+ * Site Mode - Determines how RustPress handles frontend vs apps
+ * - website: Shows the frontend website, apps are not accessible
+ * - app: Shows selected app(s), if multiple apps assigned shows app selector
+ * - hybrid: Website is main, but apps accessible via direct URL
+ */
+export type SiteMode = 'website' | 'app' | 'hybrid';
+
+export interface SiteModeSettings {
+  mode: SiteMode;
+  defaultAppId?: string; // For app mode - which app to launch by default
+  allowedAppsInHybrid?: string[]; // For hybrid mode - which apps are URL-accessible
+  appSelectorStyle?: 'grid' | 'list'; // Style for app selector page
+  showAppSelectorLogo?: boolean;
+  appSelectorTitle?: string;
+  appSelectorDescription?: string;
+}
+
 export type AppCategory =
   | 'productivity'
   | 'analytics'

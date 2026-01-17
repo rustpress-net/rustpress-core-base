@@ -3,10 +3,20 @@
  * Includes SVG split view with live preview
  */
 
-import React, { useRef, useCallback, useState, useMemo } from 'react';
-import Editor, { OnMount, BeforeMount, Monaco } from '@monaco-editor/react';
+import React, { useRef, useCallback, useState, useMemo, useEffect } from 'react';
+import Editor, { OnMount, BeforeMount, Monaco, loader } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import { Eye, EyeOff, Columns, Maximize2, Minimize2, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
+import { useCollaborationStore } from '../../store/collaborationStore';
+import { useRemoteCursors } from './collaboration/RemoteCursor';
+import { useRemoteSelections } from './collaboration/RemoteSelection';
+
+// Configure Monaco loader to use jsDelivr CDN with specific version for reliability
+loader.config({
+  paths: {
+    vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs'
+  }
+});
 
 // ============================================
 // TYPES
@@ -246,6 +256,34 @@ export const MonacoWrapper: React.FC<MonacoWrapperProps> = ({
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
 
+  // Collaboration state
+  const {
+    fileCollaborators,
+    remoteCursors,
+    remoteSelections,
+    moveCursor,
+    updateSelection,
+    openFile,
+    closeFile,
+  } = useCollaborationStore();
+
+  // Get collaborators for this file
+  const collaborators = fileCollaborators.get(path) || [];
+  const cursors = remoteCursors.get(path) || [];
+  const selections = remoteSelections.get(path) || [];
+
+  // Use remote cursor and selection hooks
+  useRemoteCursors(editorRef.current, monacoRef.current, path, cursors);
+  useRemoteSelections(editorRef.current, monacoRef.current, path, selections);
+
+  // Track file open/close for collaboration
+  useEffect(() => {
+    openFile(path);
+    return () => {
+      closeFile(path);
+    };
+  }, [path, openFile, closeFile]);
+
   // SVG preview state
   const isSvgFile = path.toLowerCase().endsWith('.svg');
   const [showPreview, setShowPreview] = useState(isSvgFile);
@@ -271,6 +309,29 @@ export const MonacoWrapper: React.FC<MonacoWrapperProps> = ({
     editor.onDidChangeCursorPosition((e) => {
       if (onCursorChange) {
         onCursorChange(e.position.lineNumber, e.position.column);
+      }
+      // Send cursor update to collaboration
+      moveCursor(path, {
+        line: e.position.lineNumber,
+        column: e.position.column,
+      });
+    });
+
+    // Listen for selection changes
+    editor.onDidChangeCursorSelection((e) => {
+      const selection = e.selection;
+      if (selection.startLineNumber !== selection.endLineNumber ||
+          selection.startColumn !== selection.endColumn) {
+        // Has a selection
+        updateSelection(path, {
+          startLine: selection.startLineNumber,
+          startColumn: selection.startColumn,
+          endLine: selection.endLineNumber,
+          endColumn: selection.endColumn,
+        });
+      } else {
+        // No selection (cursor only)
+        updateSelection(path, null);
       }
     });
 
