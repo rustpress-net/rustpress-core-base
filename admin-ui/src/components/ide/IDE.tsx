@@ -128,6 +128,10 @@ import { GitWarningBanner } from './GitWarningBanner';
 import { CollaborationPanel } from './collaboration';
 import { useCollaborationStore } from '../../store/collaborationStore';
 
+// Chat
+import { ConversationList, ConversationView } from './chat';
+import { useChatStore } from '../../store/chatStore';
+
 // Wizards
 import { WizardLauncher } from './wizards';
 import {
@@ -255,6 +259,52 @@ const isPreviewableFile = (path: string): boolean => {
 const isFunctionFile = (path: string): boolean => {
   const ext = path.toLowerCase().substring(path.lastIndexOf('.'));
   return FUNCTION_EXTENSIONS.includes(ext);
+};
+
+// ============================================
+// CHAT PANEL COMPONENT
+// ============================================
+
+const ChatPanel: React.FC = () => {
+  const {
+    activeConversationId,
+    setActiveConversation,
+    loadConversations,
+  } = useChatStore();
+
+  // Load conversations on mount
+  React.useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="p-3 border-b border-gray-700 flex items-center gap-2">
+        {activeConversationId && (
+          <button
+            onClick={() => setActiveConversation(null)}
+            className="p-1 text-gray-400 hover:text-white rounded transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+        )}
+        <MessageSquare className="w-4 h-4 text-blue-400" />
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          {activeConversationId ? 'Conversation' : 'Chat'}
+        </h3>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-hidden">
+        {activeConversationId ? (
+          <ConversationView conversationId={activeConversationId} />
+        ) : (
+          <ConversationList />
+        )}
+      </div>
+    </div>
+  );
 };
 
 // ============================================
@@ -2294,6 +2344,14 @@ export const IDE: React.FC<IDEProps> = ({
               {activityView === 'files' && (
                 <>
                   <div className="p-3 border-b border-gray-700">
+                    {/* New Project Button */}
+                    <button
+                      onClick={() => setShowWizardLauncher(true)}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 mb-3 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-lg transition-all shadow-lg hover:shadow-blue-500/25"
+                    >
+                      <Wand2 className="w-4 h-4" />
+                      New Project
+                    </button>
                     <div className="flex gap-2 mb-2">
                       <input
                         type="text"
@@ -2609,6 +2667,11 @@ export const IDE: React.FC<IDEProps> = ({
               {/* Collaboration View */}
               {activityView === 'collaboration' && (
                 <CollaborationPanel />
+              )}
+
+              {/* Chat View */}
+              {activityView === 'chat' && (
+                <ChatPanel />
               )}
 
               {/* RustPress CMS Views */}

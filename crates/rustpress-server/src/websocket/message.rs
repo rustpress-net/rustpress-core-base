@@ -90,33 +90,81 @@ pub struct ReactionDto {
 pub enum ClientMessage {
     // Connection
     Ping,
-    Authenticate { token: String },
+    Authenticate {
+        token: String,
+    },
 
     // Presence
-    UpdateStatus { status: UserStatus },
+    UpdateStatus {
+        status: UserStatus,
+    },
 
     // File Collaboration
-    OpenFile { file_path: String },
-    CloseFile { file_path: String },
-    MoveCursor { file_path: String, position: CursorPosition },
-    UpdateSelection { file_path: String, selection: Option<Selection> },
-    ApplyChanges { file_path: String, changes: Vec<TextChange> },
+    OpenFile {
+        file_path: String,
+    },
+    CloseFile {
+        file_path: String,
+    },
+    MoveCursor {
+        file_path: String,
+        position: CursorPosition,
+    },
+    UpdateSelection {
+        file_path: String,
+        selection: Option<Selection>,
+    },
+    ApplyChanges {
+        file_path: String,
+        changes: Vec<TextChange>,
+    },
 
     // Chat
-    SendMessage { conversation_id: Uuid, content: String, content_type: Option<String>, reply_to_id: Option<Uuid> },
-    EditMessage { message_id: Uuid, content: String },
-    DeleteMessage { message_id: Uuid },
-    AddReaction { message_id: Uuid, emoji: String },
-    RemoveReaction { message_id: Uuid, emoji: String },
-    PinMessage { message_id: Uuid },
-    UnpinMessage { message_id: Uuid },
-    StartTyping { conversation_id: Uuid },
-    StopTyping { conversation_id: Uuid },
-    MarkRead { conversation_id: Uuid, message_id: Uuid },
+    SendMessage {
+        conversation_id: Uuid,
+        content: String,
+        content_type: Option<String>,
+        reply_to_id: Option<Uuid>,
+    },
+    EditMessage {
+        message_id: Uuid,
+        content: String,
+    },
+    DeleteMessage {
+        message_id: Uuid,
+    },
+    AddReaction {
+        message_id: Uuid,
+        emoji: String,
+    },
+    RemoveReaction {
+        message_id: Uuid,
+        emoji: String,
+    },
+    PinMessage {
+        message_id: Uuid,
+    },
+    UnpinMessage {
+        message_id: Uuid,
+    },
+    StartTyping {
+        conversation_id: Uuid,
+    },
+    StopTyping {
+        conversation_id: Uuid,
+    },
+    MarkRead {
+        conversation_id: Uuid,
+        message_id: Uuid,
+    },
 
     // Subscriptions
-    JoinConversation { conversation_id: Uuid },
-    LeaveConversation { conversation_id: Uuid },
+    JoinConversation {
+        conversation_id: Uuid,
+    },
+    LeaveConversation {
+        conversation_id: Uuid,
+    },
 }
 
 /// Outbound WebSocket messages (to client)
@@ -124,35 +172,107 @@ pub enum ClientMessage {
 #[serde(tag = "type", content = "payload")]
 pub enum ServerMessage {
     // Connection
-    Connected { session_id: Uuid, user_id: Uuid },
+    Connected {
+        session_id: Uuid,
+        user_id: Uuid,
+    },
     Pong,
-    Error { code: String, message: String },
+    Error {
+        code: String,
+        message: String,
+    },
 
     // Presence
-    UserJoined { user: UserPresence },
-    UserLeft { user_id: Uuid },
-    PresenceUpdate { users: Vec<UserPresence> },
-    UserStatusChanged { user_id: Uuid, status: UserStatus },
+    UserJoined {
+        user: UserPresence,
+    },
+    UserLeft {
+        user_id: Uuid,
+    },
+    PresenceUpdate {
+        users: Vec<UserPresence>,
+    },
+    UserStatusChanged {
+        user_id: Uuid,
+        status: UserStatus,
+    },
 
     // File Collaboration
-    FileOpened { user_id: Uuid, username: String, file_path: String, color: String },
-    FileClosed { user_id: Uuid, file_path: String },
-    CursorMoved { user_id: Uuid, username: String, file_path: String, position: CursorPosition, color: String },
-    SelectionChanged { user_id: Uuid, username: String, file_path: String, selection: Option<Selection>, color: String },
-    TextChanged { user_id: Uuid, file_path: String, changes: Vec<TextChange> },
-    FileCollaborators { file_path: String, collaborators: Vec<FileCollaborator> },
+    FileOpened {
+        user_id: Uuid,
+        username: String,
+        file_path: String,
+        color: String,
+    },
+    FileClosed {
+        user_id: Uuid,
+        file_path: String,
+    },
+    CursorMoved {
+        user_id: Uuid,
+        username: String,
+        file_path: String,
+        position: CursorPosition,
+        color: String,
+    },
+    SelectionChanged {
+        user_id: Uuid,
+        username: String,
+        file_path: String,
+        selection: Option<Selection>,
+        color: String,
+    },
+    TextChanged {
+        user_id: Uuid,
+        file_path: String,
+        changes: Vec<TextChange>,
+    },
+    FileCollaborators {
+        file_path: String,
+        collaborators: Vec<FileCollaborator>,
+    },
 
     // Chat
-    ChatMessage { message: ChatMessageDto },
-    ChatMessageEdited { message_id: Uuid, content: String, edited_at: DateTime<Utc> },
-    ChatMessageDeleted { message_id: Uuid },
-    ReactionAdded { message_id: Uuid, user_id: Uuid, emoji: String },
-    ReactionRemoved { message_id: Uuid, user_id: Uuid, emoji: String },
-    MessagePinned { message_id: Uuid },
-    MessageUnpinned { message_id: Uuid },
-    TypingStarted { conversation_id: Uuid, user_id: Uuid, username: String },
-    TypingStopped { conversation_id: Uuid, user_id: Uuid },
-    UnreadCount { conversation_id: Uuid, count: u32 },
+    ChatMessage {
+        message: ChatMessageDto,
+    },
+    ChatMessageEdited {
+        message_id: Uuid,
+        content: String,
+        edited_at: DateTime<Utc>,
+    },
+    ChatMessageDeleted {
+        message_id: Uuid,
+    },
+    ReactionAdded {
+        message_id: Uuid,
+        user_id: Uuid,
+        emoji: String,
+    },
+    ReactionRemoved {
+        message_id: Uuid,
+        user_id: Uuid,
+        emoji: String,
+    },
+    MessagePinned {
+        message_id: Uuid,
+    },
+    MessageUnpinned {
+        message_id: Uuid,
+    },
+    TypingStarted {
+        conversation_id: Uuid,
+        user_id: Uuid,
+        username: String,
+    },
+    TypingStopped {
+        conversation_id: Uuid,
+        user_id: Uuid,
+    },
+    UnreadCount {
+        conversation_id: Uuid,
+        count: u32,
+    },
 }
 
 /// Collaborator information for a file

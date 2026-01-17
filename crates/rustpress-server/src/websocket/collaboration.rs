@@ -44,13 +44,16 @@ impl CollaborationState {
     pub fn open_file(&mut self, session_id: Uuid, user_id: Uuid, file_path: &str, color: &str) {
         // Add to file state
         let file_state = self.files.entry(file_path.to_string()).or_default();
-        file_state.editors.insert(session_id, EditorInfo {
+        file_state.editors.insert(
             session_id,
-            user_id,
-            color: color.to_string(),
-            cursor: None,
-            selection: None,
-        });
+            EditorInfo {
+                session_id,
+                user_id,
+                color: color.to_string(),
+                cursor: None,
+                selection: None,
+            },
+        );
 
         // Track which files the session has open
         self.session_files
@@ -102,7 +105,12 @@ impl CollaborationState {
     }
 
     /// Update selection for a session in a file
-    pub fn update_selection(&mut self, session_id: Uuid, file_path: &str, selection: Option<Selection>) {
+    pub fn update_selection(
+        &mut self,
+        session_id: Uuid,
+        file_path: &str,
+        selection: Option<Selection>,
+    ) {
         if let Some(file_state) = self.files.get_mut(file_path) {
             if let Some(editor) = file_state.editors.get_mut(&session_id) {
                 editor.selection = selection;

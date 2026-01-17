@@ -116,7 +116,7 @@ impl ChatService {
             WHERE id = $2 AND sender_id = $3 AND deleted_at IS NULL
             RETURNING id, conversation_id, sender_id, content, content_type, reply_to_id,
                       is_pinned, is_edited, edited_at, metadata, created_at, deleted_at
-            "#
+            "#,
         )
         .bind(content)
         .bind(message_id)
@@ -126,17 +126,13 @@ impl ChatService {
     }
 
     /// Soft delete a message
-    pub async fn delete_message(
-        &self,
-        message_id: Uuid,
-        user_id: Uuid,
-    ) -> Result<(), sqlx::Error> {
+    pub async fn delete_message(&self, message_id: Uuid, user_id: Uuid) -> Result<(), sqlx::Error> {
         sqlx::query(
             r#"
             UPDATE chat_messages
             SET deleted_at = NOW()
             WHERE id = $1 AND sender_id = $2 AND deleted_at IS NULL
-            "#
+            "#,
         )
         .bind(message_id)
         .bind(user_id)
@@ -158,7 +154,7 @@ impl ChatService {
             INSERT INTO chat_message_reactions (message_id, user_id, emoji)
             VALUES ($1, $2, $3)
             ON CONFLICT (message_id, user_id, emoji) DO NOTHING
-            "#
+            "#,
         )
         .bind(message_id)
         .bind(user_id)
@@ -180,7 +176,7 @@ impl ChatService {
             r#"
             DELETE FROM chat_message_reactions
             WHERE message_id = $1 AND user_id = $2 AND emoji = $3
-            "#
+            "#,
         )
         .bind(message_id)
         .bind(user_id)
@@ -225,14 +221,16 @@ impl ChatService {
             FROM chat_messages m
             JOIN users u ON u.id = m.sender_id
             WHERE m.id = $1 AND m.deleted_at IS NULL
-            "#
+            "#,
         )
         .bind(message_id)
         .fetch_optional(&self.pool)
         .await?;
 
         if let Some(row) = row {
-            let reactions = self.get_message_reactions(message_id, current_user_id).await?;
+            let reactions = self
+                .get_message_reactions(message_id, current_user_id)
+                .await?;
 
             Ok(Some(ChatMessageDto {
                 id: row.id,
@@ -268,7 +266,7 @@ impl ChatService {
             FROM chat_message_reactions
             WHERE message_id = $1
             GROUP BY emoji
-            "#
+            "#,
         )
         .bind(message_id)
         .bind(current_user_id)
@@ -298,7 +296,7 @@ impl ChatService {
                 SELECT 1 FROM chat_conversation_participants
                 WHERE conversation_id = $1 AND user_id = $2
             ) as exists
-            "#
+            "#,
         )
         .bind(conversation_id)
         .bind(user_id)
@@ -309,17 +307,13 @@ impl ChatService {
     }
 
     /// Update last read timestamp
-    pub async fn mark_read(
-        &self,
-        conversation_id: Uuid,
-        user_id: Uuid,
-    ) -> Result<(), sqlx::Error> {
+    pub async fn mark_read(&self, conversation_id: Uuid, user_id: Uuid) -> Result<(), sqlx::Error> {
         sqlx::query(
             r#"
             UPDATE chat_conversation_participants
             SET last_read_at = NOW()
             WHERE conversation_id = $1 AND user_id = $2
-            "#
+            "#,
         )
         .bind(conversation_id)
         .bind(user_id)
@@ -344,7 +338,7 @@ impl ChatService {
               AND p.user_id = $2
               AND m.deleted_at IS NULL
               AND m.created_at > COALESCE(p.last_read_at, '1970-01-01'::timestamptz)
-            "#
+            "#,
         )
         .bind(conversation_id)
         .bind(user_id)

@@ -39,14 +39,17 @@ impl PresenceTracker {
         avatar_url: Option<String>,
         color: String,
     ) {
-        self.users.insert(user_id, PresenceInfo {
-            username,
-            display_name,
-            avatar_url,
-            status: UserStatus::Online,
-            color,
-            current_file: None,
-        });
+        self.users.insert(
+            user_id,
+            PresenceInfo {
+                username,
+                display_name,
+                avatar_url,
+                status: UserStatus::Online,
+                color,
+                current_file: None,
+            },
+        );
     }
 
     /// Mark a user as offline

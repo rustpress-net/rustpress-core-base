@@ -5,9 +5,9 @@ use std::sync::Arc;
 use tokio::sync::{broadcast, mpsc, RwLock};
 use uuid::Uuid;
 
-use super::message::{ServerMessage, UserPresence, UserStatus, CursorPosition, Selection};
-use super::presence::PresenceTracker;
 use super::collaboration::CollaborationState;
+use super::message::{CursorPosition, Selection, ServerMessage, UserPresence, UserStatus};
+use super::presence::PresenceTracker;
 
 /// Message sender for a single connection
 pub type ConnectionSender = mpsc::UnboundedSender<ServerMessage>;
@@ -95,7 +95,13 @@ impl WebSocketHub {
         // Update presence
         {
             let mut presence = self.presence.write().await;
-            presence.user_online(user_id, username.clone(), display_name.clone(), avatar_url, color);
+            presence.user_online(
+                user_id,
+                username.clone(),
+                display_name.clone(),
+                avatar_url,
+                color,
+            );
         }
 
         // Notify others that user joined
@@ -109,7 +115,13 @@ impl WebSocketHub {
             current_file: None,
         };
 
-        self.broadcast_except(session_id, ServerMessage::UserJoined { user: user_presence }).await;
+        self.broadcast_except(
+            session_id,
+            ServerMessage::UserJoined {
+                user: user_presence,
+            },
+        )
+        .await;
     }
 
     /// Unregister a connection
@@ -144,7 +156,10 @@ impl WebSocketHub {
                     presence.user_offline(conn.user_id);
                 }
 
-                self.broadcast(ServerMessage::UserLeft { user_id: conn.user_id }).await;
+                self.broadcast(ServerMessage::UserLeft {
+                    user_id: conn.user_id,
+                })
+                .await;
             }
         }
     }
@@ -189,7 +204,12 @@ impl WebSocketHub {
     }
 
     /// Broadcast message to all users viewing a specific file
-    pub async fn broadcast_to_file(&self, file_path: &str, message: ServerMessage, except_session: Option<Uuid>) {
+    pub async fn broadcast_to_file(
+        &self,
+        file_path: &str,
+        message: ServerMessage,
+        except_session: Option<Uuid>,
+    ) {
         let collab = self.collaboration.read().await;
         let sessions = collab.get_file_sessions(file_path);
 
@@ -204,7 +224,12 @@ impl WebSocketHub {
     }
 
     /// Broadcast message to all users in a conversation
-    pub async fn broadcast_to_conversation(&self, conversation_id: Uuid, message: ServerMessage, except_session: Option<Uuid>) {
+    pub async fn broadcast_to_conversation(
+        &self,
+        conversation_id: Uuid,
+        message: ServerMessage,
+        except_session: Option<Uuid>,
+    ) {
         let connections = self.connections.read().await;
         for (session_id, conn) in connections.iter() {
             if conn.subscribed_conversations.contains(&conversation_id) {
@@ -241,7 +266,12 @@ impl WebSocketHub {
     pub async fn get_connection(&self, session_id: Uuid) -> Option<(Uuid, String, String, String)> {
         let connections = self.connections.read().await;
         connections.get(&session_id).map(|c| {
-            (c.user_id, c.username.clone(), c.display_name.clone(), c.color.clone())
+            (
+                c.user_id,
+                c.username.clone(),
+                c.display_name.clone(),
+                c.color.clone(),
+            )
         })
     }
 
@@ -263,7 +293,8 @@ impl WebSocketHub {
                     color,
                 },
                 Some(session_id),
-            ).await;
+            )
+            .await;
 
             // Send current collaborators to the new user
             let collaborators = {
@@ -277,7 +308,8 @@ impl WebSocketHub {
                     file_path: file_path.to_string(),
                     collaborators,
                 },
-            ).await;
+            )
+            .await;
         }
     }
 
@@ -296,7 +328,8 @@ impl WebSocketHub {
                     file_path: file_path.to_string(),
                 },
                 Some(session_id),
-            ).await;
+            )
+            .await;
         }
     }
 
@@ -318,12 +351,18 @@ impl WebSocketHub {
                     color,
                 },
                 Some(session_id),
-            ).await;
+            )
+            .await;
         }
     }
 
     /// Update selection
-    pub async fn update_selection(&self, session_id: Uuid, file_path: &str, selection: Option<Selection>) {
+    pub async fn update_selection(
+        &self,
+        session_id: Uuid,
+        file_path: &str,
+        selection: Option<Selection>,
+    ) {
         if let Some((user_id, username, _, color)) = self.get_connection(session_id).await {
             {
                 let mut collab = self.collaboration.write().await;
@@ -340,7 +379,8 @@ impl WebSocketHub {
                     color,
                 },
                 Some(session_id),
-            ).await;
+            )
+            .await;
         }
     }
 

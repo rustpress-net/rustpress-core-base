@@ -1,6 +1,5 @@
 //! WebSocket connection handler.
 
-use std::sync::Arc;
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
@@ -10,14 +9,15 @@ use axum::{
 };
 use futures::{SinkExt, StreamExt};
 use serde::Deserialize;
+use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{error, info, warn};
 use uuid::Uuid;
 
-use crate::state::AppState;
 use super::chat::ChatService;
 use super::hub::WebSocketHub;
 use super::message::{ClientMessage, ServerMessage};
+use crate::state::AppState;
 
 /// Query parameters for WebSocket connection
 #[derive(Debug, Deserialize)]
@@ -73,7 +73,10 @@ async fn handle_socket(socket: WebSocket, query: WsQuery, state: AppState) {
         }
     };
 
-    info!("WebSocket connected: user={}, session={}", user_id, session_id);
+    info!(
+        "WebSocket connected: user={}, session={}",
+        user_id, session_id
+    );
 
     // Split the socket
     let (mut sender, mut receiver) = socket.split();
@@ -92,17 +95,23 @@ async fn handle_socket(socket: WebSocket, query: WsQuery, state: AppState) {
         user_info.display_name.clone(),
         user_info.avatar_url.clone(),
         tx,
-    ).await;
+    )
+    .await;
 
     // Send connected message
-    let connected_msg = ServerMessage::Connected { session_id, user_id };
+    let connected_msg = ServerMessage::Connected {
+        session_id,
+        user_id,
+    };
     if let Ok(json) = serde_json::to_string(&connected_msg) {
         let _ = sender.send(Message::Text(json.into())).await;
     }
 
     // Send current online users
     let online_users = hub.get_online_users().await;
-    let presence_msg = ServerMessage::PresenceUpdate { users: online_users };
+    let presence_msg = ServerMessage::PresenceUpdate {
+        users: online_users,
+    };
     if let Ok(json) = serde_json::to_string(&presence_msg) {
         let _ = sender.send(Message::Text(json.into())).await;
     }
@@ -132,26 +141,21 @@ async fn handle_socket(socket: WebSocket, query: WsQuery, state: AppState) {
     let recv_task = tokio::spawn(async move {
         while let Some(result) = receiver.next().await {
             match result {
-                Ok(Message::Text(text)) => {
-                    match serde_json::from_str::<ClientMessage>(&text) {
-                        Ok(msg) => {
-                            handle_client_message(
-                                &hub_clone2,
-                                &chat_service,
-                                session_id,
-                                user_id,
-                                msg,
-                            ).await;
-                        }
-                        Err(e) => {
-                            warn!("Invalid WebSocket message: {}", e);
-                            hub_clone2.send_to_session(
+                Ok(Message::Text(text)) => match serde_json::from_str::<ClientMessage>(&text) {
+                    Ok(msg) => {
+                        handle_client_message(&hub_clone2, &chat_service, session_id, user_id, msg)
+                            .await;
+                    }
+                    Err(e) => {
+                        warn!("Invalid WebSocket message: {}", e);
+                        hub_clone2
+                            .send_to_session(
                                 session_id,
                                 ServerMessage::error("invalid_message", "Failed to parse message"),
-                            ).await;
-                        }
+                            )
+                            .await;
                     }
-                }
+                },
                 Ok(Message::Ping(data)) => {
                     // Pong is handled automatically by axum
                 }
@@ -175,7 +179,10 @@ async fn handle_socket(socket: WebSocket, query: WsQuery, state: AppState) {
 
     // Unregister connection
     hub.unregister(session_id).await;
-    info!("WebSocket disconnected: user={}, session={}", user_id, session_id);
+    info!(
+        "WebSocket disconnected: user={}, session={}",
+        user_id, session_id
+    );
 }
 
 /// Handle a message from the client
@@ -200,7 +207,8 @@ async fn handle_client_message(
             hub.broadcast_except(
                 session_id,
                 ServerMessage::UserStatusChanged { user_id, status },
-            ).await;
+            )
+            .await;
         }
 
         // File collaboration
@@ -212,12 +220,19 @@ async fn handle_client_message(
             hub.close_file(session_id, &file_path).await;
         }
 
-        ClientMessage::MoveCursor { file_path, position } => {
+        ClientMessage::MoveCursor {
+            file_path,
+            position,
+        } => {
             hub.move_cursor(session_id, &file_path, position).await;
         }
 
-        ClientMessage::UpdateSelection { file_path, selection } => {
-            hub.update_selection(session_id, &file_path, selection).await;
+        ClientMessage::UpdateSelection {
+            file_path,
+            selection,
+        } => {
+            hub.update_selection(session_id, &file_path, selection)
+                .await;
         }
 
         ClientMessage::ApplyChanges { file_path, changes } => {
@@ -230,35 +245,50 @@ async fn handle_client_message(
                         changes,
                     },
                     Some(session_id),
-                ).await;
+                )
+                .await;
             }
         }
 
         // Chat messages
-        ClientMessage::SendMessage { conversation_id, content, content_type, reply_to_id } => {
+        ClientMessage::SendMessage {
+            conversation_id,
+            content,
+            content_type,
+            reply_to_id,
+        } => {
             // Verify user is participant
-            if !chat_service.is_participant(conversation_id, user_id).await.unwrap_or(false) {
+            if !chat_service
+                .is_participant(conversation_id, user_id)
+                .await
+                .unwrap_or(false)
+            {
                 hub.send_to_session(
                     session_id,
                     ServerMessage::error("unauthorized", "Not a participant in this conversation"),
-                ).await;
+                )
+                .await;
                 return;
             }
 
-            match chat_service.create_message(
-                conversation_id,
-                user_id,
-                &content,
-                content_type.as_deref(),
-                reply_to_id,
-            ).await {
+            match chat_service
+                .create_message(
+                    conversation_id,
+                    user_id,
+                    &content,
+                    content_type.as_deref(),
+                    reply_to_id,
+                )
+                .await
+            {
                 Ok(msg) => {
                     if let Ok(Some(dto)) = chat_service.get_message_dto(msg.id, user_id).await {
                         hub.broadcast_to_conversation(
                             conversation_id,
                             ServerMessage::ChatMessage { message: dto },
                             None,
-                        ).await;
+                        )
+                        .await;
                     }
                 }
                 Err(e) => {
@@ -266,13 +296,20 @@ async fn handle_client_message(
                     hub.send_to_session(
                         session_id,
                         ServerMessage::error("db_error", "Failed to send message"),
-                    ).await;
+                    )
+                    .await;
                 }
             }
         }
 
-        ClientMessage::EditMessage { message_id, content } => {
-            match chat_service.edit_message(message_id, user_id, &content).await {
+        ClientMessage::EditMessage {
+            message_id,
+            content,
+        } => {
+            match chat_service
+                .edit_message(message_id, user_id, &content)
+                .await
+            {
                 Ok(msg) => {
                     hub.broadcast_to_conversation(
                         msg.conversation_id,
@@ -282,14 +319,16 @@ async fn handle_client_message(
                             edited_at: msg.edited_at.unwrap_or_else(chrono::Utc::now),
                         },
                         None,
-                    ).await;
+                    )
+                    .await;
                 }
                 Err(e) => {
                     error!("Failed to edit message: {}", e);
                     hub.send_to_session(
                         session_id,
                         ServerMessage::error("db_error", "Failed to edit message"),
-                    ).await;
+                    )
+                    .await;
                 }
             }
         }
@@ -300,14 +339,13 @@ async fn handle_client_message(
                 hub.send_to_session(
                     session_id,
                     ServerMessage::error("db_error", "Failed to delete message"),
-                ).await;
+                )
+                .await;
             } else {
                 // We'd need to get conversation_id from message first in a real impl
                 // For now, broadcast to session
-                hub.send_to_session(
-                    session_id,
-                    ServerMessage::ChatMessageDeleted { message_id },
-                ).await;
+                hub.send_to_session(session_id, ServerMessage::ChatMessageDeleted { message_id })
+                    .await;
             }
         }
 
@@ -317,19 +355,32 @@ async fn handle_client_message(
             } else {
                 hub.send_to_session(
                     session_id,
-                    ServerMessage::ReactionAdded { message_id, user_id, emoji },
-                ).await;
+                    ServerMessage::ReactionAdded {
+                        message_id,
+                        user_id,
+                        emoji,
+                    },
+                )
+                .await;
             }
         }
 
         ClientMessage::RemoveReaction { message_id, emoji } => {
-            if let Err(e) = chat_service.remove_reaction(message_id, user_id, &emoji).await {
+            if let Err(e) = chat_service
+                .remove_reaction(message_id, user_id, &emoji)
+                .await
+            {
                 error!("Failed to remove reaction: {}", e);
             } else {
                 hub.send_to_session(
                     session_id,
-                    ServerMessage::ReactionRemoved { message_id, user_id, emoji },
-                ).await;
+                    ServerMessage::ReactionRemoved {
+                        message_id,
+                        user_id,
+                        emoji,
+                    },
+                )
+                .await;
             }
         }
 
@@ -337,10 +388,8 @@ async fn handle_client_message(
             if let Err(e) = chat_service.pin_message(message_id).await {
                 error!("Failed to pin message: {}", e);
             } else {
-                hub.send_to_session(
-                    session_id,
-                    ServerMessage::MessagePinned { message_id },
-                ).await;
+                hub.send_to_session(session_id, ServerMessage::MessagePinned { message_id })
+                    .await;
             }
         }
 
@@ -348,10 +397,8 @@ async fn handle_client_message(
             if let Err(e) = chat_service.unpin_message(message_id).await {
                 error!("Failed to unpin message: {}", e);
             } else {
-                hub.send_to_session(
-                    session_id,
-                    ServerMessage::MessageUnpinned { message_id },
-                ).await;
+                hub.send_to_session(session_id, ServerMessage::MessageUnpinned { message_id })
+                    .await;
             }
         }
 
@@ -359,33 +406,51 @@ async fn handle_client_message(
             if let Some((_, username, _, _)) = hub.get_connection(session_id).await {
                 hub.broadcast_to_conversation(
                     conversation_id,
-                    ServerMessage::TypingStarted { conversation_id, user_id, username },
+                    ServerMessage::TypingStarted {
+                        conversation_id,
+                        user_id,
+                        username,
+                    },
                     Some(session_id),
-                ).await;
+                )
+                .await;
             }
         }
 
         ClientMessage::StopTyping { conversation_id } => {
             hub.broadcast_to_conversation(
                 conversation_id,
-                ServerMessage::TypingStopped { conversation_id, user_id },
+                ServerMessage::TypingStopped {
+                    conversation_id,
+                    user_id,
+                },
                 Some(session_id),
-            ).await;
+            )
+            .await;
         }
 
-        ClientMessage::MarkRead { conversation_id, message_id } => {
+        ClientMessage::MarkRead {
+            conversation_id,
+            message_id,
+        } => {
             let _ = chat_service.mark_read(conversation_id, user_id).await;
         }
 
         ClientMessage::JoinConversation { conversation_id } => {
             // Verify access
-            if chat_service.is_participant(conversation_id, user_id).await.unwrap_or(false) {
-                hub.subscribe_to_conversation(session_id, conversation_id).await;
+            if chat_service
+                .is_participant(conversation_id, user_id)
+                .await
+                .unwrap_or(false)
+            {
+                hub.subscribe_to_conversation(session_id, conversation_id)
+                    .await;
             }
         }
 
         ClientMessage::LeaveConversation { conversation_id } => {
-            hub.unsubscribe_from_conversation(session_id, conversation_id).await;
+            hub.unsubscribe_from_conversation(session_id, conversation_id)
+                .await;
         }
     }
 }
@@ -407,7 +472,7 @@ async fn get_user_info(state: &AppState, user_id: Uuid) -> Option<UserInfo> {
         SELECT username, COALESCE(display_name, username) as display_name,
                avatar_url
         FROM users WHERE id = $1
-        "#
+        "#,
     )
     .bind(user_id)
     .fetch_optional(pool)
