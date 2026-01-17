@@ -23,7 +23,7 @@ import {
   Bug, Bookmark as BookmarkIcon, Bot, Camera, Clock, Columns, Cpu, FileCode,
   FileSearch, Filter, GitCompare, GitMerge, Keyboard, Layers, Link2,
   ListTree, Microscope, Monitor, PanelBottom, Sparkles, Split, Rows,
-  SquareFunction, Timer, Type, Variable as VariableIcon, Workflow, FolderRoot
+  SquareFunction, Timer, Type, Variable as VariableIcon, Workflow, FolderRoot, Wand2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -123,6 +123,52 @@ import { FunctionRunner } from './FunctionRunner';
 import { AppPreview } from './AppPreview';
 import { PluginPreview } from './PluginPreview';
 import { GitWarningBanner } from './GitWarningBanner';
+
+// Collaboration
+import { CollaborationPanel } from './collaboration';
+import { useCollaborationStore } from '../../store/collaborationStore';
+
+// Wizards
+import { WizardLauncher } from './wizards';
+import {
+  generateThemeProject,
+  generatePluginProject,
+  generateFunctionProject,
+  generateAppProject,
+  type ThemeConfig,
+  type PluginConfig,
+  type FunctionConfig,
+  type AppConfig,
+  type GenerationResult,
+} from '../../services/projectGeneratorService';
+
+// RustPress CMS Components
+import {
+  ContentManager,
+  MediaLibrary,
+  TaxonomyManager,
+  MenuBuilder,
+  CommentModeration,
+  ThemeDesigner,
+  APIExplorer,
+  DatabaseInspector,
+  WebhookManager,
+  SEOAnalyzer,
+  PerformanceProfiler,
+  CacheManager,
+  SecurityScanner,
+  BackupManager,
+  LogViewer,
+  UserRoleEditor,
+  FormBuilder,
+  WidgetManager,
+  PluginManager,
+  AnalyticsDashboard,
+  SettingsPanel as RustPressSettings,
+  EmailTemplateEditor,
+  RedirectManager,
+  ScheduledTasks,
+} from './rustpress';
 
 // Services
 import { readFile, writeFile, listDirectory, createFile, deleteFile, renameFile, getLanguageFromPath, checkGitStatus, initGitRepository, type FileNode, type GitStatus } from '../../services/fileSystemService';
@@ -247,6 +293,9 @@ export const IDE: React.FC<IDEProps> = ({
   const [bottomPanel, setBottomPanel] = useState<BottomPanel>(null);
   const [bottomPanelHeight, setBottomPanelHeight] = useState(200);
   const [activityView, setActivityView] = useState<ActivityView>('files');
+
+  // Collaboration state
+  const { onlineUsers, isConnected: isCollaborationConnected } = useCollaborationStore();
 
   // UI state
   const [isSaving, setIsSaving] = useState(false);
@@ -582,6 +631,7 @@ export const IDE: React.FC<IDEProps> = ({
   const [showKeybindingsEditor, setShowKeybindingsEditor] = useState(false);
   const [showMinimapControls, setShowMinimapControls] = useState(false);
   const [showBookmarksManager, setShowBookmarksManager] = useState(false);
+  const [showWizardLauncher, setShowWizardLauncher] = useState(false);
 
   // Additional component state
   const [panelPresets, setPanelPresets] = useState<PanelLayout[]>([]);
@@ -1457,6 +1507,13 @@ export const IDE: React.FC<IDEProps> = ({
 
     // Advanced Search
     { id: 'advanced-search', label: 'Advanced Find and Replace', icon: <Search className="w-4 h-4" />, shortcut: 'Ctrl+Shift+H', action: () => setShowAdvancedSearch(true), category: 'Search' },
+
+    // Project Wizards
+    { id: 'wizard-launcher', label: 'Create New Project...', icon: <Wand2 className="w-4 h-4" />, shortcut: 'Ctrl+Shift+N', action: () => setShowWizardLauncher(true), category: 'Project' },
+    { id: 'create-theme', label: 'Create Theme', icon: <Palette className="w-4 h-4" />, action: () => setShowWizardLauncher(true), category: 'Project' },
+    { id: 'create-plugin', label: 'Create Plugin', icon: <Puzzle className="w-4 h-4" />, action: () => setShowWizardLauncher(true), category: 'Project' },
+    { id: 'create-function', label: 'Create Function', icon: <Zap className="w-4 h-4" />, action: () => setShowWizardLauncher(true), category: 'Project' },
+    { id: 'create-app', label: 'Create App', icon: <AppWindow className="w-4 h-4" />, action: () => setShowWizardLauncher(true), category: 'Project' },
   ], [commands, activeFile, breakpoints, tasks, addNotification]);
 
   // Window sync for detached tabs
@@ -2222,6 +2279,7 @@ export const IDE: React.FC<IDEProps> = ({
             setSidebarCollapsed(false);
           }}
           notifications={unreadNotificationsCount}
+          collaborators={onlineUsers.size}
         />
 
         {/* Left Sidebar - Dynamic content based on activity view */}
@@ -2545,6 +2603,174 @@ export const IDE: React.FC<IDEProps> = ({
                 <EditorSettingsPanel
                   config={editorConfig}
                   onChange={(changes) => setEditorConfig(prev => ({ ...prev, ...changes }))}
+                />
+              )}
+
+              {/* Collaboration View */}
+              {activityView === 'collaboration' && (
+                <CollaborationPanel />
+              )}
+
+              {/* RustPress CMS Views */}
+              {activityView === 'content' && (
+                <ContentManager
+                  onEdit={(item) => toast(`Editing: ${item.title}`)}
+                  onDelete={(item) => toast(`Deleting: ${item.title}`)}
+                  onPublish={(item) => toast(`Publishing: ${item.title}`)}
+                />
+              )}
+
+              {activityView === 'media' && (
+                <MediaLibrary
+                  onSelect={(item) => toast(`Selected: ${item.name}`)}
+                  onUpload={(files) => toast(`Uploading ${files.length} files`)}
+                />
+              )}
+
+              {activityView === 'taxonomy' && (
+                <TaxonomyManager
+                  onSave={(taxonomies) => toast('Taxonomies saved')}
+                  onDelete={(taxonomy) => toast(`Deleted: ${taxonomy.name}`)}
+                />
+              )}
+
+              {activityView === 'menus' && (
+                <MenuBuilder
+                  onSave={(config) => toast('Menu saved')}
+                />
+              )}
+
+              {activityView === 'comments' && (
+                <CommentModeration
+                  onApprove={(comment) => toast(`Approved comment from ${comment.author}`)}
+                  onReject={(comment) => toast(`Rejected comment from ${comment.author}`)}
+                  onSpam={(comment) => toast(`Marked as spam: ${comment.author}`)}
+                />
+              )}
+
+              {activityView === 'themes' && (
+                <ThemeDesigner
+                  onSave={(variables) => toast('Theme saved')}
+                  onPreview={() => toast('Opening preview...')}
+                />
+              )}
+
+              {activityView === 'api' && (
+                <APIExplorer
+                  onTest={(endpoint) => toast(`Testing: ${endpoint.method} ${endpoint.path}`)}
+                />
+              )}
+
+              {activityView === 'database' && (
+                <DatabaseInspector
+                  onQuery={(sql, results) => toast(`Query returned ${results.length} rows`)}
+                />
+              )}
+
+              {activityView === 'webhooks' && (
+                <WebhookManager
+                  onSave={(webhooks) => toast('Webhooks saved')}
+                  onTest={(webhook) => toast(`Testing: ${webhook.name}`)}
+                />
+              )}
+
+              {activityView === 'seo' && (
+                <SEOAnalyzer
+                  onFix={(issue) => toast(`Fixing: ${issue.title}`)}
+                  onAnalyze={() => toast('Analyzing...')}
+                />
+              )}
+
+              {activityView === 'performance' && (
+                <PerformanceProfiler
+                  onOptimize={(recommendations) => toast('Optimizing...')}
+                  onRefresh={() => toast('Refreshing metrics...')}
+                />
+              )}
+
+              {activityView === 'cache' && (
+                <CacheManager
+                  onClear={(keys) => toast(`Cleared ${keys?.length || 'all'} entries`)}
+                  onSave={(settings) => toast('Cache settings saved')}
+                />
+              )}
+
+              {activityView === 'security' && (
+                <SecurityScanner
+                  onFix={(issue) => toast(`Fixing: ${issue.title}`)}
+                  onScan={() => toast('Starting security scan...')}
+                />
+              )}
+
+              {activityView === 'backups' && (
+                <BackupManager
+                  onCreate={(type) => toast(`Creating ${type} backup...`)}
+                  onRestore={(backup) => toast(`Restoring backup from ${backup.date}`)}
+                  onDelete={(backup) => toast(`Deleting backup: ${backup.id}`)}
+                />
+              )}
+
+              {activityView === 'logs' && (
+                <LogViewer
+                  onClear={() => toast('Logs cleared')}
+                  onExport={(format) => toast(`Exporting as ${format}`)}
+                />
+              )}
+
+              {activityView === 'users' && (
+                <UserRoleEditor
+                  onSave={(roles) => toast('Roles saved')}
+                  onUserUpdate={(user) => toast(`Updated: ${user.name}`)}
+                />
+              )}
+
+              {activityView === 'forms' && (
+                <FormBuilder
+                  onSave={(form) => toast(`Form saved: ${form.name}`)}
+                  onPreview={(form) => toast('Opening form preview...')}
+                />
+              )}
+
+              {activityView === 'widgets' && (
+                <WidgetManager
+                  onSave={(areas) => toast('Widgets saved')}
+                />
+              )}
+
+              {activityView === 'plugins' && (
+                <PluginManager
+                  onActivate={(plugin) => toast(`Activated: ${plugin.name}`)}
+                  onDeactivate={(plugin) => toast(`Deactivated: ${plugin.name}`)}
+                  onDelete={(plugin) => toast(`Deleted: ${plugin.name}`)}
+                  onUpdate={(plugin) => toast(`Updating: ${plugin.name}`)}
+                />
+              )}
+
+              {activityView === 'analytics' && (
+                <AnalyticsDashboard
+                  onExport={(format) => toast(`Exporting as ${format}`)}
+                  onRefresh={() => toast('Refreshing analytics...')}
+                />
+              )}
+
+              {activityView === 'email' && (
+                <EmailTemplateEditor
+                  onSave={(template) => toast(`Template saved: ${template.name}`)}
+                  onSend={(template, to) => toast(`Test email sent to ${to}`)}
+                />
+              )}
+
+              {activityView === 'redirects' && (
+                <RedirectManager
+                  onSave={(redirects) => toast(`Saved ${redirects.length} redirects`)}
+                  onTest={(url) => toast(`Testing redirect: ${url}`)}
+                />
+              )}
+
+              {activityView === 'tasks' && (
+                <ScheduledTasks
+                  onRun={(task) => toast(`Running: ${task.name}`)}
+                  onSave={(tasks) => toast('Tasks saved')}
                 />
               )}
             </>
@@ -3215,6 +3441,73 @@ export const IDE: React.FC<IDEProps> = ({
           setShowOnboarding(false);
           localStorage.setItem('ide-onboarding-complete', 'true');
           toast.success('Welcome to RustPress IDE!');
+        }}
+      />
+
+      <WizardLauncher
+        isOpen={showWizardLauncher}
+        onClose={() => setShowWizardLauncher(false)}
+        onProjectCreated={async (type, config) => {
+          const typeName = type.charAt(0).toUpperCase() + type.slice(1);
+          toast(`Creating ${typeName} project...`, { icon: '🔨' });
+
+          let result: GenerationResult;
+
+          try {
+            switch (type) {
+              case 'theme':
+                result = await generateThemeProject(config as ThemeConfig);
+                break;
+              case 'plugin':
+                result = await generatePluginProject(config as PluginConfig);
+                break;
+              case 'function':
+                result = await generateFunctionProject(config as FunctionConfig);
+                break;
+              case 'app':
+                result = await generateAppProject(config as AppConfig);
+                break;
+              default:
+                toast.error(`Unknown project type: ${type}`);
+                return;
+            }
+
+            if (result.success) {
+              toast.success(
+                `${typeName} project created successfully! ${result.filesCreated.length} files generated.`,
+                { duration: 5000 }
+              );
+
+              // Refresh the file tree to show new project
+              const tree = await listDirectory(currentFolder.path);
+              setFileTree(tree);
+
+              // Add notification with details
+              addNotification(
+                'success',
+                `${typeName} Created`,
+                `Project "${(config as { name?: string }).name || type}" created at ${result.projectPath}`
+              );
+
+              // Optionally open the main file
+              const mainFile = result.filesCreated.find(f =>
+                f.endsWith('theme.json') ||
+                f.endsWith('plugin.json') ||
+                f.endsWith('function.json') ||
+                f.endsWith('app.json')
+              );
+              if (mainFile) {
+                openFileFromPath(mainFile);
+              }
+            } else {
+              toast.error(`Failed to create ${typeName} project: ${result.errors.join(', ')}`);
+              addNotification('error', 'Project Creation Failed', result.errors.join(', '));
+            }
+          } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+            toast.error(`Error creating ${typeName} project: ${errorMsg}`);
+            addNotification('error', 'Project Creation Error', errorMsg);
+          }
         }}
       />
 

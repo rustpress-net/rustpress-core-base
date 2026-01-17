@@ -250,7 +250,7 @@ impl Default for SecurityHeadersConfig {
             hsts_max_age: 31536000, // 1 year
             hsts_include_subdomains: true,
             hsts_preload: false,
-            csp: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'".to_string(),
+            csp: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' data: https://cdn.jsdelivr.net; connect-src 'self' ws: wss: https://cdn.jsdelivr.net; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:".to_string(),
             frame_options: "SAMEORIGIN".to_string(),
             referrer_policy: "strict-origin-when-cross-origin".to_string(),
             permissions_policy: "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()".to_string(),

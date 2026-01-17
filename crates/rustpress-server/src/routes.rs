@@ -22,6 +22,8 @@ pub fn create_router(state: AppState) -> Router {
     Router::new()
         // Health and system routes
         .nest("/health", health_routes())
+        // API health check alias (for frontend compatibility)
+        .route("/api/health", get(health_check))
         // API v1 routes
         .nest("/api/v1", api_v1_routes())
         // Cloudflare plugin routes (separate state)
@@ -152,9 +154,64 @@ fn health_routes() -> Router<AppState> {
         .route("/ready", get(readiness_check))
 }
 
+/// File system routes (for IDE)
+fn file_routes() -> Router<AppState> {
+    Router::new()
+        .route("/list", get(list_files_handler))
+        .route("/read", get(read_file_handler))
+        .route("/write", put(write_file_handler))
+        .route("/create", post(create_file_handler))
+        .route("/delete", delete(delete_file_handler))
+        .route("/rename", put(rename_file_handler))
+}
+
+/// Git routes (for IDE)
+fn git_routes() -> Router<AppState> {
+    Router::new()
+        .route("/status", get(git_status_handler))
+        .route("/init", post(git_init_handler))
+}
+
+/// Chat routes
+fn chat_routes() -> Router<AppState> {
+    Router::new()
+        // Personal notes (messages to self)
+        .route("/personal-notes", get(personal_notes_handler))
+        // Online users for group chat creation
+        .route("/online-users", get(online_users_handler))
+        // Create group chat
+        .route("/group", post(create_group_chat_handler))
+        // Conversations
+        .route("/conversations", get(list_conversations_handler).post(create_conversation_handler))
+        .route("/conversations/:id", get(get_conversation_handler).put(update_conversation_handler).delete(archive_conversation_handler))
+        .route("/conversations/:id/messages", get(get_messages_handler).post(send_message_handler))
+        .route("/conversations/:id/participants", get(list_participants_handler).post(add_participant_handler))
+        .route("/conversations/:id/participants/:user_id", delete(remove_participant_handler))
+        .route("/conversations/:id/tags", post(add_conversation_tag_handler))
+        .route("/conversations/:id/tags/:tag", delete(remove_conversation_tag_handler))
+        // Messages
+        .route("/messages/:id", put(edit_message_handler).delete(delete_message_handler))
+        .route("/messages/:id/reactions", post(add_reaction_handler))
+        .route("/messages/:id/reactions/:emoji", delete(remove_reaction_handler))
+        .route("/messages/:id/star", post(star_message_handler).delete(unstar_message_handler))
+        .route("/messages/:id/pin", post(pin_message_handler).delete(unpin_message_handler))
+        .route("/messages/:id/remind", post(set_reminder_handler))
+        // History and starred
+        .route("/history", get(chat_history_handler))
+        .route("/starred", get(starred_messages_handler))
+}
+
 /// API v1 routes
 fn api_v1_routes() -> Router<AppState> {
     Router::new()
+        // WebSocket endpoint for real-time collaboration
+        .route("/ws", get(crate::websocket::websocket_handler))
+        // Chat routes
+        .nest("/chat", chat_routes())
+        // File system routes (for IDE)
+        .nest("/files", file_routes())
+        // Git routes (for IDE)
+        .nest("/git", git_routes())
         // Auth routes
         .nest("/auth", auth_routes())
         // User routes
@@ -413,6 +470,483 @@ async fn readiness_check(State(state): State<AppState>) -> axum::response::Respo
 async fn metrics_handler(State(state): State<AppState>) -> impl axum::response::IntoResponse {
     // Return Prometheus metrics
     "# Metrics endpoint - implement with prometheus-client"
+}
+
+// =============================================================================
+// File System Handlers (for IDE)
+// =============================================================================
+
+#[derive(Deserialize)]
+struct FileListQuery {
+    path: Option<String>,
+}
+
+#[derive(Serialize)]
+struct FileNode {
+    id: String,
+    name: String,
+    path: String,
+    #[serde(rename = "type")]
+    file_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    children: Option<Vec<FileNode>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    modified: Option<String>,
+}
+
+async fn list_files_handler(
+    Query(params): Query<FileListQuery>,
+) -> impl axum::response::IntoResponse {
+    let base_path = params.path.unwrap_or_default();
+
+    // Allowed directories for IDE access
+    let allowed_prefixes = ["themes", "functions", "plugins", "apps", "assets"];
+
+    // If path is empty or just a root path, return the list of allowed directories
+    if base_path.is_empty() || base_path == "/" {
+        let nodes: Vec<FileNode> = allowed_prefixes.iter().map(|name| FileNode {
+            id: name.to_string(),
+            name: name.to_string(),
+            path: name.to_string(),
+            file_type: "folder".to_string(),
+            children: None,
+            size: None,
+            modified: None,
+        }).collect();
+        return Json(nodes).into_response();
+    }
+
+    // Validate path starts with allowed prefix
+    let normalized_path = base_path.trim_start_matches('/');
+    let is_allowed = allowed_prefixes.iter().any(|prefix| {
+        normalized_path == *prefix || normalized_path.starts_with(&format!("{}/", prefix))
+    });
+
+    if !is_allowed {
+        return (
+            axum::http::StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "error": "Access denied to this path" }))
+        ).into_response();
+    }
+
+    // Read directory contents
+    let full_path = std::path::Path::new(".").join(normalized_path);
+
+    match tokio::fs::read_dir(&full_path).await {
+        Ok(mut entries) => {
+            let mut nodes = Vec::new();
+            while let Ok(Some(entry)) = entries.next_entry().await {
+                let file_name = entry.file_name().to_string_lossy().to_string();
+                let file_path = format!("{}/{}", normalized_path, file_name);
+                let metadata = entry.metadata().await.ok();
+
+                let file_type = if metadata.as_ref().map(|m| m.is_dir()).unwrap_or(false) {
+                    "folder"
+                } else {
+                    "file"
+                };
+
+                nodes.push(FileNode {
+                    id: file_path.clone(),
+                    name: file_name,
+                    path: file_path,
+                    file_type: file_type.to_string(),
+                    children: None,
+                    size: metadata.as_ref().map(|m| m.len()),
+                    modified: metadata.as_ref().and_then(|m| m.modified().ok())
+                        .map(|t| chrono::DateTime::<chrono::Utc>::from(t).to_rfc3339()),
+                });
+            }
+
+            // Sort: folders first, then files, both alphabetically
+            nodes.sort_by(|a, b| {
+                match (a.file_type.as_str(), b.file_type.as_str()) {
+                    ("folder", "file") => std::cmp::Ordering::Less,
+                    ("file", "folder") => std::cmp::Ordering::Greater,
+                    _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+                }
+            });
+
+            Json(nodes).into_response()
+        }
+        Err(_) => {
+            Json(Vec::<FileNode>::new()).into_response()
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct FileReadQuery {
+    path: String,
+}
+
+#[derive(Serialize)]
+struct FileContent {
+    path: String,
+    content: String,
+    encoding: String,
+    language: String,
+    size: u64,
+    modified: String,
+}
+
+async fn read_file_handler(
+    Query(params): Query<FileReadQuery>,
+) -> impl axum::response::IntoResponse {
+    let path = params.path.trim_start_matches('/');
+
+    // Validate path
+    let allowed_prefixes = ["themes", "functions", "plugins", "apps", "assets"];
+    let is_allowed = allowed_prefixes.iter().any(|prefix| {
+        path.starts_with(prefix)
+    });
+
+    if !is_allowed {
+        return (
+            axum::http::StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "error": "Access denied to this path" }))
+        ).into_response();
+    }
+
+    let full_path = std::path::Path::new(".").join(path);
+
+    match tokio::fs::read_to_string(&full_path).await {
+        Ok(content) => {
+            let metadata = tokio::fs::metadata(&full_path).await.ok();
+            let language = get_language_from_path(path);
+
+            Json(FileContent {
+                path: path.to_string(),
+                content,
+                encoding: "utf-8".to_string(),
+                language,
+                size: metadata.as_ref().map(|m| m.len()).unwrap_or(0),
+                modified: metadata.as_ref().and_then(|m| m.modified().ok())
+                    .map(|t| chrono::DateTime::<chrono::Utc>::from(t).to_rfc3339())
+                    .unwrap_or_default(),
+            }).into_response()
+        }
+        Err(e) => {
+            (
+                axum::http::StatusCode::NOT_FOUND,
+                Json(serde_json::json!({ "error": format!("Failed to read file: {}", e) }))
+            ).into_response()
+        }
+    }
+}
+
+fn get_language_from_path(path: &str) -> String {
+    let extension = std::path::Path::new(path)
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("");
+
+    match extension.to_lowercase().as_str() {
+        "rs" => "rust",
+        "js" => "javascript",
+        "ts" => "typescript",
+        "jsx" => "javascript",
+        "tsx" => "typescript",
+        "html" | "htm" => "html",
+        "css" => "css",
+        "scss" | "sass" => "scss",
+        "json" => "json",
+        "md" => "markdown",
+        "yaml" | "yml" => "yaml",
+        "toml" => "toml",
+        "xml" => "xml",
+        "svg" => "xml",
+        "sql" => "sql",
+        "sh" | "bash" => "shell",
+        "py" => "python",
+        "go" => "go",
+        "java" => "java",
+        "php" => "php",
+        "rb" => "ruby",
+        "c" | "h" => "c",
+        "cpp" | "hpp" | "cc" => "cpp",
+        _ => "plaintext",
+    }.to_string()
+}
+
+#[derive(Deserialize)]
+struct WriteFileRequest {
+    path: String,
+    content: String,
+}
+
+async fn write_file_handler(
+    Json(payload): Json<WriteFileRequest>,
+) -> impl axum::response::IntoResponse {
+    let path = payload.path.trim_start_matches('/');
+
+    // Validate path
+    let allowed_prefixes = ["themes", "functions", "plugins", "apps", "assets"];
+    let is_allowed = allowed_prefixes.iter().any(|prefix| {
+        path.starts_with(prefix)
+    });
+
+    if !is_allowed {
+        return (
+            axum::http::StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "error": "Access denied to this path" }))
+        ).into_response();
+    }
+
+    let full_path = std::path::Path::new(".").join(path);
+
+    match tokio::fs::write(&full_path, &payload.content).await {
+        Ok(_) => {
+            Json(serde_json::json!({ "success": true })).into_response()
+        }
+        Err(e) => {
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": format!("Failed to write file: {}", e) }))
+            ).into_response()
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct CreateFileRequest {
+    path: String,
+    #[serde(rename = "type")]
+    file_type: String,
+}
+
+async fn create_file_handler(
+    Json(payload): Json<CreateFileRequest>,
+) -> impl axum::response::IntoResponse {
+    let path = payload.path.trim_start_matches('/');
+
+    // Validate path
+    let allowed_prefixes = ["themes", "functions", "plugins", "apps", "assets"];
+    let is_allowed = allowed_prefixes.iter().any(|prefix| {
+        path.starts_with(prefix)
+    });
+
+    if !is_allowed {
+        return (
+            axum::http::StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "error": "Access denied to this path" }))
+        ).into_response();
+    }
+
+    let full_path = std::path::Path::new(".").join(path);
+
+    let result = if payload.file_type == "folder" {
+        tokio::fs::create_dir_all(&full_path).await
+    } else {
+        // Create parent directories if needed
+        if let Some(parent) = full_path.parent() {
+            let _ = tokio::fs::create_dir_all(parent).await;
+        }
+        tokio::fs::write(&full_path, "").await
+    };
+
+    match result {
+        Ok(_) => {
+            Json(serde_json::json!({ "success": true })).into_response()
+        }
+        Err(e) => {
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": format!("Failed to create: {}", e) }))
+            ).into_response()
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct DeleteFileRequest {
+    path: String,
+}
+
+async fn delete_file_handler(
+    Json(payload): Json<DeleteFileRequest>,
+) -> impl axum::response::IntoResponse {
+    let path = payload.path.trim_start_matches('/');
+
+    // Validate path
+    let allowed_prefixes = ["themes", "functions", "plugins", "apps", "assets"];
+    let is_allowed = allowed_prefixes.iter().any(|prefix| {
+        path.starts_with(prefix)
+    });
+
+    if !is_allowed {
+        return (
+            axum::http::StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "error": "Access denied to this path" }))
+        ).into_response();
+    }
+
+    let full_path = std::path::Path::new(".").join(path);
+    let metadata = tokio::fs::metadata(&full_path).await;
+
+    let result = match metadata {
+        Ok(m) if m.is_dir() => tokio::fs::remove_dir_all(&full_path).await,
+        Ok(_) => tokio::fs::remove_file(&full_path).await,
+        Err(e) => Err(e),
+    };
+
+    match result {
+        Ok(_) => {
+            Json(serde_json::json!({ "success": true })).into_response()
+        }
+        Err(e) => {
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": format!("Failed to delete: {}", e) }))
+            ).into_response()
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct RenameFileRequest {
+    #[serde(rename = "oldPath")]
+    old_path: String,
+    #[serde(rename = "newPath")]
+    new_path: String,
+}
+
+async fn rename_file_handler(
+    Json(payload): Json<RenameFileRequest>,
+) -> impl axum::response::IntoResponse {
+    let old_path = payload.old_path.trim_start_matches('/');
+    let new_path = payload.new_path.trim_start_matches('/');
+
+    // Validate paths
+    let allowed_prefixes = ["themes", "functions", "plugins", "apps", "assets"];
+    let old_allowed = allowed_prefixes.iter().any(|prefix| old_path.starts_with(prefix));
+    let new_allowed = allowed_prefixes.iter().any(|prefix| new_path.starts_with(prefix));
+
+    if !old_allowed || !new_allowed {
+        return (
+            axum::http::StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "error": "Access denied to this path" }))
+        ).into_response();
+    }
+
+    let old_full = std::path::Path::new(".").join(old_path);
+    let new_full = std::path::Path::new(".").join(new_path);
+
+    match tokio::fs::rename(&old_full, &new_full).await {
+        Ok(_) => {
+            Json(serde_json::json!({ "success": true })).into_response()
+        }
+        Err(e) => {
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": format!("Failed to rename: {}", e) }))
+            ).into_response()
+        }
+    }
+}
+
+// =============================================================================
+// Git Handlers (for IDE)
+// =============================================================================
+
+#[derive(Deserialize)]
+struct GitStatusQuery {
+    path: String,
+}
+
+#[derive(Serialize)]
+struct GitStatusResponse {
+    #[serde(rename = "hasGit")]
+    has_git: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    branch: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "isDirty")]
+    is_dirty: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "remoteUrl")]
+    remote_url: Option<String>,
+}
+
+async fn git_status_handler(
+    Query(params): Query<GitStatusQuery>,
+) -> impl axum::response::IntoResponse {
+    let path = params.path.trim_start_matches('/');
+    let full_path = std::path::Path::new(".").join(path);
+    let git_path = full_path.join(".git");
+
+    let has_git = git_path.exists();
+
+    if !has_git {
+        return Json(GitStatusResponse {
+            has_git: false,
+            branch: None,
+            is_dirty: None,
+            remote_url: None,
+        }).into_response();
+    }
+
+    // Try to get branch name
+    let head_path = git_path.join("HEAD");
+    let branch = tokio::fs::read_to_string(&head_path).await.ok()
+        .and_then(|content| {
+            if content.starts_with("ref: refs/heads/") {
+                Some(content.trim_start_matches("ref: refs/heads/").trim().to_string())
+            } else {
+                Some("detached".to_string())
+            }
+        });
+
+    Json(GitStatusResponse {
+        has_git: true,
+        branch,
+        is_dirty: Some(false), // Simplified - would need git2 for accurate status
+        remote_url: None,
+    }).into_response()
+}
+
+async fn git_init_handler(
+    Json(payload): Json<GitStatusQuery>,
+) -> impl axum::response::IntoResponse {
+    let path = payload.path.trim_start_matches('/');
+
+    // Validate path
+    let allowed_prefixes = ["themes", "functions", "plugins", "apps"];
+    let is_allowed = allowed_prefixes.iter().any(|prefix| path.starts_with(prefix));
+
+    if !is_allowed {
+        return (
+            axum::http::StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "error": "Access denied to this path" }))
+        ).into_response();
+    }
+
+    // Use git command to init
+    let full_path = std::path::Path::new(".").join(path);
+    let output = tokio::process::Command::new("git")
+        .args(["init"])
+        .current_dir(&full_path)
+        .output()
+        .await;
+
+    match output {
+        Ok(o) if o.status.success() => {
+            Json(serde_json::json!({ "success": true })).into_response()
+        }
+        Ok(o) => {
+            let error = String::from_utf8_lossy(&o.stderr);
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": format!("Git init failed: {}", error) }))
+            ).into_response()
+        }
+        Err(e) => {
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": format!("Failed to run git: {}", e) }))
+            ).into_response()
+        }
+    }
 }
 
 // =============================================================================
@@ -5733,4 +6267,850 @@ pub fn build_cloudflare_router(state: &AppState) -> Router {
 
     // Create the cloudflare router with its own state
     rustcloudflare::api::create_router(services)
+}
+
+// ============================================
+// Chat Handlers
+// ============================================
+
+/// Chat pagination query params
+#[derive(Debug, Deserialize)]
+struct ChatPaginationQuery {
+    #[serde(default = "default_chat_limit")]
+    limit: i64,
+    #[serde(default)]
+    offset: i64,
+}
+
+fn default_chat_limit() -> i64 {
+    50
+}
+
+/// Get or create personal notes conversation (messages to self)
+async fn personal_notes_handler(
+    user: AuthUser,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    // Check if personal notes conversation already exists
+    let existing: Option<(Uuid, Option<String>, String)> = sqlx::query_as(
+        r#"
+        SELECT c.id, c.title, c.type
+        FROM chat_conversations c
+        JOIN chat_conversation_participants p ON p.conversation_id = c.id
+        WHERE c.type = 'personal' AND c.created_by = $1 AND p.user_id = $1
+        AND (SELECT COUNT(*) FROM chat_conversation_participants WHERE conversation_id = c.id) = 1
+        LIMIT 1
+        "#
+    )
+    .bind(user.id)
+    .fetch_optional(pool)
+    .await
+    .unwrap_or(None);
+
+    if let Some((id, title, conv_type)) = existing {
+        return Ok(json(serde_json::json!({
+            "id": id,
+            "title": title.unwrap_or_else(|| "Personal Notes".to_string()),
+            "type": conv_type,
+            "created": false
+        })));
+    }
+
+    // Create new personal notes conversation
+    let conv_id: Uuid = sqlx::query_scalar(
+        r#"
+        INSERT INTO chat_conversations (title, type, created_by)
+        VALUES ('Personal Notes', 'personal', $1)
+        RETURNING id
+        "#
+    )
+    .bind(user.id)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to create personal notes: {}", e)))?;
+
+    // Add user as the only participant
+    sqlx::query("INSERT INTO chat_conversation_participants (conversation_id, user_id, role) VALUES ($1, $2, 'admin')")
+        .bind(conv_id)
+        .bind(user.id)
+        .execute(pool)
+        .await
+        .ok();
+
+    Ok(json(serde_json::json!({
+        "id": conv_id,
+        "title": "Personal Notes",
+        "type": "personal",
+        "created": true
+    })))
+}
+
+/// Get online users for creating group chats
+async fn online_users_handler(
+    user: AuthUser,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let online_users = state.ws_hub().get_online_users().await;
+
+    // Filter out current user and map to response format
+    let users: Vec<serde_json::Value> = online_users
+        .into_iter()
+        .filter(|u| u.user_id != user.id)
+        .map(|u| serde_json::json!({
+            "id": u.user_id,
+            "username": u.username,
+            "display_name": u.display_name,
+            "avatar_url": u.avatar_url,
+            "status": u.status,
+            "color": u.color,
+            "current_file": u.current_file
+        }))
+        .collect();
+
+    Ok(json(serde_json::json!({
+        "users": users,
+        "count": users.len()
+    })))
+}
+
+/// Create group chat request
+#[derive(Debug, Deserialize)]
+struct CreateGroupChatRequest {
+    title: String,
+    participant_ids: Vec<Uuid>,
+}
+
+/// Create a new group chat with online users
+async fn create_group_chat_handler(
+    user: AuthUser,
+    State(state): State<AppState>,
+    Json(payload): Json<CreateGroupChatRequest>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    if payload.participant_ids.is_empty() {
+        return Err(rustpress_core::error::Error::validation("At least one participant is required").into());
+    }
+
+    // Create group conversation
+    let conv_id: Uuid = sqlx::query_scalar(
+        r#"
+        INSERT INTO chat_conversations (title, type, created_by)
+        VALUES ($1, 'group', $2)
+        RETURNING id
+        "#
+    )
+    .bind(&payload.title)
+    .bind(user.id)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to create group chat: {}", e)))?;
+
+    // Add creator as admin
+    sqlx::query("INSERT INTO chat_conversation_participants (conversation_id, user_id, role) VALUES ($1, $2, 'admin')")
+        .bind(conv_id)
+        .bind(user.id)
+        .execute(pool)
+        .await
+        .ok();
+
+    // Add other participants
+    for participant_id in &payload.participant_ids {
+        sqlx::query("INSERT INTO chat_conversation_participants (conversation_id, user_id, role) VALUES ($1, $2, 'member')")
+            .bind(conv_id)
+            .bind(participant_id)
+            .execute(pool)
+            .await
+            .ok();
+    }
+
+    // Notify participants via WebSocket
+    let ws_hub = state.ws_hub();
+    for participant_id in &payload.participant_ids {
+        ws_hub.send_to_user(
+            *participant_id,
+            crate::websocket::ServerMessage::ChatMessage {
+                message: crate::websocket::message::ChatMessageDto {
+                    id: uuid::Uuid::new_v4(),
+                    conversation_id: conv_id,
+                    sender_id: user.id,
+                    sender_name: "System".to_string(),
+                    sender_avatar: None,
+                    content: format!("You have been added to group chat: {}", payload.title),
+                    content_type: "system".to_string(),
+                    reply_to_id: None,
+                    is_pinned: false,
+                    is_edited: false,
+                    reactions: vec![],
+                    created_at: chrono::Utc::now(),
+                },
+            },
+        ).await;
+    }
+
+    Ok(created(serde_json::json!({
+        "id": conv_id,
+        "title": payload.title,
+        "type": "group",
+        "participants": payload.participant_ids.len() + 1
+    })))
+}
+
+/// List conversations for the current user
+async fn list_conversations_handler(
+    user: AuthUser,
+    State(state): State<AppState>,
+    Query(params): Query<ChatPaginationQuery>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    let conversations: Vec<serde_json::Value> = sqlx::query_as::<_, (Uuid, Option<String>, String, chrono::DateTime<chrono::Utc>)>(
+        r#"
+        SELECT c.id, c.title, c.type, c.updated_at
+        FROM chat_conversations c
+        JOIN chat_conversation_participants p ON p.conversation_id = c.id
+        WHERE p.user_id = $1 AND c.is_archived = false
+        ORDER BY c.updated_at DESC
+        LIMIT $2 OFFSET $3
+        "#
+    )
+    .bind(user.id)
+    .bind(params.limit)
+    .bind(params.offset)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default()
+    .into_iter()
+    .map(|(id, title, conv_type, updated_at)| serde_json::json!({
+        "id": id,
+        "title": title,
+        "type": conv_type,
+        "updated_at": updated_at
+    }))
+    .collect();
+
+    Ok(json(serde_json::json!({ "conversations": conversations })))
+}
+
+/// Create conversation request
+#[derive(Debug, Deserialize)]
+struct CreateConversationRequest {
+    title: Option<String>,
+    #[serde(rename = "type")]
+    conversation_type: Option<String>,
+    participant_ids: Vec<Uuid>,
+}
+
+/// Create a new conversation
+async fn create_conversation_handler(
+    user: AuthUser,
+    State(state): State<AppState>,
+    Json(payload): Json<CreateConversationRequest>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+    let conv_type = payload.conversation_type.unwrap_or_else(|| "direct".to_string());
+
+    // Create conversation
+    let conv_id: Uuid = sqlx::query_scalar(
+        r#"
+        INSERT INTO chat_conversations (title, type, created_by)
+        VALUES ($1, $2, $3)
+        RETURNING id
+        "#
+    )
+    .bind(&payload.title)
+    .bind(&conv_type)
+    .bind(user.id)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to create conversation: {}", e)))?;
+
+    // Add creator as participant
+    sqlx::query("INSERT INTO chat_conversation_participants (conversation_id, user_id, role) VALUES ($1, $2, 'admin')")
+        .bind(conv_id)
+        .bind(user.id)
+        .execute(pool)
+        .await
+        .ok();
+
+    // Add other participants
+    for participant_id in payload.participant_ids {
+        sqlx::query("INSERT INTO chat_conversation_participants (conversation_id, user_id) VALUES ($1, $2)")
+            .bind(conv_id)
+            .bind(participant_id)
+            .execute(pool)
+            .await
+            .ok();
+    }
+
+    Ok(created(serde_json::json!({
+        "id": conv_id,
+        "title": payload.title,
+        "type": conv_type
+    })))
+}
+
+/// Get a specific conversation
+async fn get_conversation_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    let conv: Option<(Uuid, Option<String>, String, bool)> = sqlx::query_as(
+        r#"
+        SELECT c.id, c.title, c.type, c.is_archived
+        FROM chat_conversations c
+        JOIN chat_conversation_participants p ON p.conversation_id = c.id
+        WHERE c.id = $1 AND p.user_id = $2
+        "#
+    )
+    .bind(id)
+    .bind(user.id)
+    .fetch_optional(pool)
+    .await
+    .unwrap_or(None);
+
+    match conv {
+        Some((id, title, conv_type, is_archived)) => Ok(json(serde_json::json!({
+            "id": id,
+            "title": title,
+            "type": conv_type,
+            "is_archived": is_archived
+        }))),
+        None => Err(rustpress_core::error::Error::not_found("Conversation", id.to_string()).into()),
+    }
+}
+
+/// Update conversation request
+#[derive(Debug, Deserialize)]
+struct UpdateConversationRequest {
+    title: Option<String>,
+}
+
+/// Update a conversation
+async fn update_conversation_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+    Json(payload): Json<UpdateConversationRequest>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    sqlx::query("UPDATE chat_conversations SET title = COALESCE($1, title) WHERE id = $2")
+        .bind(&payload.title)
+        .bind(id)
+        .execute(pool)
+        .await
+        .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to update: {}", e)))?;
+
+    Ok(json(serde_json::json!({ "success": true })))
+}
+
+/// Archive a conversation
+async fn archive_conversation_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    sqlx::query("UPDATE chat_conversations SET is_archived = true WHERE id = $1")
+        .bind(id)
+        .execute(pool)
+        .await
+        .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to archive: {}", e)))?;
+
+    Ok(no_content())
+}
+
+/// Get messages in a conversation
+async fn get_messages_handler(
+    _user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+    Query(params): Query<ChatPaginationQuery>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    let messages: Vec<serde_json::Value> = sqlx::query_as::<_, (Uuid, Uuid, String, String, bool, bool, chrono::DateTime<chrono::Utc>)>(
+        r#"
+        SELECT m.id, m.sender_id, m.content, m.content_type, m.is_pinned, m.is_edited, m.created_at
+        FROM chat_messages m
+        WHERE m.conversation_id = $1 AND m.deleted_at IS NULL
+        ORDER BY m.created_at DESC
+        LIMIT $2 OFFSET $3
+        "#
+    )
+    .bind(id)
+    .bind(params.limit)
+    .bind(params.offset)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default()
+    .into_iter()
+    .map(|(msg_id, sender_id, content, content_type, is_pinned, is_edited, created_at)| serde_json::json!({
+        "id": msg_id,
+        "sender_id": sender_id,
+        "content": content,
+        "content_type": content_type,
+        "is_pinned": is_pinned,
+        "is_edited": is_edited,
+        "created_at": created_at
+    }))
+    .collect();
+
+    Ok(json(serde_json::json!({ "messages": messages })))
+}
+
+/// Send message request
+#[derive(Debug, Deserialize)]
+struct SendMessageRequest {
+    content: String,
+    content_type: Option<String>,
+    reply_to_id: Option<Uuid>,
+}
+
+/// Send a message to a conversation
+async fn send_message_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+    Json(payload): Json<SendMessageRequest>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    let msg_id: Uuid = sqlx::query_scalar(
+        r#"
+        INSERT INTO chat_messages (conversation_id, sender_id, content, content_type, reply_to_id)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id
+        "#
+    )
+    .bind(id)
+    .bind(user.id)
+    .bind(&payload.content)
+    .bind(payload.content_type.as_deref().unwrap_or("text"))
+    .bind(payload.reply_to_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to send message: {}", e)))?;
+
+    // Broadcast via WebSocket
+    if let Ok(Some(dto)) = crate::websocket::chat::ChatService::new(pool.clone())
+        .get_message_dto(msg_id, user.id)
+        .await
+    {
+        state.ws_hub.broadcast_to_conversation(
+            id,
+            crate::websocket::ServerMessage::ChatMessage { message: dto },
+            None,
+        ).await;
+    }
+
+    Ok(created(serde_json::json!({ "id": msg_id })))
+}
+
+/// List participants in a conversation
+async fn list_participants_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    let participants: Vec<serde_json::Value> = sqlx::query_as::<_, (Uuid, String, Option<String>)>(
+        r#"
+        SELECT u.id, u.username, u.display_name
+        FROM chat_conversation_participants p
+        JOIN users u ON u.id = p.user_id
+        WHERE p.conversation_id = $1
+        "#
+    )
+    .bind(id)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default()
+    .into_iter()
+    .map(|(uid, username, display_name)| serde_json::json!({
+        "id": uid,
+        "username": username,
+        "display_name": display_name
+    }))
+    .collect();
+
+    Ok(json(serde_json::json!({ "participants": participants })))
+}
+
+/// Add participant to conversation
+#[derive(Debug, Deserialize)]
+struct AddParticipantRequest {
+    user_id: Uuid,
+}
+
+async fn add_participant_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+    Json(payload): Json<AddParticipantRequest>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    sqlx::query("INSERT INTO chat_conversation_participants (conversation_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING")
+        .bind(id)
+        .bind(payload.user_id)
+        .execute(pool)
+        .await
+        .ok();
+
+    Ok(created(serde_json::json!({ "success": true })))
+}
+
+/// Path parameters for participant removal
+#[derive(Debug, Deserialize)]
+struct ParticipantPath {
+    id: Uuid,
+    user_id: Uuid,
+}
+
+async fn remove_participant_handler(
+    user: AuthUser,
+    axum::extract::Path(params): axum::extract::Path<ParticipantPath>,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    sqlx::query("DELETE FROM chat_conversation_participants WHERE conversation_id = $1 AND user_id = $2")
+        .bind(params.id)
+        .bind(params.user_id)
+        .execute(pool)
+        .await
+        .ok();
+
+    Ok(no_content())
+}
+
+/// Add tag to conversation
+#[derive(Debug, Deserialize)]
+struct AddTagRequest {
+    tag: String,
+    color: Option<String>,
+}
+
+async fn add_conversation_tag_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+    Json(payload): Json<AddTagRequest>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    sqlx::query("INSERT INTO chat_conversation_tags (conversation_id, tag, color) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING")
+        .bind(id)
+        .bind(&payload.tag)
+        .bind(&payload.color)
+        .execute(pool)
+        .await
+        .ok();
+
+    Ok(created(serde_json::json!({ "success": true })))
+}
+
+/// Path parameters for tag removal
+#[derive(Debug, Deserialize)]
+struct TagPath {
+    id: Uuid,
+    tag: String,
+}
+
+async fn remove_conversation_tag_handler(
+    user: AuthUser,
+    axum::extract::Path(params): axum::extract::Path<TagPath>,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    sqlx::query("DELETE FROM chat_conversation_tags WHERE conversation_id = $1 AND tag = $2")
+        .bind(params.id)
+        .bind(&params.tag)
+        .execute(pool)
+        .await
+        .ok();
+
+    Ok(no_content())
+}
+
+/// Edit message request
+#[derive(Debug, Deserialize)]
+struct EditMessageRequest {
+    content: String,
+}
+
+async fn edit_message_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+    Json(payload): Json<EditMessageRequest>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    sqlx::query("UPDATE chat_messages SET content = $1, is_edited = true, edited_at = NOW() WHERE id = $2 AND sender_id = $3")
+        .bind(&payload.content)
+        .bind(id)
+        .bind(user.id)
+        .execute(pool)
+        .await
+        .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to edit: {}", e)))?;
+
+    Ok(json(serde_json::json!({ "success": true })))
+}
+
+async fn delete_message_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    sqlx::query("UPDATE chat_messages SET deleted_at = NOW() WHERE id = $1 AND sender_id = $2")
+        .bind(id)
+        .bind(user.id)
+        .execute(pool)
+        .await
+        .ok();
+
+    Ok(no_content())
+}
+
+/// Add reaction request
+#[derive(Debug, Deserialize)]
+struct AddReactionRequest {
+    emoji: String,
+}
+
+async fn add_reaction_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+    Json(payload): Json<AddReactionRequest>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    sqlx::query("INSERT INTO chat_message_reactions (message_id, user_id, emoji) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING")
+        .bind(id)
+        .bind(user.id)
+        .bind(&payload.emoji)
+        .execute(pool)
+        .await
+        .ok();
+
+    Ok(created(serde_json::json!({ "success": true })))
+}
+
+/// Path params for reaction removal
+#[derive(Debug, Deserialize)]
+struct ReactionPath {
+    id: Uuid,
+    emoji: String,
+}
+
+async fn remove_reaction_handler(
+    user: AuthUser,
+    axum::extract::Path(params): axum::extract::Path<ReactionPath>,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    sqlx::query("DELETE FROM chat_message_reactions WHERE message_id = $1 AND user_id = $2 AND emoji = $3")
+        .bind(params.id)
+        .bind(user.id)
+        .bind(&params.emoji)
+        .execute(pool)
+        .await
+        .ok();
+
+    Ok(no_content())
+}
+
+async fn star_message_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    sqlx::query("INSERT INTO chat_message_stars (message_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING")
+        .bind(id)
+        .bind(user.id)
+        .execute(pool)
+        .await
+        .ok();
+
+    Ok(created(serde_json::json!({ "success": true })))
+}
+
+async fn unstar_message_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    sqlx::query("DELETE FROM chat_message_stars WHERE message_id = $1 AND user_id = $2")
+        .bind(id)
+        .bind(user.id)
+        .execute(pool)
+        .await
+        .ok();
+
+    Ok(no_content())
+}
+
+async fn pin_message_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    sqlx::query("UPDATE chat_messages SET is_pinned = true WHERE id = $1")
+        .bind(id)
+        .execute(pool)
+        .await
+        .ok();
+
+    Ok(json(serde_json::json!({ "success": true })))
+}
+
+async fn unpin_message_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    sqlx::query("UPDATE chat_messages SET is_pinned = false WHERE id = $1")
+        .bind(id)
+        .execute(pool)
+        .await
+        .ok();
+
+    Ok(json(serde_json::json!({ "success": true })))
+}
+
+/// Set reminder request
+#[derive(Debug, Deserialize)]
+struct SetReminderRequest {
+    remind_at: chrono::DateTime<chrono::Utc>,
+}
+
+async fn set_reminder_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+    Json(payload): Json<SetReminderRequest>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    let reminder_id: Uuid = sqlx::query_scalar(
+        "INSERT INTO chat_message_reminders (message_id, user_id, remind_at) VALUES ($1, $2, $3) RETURNING id"
+    )
+    .bind(id)
+    .bind(user.id)
+    .bind(payload.remind_at)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to set reminder: {}", e)))?;
+
+    Ok(created(serde_json::json!({ "id": reminder_id })))
+}
+
+/// Chat history query params
+#[derive(Debug, Deserialize)]
+struct ChatHistoryQuery {
+    search: Option<String>,
+    from: Option<chrono::DateTime<chrono::Utc>>,
+    to: Option<chrono::DateTime<chrono::Utc>>,
+    limit: Option<i64>,
+    offset: Option<i64>,
+}
+
+async fn chat_history_handler(
+    user: AuthUser,
+    State(state): State<AppState>,
+    Query(params): Query<ChatHistoryQuery>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    let messages: Vec<serde_json::Value> = sqlx::query_as::<_, (Uuid, Uuid, String, chrono::DateTime<chrono::Utc>)>(
+        r#"
+        SELECT m.id, m.conversation_id, m.content, m.created_at
+        FROM chat_messages m
+        JOIN chat_conversation_participants p ON p.conversation_id = m.conversation_id
+        WHERE p.user_id = $1
+          AND m.deleted_at IS NULL
+          AND ($2::text IS NULL OR m.content ILIKE '%' || $2 || '%')
+          AND ($3::timestamptz IS NULL OR m.created_at >= $3)
+          AND ($4::timestamptz IS NULL OR m.created_at <= $4)
+        ORDER BY m.created_at DESC
+        LIMIT $5 OFFSET $6
+        "#
+    )
+    .bind(user.id)
+    .bind(&params.search)
+    .bind(params.from)
+    .bind(params.to)
+    .bind(params.limit.unwrap_or(50))
+    .bind(params.offset.unwrap_or(0))
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default()
+    .into_iter()
+    .map(|(id, conv_id, content, created_at)| serde_json::json!({
+        "id": id,
+        "conversation_id": conv_id,
+        "content": content,
+        "created_at": created_at
+    }))
+    .collect();
+
+    Ok(json(serde_json::json!({ "messages": messages })))
+}
+
+async fn starred_messages_handler(
+    user: AuthUser,
+    State(state): State<AppState>,
+    Query(params): Query<ChatPaginationQuery>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let pool = state.db().inner();
+
+    let messages: Vec<serde_json::Value> = sqlx::query_as::<_, (Uuid, Uuid, String, chrono::DateTime<chrono::Utc>)>(
+        r#"
+        SELECT m.id, m.conversation_id, m.content, m.created_at
+        FROM chat_messages m
+        JOIN chat_message_stars s ON s.message_id = m.id
+        WHERE s.user_id = $1 AND m.deleted_at IS NULL
+        ORDER BY s.created_at DESC
+        LIMIT $2 OFFSET $3
+        "#
+    )
+    .bind(user.id)
+    .bind(params.limit)
+    .bind(params.offset)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default()
+    .into_iter()
+    .map(|(id, conv_id, content, created_at)| serde_json::json!({
+        "id": id,
+        "conversation_id": conv_id,
+        "content": content,
+        "created_at": created_at
+    }))
+    .collect();
+
+    Ok(json(serde_json::json!({ "messages": messages })))
 }

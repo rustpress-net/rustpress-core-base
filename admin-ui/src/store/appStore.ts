@@ -8,7 +8,9 @@ import type {
   AppStoreFilters,
   AppCategory,
   AppUsageStats,
-  AppNotification
+  AppNotification,
+  SiteMode,
+  SiteModeSettings
 } from '../types/app';
 
 interface AppState {
@@ -16,6 +18,9 @@ interface AppState {
   installedApps: InstalledApp[];
   activeApp: InstalledApp | null;
   launchedAppId: string | null;
+
+  // Site Mode Settings
+  siteModeSettings: SiteModeSettings;
 
   // User app access
   userAppAccess: Record<string, UserAppAccess>;
@@ -45,6 +50,11 @@ interface AppState {
   launchApp: (appId: string) => void;
   closeLaunchedApp: () => void;
   setActiveApp: (app: InstalledApp | null) => void;
+
+  // Actions - Site Mode
+  setSiteMode: (mode: SiteMode) => void;
+  updateSiteModeSettings: (settings: Partial<SiteModeSettings>) => void;
+  getSiteModeSettings: () => SiteModeSettings;
 
   // Actions - User Access
   setUserAccess: (userId: string, access: UserAppAccess) => void;
@@ -80,79 +90,67 @@ interface AppState {
 // Default installed apps (demo)
 const defaultApps: InstalledApp[] = [
   {
-    id: 'inventory-manager',
-    name: 'Inventory Manager',
-    slug: 'inventory-manager',
-    description: 'Complete inventory management system with stock tracking, barcode scanning, and automated reorder points.',
-    shortDescription: 'Track and manage your inventory',
-    version: '2.1.0',
+    id: 'task-manager',
+    name: 'Task Manager',
+    slug: 'task-manager',
+    description: 'Simple task/todo management application with priorities, due dates, and star favorites.',
+    shortDescription: 'Manage your tasks efficiently',
+    version: '1.0.0',
     author: 'RustPress Team',
-    icon: 'Package',
+    icon: 'CheckCircle2',
     category: 'productivity',
-    tags: ['inventory', 'stock', 'warehouse'],
+    tags: ['tasks', 'todo', 'productivity'],
     pricing: { type: 'free' },
     status: 'active',
     installDate: new Date().toISOString(),
-    installedVersion: '2.1.0',
-    permissions: ['read:content', 'write:content', 'storage:files'],
-    entryPoint: '/apps/inventory-manager',
+    installedVersion: '1.0.0',
+    permissions: ['read:content', 'write:content'],
+    entryPoint: '/app/task-manager',
     rating: 4.8,
     downloadCount: 15420,
     verified: true,
   },
   {
-    id: 'customer-portal',
-    name: 'Customer Portal',
-    slug: 'customer-portal',
-    description: 'Self-service customer portal with ticket management, knowledge base, and account management.',
-    shortDescription: 'Customer self-service portal',
-    version: '1.5.2',
+    id: 'notes',
+    name: 'Notes',
+    slug: 'notes',
+    description: 'Simple note-taking application with color-coded cards, pinning, archiving, and tags.',
+    shortDescription: 'Take notes and organize ideas',
+    version: '1.0.0',
     author: 'RustPress Team',
-    icon: 'Users',
-    category: 'communication',
-    tags: ['customers', 'support', 'portal'],
-    pricing: { type: 'membership', price: 29, currency: 'USD', billingPeriod: 'monthly' },
+    icon: 'FileText',
+    category: 'productivity',
+    tags: ['notes', 'writing', 'organization'],
+    pricing: { type: 'free' },
     status: 'active',
     installDate: new Date().toISOString(),
-    installedVersion: '1.5.2',
-    permissions: ['read:users', 'write:users', 'read:content'],
-    entryPoint: '/apps/customer-portal',
-    rating: 4.6,
-    downloadCount: 8930,
+    installedVersion: '1.0.0',
+    permissions: ['read:content', 'write:content'],
+    entryPoint: '/app/notes',
+    rating: 4.7,
+    downloadCount: 12300,
     verified: true,
-    license: {
-      key: 'CP-DEMO-LICENSE-KEY',
-      type: 'membership',
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      isValid: true,
-    },
   },
   {
-    id: 'analytics-dashboard',
-    name: 'Analytics Dashboard',
-    slug: 'analytics-dashboard',
-    description: 'Real-time analytics dashboard with customizable widgets, reports, and data visualization.',
-    shortDescription: 'Real-time analytics and insights',
-    version: '3.0.0',
-    author: 'DataViz Labs',
-    icon: 'BarChart3',
-    category: 'analytics',
-    tags: ['analytics', 'dashboard', 'reports'],
-    pricing: { type: 'one-time', price: 149, currency: 'USD' },
+    id: 'calendar',
+    name: 'Calendar',
+    slug: 'calendar',
+    description: 'Monthly calendar application with event creation, color coding, and time management.',
+    shortDescription: 'Plan your schedule',
+    version: '1.0.0',
+    author: 'RustPress Team',
+    icon: 'Calendar',
+    category: 'productivity',
+    tags: ['calendar', 'events', 'scheduling'],
+    pricing: { type: 'free' },
     status: 'active',
     installDate: new Date().toISOString(),
-    installedVersion: '3.0.0',
-    permissions: ['read:users', 'read:content', 'api:external'],
-    entryPoint: '/apps/analytics-dashboard',
-    rating: 4.9,
-    downloadCount: 23150,
+    installedVersion: '1.0.0',
+    permissions: ['read:content', 'write:content'],
+    entryPoint: '/app/calendar',
+    rating: 4.6,
+    downloadCount: 9800,
     verified: true,
-    featured: true,
-    license: {
-      key: 'AD-PERPETUAL-LICENSE',
-      type: 'one-time',
-      isValid: true,
-    },
   },
 ];
 
@@ -280,14 +278,23 @@ const demoStoreApps: App[] = [
 const defaultUserAccess: Record<string, UserAppAccess> = {
   'user-1': {
     userId: 'user-1',
-    appIds: ['inventory-manager', 'customer-portal', 'analytics-dashboard'],
-    defaultAppId: 'analytics-dashboard',
+    appIds: ['task-manager', 'notes', 'calendar'],
+    defaultAppId: 'task-manager',
   },
   'user-2': {
     userId: 'user-2',
-    appIds: ['inventory-manager'],
-    defaultAppId: 'inventory-manager',
+    appIds: ['notes'],
+    defaultAppId: 'notes',
   },
+};
+
+// Default site mode settings
+const defaultSiteModeSettings: SiteModeSettings = {
+  mode: 'hybrid',
+  appSelectorStyle: 'grid',
+  showAppSelectorLogo: true,
+  appSelectorTitle: 'Select an Application',
+  appSelectorDescription: 'Choose an application to get started',
 };
 
 export const useAppStore = create<AppState>()(
@@ -296,6 +303,7 @@ export const useAppStore = create<AppState>()(
       installedApps: defaultApps,
       activeApp: null,
       launchedAppId: null,
+      siteModeSettings: defaultSiteModeSettings,
       userAppAccess: defaultUserAccess,
       defaultAppId: null,
       availableApps: demoStoreApps,
@@ -382,6 +390,29 @@ export const useAppStore = create<AppState>()(
 
       setActiveApp: (app) => {
         set({ activeApp: app });
+      },
+
+      // Site Mode
+      setSiteMode: (mode) => {
+        set((state) => ({
+          siteModeSettings: {
+            ...state.siteModeSettings,
+            mode,
+          },
+        }));
+      },
+
+      updateSiteModeSettings: (settings) => {
+        set((state) => ({
+          siteModeSettings: {
+            ...state.siteModeSettings,
+            ...settings,
+          },
+        }));
+      },
+
+      getSiteModeSettings: () => {
+        return get().siteModeSettings;
       },
 
       // User Access

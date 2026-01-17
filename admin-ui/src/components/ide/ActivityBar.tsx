@@ -7,7 +7,11 @@ import { motion } from 'framer-motion';
 import {
   Files, Search, GitBranch, Bug, Puzzle, Settings,
   User, Bell, Keyboard, Layout, Terminal, Palette,
-  Bot, Bookmark, Clock, List, Sliders
+  Bot, Bookmark, Clock, List, Sliders, FileText,
+  Image, Tags, Menu, MessageSquare, Layers, Database,
+  Globe, Gauge, Shield, HardDrive, ScrollText, Users,
+  FormInput, LayoutGrid, BarChart3, Mail, ArrowRightLeft,
+  Zap, Webhook
 } from 'lucide-react';
 
 export type ActivityView =
@@ -21,7 +25,7 @@ export type ActivityView =
   | 'timeline'
   | 'outline'
   | 'editor-settings'
-  | 'settings';
+  | 'collaboration';
 
 interface ActivityItem {
   id: ActivityView;
@@ -36,23 +40,32 @@ interface ActivityBarProps {
   gitChanges?: number;
   problems?: number;
   notifications?: number;
+  collaborators?: number;
   onOpenSettings?: () => void;
   onOpenShortcuts?: () => void;
   onToggleTerminal?: () => void;
 }
 
-const topItems: ActivityItem[] = [
+// Core IDE Items
+const coreItems: ActivityItem[] = [
   { id: 'files', icon: Files, label: 'Explorer' },
   { id: 'search', icon: Search, label: 'Search' },
   { id: 'git', icon: GitBranch, label: 'Source Control' },
   { id: 'debug', icon: Bug, label: 'Debug' },
   { id: 'extensions', icon: Puzzle, label: 'Extensions' },
   { id: 'ai-assistant', icon: Bot, label: 'AI Assistant' },
+  { id: 'collaboration', icon: Users, label: 'Collaborators' },
+];
+
+// Secondary IDE Items
+const secondaryItems: ActivityItem[] = [
   { id: 'outline', icon: List, label: 'Outline' },
   { id: 'bookmarks', icon: Bookmark, label: 'Bookmarks' },
   { id: 'timeline', icon: Clock, label: 'Timeline' },
   { id: 'editor-settings', icon: Sliders, label: 'Editor Settings' },
 ];
+
+const topItems: ActivityItem[] = [...coreItems, ...secondaryItems];
 
 export const ActivityBar: React.FC<ActivityBarProps> = ({
   activeView,
@@ -60,6 +73,7 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
   gitChanges = 0,
   problems = 0,
   notifications = 0,
+  collaborators = 0,
   onOpenSettings,
   onOpenShortcuts,
   onToggleTerminal
@@ -71,7 +85,7 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
         {topItems.map(item => {
           const Icon = item.icon;
           const isActive = activeView === item.id;
-          const badge = item.id === 'git' ? gitChanges : undefined;
+          const badge = item.id === 'git' ? gitChanges : item.id === 'collaboration' ? collaborators : undefined;
 
           return (
             <button

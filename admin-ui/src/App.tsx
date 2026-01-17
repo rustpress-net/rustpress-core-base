@@ -61,6 +61,15 @@ const AppsManagement = lazy(() => import('./pages/apps/AppsManagement'));
 const AppStorePage = lazy(() => import('./pages/apps/AppStore'));
 const AppSettings = lazy(() => import('./pages/apps/AppSettings'));
 const UserAppAccess = lazy(() => import('./pages/apps/UserAppAccess'));
+const AppSelectionPage = lazy(() => import('./pages/apps/AppSelectionPage'));
+
+// Settings Pages
+const SiteModeSettings = lazy(() => import('./pages/settings/SiteModeSettings'));
+
+// App Components (for Site Mode)
+const TaskManagerApp = lazy(() => import('./apps/TaskManagerApp'));
+const NotesApp = lazy(() => import('./apps/NotesApp'));
+const CalendarApp = lazy(() => import('./apps/CalendarApp'));
 
 // API Management
 const ApiManagement = lazy(() => import('./pages/api/ApiManagement'));
@@ -71,6 +80,7 @@ import { FileText, Folders, Image, MessageSquare, Palette, Package, Users, Setti
 import { motion } from 'framer-motion';
 import { staggerContainer, fadeInUp } from './design-system';
 import { Link } from 'react-router-dom';
+import { useAppStore } from './store/appStore';
 
 // Loading component with skeleton
 const PageLoader = () => (
@@ -79,6 +89,19 @@ const PageLoader = () => (
     <SkeletonTable rows={5} columns={5} />
   </div>
 );
+
+// Smart redirect based on site mode
+const SiteModeRedirect = () => {
+  const { siteModeSettings } = useAppStore();
+
+  // In app mode, redirect to app selector (which handles single vs multiple apps)
+  if (siteModeSettings.mode === 'app') {
+    return <Navigate to="/app-selector" replace />;
+  }
+
+  // In website or hybrid mode, go to dashboard
+  return <Navigate to="/dashboard" replace />;
+};
 
 // Posts List Page - Using new design system
 const PostsList = () => (
@@ -588,10 +611,50 @@ function App() {
         </Suspense>
       } />
 
+      {/* App routes - Full page apps without layout */}
+      <Route path="/app/task-manager" element={
+        <Suspense fallback={
+          <div className="h-screen flex items-center justify-center bg-gray-900">
+            <div className="text-white">Loading Task Manager...</div>
+          </div>
+        }>
+          <TaskManagerApp />
+        </Suspense>
+      } />
+      <Route path="/app/notes" element={
+        <Suspense fallback={
+          <div className="h-screen flex items-center justify-center bg-gray-900">
+            <div className="text-white">Loading Notes...</div>
+          </div>
+        }>
+          <NotesApp />
+        </Suspense>
+      } />
+      <Route path="/app/calendar" element={
+        <Suspense fallback={
+          <div className="h-screen flex items-center justify-center bg-gray-900">
+            <div className="text-white">Loading Calendar...</div>
+          </div>
+        }>
+          <CalendarApp />
+        </Suspense>
+      } />
+
+      {/* App Selector - Full page without layout */}
+      <Route path="/app-selector" element={
+        <Suspense fallback={
+          <div className="h-screen flex items-center justify-center bg-gray-900">
+            <div className="text-white">Loading...</div>
+          </div>
+        }>
+          <AppSelectionPage />
+        </Suspense>
+      } />
+
       {/* Admin routes with EnterpriseLayout */}
       <Route path="/" element={<EnterpriseLayout />}>
-        {/* Dashboard */}
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        {/* Smart redirect based on site mode */}
+        <Route index element={<SiteModeRedirect />} />
         <Route path="dashboard" element={
           <Suspense fallback={<PageLoader />}>
             <EnterpriseDashboard />
@@ -755,6 +818,11 @@ function App() {
 
         {/* System */}
         <Route path="settings" element={<SettingsListPage />} />
+        <Route path="settings/site-mode" element={
+          <Suspense fallback={<PageLoader />}>
+            <SiteModeSettings />
+          </Suspense>
+        } />
         <Route path="cache" element={
           <Suspense fallback={<PageLoader />}>
             <Cache />

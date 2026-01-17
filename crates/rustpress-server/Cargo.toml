@@ -81,6 +81,9 @@ sha2 = "0.10"
 bcrypt = "0.15"
 argon2.workspace = true
 
+# WebSocket
+tokio-tungstenite = "0.21"
+
 # Database (for migration CLI)
 sqlx.workspace = true
 
