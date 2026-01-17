@@ -296,7 +296,7 @@ const ChatPanel: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-auto min-h-0">
         {activeConversationId ? (
           <ConversationView conversationId={activeConversationId} />
         ) : (
