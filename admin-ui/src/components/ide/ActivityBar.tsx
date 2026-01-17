@@ -25,7 +25,8 @@ export type ActivityView =
   | 'timeline'
   | 'outline'
   | 'editor-settings'
-  | 'collaboration';
+  | 'collaboration'
+  | 'chat';
 
 interface ActivityItem {
   id: ActivityView;
@@ -54,6 +55,7 @@ const coreItems: ActivityItem[] = [
   { id: 'debug', icon: Bug, label: 'Debug' },
   { id: 'extensions', icon: Puzzle, label: 'Extensions' },
   { id: 'ai-assistant', icon: Bot, label: 'AI Assistant' },
+  { id: 'chat', icon: MessageSquare, label: 'Chat' },
   { id: 'collaboration', icon: Users, label: 'Collaborators' },
 ];
 

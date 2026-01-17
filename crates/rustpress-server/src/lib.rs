@@ -21,4 +21,4 @@ pub use app::App;
 pub use background::init_background_tasks;
 pub use services::{EmailConfig, EmailService, EmailTemplate};
 pub use state::AppState;
-pub use websocket::{WebSocketHub, websocket_handler};
+pub use websocket::{websocket_handler, WebSocketHub};

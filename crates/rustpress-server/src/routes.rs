@@ -182,19 +182,54 @@ fn chat_routes() -> Router<AppState> {
         // Create group chat
         .route("/group", post(create_group_chat_handler))
         // Conversations
-        .route("/conversations", get(list_conversations_handler).post(create_conversation_handler))
-        .route("/conversations/:id", get(get_conversation_handler).put(update_conversation_handler).delete(archive_conversation_handler))
-        .route("/conversations/:id/messages", get(get_messages_handler).post(send_message_handler))
-        .route("/conversations/:id/participants", get(list_participants_handler).post(add_participant_handler))
-        .route("/conversations/:id/participants/:user_id", delete(remove_participant_handler))
-        .route("/conversations/:id/tags", post(add_conversation_tag_handler))
-        .route("/conversations/:id/tags/:tag", delete(remove_conversation_tag_handler))
+        .route(
+            "/conversations",
+            get(list_conversations_handler).post(create_conversation_handler),
+        )
+        .route(
+            "/conversations/:id",
+            get(get_conversation_handler)
+                .put(update_conversation_handler)
+                .delete(archive_conversation_handler),
+        )
+        .route(
+            "/conversations/:id/messages",
+            get(get_messages_handler).post(send_message_handler),
+        )
+        .route(
+            "/conversations/:id/participants",
+            get(list_participants_handler).post(add_participant_handler),
+        )
+        .route(
+            "/conversations/:id/participants/:user_id",
+            delete(remove_participant_handler),
+        )
+        .route(
+            "/conversations/:id/tags",
+            post(add_conversation_tag_handler),
+        )
+        .route(
+            "/conversations/:id/tags/:tag",
+            delete(remove_conversation_tag_handler),
+        )
         // Messages
-        .route("/messages/:id", put(edit_message_handler).delete(delete_message_handler))
+        .route(
+            "/messages/:id",
+            put(edit_message_handler).delete(delete_message_handler),
+        )
         .route("/messages/:id/reactions", post(add_reaction_handler))
-        .route("/messages/:id/reactions/:emoji", delete(remove_reaction_handler))
-        .route("/messages/:id/star", post(star_message_handler).delete(unstar_message_handler))
-        .route("/messages/:id/pin", post(pin_message_handler).delete(unpin_message_handler))
+        .route(
+            "/messages/:id/reactions/:emoji",
+            delete(remove_reaction_handler),
+        )
+        .route(
+            "/messages/:id/star",
+            post(star_message_handler).delete(unstar_message_handler),
+        )
+        .route(
+            "/messages/:id/pin",
+            post(pin_message_handler).delete(unpin_message_handler),
+        )
         .route("/messages/:id/remind", post(set_reminder_handler))
         // History and starred
         .route("/history", get(chat_history_handler))
@@ -506,15 +541,18 @@ async fn list_files_handler(
 
     // If path is empty or just a root path, return the list of allowed directories
     if base_path.is_empty() || base_path == "/" {
-        let nodes: Vec<FileNode> = allowed_prefixes.iter().map(|name| FileNode {
-            id: name.to_string(),
-            name: name.to_string(),
-            path: name.to_string(),
-            file_type: "folder".to_string(),
-            children: None,
-            size: None,
-            modified: None,
-        }).collect();
+        let nodes: Vec<FileNode> = allowed_prefixes
+            .iter()
+            .map(|name| FileNode {
+                id: name.to_string(),
+                name: name.to_string(),
+                path: name.to_string(),
+                file_type: "folder".to_string(),
+                children: None,
+                size: None,
+                modified: None,
+            })
+            .collect();
         return Json(nodes).into_response();
     }
 
@@ -527,8 +565,9 @@ async fn list_files_handler(
     if !is_allowed {
         return (
             axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({ "error": "Access denied to this path" }))
-        ).into_response();
+            Json(serde_json::json!({ "error": "Access denied to this path" })),
+        )
+            .into_response();
     }
 
     // Read directory contents
@@ -555,25 +594,23 @@ async fn list_files_handler(
                     file_type: file_type.to_string(),
                     children: None,
                     size: metadata.as_ref().map(|m| m.len()),
-                    modified: metadata.as_ref().and_then(|m| m.modified().ok())
+                    modified: metadata
+                        .as_ref()
+                        .and_then(|m| m.modified().ok())
                         .map(|t| chrono::DateTime::<chrono::Utc>::from(t).to_rfc3339()),
                 });
             }
 
             // Sort: folders first, then files, both alphabetically
-            nodes.sort_by(|a, b| {
-                match (a.file_type.as_str(), b.file_type.as_str()) {
-                    ("folder", "file") => std::cmp::Ordering::Less,
-                    ("file", "folder") => std::cmp::Ordering::Greater,
-                    _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
-                }
+            nodes.sort_by(|a, b| match (a.file_type.as_str(), b.file_type.as_str()) {
+                ("folder", "file") => std::cmp::Ordering::Less,
+                ("file", "folder") => std::cmp::Ordering::Greater,
+                _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
             });
 
             Json(nodes).into_response()
         }
-        Err(_) => {
-            Json(Vec::<FileNode>::new()).into_response()
-        }
+        Err(_) => Json(Vec::<FileNode>::new()).into_response(),
     }
 }
 
@@ -599,15 +636,16 @@ async fn read_file_handler(
 
     // Validate path
     let allowed_prefixes = ["themes", "functions", "plugins", "apps", "assets"];
-    let is_allowed = allowed_prefixes.iter().any(|prefix| {
-        path.starts_with(prefix)
-    });
+    let is_allowed = allowed_prefixes
+        .iter()
+        .any(|prefix| path.starts_with(prefix));
 
     if !is_allowed {
         return (
             axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({ "error": "Access denied to this path" }))
-        ).into_response();
+            Json(serde_json::json!({ "error": "Access denied to this path" })),
+        )
+            .into_response();
     }
 
     let full_path = std::path::Path::new(".").join(path);
@@ -623,17 +661,19 @@ async fn read_file_handler(
                 encoding: "utf-8".to_string(),
                 language,
                 size: metadata.as_ref().map(|m| m.len()).unwrap_or(0),
-                modified: metadata.as_ref().and_then(|m| m.modified().ok())
+                modified: metadata
+                    .as_ref()
+                    .and_then(|m| m.modified().ok())
                     .map(|t| chrono::DateTime::<chrono::Utc>::from(t).to_rfc3339())
                     .unwrap_or_default(),
-            }).into_response()
+            })
+            .into_response()
         }
-        Err(e) => {
-            (
-                axum::http::StatusCode::NOT_FOUND,
-                Json(serde_json::json!({ "error": format!("Failed to read file: {}", e) }))
-            ).into_response()
-        }
+        Err(e) => (
+            axum::http::StatusCode::NOT_FOUND,
+            Json(serde_json::json!({ "error": format!("Failed to read file: {}", e) })),
+        )
+            .into_response(),
     }
 }
 
@@ -668,7 +708,8 @@ fn get_language_from_path(path: &str) -> String {
         "c" | "h" => "c",
         "cpp" | "hpp" | "cc" => "cpp",
         _ => "plaintext",
-    }.to_string()
+    }
+    .to_string()
 }
 
 #[derive(Deserialize)]
@@ -684,29 +725,27 @@ async fn write_file_handler(
 
     // Validate path
     let allowed_prefixes = ["themes", "functions", "plugins", "apps", "assets"];
-    let is_allowed = allowed_prefixes.iter().any(|prefix| {
-        path.starts_with(prefix)
-    });
+    let is_allowed = allowed_prefixes
+        .iter()
+        .any(|prefix| path.starts_with(prefix));
 
     if !is_allowed {
         return (
             axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({ "error": "Access denied to this path" }))
-        ).into_response();
+            Json(serde_json::json!({ "error": "Access denied to this path" })),
+        )
+            .into_response();
     }
 
     let full_path = std::path::Path::new(".").join(path);
 
     match tokio::fs::write(&full_path, &payload.content).await {
-        Ok(_) => {
-            Json(serde_json::json!({ "success": true })).into_response()
-        }
-        Err(e) => {
-            (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": format!("Failed to write file: {}", e) }))
-            ).into_response()
-        }
+        Ok(_) => Json(serde_json::json!({ "success": true })).into_response(),
+        Err(e) => (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": format!("Failed to write file: {}", e) })),
+        )
+            .into_response(),
     }
 }
 
@@ -724,15 +763,16 @@ async fn create_file_handler(
 
     // Validate path
     let allowed_prefixes = ["themes", "functions", "plugins", "apps", "assets"];
-    let is_allowed = allowed_prefixes.iter().any(|prefix| {
-        path.starts_with(prefix)
-    });
+    let is_allowed = allowed_prefixes
+        .iter()
+        .any(|prefix| path.starts_with(prefix));
 
     if !is_allowed {
         return (
             axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({ "error": "Access denied to this path" }))
-        ).into_response();
+            Json(serde_json::json!({ "error": "Access denied to this path" })),
+        )
+            .into_response();
     }
 
     let full_path = std::path::Path::new(".").join(path);
@@ -748,15 +788,12 @@ async fn create_file_handler(
     };
 
     match result {
-        Ok(_) => {
-            Json(serde_json::json!({ "success": true })).into_response()
-        }
-        Err(e) => {
-            (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": format!("Failed to create: {}", e) }))
-            ).into_response()
-        }
+        Ok(_) => Json(serde_json::json!({ "success": true })).into_response(),
+        Err(e) => (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": format!("Failed to create: {}", e) })),
+        )
+            .into_response(),
     }
 }
 
@@ -772,15 +809,16 @@ async fn delete_file_handler(
 
     // Validate path
     let allowed_prefixes = ["themes", "functions", "plugins", "apps", "assets"];
-    let is_allowed = allowed_prefixes.iter().any(|prefix| {
-        path.starts_with(prefix)
-    });
+    let is_allowed = allowed_prefixes
+        .iter()
+        .any(|prefix| path.starts_with(prefix));
 
     if !is_allowed {
         return (
             axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({ "error": "Access denied to this path" }))
-        ).into_response();
+            Json(serde_json::json!({ "error": "Access denied to this path" })),
+        )
+            .into_response();
     }
 
     let full_path = std::path::Path::new(".").join(path);
@@ -793,15 +831,12 @@ async fn delete_file_handler(
     };
 
     match result {
-        Ok(_) => {
-            Json(serde_json::json!({ "success": true })).into_response()
-        }
-        Err(e) => {
-            (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": format!("Failed to delete: {}", e) }))
-            ).into_response()
-        }
+        Ok(_) => Json(serde_json::json!({ "success": true })).into_response(),
+        Err(e) => (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": format!("Failed to delete: {}", e) })),
+        )
+            .into_response(),
     }
 }
 
@@ -821,29 +856,31 @@ async fn rename_file_handler(
 
     // Validate paths
     let allowed_prefixes = ["themes", "functions", "plugins", "apps", "assets"];
-    let old_allowed = allowed_prefixes.iter().any(|prefix| old_path.starts_with(prefix));
-    let new_allowed = allowed_prefixes.iter().any(|prefix| new_path.starts_with(prefix));
+    let old_allowed = allowed_prefixes
+        .iter()
+        .any(|prefix| old_path.starts_with(prefix));
+    let new_allowed = allowed_prefixes
+        .iter()
+        .any(|prefix| new_path.starts_with(prefix));
 
     if !old_allowed || !new_allowed {
         return (
             axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({ "error": "Access denied to this path" }))
-        ).into_response();
+            Json(serde_json::json!({ "error": "Access denied to this path" })),
+        )
+            .into_response();
     }
 
     let old_full = std::path::Path::new(".").join(old_path);
     let new_full = std::path::Path::new(".").join(new_path);
 
     match tokio::fs::rename(&old_full, &new_full).await {
-        Ok(_) => {
-            Json(serde_json::json!({ "success": true })).into_response()
-        }
-        Err(e) => {
-            (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": format!("Failed to rename: {}", e) }))
-            ).into_response()
-        }
+        Ok(_) => Json(serde_json::json!({ "success": true })).into_response(),
+        Err(e) => (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": format!("Failed to rename: {}", e) })),
+        )
+            .into_response(),
     }
 }
 
@@ -883,15 +920,23 @@ async fn git_status_handler(
             branch: None,
             is_dirty: None,
             remote_url: None,
-        }).into_response();
+        })
+        .into_response();
     }
 
     // Try to get branch name
     let head_path = git_path.join("HEAD");
-    let branch = tokio::fs::read_to_string(&head_path).await.ok()
+    let branch = tokio::fs::read_to_string(&head_path)
+        .await
+        .ok()
         .and_then(|content| {
             if content.starts_with("ref: refs/heads/") {
-                Some(content.trim_start_matches("ref: refs/heads/").trim().to_string())
+                Some(
+                    content
+                        .trim_start_matches("ref: refs/heads/")
+                        .trim()
+                        .to_string(),
+                )
             } else {
                 Some("detached".to_string())
             }
@@ -902,7 +947,8 @@ async fn git_status_handler(
         branch,
         is_dirty: Some(false), // Simplified - would need git2 for accurate status
         remote_url: None,
-    }).into_response()
+    })
+    .into_response()
 }
 
 async fn git_init_handler(
@@ -912,13 +958,16 @@ async fn git_init_handler(
 
     // Validate path
     let allowed_prefixes = ["themes", "functions", "plugins", "apps"];
-    let is_allowed = allowed_prefixes.iter().any(|prefix| path.starts_with(prefix));
+    let is_allowed = allowed_prefixes
+        .iter()
+        .any(|prefix| path.starts_with(prefix));
 
     if !is_allowed {
         return (
             axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({ "error": "Access denied to this path" }))
-        ).into_response();
+            Json(serde_json::json!({ "error": "Access denied to this path" })),
+        )
+            .into_response();
     }
 
     // Use git command to init
@@ -930,22 +979,20 @@ async fn git_init_handler(
         .await;
 
     match output {
-        Ok(o) if o.status.success() => {
-            Json(serde_json::json!({ "success": true })).into_response()
-        }
+        Ok(o) if o.status.success() => Json(serde_json::json!({ "success": true })).into_response(),
         Ok(o) => {
             let error = String::from_utf8_lossy(&o.stderr);
             (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": format!("Git init failed: {}", error) }))
-            ).into_response()
+                Json(serde_json::json!({ "error": format!("Git init failed: {}", error) })),
+            )
+                .into_response()
         }
-        Err(e) => {
-            (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": format!("Failed to run git: {}", e) }))
-            ).into_response()
-        }
+        Err(e) => (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": format!("Failed to run git: {}", e) })),
+        )
+            .into_response(),
     }
 }
 
@@ -6302,7 +6349,7 @@ async fn personal_notes_handler(
         WHERE c.type = 'personal' AND c.created_by = $1 AND p.user_id = $1
         AND (SELECT COUNT(*) FROM chat_conversation_participants WHERE conversation_id = c.id) = 1
         LIMIT 1
-        "#
+        "#,
     )
     .bind(user.id)
     .fetch_optional(pool)
@@ -6324,12 +6371,14 @@ async fn personal_notes_handler(
         INSERT INTO chat_conversations (title, type, created_by)
         VALUES ('Personal Notes', 'personal', $1)
         RETURNING id
-        "#
+        "#,
     )
     .bind(user.id)
     .fetch_one(pool)
     .await
-    .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to create personal notes: {}", e)))?;
+    .map_err(|e| {
+        rustpress_core::error::Error::internal(format!("Failed to create personal notes: {}", e))
+    })?;
 
     // Add user as the only participant
     sqlx::query("INSERT INTO chat_conversation_participants (conversation_id, user_id, role) VALUES ($1, $2, 'admin')")
@@ -6358,15 +6407,17 @@ async fn online_users_handler(
     let users: Vec<serde_json::Value> = online_users
         .into_iter()
         .filter(|u| u.user_id != user.id)
-        .map(|u| serde_json::json!({
-            "id": u.user_id,
-            "username": u.username,
-            "display_name": u.display_name,
-            "avatar_url": u.avatar_url,
-            "status": u.status,
-            "color": u.color,
-            "current_file": u.current_file
-        }))
+        .map(|u| {
+            serde_json::json!({
+                "id": u.user_id,
+                "username": u.username,
+                "display_name": u.display_name,
+                "avatar_url": u.avatar_url,
+                "status": u.status,
+                "color": u.color,
+                "current_file": u.current_file
+            })
+        })
         .collect();
 
     Ok(json(serde_json::json!({
@@ -6391,7 +6442,10 @@ async fn create_group_chat_handler(
     let pool = state.db().inner();
 
     if payload.participant_ids.is_empty() {
-        return Err(rustpress_core::error::Error::validation("At least one participant is required").into());
+        return Err(rustpress_core::error::Error::validation(
+            "At least one participant is required",
+        )
+        .into());
     }
 
     // Create group conversation
@@ -6400,13 +6454,15 @@ async fn create_group_chat_handler(
         INSERT INTO chat_conversations (title, type, created_by)
         VALUES ($1, 'group', $2)
         RETURNING id
-        "#
+        "#,
     )
     .bind(&payload.title)
     .bind(user.id)
     .fetch_one(pool)
     .await
-    .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to create group chat: {}", e)))?;
+    .map_err(|e| {
+        rustpress_core::error::Error::internal(format!("Failed to create group chat: {}", e))
+    })?;
 
     // Add creator as admin
     sqlx::query("INSERT INTO chat_conversation_participants (conversation_id, user_id, role) VALUES ($1, $2, 'admin')")
@@ -6429,25 +6485,27 @@ async fn create_group_chat_handler(
     // Notify participants via WebSocket
     let ws_hub = state.ws_hub();
     for participant_id in &payload.participant_ids {
-        ws_hub.send_to_user(
-            *participant_id,
-            crate::websocket::ServerMessage::ChatMessage {
-                message: crate::websocket::message::ChatMessageDto {
-                    id: uuid::Uuid::new_v4(),
-                    conversation_id: conv_id,
-                    sender_id: user.id,
-                    sender_name: "System".to_string(),
-                    sender_avatar: None,
-                    content: format!("You have been added to group chat: {}", payload.title),
-                    content_type: "system".to_string(),
-                    reply_to_id: None,
-                    is_pinned: false,
-                    is_edited: false,
-                    reactions: vec![],
-                    created_at: chrono::Utc::now(),
+        ws_hub
+            .send_to_user(
+                *participant_id,
+                crate::websocket::ServerMessage::ChatMessage {
+                    message: crate::websocket::message::ChatMessageDto {
+                        id: uuid::Uuid::new_v4(),
+                        conversation_id: conv_id,
+                        sender_id: user.id,
+                        sender_name: "System".to_string(),
+                        sender_avatar: None,
+                        content: format!("You have been added to group chat: {}", payload.title),
+                        content_type: "system".to_string(),
+                        reply_to_id: None,
+                        is_pinned: false,
+                        is_edited: false,
+                        reactions: vec![],
+                        created_at: chrono::Utc::now(),
+                    },
                 },
-            },
-        ).await;
+            )
+            .await;
     }
 
     Ok(created(serde_json::json!({
@@ -6466,30 +6524,33 @@ async fn list_conversations_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    let conversations: Vec<serde_json::Value> = sqlx::query_as::<_, (Uuid, Option<String>, String, chrono::DateTime<chrono::Utc>)>(
-        r#"
+    let conversations: Vec<serde_json::Value> =
+        sqlx::query_as::<_, (Uuid, Option<String>, String, chrono::DateTime<chrono::Utc>)>(
+            r#"
         SELECT c.id, c.title, c.type, c.updated_at
         FROM chat_conversations c
         JOIN chat_conversation_participants p ON p.conversation_id = c.id
         WHERE p.user_id = $1 AND c.is_archived = false
         ORDER BY c.updated_at DESC
         LIMIT $2 OFFSET $3
-        "#
-    )
-    .bind(user.id)
-    .bind(params.limit)
-    .bind(params.offset)
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default()
-    .into_iter()
-    .map(|(id, title, conv_type, updated_at)| serde_json::json!({
-        "id": id,
-        "title": title,
-        "type": conv_type,
-        "updated_at": updated_at
-    }))
-    .collect();
+        "#,
+        )
+        .bind(user.id)
+        .bind(params.limit)
+        .bind(params.offset)
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .map(|(id, title, conv_type, updated_at)| {
+            serde_json::json!({
+                "id": id,
+                "title": title,
+                "type": conv_type,
+                "updated_at": updated_at
+            })
+        })
+        .collect();
 
     Ok(json(serde_json::json!({ "conversations": conversations })))
 }
@@ -6510,7 +6571,9 @@ async fn create_conversation_handler(
     Json(payload): Json<CreateConversationRequest>,
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
-    let conv_type = payload.conversation_type.unwrap_or_else(|| "direct".to_string());
+    let conv_type = payload
+        .conversation_type
+        .unwrap_or_else(|| "direct".to_string());
 
     // Create conversation
     let conv_id: Uuid = sqlx::query_scalar(
@@ -6518,14 +6581,16 @@ async fn create_conversation_handler(
         INSERT INTO chat_conversations (title, type, created_by)
         VALUES ($1, $2, $3)
         RETURNING id
-        "#
+        "#,
     )
     .bind(&payload.title)
     .bind(&conv_type)
     .bind(user.id)
     .fetch_one(pool)
     .await
-    .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to create conversation: {}", e)))?;
+    .map_err(|e| {
+        rustpress_core::error::Error::internal(format!("Failed to create conversation: {}", e))
+    })?;
 
     // Add creator as participant
     sqlx::query("INSERT INTO chat_conversation_participants (conversation_id, user_id, role) VALUES ($1, $2, 'admin')")
@@ -6537,12 +6602,14 @@ async fn create_conversation_handler(
 
     // Add other participants
     for participant_id in payload.participant_ids {
-        sqlx::query("INSERT INTO chat_conversation_participants (conversation_id, user_id) VALUES ($1, $2)")
-            .bind(conv_id)
-            .bind(participant_id)
-            .execute(pool)
-            .await
-            .ok();
+        sqlx::query(
+            "INSERT INTO chat_conversation_participants (conversation_id, user_id) VALUES ($1, $2)",
+        )
+        .bind(conv_id)
+        .bind(participant_id)
+        .execute(pool)
+        .await
+        .ok();
     }
 
     Ok(created(serde_json::json!({
@@ -6566,7 +6633,7 @@ async fn get_conversation_handler(
         FROM chat_conversations c
         JOIN chat_conversation_participants p ON p.conversation_id = c.id
         WHERE c.id = $1 AND p.user_id = $2
-        "#
+        "#,
     )
     .bind(id)
     .bind(user.id)
@@ -6636,14 +6703,25 @@ async fn get_messages_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    let messages: Vec<serde_json::Value> = sqlx::query_as::<_, (Uuid, Uuid, String, String, bool, bool, chrono::DateTime<chrono::Utc>)>(
+    let messages: Vec<serde_json::Value> = sqlx::query_as::<
+        _,
+        (
+            Uuid,
+            Uuid,
+            String,
+            String,
+            bool,
+            bool,
+            chrono::DateTime<chrono::Utc>,
+        ),
+    >(
         r#"
         SELECT m.id, m.sender_id, m.content, m.content_type, m.is_pinned, m.is_edited, m.created_at
         FROM chat_messages m
         WHERE m.conversation_id = $1 AND m.deleted_at IS NULL
         ORDER BY m.created_at DESC
         LIMIT $2 OFFSET $3
-        "#
+        "#,
     )
     .bind(id)
     .bind(params.limit)
@@ -6652,15 +6730,19 @@ async fn get_messages_handler(
     .await
     .unwrap_or_default()
     .into_iter()
-    .map(|(msg_id, sender_id, content, content_type, is_pinned, is_edited, created_at)| serde_json::json!({
-        "id": msg_id,
-        "sender_id": sender_id,
-        "content": content,
-        "content_type": content_type,
-        "is_pinned": is_pinned,
-        "is_edited": is_edited,
-        "created_at": created_at
-    }))
+    .map(
+        |(msg_id, sender_id, content, content_type, is_pinned, is_edited, created_at)| {
+            serde_json::json!({
+                "id": msg_id,
+                "sender_id": sender_id,
+                "content": content,
+                "content_type": content_type,
+                "is_pinned": is_pinned,
+                "is_edited": is_edited,
+                "created_at": created_at
+            })
+        },
+    )
     .collect();
 
     Ok(json(serde_json::json!({ "messages": messages })))
@@ -6688,7 +6770,7 @@ async fn send_message_handler(
         INSERT INTO chat_messages (conversation_id, sender_id, content, content_type, reply_to_id)
         VALUES ($1, $2, $3, $4, $5)
         RETURNING id
-        "#
+        "#,
     )
     .bind(id)
     .bind(user.id)
@@ -6697,18 +6779,23 @@ async fn send_message_handler(
     .bind(payload.reply_to_id)
     .fetch_one(pool)
     .await
-    .map_err(|e| rustpress_core::error::Error::internal(format!("Failed to send message: {}", e)))?;
+    .map_err(|e| {
+        rustpress_core::error::Error::internal(format!("Failed to send message: {}", e))
+    })?;
 
     // Broadcast via WebSocket
     if let Ok(Some(dto)) = crate::websocket::chat::ChatService::new(pool.clone())
         .get_message_dto(msg_id, user.id)
         .await
     {
-        state.ws_hub.broadcast_to_conversation(
-            id,
-            crate::websocket::ServerMessage::ChatMessage { message: dto },
-            None,
-        ).await;
+        state
+            .ws_hub
+            .broadcast_to_conversation(
+                id,
+                crate::websocket::ServerMessage::ChatMessage { message: dto },
+                None,
+            )
+            .await;
     }
 
     Ok(created(serde_json::json!({ "id": msg_id })))
@@ -6728,18 +6815,20 @@ async fn list_participants_handler(
         FROM chat_conversation_participants p
         JOIN users u ON u.id = p.user_id
         WHERE p.conversation_id = $1
-        "#
+        "#,
     )
     .bind(id)
     .fetch_all(pool)
     .await
     .unwrap_or_default()
     .into_iter()
-    .map(|(uid, username, display_name)| serde_json::json!({
-        "id": uid,
-        "username": username,
-        "display_name": display_name
-    }))
+    .map(|(uid, username, display_name)| {
+        serde_json::json!({
+            "id": uid,
+            "username": username,
+            "display_name": display_name
+        })
+    })
     .collect();
 
     Ok(json(serde_json::json!({ "participants": participants })))
@@ -6783,12 +6872,14 @@ async fn remove_participant_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    sqlx::query("DELETE FROM chat_conversation_participants WHERE conversation_id = $1 AND user_id = $2")
-        .bind(params.id)
-        .bind(params.user_id)
-        .execute(pool)
-        .await
-        .ok();
+    sqlx::query(
+        "DELETE FROM chat_conversation_participants WHERE conversation_id = $1 AND user_id = $2",
+    )
+    .bind(params.id)
+    .bind(params.user_id)
+    .execute(pool)
+    .await
+    .ok();
 
     Ok(no_content())
 }
@@ -6924,13 +7015,15 @@ async fn remove_reaction_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    sqlx::query("DELETE FROM chat_message_reactions WHERE message_id = $1 AND user_id = $2 AND emoji = $3")
-        .bind(params.id)
-        .bind(user.id)
-        .bind(&params.emoji)
-        .execute(pool)
-        .await
-        .ok();
+    sqlx::query(
+        "DELETE FROM chat_message_reactions WHERE message_id = $1 AND user_id = $2 AND emoji = $3",
+    )
+    .bind(params.id)
+    .bind(user.id)
+    .bind(&params.emoji)
+    .execute(pool)
+    .await
+    .ok();
 
     Ok(no_content())
 }
@@ -7045,8 +7138,9 @@ async fn chat_history_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    let messages: Vec<serde_json::Value> = sqlx::query_as::<_, (Uuid, Uuid, String, chrono::DateTime<chrono::Utc>)>(
-        r#"
+    let messages: Vec<serde_json::Value> =
+        sqlx::query_as::<_, (Uuid, Uuid, String, chrono::DateTime<chrono::Utc>)>(
+            r#"
         SELECT m.id, m.conversation_id, m.content, m.created_at
         FROM chat_messages m
         JOIN chat_conversation_participants p ON p.conversation_id = m.conversation_id
@@ -7057,25 +7151,27 @@ async fn chat_history_handler(
           AND ($4::timestamptz IS NULL OR m.created_at <= $4)
         ORDER BY m.created_at DESC
         LIMIT $5 OFFSET $6
-        "#
-    )
-    .bind(user.id)
-    .bind(&params.search)
-    .bind(params.from)
-    .bind(params.to)
-    .bind(params.limit.unwrap_or(50))
-    .bind(params.offset.unwrap_or(0))
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default()
-    .into_iter()
-    .map(|(id, conv_id, content, created_at)| serde_json::json!({
-        "id": id,
-        "conversation_id": conv_id,
-        "content": content,
-        "created_at": created_at
-    }))
-    .collect();
+        "#,
+        )
+        .bind(user.id)
+        .bind(&params.search)
+        .bind(params.from)
+        .bind(params.to)
+        .bind(params.limit.unwrap_or(50))
+        .bind(params.offset.unwrap_or(0))
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .map(|(id, conv_id, content, created_at)| {
+            serde_json::json!({
+                "id": id,
+                "conversation_id": conv_id,
+                "content": content,
+                "created_at": created_at
+            })
+        })
+        .collect();
 
     Ok(json(serde_json::json!({ "messages": messages })))
 }
@@ -7087,30 +7183,33 @@ async fn starred_messages_handler(
 ) -> HttpResult<impl axum::response::IntoResponse> {
     let pool = state.db().inner();
 
-    let messages: Vec<serde_json::Value> = sqlx::query_as::<_, (Uuid, Uuid, String, chrono::DateTime<chrono::Utc>)>(
-        r#"
+    let messages: Vec<serde_json::Value> =
+        sqlx::query_as::<_, (Uuid, Uuid, String, chrono::DateTime<chrono::Utc>)>(
+            r#"
         SELECT m.id, m.conversation_id, m.content, m.created_at
         FROM chat_messages m
         JOIN chat_message_stars s ON s.message_id = m.id
         WHERE s.user_id = $1 AND m.deleted_at IS NULL
         ORDER BY s.created_at DESC
         LIMIT $2 OFFSET $3
-        "#
-    )
-    .bind(user.id)
-    .bind(params.limit)
-    .bind(params.offset)
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default()
-    .into_iter()
-    .map(|(id, conv_id, content, created_at)| serde_json::json!({
-        "id": id,
-        "conversation_id": conv_id,
-        "content": content,
-        "created_at": created_at
-    }))
-    .collect();
+        "#,
+        )
+        .bind(user.id)
+        .bind(params.limit)
+        .bind(params.offset)
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .map(|(id, conv_id, content, created_at)| {
+            serde_json::json!({
+                "id": id,
+                "conversation_id": conv_id,
+                "content": content,
+                "created_at": created_at
+            })
+        })
+        .collect();
 
     Ok(json(serde_json::json!({ "messages": messages })))
 }
