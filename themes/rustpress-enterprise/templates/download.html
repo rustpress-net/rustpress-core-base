@@ -1,0 +1,606 @@
+{% extends "templates/base.html" %}
+
+{% block title %}Download - {{ site.name | default(value="RustPress") }}{% endblock %}
+
+{% block content %}
+<main class="main-content">
+  <!-- Hero Section -->
+  <section class="download-hero">
+    <div class="container">
+      <div class="download-hero-content" data-animate="fade-up">
+        <span class="hero-badge">Download RustPress</span>
+        <h1 class="hero-title">Get Started with <span class="text-gradient">RustPress</span></h1>
+        <p class="hero-description">
+          Download RustPress for your platform and start building blazing-fast websites today.
+          Free for personal use, with premium plans for professionals.
+        </p>
+        <div class="version-info">
+          <span class="version-badge">Latest: v0.9.5-beta</span>
+          <a href="https://github.com/nicholaswinton2/RustPress/releases" class="changelog-link" target="_blank" rel="noopener">View Changelog</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Options -->
+  <section class="download-options section">
+    <div class="container">
+      <div class="platforms-grid" data-animate-stagger>
+        <!-- Windows -->
+        <div class="platform-card">
+          <div class="platform-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88" width="48" height="48">
+              <path fill="#00adef" d="M0 12.5l35.7-4.9v34.5H0V12.5zm40 33.6V7l48-7v49h-48zm0 5.5h48v42l-48 7V51.6zm-40-6h35.7v34l-35.7-4.9V45.6z"/>
+            </svg>
+          </div>
+          <h3>Windows</h3>
+          <p>Windows 10/11 (64-bit)</p>
+          <div class="download-buttons">
+            <a href="#" class="btn btn--primary btn--lg">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download .exe
+            </a>
+            <a href="#" class="btn btn--outline btn--sm">MSI Installer</a>
+          </div>
+          <span class="file-size">~45 MB</span>
+        </div>
+
+        <!-- macOS -->
+        <div class="platform-card">
+          <div class="platform-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" width="40" height="48">
+              <path fill="#555" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+            </svg>
+          </div>
+          <h3>macOS</h3>
+          <p>macOS 12+ (Intel & Apple Silicon)</p>
+          <div class="download-buttons">
+            <a href="#" class="btn btn--primary btn--lg">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download .dmg
+            </a>
+            <a href="#" class="btn btn--outline btn--sm">Homebrew</a>
+          </div>
+          <span class="file-size">~42 MB</span>
+        </div>
+
+        <!-- Linux -->
+        <div class="platform-card">
+          <div class="platform-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="42" height="48">
+              <path fill="#333" d="M220.8 123.3c1 .5 1.8 1.7 3 1.7 1.1 0 2.8-.4 2.9-1.5.2-1.4-1.9-2.3-3.2-2.9-1.7-.7-3.9-1-5.5-.1-.4.2-.8.7-.6 1.1.3 1.3 2.3 1.1 3.4 1.7zm-21.9 1.7c1.2 0 2-1.2 3-1.7 1.1-.6 3.1-.4 3.5-1.6.2-.4-.2-.9-.6-1.1-1.6-.9-3.8-.6-5.5.1-1.3.6-3.4 1.5-3.2 2.9.1 1 1.8 1.5 2.8 1.4zM420 403.8c-3.6-4-5.3-11.6-7.2-19.7-1.8-8.1-3.9-16.8-10.5-22.4-1.3-1.1-2.6-2.1-4-2.9-1.3-.8-2.7-1.5-4.1-2 9.2-27.3 5.6-54.5-3.7-79.1-11.4-30.1-31.3-56.4-46.5-74.4-17.1-21.5-33.7-41.9-33.4-72C311.1 85.4 315.7.1 234.8 0 132.4-.2 158 103.4 156.9 135.2c-1.7 23.4-6.4 41.8-22.5 64.7-18.9 22.5-45.5 58.8-58.1 96.7-6 17.9-8.8 36.1-6.2 53.3-6.5 5.8-11.4 14.7-16.6 20.2-4.2 4.3-10.3 5.9-17 8.3s-14 6-18.5 14.5c-2.1 3.9-2.8 8.1-2.8 12.4 0 3.9.6 7.9 1.2 11.8 1.2 8.1 2.5 15.7.8 20.8-5.2 14.4-5.9 24.4-2.2 31.7 3.8 7.3 11.4 10.5 20.1 12.3 17.3 3.6 40.8 2.7 59.3 12.5 19.8 10.4 39.9 14.1 55.9 10.4 11.6-2.6 21.1-9.6 25.9-20.2 12.5-.1 26.3-5.4 48.3-6.6 14.9-1.2 33.6 5.3 55.1 4.1.6 2.3 1.4 4.6 2.5 6.7v.1c8.3 16.7 23.8 24.3 40.3 23 16.6-1.3 34.1-11 48.3-27.9 13.6-16.4 36-23.2 50.9-32.2 7.4-4.5 13.4-10.1 13.9-18.3.4-8.2-4.4-17.3-15.5-29.7zM223.7 87.3c9.8-22.2 34.2-21.8 44-.4 6.5 14.2 3.6 30.9-4.3 40.4-1.6-.8-5.9-2.6-12.6-4.9 1.1-1.2 3.1-2.7 3.9-4.6 4.8-11.8-.2-27-9.1-27.3-7.3-.5-13.9 10.8-11.8 23-4.1-2-9.4-3.5-13-4.4-1-6.9-.3-14.6 2.9-21.8zM183 75.8c10.1 0 20.8 14.2 19.1 33.5-3.5 1-7.1 2.5-10.2 4.6 1.2-8.9-3.3-20.1-9.6-19.6-8.4.7-9.8 21.2-1.8 28.1 1 .8 1.9-.2-5.9 5.5-15.6-14.6-10.5-52.1 8.4-52.1zm-13.6 60.7c6.2-4.6 13.6-10 14.1-10.5 4.7-4.4 13.5-14.2 27.9-14.2 7.1 0 15.6 2.3 25.9 8.9 6.3 4.1 11.3 4.4 22.6 9.3 8.4 3.5 13.7 9.7 10.5 18.2-2.6 7.1-11 14.4-22.7 18.1-11.1 3.6-19.8 16-38.2 14.9-3.9-.2-7-1-9.6-2.1-8-3.5-12.2-10.4-20-15-8.6-4.8-13.2-10.4-14.7-15.3-1.4-4.9 0-9 4.2-12.3zm3.3 334c-2.7 35.1-43.9 34.4-75.3 18-29.9-15.8-68.6-6.5-76.5-21.9-2.4-4.7-2.4-12.7 2.6-26.4v-.2c2.4-7.6.6-16-.6-23.9-1.2-7.8-1.8-15 .9-20 3.5-6.7 8.5-9.1 14.8-11.3 10.3-3.7 11.8-3.4 19.6-9.9 5.5-5.7 9.5-12.9 14.3-18 5.1-5.5 10-8.1 17.7-6.9 8.1 1.2 15.1 6.8 21.9 16l19.6 35.6c9.5 19.9 43.1 48.4 41 68.9zm-30.5-99.4c6 16.9-4.5 35.4-21.3 35.4-6.5 0-12.9-3-18.4-8.2-8.4-7.9-14.5-20.4-17.3-34.4-.5-2.9-.6-5.4-.3-7.3 1.2-8.1 4.7-14.9 11.8-18.1 8.2-3.8 17.5-2.1 26.1 4.3 9.3 7.2 15.8 18.6 19.4 28.3zm-13.2-165.7c-7.5 16.2-19.5 21.2-31.1 24.6s-23 1.4-34.4 3.5c-7.1 1.3-16.1 4.7-22.8 10.2 1.3-10.5 4.3-21 9.5-31.3 12.2-24.4 28.5-43.9 43.4-64.2 17.4-23.7 22.5-44.1 22.5-67.5 0-8.9-1.2-18.1-3.5-27.4 3.2-.8 6.5-1.4 9.8-1.5 44.6 0 54.7 68.3 50.2 97.6-4.4 29.1-27.2 61.3-43.6 56zm-5.3-10.4c13-18.6 28.6-39.5 38.5-56.6 8.3-14.3 16.7-35.6 17.2-56.8 11.3 24.8 21.3 74.4 6.5 114.5-7.6 20.8-20.5 36.8-34.7 44.3l-26.1-46.8c-.3-.4-.5-.9-.7-1.3-.1-.2-.2-.4-.3-.6-1.2-1.7.2 2.3-.4-2.7zm8.4 93.3c.9-1.5 1.2-2.7 1.3-3.5.5-3.3-2.8-7.6-6-10.8 2.9-.8 6.8-.1 11.4 1.7 10.6 4 18.1 14.2 16.7 25.6-1.3 11.3-11.6 20.1-25.1 21.2 2.3-11.1 3.1-25.7 1.7-34.2zM391 386.3c-4.8 10.2-16.6 15.9-27.7 18-8.8 1.6-18.2 1.3-26.2-1.5s-14.5-8.3-18.6-15.3c-2.2-3.8-3.6-8-4.7-12.3-2-7.9-3.4-16.2-6.2-23.6 15-5.9 34.4-16.9 44.1-34.9 7.5 4.6 12.4 9.7 17.7 18.3 5.7 9.2 9.7 20.4 15.3 31.8 3.2 6.5 5.5 13.8 6.3 19.5zM422.7 400c-9.6 6.8-22.6 11.4-35.3 17.6-12.8 6.3-23.2 13.8-33.2 23.6-6.5 6.5-12.5 14-18.4 21.6-7.6 9.9-18.8 20.6-30.8 21.6-16.1 1.4-25.2-8.8-30.6-22.5-5.5-13.7-.6-29.4 11.5-35.4 29.1-14.4 73.6-11.4 95.5-5.4 6.3 1.7 12 4.5 17.5 7.6 5.3 3 10.5 6.6 13.8 10.9 2.8 3.7 6.6 9.6 4.5 13.4-.9 1.7-2.6 2.7-4.4 3.6-3.9 2.1-8.1 3.6-10.8 3.6-6.8 0-8.4-2.4-12.7-6-6.2-5.1-6.1-6.5-2.9-9.8 5.4-5.6 15.6-8.7 23.3-10.5 2.7-.7 4.2-.9 4.2-1.1-.1-4.3-2.6-7.7-6.7-11.6-2-2-4.4-3.7-6.7-5.4-1.6-1.2-3.4-2.4-5.2-3.2-.3 0 4.3 4.7 7.3 7.5 4.7 4.5 3.3 7.5-.1 10.2-2.9 2.3-8.9 6.8-17.9 7.8-3.4.3-6.7-.5-9.7-2.1-3.5-1.8-5.9-5.8-4.7-9.8 2.7-8.6 14.3-12.6 23.1-12.6 3.1 0 5.9 1.1 8.2 2.7 6.7 4.7 14.1 14.3 14.5 16.3.3 1.5-4.9 7.2-15.5 13.4-.9.5-2.2 1.3-3.1 2-.9.8-.6 1.7.2 2.3.8.6 1.7.9 2.5 1.2 3.9 1.7 8.8 3 13.9 4.4 5.1 1.5 10.4 3.1 15 6 4.7 2.9 8.8 7.4 7.2 13.4-1.1 4.6-5.2 8.1-10.2 11.1-4.5 2.7-9.7 4.6-15 5.4-.4.1-.8.2-1.2.2-9.9 1.8-19.9-1.5-24.7-9.6-.5-.9-1.1-1.9-1.4-2.9-.3-1.1-.4-2.2-.4-3.5 0-12.6 8.9-21.7 19.5-26.9 10.6-5.2 23.1-6.5 34.4-3.5.1.1 5.9 2.2 5.8 2.3z"/>
+            </svg>
+          </div>
+          <h3>Linux</h3>
+          <p>Ubuntu, Debian, Fedora, Arch</p>
+          <div class="download-buttons">
+            <a href="#" class="btn btn--primary btn--lg">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download .deb
+            </a>
+            <a href="#" class="btn btn--outline btn--sm">.rpm</a>
+            <a href="#" class="btn btn--outline btn--sm">.tar.gz</a>
+          </div>
+          <span class="file-size">~40 MB</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Alternative Install Methods -->
+  <section class="install-methods section section--muted">
+    <div class="container">
+      <div class="section-header" data-animate="fade-up">
+        <h2 class="section-title">Alternative <span class="text-gradient">Installation</span></h2>
+        <p class="section-subtitle">Install using your preferred package manager or from source</p>
+      </div>
+
+      <div class="methods-grid" data-animate-stagger>
+        <!-- Cargo -->
+        <div class="method-card">
+          <div class="method-header">
+            <span class="method-icon">
+              <svg viewBox="0 0 100 100" width="28" height="28">
+                <circle fill="#ce422b" cx="50" cy="50" r="45"/>
+                <text x="50" y="60" font-family="sans-serif" font-size="24" font-weight="bold" fill="#fff" text-anchor="middle">Rs</text>
+              </svg>
+            </span>
+            <h4>Cargo (Rust)</h4>
+          </div>
+          <div class="method-code">
+            <code>cargo install rustpress</code>
+            <button class="copy-btn" data-copy="cargo install rustpress">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Homebrew -->
+        <div class="method-card">
+          <div class="method-header">
+            <span class="method-icon">
+              <svg viewBox="0 0 100 100" width="28" height="28">
+                <rect fill="#2e2a24" width="100" height="100" rx="10"/>
+                <text x="50" y="65" font-family="sans-serif" font-size="24" font-weight="bold" fill="#fbb040" text-anchor="middle">🍺</text>
+              </svg>
+            </span>
+            <h4>Homebrew (macOS)</h4>
+          </div>
+          <div class="method-code">
+            <code>brew install rustpress/tap/rustpress</code>
+            <button class="copy-btn" data-copy="brew install rustpress/tap/rustpress">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Docker -->
+        <div class="method-card">
+          <div class="method-header">
+            <span class="method-icon">
+              <svg viewBox="0 0 100 100" width="28" height="28">
+                <rect fill="#2496ed" width="100" height="100" rx="10"/>
+                <text x="50" y="65" font-family="sans-serif" font-size="24" font-weight="bold" fill="#fff" text-anchor="middle">D</text>
+              </svg>
+            </span>
+            <h4>Docker</h4>
+          </div>
+          <div class="method-code">
+            <code>docker pull rustpress/rustpress:latest</code>
+            <button class="copy-btn" data-copy="docker pull rustpress/rustpress:latest">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- From Source -->
+        <div class="method-card">
+          <div class="method-header">
+            <span class="method-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+            </span>
+            <h4>From Source</h4>
+          </div>
+          <div class="method-code">
+            <code>git clone https://github.com/rustpress/rustpress && cd rustpress && cargo build --release</code>
+            <button class="copy-btn" data-copy="git clone https://github.com/rustpress/rustpress && cd rustpress && cargo build --release">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- System Requirements -->
+  <section class="requirements section">
+    <div class="container">
+      <div class="section-header" data-animate="fade-up">
+        <h2 class="section-title">System <span class="text-gradient">Requirements</span></h2>
+      </div>
+
+      <div class="requirements-grid" data-animate="fade-up">
+        <div class="requirement-card">
+          <h4>Minimum</h4>
+          <ul>
+            <li>1 CPU core</li>
+            <li>512 MB RAM</li>
+            <li>100 MB disk space</li>
+            <li>PostgreSQL 13+ or SQLite</li>
+          </ul>
+        </div>
+
+        <div class="requirement-card requirement-card--recommended">
+          <h4>Recommended</h4>
+          <ul>
+            <li>2+ CPU cores</li>
+            <li>2 GB RAM</li>
+            <li>1 GB disk space</li>
+            <li>PostgreSQL 15+</li>
+            <li>Redis 6+ for caching</li>
+          </ul>
+        </div>
+
+        <div class="requirement-card">
+          <h4>Production</h4>
+          <ul>
+            <li>4+ CPU cores</li>
+            <li>4+ GB RAM</li>
+            <li>SSD storage</li>
+            <li>PostgreSQL 15+ cluster</li>
+            <li>Redis 7+ cluster</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section class="quickstart section section--muted">
+    <div class="container">
+      <div class="quickstart-content" data-animate="fade-up">
+        <h2 class="section-title">Quick <span class="text-gradient">Start</span></h2>
+        <p class="section-subtitle">Get your first site running in 60 seconds</p>
+
+        <div class="terminal">
+          <div class="terminal-header">
+            <div class="window-controls">
+              <span></span><span></span><span></span>
+            </div>
+            <span class="terminal-title">Terminal</span>
+          </div>
+          <div class="terminal-content">
+            <div class="terminal-line">
+              <span class="prompt">$</span>
+              <span class="command">rustpress new my-site</span>
+            </div>
+            <div class="terminal-line output">
+              <span class="success">Creating new RustPress site...</span>
+            </div>
+            <div class="terminal-line">
+              <span class="prompt">$</span>
+              <span class="command">cd my-site && rustpress serve</span>
+            </div>
+            <div class="terminal-line output">
+              <span class="success">Server running at http://localhost:8080</span>
+            </div>
+            <div class="terminal-line output">
+              <span>Admin panel at http://localhost:8080/admin</span>
+            </div>
+          </div>
+        </div>
+
+        <a href="/docs" class="btn btn--primary btn--lg">
+          Read Full Guide
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* Download Hero */
+.download-hero {
+  padding: var(--space-20) 0 var(--space-10);
+  background: var(--gradient-dark);
+  text-align: center;
+}
+
+.download-hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero-badge {
+  display: inline-block;
+  padding: var(--space-2) var(--space-4);
+  background: rgba(206, 66, 43, 0.1);
+  border: 1px solid var(--border-rust);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-rust-light);
+  margin-bottom: var(--space-6);
+}
+
+.hero-title {
+  font-size: var(--text-5xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  margin-bottom: var(--space-6);
+}
+
+.hero-description {
+  font-size: var(--text-xl);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+}
+
+.version-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+.version-badge {
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-family: monospace;
+}
+
+.changelog-link {
+  font-size: var(--text-sm);
+  color: var(--color-rust-light);
+}
+
+/* Platforms Grid */
+.platforms-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+}
+
+.platform-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  text-align: center;
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.platform-card:hover {
+  border-color: var(--color-rust);
+  transform: translateY(-4px);
+}
+
+.platform-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.platform-card h3 {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-2);
+}
+
+.platform-card p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+}
+
+.download-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.file-size {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* Methods Grid */
+.methods-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+.method-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+}
+
+.method-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.method-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.method-header h4 {
+  font-size: var(--text-base);
+}
+
+.method-code {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+}
+
+.method-code code {
+  flex: 1;
+  font-family: monospace;
+  font-size: var(--text-sm);
+  color: var(--color-rust-light);
+  overflow-x: auto;
+}
+
+.copy-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+}
+
+.copy-btn:hover {
+  color: var(--color-rust-light);
+}
+
+/* Requirements */
+.requirements-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+}
+
+.requirement-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+}
+
+.requirement-card--recommended {
+  border-color: var(--color-rust);
+  position: relative;
+}
+
+.requirement-card--recommended::before {
+  content: 'Recommended';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-rust);
+  color: white;
+  font-size: var(--text-xs);
+  border-radius: var(--radius-full);
+}
+
+.requirement-card h4 {
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-4);
+  text-align: center;
+}
+
+.requirement-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.requirement-card li {
+  padding: var(--space-2) 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.requirement-card li:last-child {
+  border-bottom: none;
+}
+
+/* Quick Start */
+.quickstart-content {
+  max-width: 700px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.terminal {
+  background: #1e1e1e;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  margin: var(--space-8) 0;
+  text-align: left;
+}
+
+.terminal-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: #2d2d2d;
+  border-bottom: 1px solid #404040;
+}
+
+.window-controls {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.window-controls span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.window-controls span:first-child { background: #ff5f57; }
+.window-controls span:nth-child(2) { background: #ffbd2e; }
+.window-controls span:last-child { background: #27ca40; }
+
+.terminal-title {
+  font-size: var(--text-sm);
+  color: #888;
+}
+
+.terminal-content {
+  padding: var(--space-5);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--text-sm);
+}
+
+.terminal-line {
+  line-height: 1.8;
+}
+
+.prompt {
+  color: #27ca40;
+  margin-right: var(--space-2);
+}
+
+.command {
+  color: #e6e6e6;
+}
+
+.terminal-line.output {
+  color: #888;
+  padding-left: var(--space-4);
+}
+
+.terminal-line .success {
+  color: #27ca40;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .platforms-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .methods-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .requirements-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: var(--text-3xl);
+  }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Copy to clipboard functionality
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const text = this.dataset.copy;
+      navigator.clipboard.writeText(text).then(() => {
+        const originalIcon = this.innerHTML;
+        this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+        setTimeout(() => {
+          this.innerHTML = originalIcon;
+        }, 2000);
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

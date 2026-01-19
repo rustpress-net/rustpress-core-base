@@ -124,6 +124,10 @@ import { AppPreview } from './AppPreview';
 import { PluginPreview } from './PluginPreview';
 import { GitWarningBanner } from './GitWarningBanner';
 
+// Database and Notes
+import { DatabaseExplorer } from './DatabaseExplorer';
+import { PersonalNotes } from './PersonalNotes';
+
 // Collaboration
 import { CollaborationPanel } from './collaboration';
 import { useCollaborationStore } from '../../store/collaborationStore';
@@ -201,7 +205,7 @@ export interface IDEProps {
 }
 
 type RightPanel = 'git' | 'settings' | 'search' | 'editor-settings' | 'extensions' | 'outline' | 'history' | 'ai-assistant' | 'references' | 'call-hierarchy' | 'type-hierarchy' | 'bookmarks' | 'timeline' | 'compare' | null;
-type BottomPanel = 'terminal' | 'problems' | 'output' | 'debug-console' | 'tasks' | 'preview' | null;
+type BottomPanel = 'terminal' | 'problems' | 'output' | 'debug-console' | 'tasks' | 'preview' | 'database' | 'notes' | null;
 
 // Folder configuration - base folders always shown
 const BASE_FOLDERS = [
@@ -352,6 +356,7 @@ export const IDE: React.FC<IDEProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [zenMode, setZenMode] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [splitMode, setSplitMode] = useState<'none' | 'horizontal' | 'vertical'>('none');
 
   // Modal state
@@ -757,6 +762,30 @@ export const IDE: React.FC<IDEProps> = ({
   useEffect(() => {
     localStorage.setItem('ide-editor-config', JSON.stringify(editorConfig));
   }, [editorConfig]);
+
+  // Fullscreen change listener
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  // Toggle fullscreen function
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error('Fullscreen error:', err);
+    }
+  };
 
   // Auto-save functionality
   useEffect(() => {
@@ -2083,14 +2112,17 @@ export const IDE: React.FC<IDEProps> = ({
             )}
           </button>
 
-          {/* Zen Mode Button */}
+          {/* Fullscreen Button */}
           <button
-            onClick={() => setZenMode(true)}
-            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
-            title="Zen Mode"
-            disabled={!activeFile}
+            onClick={toggleFullscreen}
+            className={`p-1.5 rounded transition-colors ${
+              isFullscreen
+                ? 'text-blue-400 bg-blue-500/20 hover:bg-blue-500/30'
+                : 'text-gray-400 hover:text-white hover:bg-gray-700'
+            }`}
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
-            <Maximize2 className="w-4 h-4" />
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
 
           {/* Split Editor Button */}
@@ -2452,6 +2484,7 @@ export const IDE: React.FC<IDEProps> = ({
               {/* Extensions View */}
               {activityView === 'extensions' && (
                 <ExtensionsPanel
+                  embedded={true}
                   extensions={extensions}
                   onInstall={(id) => {
                     setExtensions(prev => prev.map(ext =>
@@ -3201,6 +3234,28 @@ export const IDE: React.FC<IDEProps> = ({
                       <Monitor className="w-3.5 h-3.5" />
                       Preview
                     </button>
+                    <button
+                      onClick={() => setBottomPanel('database')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                        bottomPanel === 'database'
+                          ? 'text-white border-b-2 border-blue-500'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      <Layers className="w-3.5 h-3.5" />
+                      Database
+                    </button>
+                    <button
+                      onClick={() => setBottomPanel('notes')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                        bottomPanel === 'notes'
+                          ? 'text-white border-b-2 border-blue-500'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Notes
+                    </button>
                   </div>
                   <div className="flex items-center gap-1">
                     <button
@@ -3390,6 +3445,15 @@ export const IDE: React.FC<IDEProps> = ({
                         }
                       }}
                     />
+                  )}
+                  {bottomPanel === 'database' && (
+                    <DatabaseExplorer
+                      onClose={() => setBottomPanel(null)}
+                      activeFile={activeFile ? { path: activeFile.path, content: activeFile.content } : undefined}
+                    />
+                  )}
+                  {bottomPanel === 'notes' && (
+                    <PersonalNotes />
                   )}
                 </div>
               </motion.div>

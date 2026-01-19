@@ -103,6 +103,7 @@ const navigation = [
     id: 'appearance',
     title: 'Appearance',
     items: [
+      { icon: Palette, iconName: 'Palette', label: 'Themes', href: '/themes' },
       { icon: LayoutTemplate, iconName: 'LayoutTemplate', label: 'Header', href: '/appearance/header' },
       { icon: Layout, iconName: 'Layout', label: 'Footer', href: '/appearance/footer' },
       { icon: PanelLeft, iconName: 'PanelLeft', label: 'Sidebar', href: '/appearance/sidebar' },
@@ -123,8 +124,8 @@ const navigation = [
     id: 'plugins',
     title: 'Plugins',
     items: [
-      { icon: Package, iconName: 'Package', label: 'Installed', href: '/plugins' },
-      { icon: Zap, iconName: 'Zap', label: 'Add New', href: '/plugins/add' },
+      { icon: Store, iconName: 'Store', label: 'Marketplace', href: '/plugins' },
+      { icon: Package, iconName: 'Package', label: 'Installed', href: '/plugins?tab=installed' },
     ],
   },
   {

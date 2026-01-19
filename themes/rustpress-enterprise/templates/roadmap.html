@@ -1,0 +1,732 @@
+{% extends "templates/base.html" %}
+
+{% block title %}Roadmap - {{ site.name | default(value="RustPress") }}{% endblock %}
+
+{% block content %}
+<main class="main-content">
+  <!-- Hero Section -->
+  <section class="roadmap-hero">
+    <div class="container">
+      <div class="roadmap-hero-content" data-animate="fade-up">
+        <span class="hero-badge">Development Roadmap</span>
+        <h1 class="hero-title">The Future of <span class="text-gradient">RustPress</span></h1>
+        <p class="hero-description">
+          Follow our journey as we build the fastest, most secure CMS platform.
+          Early bird subscribers get access to features before everyone else.
+        </p>
+        <div class="release-highlights">
+          <div class="release-badge release-badge--sponsor">
+            <span class="release-label">Sponsor & Early Bird</span>
+            <span class="release-date">Q2 2026</span>
+          </div>
+          <div class="release-badge release-badge--public">
+            <span class="release-label">Public Release</span>
+            <span class="release-date">Q3 2026</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Timeline Section -->
+  <section class="timeline-section section">
+    <div class="container">
+      <div class="timeline">
+        <!-- Q4 2025 - Foundation -->
+        <div class="timeline-item timeline-item--completed" data-animate="fade-up">
+          <div class="timeline-marker">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <span class="timeline-quarter">Q4 2025</span>
+              <span class="timeline-status timeline-status--completed">Completed</span>
+            </div>
+            <h3 class="timeline-title">Foundation & Core Architecture</h3>
+            <p class="timeline-description">Building the foundation with Rust for maximum performance and security.</p>
+            <ul class="timeline-features">
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                Core CMS engine written in Rust
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                PostgreSQL database integration
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                Tera templating engine
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                Basic admin dashboard
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                Redis caching layer
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Q1 2026 - Current -->
+        <div class="timeline-item timeline-item--current" data-animate="fade-up">
+          <div class="timeline-marker">
+            <div class="pulse-ring"></div>
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <span class="timeline-quarter">Q1 2026</span>
+              <span class="timeline-status timeline-status--current">In Progress</span>
+            </div>
+            <h3 class="timeline-title">Enhanced Content Management</h3>
+            <p class="timeline-description">Expanding content creation capabilities and improving the user experience.</p>
+            <ul class="timeline-features">
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                Advanced Markdown editor
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                Media library with optimization
+              </li>
+              <li class="in-progress">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                Visual page builder
+              </li>
+              <li class="in-progress">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                Theme marketplace launch
+              </li>
+              <li class="pending">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                Plugin system architecture
+              </li>
+            </ul>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 65%"></div>
+              <span class="progress-label">65% Complete</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q2 2026 - Sponsor Release -->
+        <div class="timeline-item timeline-item--sponsor" data-animate="fade-up">
+          <div class="timeline-marker">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <span class="timeline-quarter">Q2 2026</span>
+              <span class="timeline-status timeline-status--sponsor">Sponsor & Early Bird Release</span>
+            </div>
+            <h3 class="timeline-title">Premium Features & Early Access</h3>
+            <p class="timeline-description">Exclusive early access for sponsors and early bird subscribers.</p>
+            <ul class="timeline-features">
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                AI-powered content generation
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                Advanced analytics dashboard
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                Multi-site management
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                Premium themes & plugins
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                Priority support channel
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                Cloud hosting beta
+              </li>
+            </ul>
+            <a href="/pricing" class="btn btn--primary btn--lg">
+              Get Early Access
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Q3 2026 - Public Release -->
+        <div class="timeline-item timeline-item--public" data-animate="fade-up">
+          <div class="timeline-marker">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <span class="timeline-quarter">Q3 2026</span>
+              <span class="timeline-status timeline-status--public">Public Release</span>
+            </div>
+            <h3 class="timeline-title">RustPress 1.0 - General Availability</h3>
+            <p class="timeline-description">The official public release with all core features fully polished.</p>
+            <ul class="timeline-features">
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                Full documentation
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                Migration tools from WordPress, Ghost, Hugo
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                One-click cloud deployment
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                Enterprise support plans
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                Open source community edition
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Q4 2026 & Beyond -->
+        <div class="timeline-item timeline-item--future" data-animate="fade-up">
+          <div class="timeline-marker">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <span class="timeline-quarter">Q4 2026+</span>
+              <span class="timeline-status timeline-status--future">Future</span>
+            </div>
+            <h3 class="timeline-title">Continuous Innovation</h3>
+            <p class="timeline-description">Our commitment to innovation doesn't stop at v1.0. Here's what's next.</p>
+            <ul class="timeline-features">
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                Headless CMS mode
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                GraphQL API
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                E-commerce integrations
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                Native mobile apps
+              </li>
+              <li>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                Edge computing support
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Early Access Benefits -->
+  <section class="early-access-section section section--muted">
+    <div class="container">
+      <div class="section-header" data-animate="fade-up">
+        <h2 class="section-title">Early Access <span class="text-gradient">Benefits</span></h2>
+        <p class="section-subtitle">Why become a sponsor or early bird subscriber?</p>
+      </div>
+
+      <div class="benefits-grid" data-animate-stagger>
+        <div class="benefit-card">
+          <div class="benefit-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <h4>3 Months Early Access</h4>
+          <p>Get access to RustPress in Q2 2026, three months before the public release.</p>
+        </div>
+
+        <div class="benefit-card">
+          <div class="benefit-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          </div>
+          <h4>Lifetime Discount</h4>
+          <p>Lock in special pricing that will never increase, even as we add more features.</p>
+        </div>
+
+        <div class="benefit-card">
+          <div class="benefit-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </div>
+          <h4>Direct Support</h4>
+          <p>Private Slack/Discord channel with direct access to the development team.</p>
+        </div>
+
+        <div class="benefit-card">
+          <div class="benefit-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+          </div>
+          <h4>Shape the Product</h4>
+          <p>Your feedback directly influences feature priorities and implementation details.</p>
+        </div>
+
+        <div class="benefit-card">
+          <div class="benefit-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <h4>Exclusive Badge</h4>
+          <p>Special "Founding Member" badge displayed on your profile and sites.</p>
+        </div>
+
+        <div class="benefit-card">
+          <div class="benefit-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+          </div>
+          <h4>Premium Themes</h4>
+          <p>Exclusive early access to premium themes before marketplace launch.</p>
+        </div>
+      </div>
+
+      <div class="early-access-cta" data-animate="fade-up">
+        <a href="/pricing" class="btn btn--primary btn--xl btn--glow">
+          Become an Early Bird
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Newsletter Section -->
+  <section class="newsletter-section section">
+    <div class="container">
+      <div class="newsletter-content" data-animate="fade-up">
+        <h2 class="section-title">Stay <span class="text-gradient">Updated</span></h2>
+        <p class="section-subtitle">Subscribe to get roadmap updates and release announcements</p>
+        <form class="newsletter-form" action="/api/newsletter" method="POST">
+          <div class="form-group">
+            <input type="email" name="email" placeholder="Enter your email" required>
+            <button type="submit" class="btn btn--primary">
+              Subscribe
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+          <p class="form-note">No spam. Unsubscribe anytime.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* Roadmap Hero */
+.roadmap-hero {
+  padding: var(--space-20) 0;
+  background: var(--gradient-dark);
+  text-align: center;
+}
+
+.roadmap-hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero-badge {
+  display: inline-block;
+  padding: var(--space-2) var(--space-4);
+  background: rgba(206, 66, 43, 0.1);
+  border: 1px solid var(--border-rust);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-rust-light);
+  margin-bottom: var(--space-6);
+}
+
+.hero-title {
+  font-size: var(--text-5xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  margin-bottom: var(--space-6);
+}
+
+.hero-description {
+  font-size: var(--text-xl);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-10);
+}
+
+.release-highlights {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-6);
+}
+
+.release-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-6) var(--space-8);
+  background: var(--color-bg-card);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-xl);
+}
+
+.release-badge--sponsor {
+  border-color: #a855f7;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(168, 85, 247, 0.02));
+}
+
+.release-badge--public {
+  border-color: #27ca40;
+  background: linear-gradient(135deg, rgba(39, 202, 64, 0.1), rgba(39, 202, 64, 0.02));
+}
+
+.release-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.release-date {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+}
+
+.release-badge--sponsor .release-date {
+  color: #a855f7;
+}
+
+.release-badge--public .release-date {
+  color: #27ca40;
+}
+
+/* Timeline */
+.timeline {
+  position: relative;
+  max-width: 800px;
+  margin: 0 auto;
+  padding-left: var(--space-16);
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 27px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--color-rust) 0%, var(--border-color) 100%);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: var(--space-12);
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: calc(-1 * var(--space-16) + 12px);
+  top: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: 50%;
+  color: var(--color-text-muted);
+}
+
+.timeline-item--completed .timeline-marker {
+  background: #27ca40;
+  border-color: #27ca40;
+  color: white;
+}
+
+.timeline-item--current .timeline-marker {
+  background: var(--color-rust);
+  border-color: var(--color-rust);
+  color: white;
+}
+
+.timeline-item--sponsor .timeline-marker {
+  background: #a855f7;
+  border-color: #a855f7;
+  color: white;
+}
+
+.timeline-item--public .timeline-marker {
+  background: #27ca40;
+  border-color: #27ca40;
+  color: white;
+}
+
+.pulse-ring {
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
+}
+
+.timeline-content {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+}
+
+.timeline-item--current .timeline-content {
+  border-color: var(--color-rust);
+}
+
+.timeline-item--sponsor .timeline-content {
+  border-color: #a855f7;
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.timeline-quarter {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.timeline-status {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+}
+
+.timeline-status--completed {
+  background: rgba(39, 202, 64, 0.1);
+  color: #27ca40;
+}
+
+.timeline-status--current {
+  background: rgba(206, 66, 43, 0.1);
+  color: var(--color-rust-light);
+}
+
+.timeline-status--sponsor {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+}
+
+.timeline-status--public {
+  background: rgba(39, 202, 64, 0.1);
+  color: #27ca40;
+}
+
+.timeline-status--future {
+  background: rgba(107, 114, 128, 0.1);
+  color: var(--color-text-muted);
+}
+
+.timeline-title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-2);
+}
+
+.timeline-description {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+}
+
+.timeline-features {
+  list-style: none;
+  padding: 0;
+  margin-bottom: var(--space-6);
+}
+
+.timeline-features li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.timeline-features li svg {
+  flex-shrink: 0;
+  color: #27ca40;
+}
+
+.timeline-features li.in-progress svg {
+  color: var(--color-rust);
+}
+
+.timeline-features li.pending svg {
+  color: var(--color-text-muted);
+}
+
+.progress-bar {
+  position: relative;
+  height: 8px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-rust), var(--color-rust-light));
+  border-radius: var(--radius-full);
+  transition: width 1s var(--ease-out);
+}
+
+.progress-label {
+  position: absolute;
+  right: 0;
+  top: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Benefits Grid */
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+  margin-bottom: var(--space-10);
+}
+
+.benefit-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  text-align: center;
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.benefit-card:hover {
+  border-color: var(--color-rust);
+  transform: translateY(-4px);
+}
+
+.benefit-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(168, 85, 247, 0.1);
+  border-radius: var(--radius-lg);
+  color: #a855f7;
+}
+
+.benefit-card h4 {
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-2);
+}
+
+.benefit-card p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.early-access-cta {
+  text-align: center;
+}
+
+/* Newsletter */
+.newsletter-section {
+  background: var(--gradient-dark);
+}
+
+.newsletter-content {
+  max-width: 500px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.newsletter-form {
+  margin-top: var(--space-8);
+}
+
+.newsletter-form .form-group {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.newsletter-form input {
+  flex: 1;
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+}
+
+.newsletter-form input:focus {
+  border-color: var(--color-rust);
+  outline: none;
+}
+
+.form-note {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: var(--text-3xl);
+  }
+
+  .release-highlights {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .timeline {
+    padding-left: var(--space-12);
+  }
+
+  .timeline-marker {
+    left: calc(-1 * var(--space-12) + 8px);
+    width: 24px;
+    height: 24px;
+  }
+
+  .timeline::before {
+    left: 19px;
+  }
+
+  .benefits-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .newsletter-form .form-group {
+    flex-direction: column;
+  }
+}
+</style>
+{% endblock %}

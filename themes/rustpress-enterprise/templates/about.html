@@ -1,489 +1,1080 @@
-{% extends "layouts/base.html" %}
+{% extends "templates/base.html" %}
 
-{% block title %}About Us - {{ site.title }}{% endblock %}
+{% block title %}About - {{ site.name | default(value="RustPress") }}{% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<section class="page-hero about-hero">
-  <div class="hero-particles"></div>
-  <div class="container">
-    <div class="page-hero-content" data-animate="fade-up">
-      <span class="hero-badge">
-        <span class="badge-dot"></span>
-        Our Story
-      </span>
-      <h1 class="page-hero-title">
-        Building the future of <span class="gradient-text">content management</span>
-      </h1>
-      <p class="page-hero-description">
-        We're on a mission to revolutionize content management with the power of Rust.
-        RustPress combines blazing fast performance, memory-safe security, and AI-powered tools.
-      </p>
-    </div>
-  </div>
-</section>
-
-<!-- Mission & Vision -->
-<section class="mission-section">
-  <div class="container">
-    <div class="mission-grid">
-      <div class="mission-card" data-animate="fade-up">
-        <div class="mission-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 16v-4"/>
-            <path d="M12 8h.01"/>
-          </svg>
-        </div>
-        <h3>Our Mission</h3>
-        <p>To build the fastest, most secure CMS in the world using Rust. We believe every publisher deserves a content platform that's lightning fast, never crashes, and includes AI tools for better content.</p>
-      </div>
-
-      <div class="mission-card" data-animate="fade-up" data-delay="100">
-        <div class="mission-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
-        </div>
-        <h3>Our Vision</h3>
-        <p>A world where content creators focus on writing great content, not fighting slow software or security patches. We're building the next generation of CMS with 10 AI enhancement tools built-in.</p>
-      </div>
-
-      <div class="mission-card" data-animate="fade-up" data-delay="200">
-        <div class="mission-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-        </div>
-        <h3>Our Values</h3>
-        <p>Performance first, security by default, developer experience, and open source spirit. We chose Rust because we refuse to compromise on speed or safety. Every page is editable, always.</p>
+<main class="main-content">
+  <!-- Hero Section -->
+  <section class="about-hero">
+    <div class="container">
+      <div class="about-hero-content" data-animate="fade-up">
+        <span class="hero-badge">About RustPress</span>
+        <h1 class="hero-title">Building the Future of <span class="text-gradient">Content Management</span></h1>
+        <p class="hero-description">
+          RustPress is a next-generation CMS built with Rust, designed for developers who demand
+          performance, security, and flexibility without compromise.
+        </p>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- Stats Section -->
-<section class="about-stats-section">
-  <div class="container">
-    <div class="stats-grid stats-grid--large" data-animate="fade-up">
-      <div class="stat-item">
-        <span class="stat-number">10</span>
-        <span class="stat-label">AI Enhancement Tools</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-number">5</span>
-        <span class="stat-label">Content Formats</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-number">~5ms</span>
-        <span class="stat-label">Response Time</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-number">0</span>
-        <span class="stat-label">Memory Vulnerabilities</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Our Story Timeline -->
-<section class="story-section">
-  <div class="container">
-    <div class="section-header" data-animate="fade-up">
-      <span class="section-badge">Our Journey</span>
-      <h2 class="section-title">The RustPress story</h2>
-      <p class="section-description">
-        From a simple idea to the fastest CMS, here's how we built RustPress.
-      </p>
-    </div>
-
-    <div class="timeline">
-      <div class="timeline-item" data-animate="fade-up">
-        <div class="timeline-marker">
-          <span class="timeline-year">2022</span>
-        </div>
-        <div class="timeline-content">
-          <h4>The Idea</h4>
-          <p>Frustrated with slow, insecure WordPress sites and constant plugin updates, we asked: what if we built a CMS in Rust? Memory-safe, blazing fast, and modern.</p>
-        </div>
-      </div>
-
-      <div class="timeline-item" data-animate="fade-up">
-        <div class="timeline-marker">
-          <span class="timeline-year">2023</span>
-        </div>
-        <div class="timeline-content">
-          <h4>Core Engine Built</h4>
-          <p>Built the Rust backend with Axum framework. Achieved 5ms response times - 40x faster than WordPress. PostgreSQL database with Redis caching layer.</p>
-        </div>
-      </div>
-
-      <div class="timeline-item" data-animate="fade-up">
-        <div class="timeline-marker">
-          <span class="timeline-year">2024</span>
-        </div>
-        <div class="timeline-content">
-          <h4>Admin UI & Block Editor</h4>
-          <p>Launched the React-based admin panel. Built the block editor with 5 content formats: Blocks, Elementor, Markdown, HTML, and Text.</p>
-        </div>
-      </div>
-
-      <div class="timeline-item" data-animate="fade-up">
-        <div class="timeline-marker">
-          <span class="timeline-year">2024</span>
-        </div>
-        <div class="timeline-content">
-          <h4>AI Enhancement Tools</h4>
-          <p>Integrated 10 AI tools: Title Generator, Content Summarizer, SEO Optimizer, Plagiarism Checker, Tone Adjuster, Grammar Fixer, Image Generator, Alt Text Generator, Schema Generator, Related Posts.</p>
-        </div>
-      </div>
-
-      <div class="timeline-item timeline-item--present" data-animate="fade-up">
-        <div class="timeline-marker">
-          <span class="timeline-year">Today</span>
-        </div>
-        <div class="timeline-content">
-          <h4>Full CMS Platform</h4>
-          <p>Complete content management with pages, posts, media library, taxonomies, and themes. Every page is fully editable through the admin panel. Zero memory vulnerabilities.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Leadership Team -->
-<section class="team-section">
-  <div class="container">
-    <div class="section-header" data-animate="fade-up">
-      <span class="section-badge">Leadership</span>
-      <h2 class="section-title">Meet our team</h2>
-      <p class="section-description">
-        The people behind RustPress
-      </p>
-    </div>
-
-    <div class="team-grid">
-      <div class="team-card" data-animate="fade-up">
-        <div class="team-card-image">
-          <div class="team-avatar">
-            <span>AK</span>
+  <!-- Mission Section -->
+  <section class="mission-section section">
+    <div class="container">
+      <div class="mission-grid">
+        <div class="mission-content" data-animate="fade-right">
+          <h2 class="section-title">Our <span class="text-gradient">Mission</span></h2>
+          <p class="section-text">
+            We believe content management should be fast, secure, and enjoyable. Traditional CMS
+            platforms are slow, vulnerable, and frustrating to use. RustPress changes that.
+          </p>
+          <p class="section-text">
+            By leveraging Rust's performance and safety guarantees, we've created a CMS that's
+            10x faster than PHP alternatives while eliminating entire classes of security vulnerabilities.
+          </p>
+          <div class="mission-stats">
+            <div class="stat">
+              <span class="stat-value">10x</span>
+              <span class="stat-label">Faster than WordPress</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value">0</span>
+              <span class="stat-label">Memory-safety bugs</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value">Free</span>
+              <span class="stat-label">For everyone</span>
+            </div>
           </div>
         </div>
-        <div class="team-card-content">
-          <h4>Alex Kim</h4>
-          <span class="team-role">Co-Founder & CEO</span>
-          <p>Former engineering lead at Google. 15 years of experience building scalable platforms.</p>
-          <div class="team-social">
-            <a href="#" aria-label="LinkedIn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-                <rect x="2" y="9" width="4" height="12"/>
-                <circle cx="4" cy="4" r="2"/>
-              </svg>
-            </a>
-            <a href="#" aria-label="Twitter">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div class="team-card" data-animate="fade-up" data-delay="100">
-        <div class="team-card-image">
-          <div class="team-avatar">
-            <span>SP</span>
-          </div>
-        </div>
-        <div class="team-card-content">
-          <h4>Sarah Patel</h4>
-          <span class="team-role">Co-Founder & CTO</span>
-          <p>Ex-Amazon Principal Engineer. Built distributed systems handling billions of requests daily.</p>
-          <div class="team-social">
-            <a href="#" aria-label="LinkedIn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-                <rect x="2" y="9" width="4" height="12"/>
-                <circle cx="4" cy="4" r="2"/>
-              </svg>
-            </a>
-            <a href="#" aria-label="GitHub">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div class="team-card" data-animate="fade-up" data-delay="200">
-        <div class="team-card-image">
-          <div class="team-avatar">
-            <span>MJ</span>
-          </div>
-        </div>
-        <div class="team-card-content">
-          <h4>Michael Johnson</h4>
-          <span class="team-role">Chief Revenue Officer</span>
-          <p>20 years in enterprise sales. Previously VP of Sales at Salesforce and HubSpot.</p>
-          <div class="team-social">
-            <a href="#" aria-label="LinkedIn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-                <rect x="2" y="9" width="4" height="12"/>
-                <circle cx="4" cy="4" r="2"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div class="team-card" data-animate="fade-up" data-delay="300">
-        <div class="team-card-image">
-          <div class="team-avatar">
-            <span>EC</span>
-          </div>
-        </div>
-        <div class="team-card-content">
-          <h4>Emily Chen</h4>
-          <span class="team-role">VP of Product</span>
-          <p>Product leader with 12 years experience. Previously at Stripe and Figma.</p>
-          <div class="team-social">
-            <a href="#" aria-label="LinkedIn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-                <rect x="2" y="9" width="4" height="12"/>
-                <circle cx="4" cy="4" r="2"/>
-              </svg>
-            </a>
-            <a href="#" aria-label="Twitter">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div class="team-card" data-animate="fade-up" data-delay="400">
-        <div class="team-card-image">
-          <div class="team-avatar">
-            <span>DW</span>
-          </div>
-        </div>
-        <div class="team-card-content">
-          <h4>David Williams</h4>
-          <span class="team-role">VP of Engineering</span>
-          <p>Engineering leader who scaled teams from 10 to 200. Previously at Netflix and Uber.</p>
-          <div class="team-social">
-            <a href="#" aria-label="LinkedIn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-                <rect x="2" y="9" width="4" height="12"/>
-                <circle cx="4" cy="4" r="2"/>
-              </svg>
-            </a>
-            <a href="#" aria-label="GitHub">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div class="team-card" data-animate="fade-up" data-delay="500">
-        <div class="team-card-image">
-          <div class="team-avatar">
-            <span>LT</span>
-          </div>
-        </div>
-        <div class="team-card-content">
-          <h4>Lisa Thompson</h4>
-          <span class="team-role">VP of Customer Success</span>
-          <p>Customer success expert with 10 years building world-class support organizations.</p>
-          <div class="team-social">
-            <a href="#" aria-label="LinkedIn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-                <rect x="2" y="9" width="4" height="12"/>
-                <circle cx="4" cy="4" r="2"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Investors -->
-<section class="investors-section">
-  <div class="container">
-    <div class="section-header" data-animate="fade-up">
-      <span class="section-badge">Backed By</span>
-      <h2 class="section-title">Our investors</h2>
-      <p class="section-description">
-        Supported by world-class investors who believe in our vision
-      </p>
-    </div>
-
-    <div class="investors-grid" data-animate="fade-up">
-      <div class="investor-card">
-        <div class="investor-logo">Sequoia</div>
-        <span class="investor-type">Lead Series B</span>
-      </div>
-      <div class="investor-card">
-        <div class="investor-logo">a16z</div>
-        <span class="investor-type">Lead Series A</span>
-      </div>
-      <div class="investor-card">
-        <div class="investor-logo">Accel</div>
-        <span class="investor-type">Series B</span>
-      </div>
-      <div class="investor-card">
-        <div class="investor-logo">Index</div>
-        <span class="investor-type">Series A</span>
-      </div>
-      <div class="investor-card">
-        <div class="investor-logo">YC</div>
-        <span class="investor-type">Seed</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Office Locations -->
-<section class="offices-section">
-  <div class="container">
-    <div class="section-header" data-animate="fade-up">
-      <span class="section-badge">Global Presence</span>
-      <h2 class="section-title">Our offices</h2>
-      <p class="section-description">
-        With offices around the world, we're always close to our customers
-      </p>
-    </div>
-
-    <div class="offices-grid" data-animate="fade-up">
-      <div class="office-card">
-        <div class="office-image">
-          <div class="office-placeholder">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M3 21h18"/>
-              <path d="M5 21V7l8-4 8 4v14"/>
-              <path d="M9 21v-4h6v4"/>
-              <path d="M9 9h1"/>
-              <path d="M14 9h1"/>
-              <path d="M9 13h1"/>
-              <path d="M14 13h1"/>
+        <div class="mission-visual" data-animate="fade-left">
+          <div class="rust-logo">
+            <svg viewBox="0 0 512 512" width="200" height="200">
+              <path fill="#ce422b" d="M256 0C114.6 0 0 114.6 0 256s114.6 256 256 256 256-114.6 256-256S397.4 0 256 0zm0 480C132.5 480 32 379.5 32 256S132.5 32 256 32s224 100.5 224 224-100.5 224-224 224z"/>
+              <circle fill="none" stroke="#ce422b" stroke-width="16" cx="256" cy="256" r="180"/>
+              <path fill="#ce422b" d="M256 100a156 156 0 1 0 0 312 156 156 0 0 0 0-312zm0 280a124 124 0 1 1 0-248 124 124 0 0 1 0 248z"/>
+              <path fill="#ce422b" d="M256 176c-44.2 0-80 35.8-80 80s35.8 80 80 80 80-35.8 80-80-35.8-80-80-80zm0 128c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z"/>
             </svg>
+            <span class="rust-tagline">Built with Rust</span>
           </div>
-        </div>
-        <div class="office-content">
-          <h4>San Francisco</h4>
-          <span class="office-tag">Headquarters</span>
-          <p>535 Mission St, Suite 1401<br>San Francisco, CA 94105</p>
-        </div>
-      </div>
-
-      <div class="office-card">
-        <div class="office-image">
-          <div class="office-placeholder">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M3 21h18"/>
-              <path d="M5 21V7l8-4 8 4v14"/>
-              <path d="M9 21v-4h6v4"/>
-              <path d="M9 9h1"/>
-              <path d="M14 9h1"/>
-              <path d="M9 13h1"/>
-              <path d="M14 13h1"/>
-            </svg>
-          </div>
-        </div>
-        <div class="office-content">
-          <h4>New York</h4>
-          <span class="office-tag">East Coast Hub</span>
-          <p>114 5th Avenue, 18th Floor<br>New York, NY 10011</p>
-        </div>
-      </div>
-
-      <div class="office-card">
-        <div class="office-image">
-          <div class="office-placeholder">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M3 21h18"/>
-              <path d="M5 21V7l8-4 8 4v14"/>
-              <path d="M9 21v-4h6v4"/>
-              <path d="M9 9h1"/>
-              <path d="M14 9h1"/>
-              <path d="M9 13h1"/>
-              <path d="M14 13h1"/>
-            </svg>
-          </div>
-        </div>
-        <div class="office-content">
-          <h4>London</h4>
-          <span class="office-tag">EMEA Hub</span>
-          <p>30 Finsbury Square<br>London EC2A 1AG, UK</p>
-        </div>
-      </div>
-
-      <div class="office-card">
-        <div class="office-image">
-          <div class="office-placeholder">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M3 21h18"/>
-              <path d="M5 21V7l8-4 8 4v14"/>
-              <path d="M9 21v-4h6v4"/>
-              <path d="M9 9h1"/>
-              <path d="M14 9h1"/>
-              <path d="M9 13h1"/>
-              <path d="M14 13h1"/>
-            </svg>
-          </div>
-        </div>
-        <div class="office-content">
-          <h4>Singapore</h4>
-          <span class="office-tag">APAC Hub</span>
-          <p>71 Robinson Road, #14-01<br>Singapore 068895</p>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- Careers CTA -->
-<section class="careers-cta-section">
-  <div class="container">
-    <div class="careers-cta glass-card" data-animate="fade-up">
-      <div class="careers-cta-content">
-        <span class="section-badge">Join Us</span>
-        <h2>We're hiring!</h2>
-        <p>Join our team of passionate Rust developers building the future of content management. We're looking for people who love performance and security.</p>
-        <div class="careers-stats">
-          <div class="career-stat">
-            <span class="stat-number">25+</span>
-            <span class="stat-label">Open Positions</span>
+  <!-- Values Section -->
+  <section class="values-section section section--muted">
+    <div class="container">
+      <div class="section-header" data-animate="fade-up">
+        <h2 class="section-title">Our <span class="text-gradient">Values</span></h2>
+        <p class="section-subtitle">The principles that guide everything we build</p>
+      </div>
+
+      <div class="values-grid" data-animate-stagger>
+        <div class="value-card">
+          <div class="value-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
           </div>
-          <div class="career-stat">
-            <span class="stat-number">4.8</span>
-            <span class="stat-label">Glassdoor Rating</span>
+          <h4>Performance First</h4>
+          <p>Every line of code is optimized for speed. Sub-millisecond response times aren't a goal—they're the standard.</p>
+        </div>
+
+        <div class="value-card">
+          <div class="value-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           </div>
-          <div class="career-stat">
-            <span class="stat-number">100%</span>
-            <span class="stat-label">Remote Friendly</span>
+          <h4>Security by Design</h4>
+          <p>Rust's memory safety prevents vulnerabilities at compile time. Your site is protected from day one.</p>
+        </div>
+
+        <div class="value-card">
+          <div class="value-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </div>
+          <h4>Developer Experience</h4>
+          <p>We build tools we love to use. Clear APIs, great documentation, and thoughtful defaults.</p>
+        </div>
+
+        <div class="value-card">
+          <div class="value-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h4>Community Driven</h4>
+          <p>Open source at heart. We build with the community, not just for it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Story Section -->
+  <section class="story-section section">
+    <div class="container">
+      <div class="story-content" data-animate="fade-up">
+        <h2 class="section-title">The <span class="text-gradient">Story</span></h2>
+        <div class="story-text">
+          <p>
+            RustPress started as a side project in 2024, born from frustration with existing CMS platforms.
+            Why should a simple blog post take 500ms to render? Why are SQL injection vulnerabilities still
+            making headlines in 2024?
+          </p>
+          <p>
+            We knew there had to be a better way. Rust offered the perfect foundation: blazing-fast
+            performance, memory safety without garbage collection, and a developer community that
+            values correctness.
+          </p>
+          <p>
+            After months of development, RustPress emerged as a full-featured CMS that proves you don't
+            have to sacrifice usability for performance, or security for flexibility.
+          </p>
+          <p>
+            Today, RustPress powers thousands of websites around the world, from personal blogs to
+            enterprise platforms. And we're just getting started.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech Stack -->
+  <section class="stack-section section section--muted">
+    <div class="container">
+      <div class="section-header text-center" data-animate="fade-up">
+        <span class="section-label">Under the Hood</span>
+        <h2 class="section-title">Technology <span class="text-gradient">Stack</span></h2>
+        <p class="section-subtitle">Built with the best tools for the job</p>
+      </div>
+
+      <div class="stack-showcase">
+        <div class="stack-grid-modern">
+          <div class="stack-card" data-animate="fade-up" style="--delay: 0.1s">
+            <div class="stack-card-inner">
+              <div class="stack-icon-wrapper">
+                <div class="stack-icon-glow"></div>
+                <div class="stack-icon">
+                  <svg viewBox="0 0 100 100" width="48" height="48">
+                    <circle fill="#ce422b" cx="50" cy="50" r="45"/>
+                    <text x="50" y="60" font-family="sans-serif" font-size="24" font-weight="bold" fill="#fff" text-anchor="middle">Rs</text>
+                  </svg>
+                </div>
+              </div>
+              <h4 class="stack-name">Rust</h4>
+              <p class="stack-desc">Core backend engine for blazing-fast performance</p>
+            </div>
+          </div>
+
+          <div class="stack-card" data-animate="fade-up" style="--delay: 0.15s">
+            <div class="stack-card-inner">
+              <div class="stack-icon-wrapper">
+                <div class="stack-icon-glow" style="--glow-color: #336791"></div>
+                <div class="stack-icon">
+                  <svg viewBox="0 0 100 100" width="48" height="48">
+                    <rect fill="#336791" width="100" height="100" rx="10"/>
+                    <text x="50" y="65" font-family="sans-serif" font-size="24" font-weight="bold" fill="#fff" text-anchor="middle">PG</text>
+                  </svg>
+                </div>
+              </div>
+              <h4 class="stack-name">PostgreSQL</h4>
+              <p class="stack-desc">Reliable database for all your content</p>
+            </div>
+          </div>
+
+          <div class="stack-card" data-animate="fade-up" style="--delay: 0.2s">
+            <div class="stack-card-inner">
+              <div class="stack-icon-wrapper">
+                <div class="stack-icon-glow" style="--glow-color: #dc382d"></div>
+                <div class="stack-icon">
+                  <svg viewBox="0 0 100 100" width="48" height="48">
+                    <rect fill="#dc382d" width="100" height="100" rx="10"/>
+                    <text x="50" y="65" font-family="sans-serif" font-size="24" font-weight="bold" fill="#fff" text-anchor="middle">R</text>
+                  </svg>
+                </div>
+              </div>
+              <h4 class="stack-name">Redis</h4>
+              <p class="stack-desc">Lightning-fast caching layer</p>
+            </div>
+          </div>
+
+          <div class="stack-card" data-animate="fade-up" style="--delay: 0.25s">
+            <div class="stack-card-inner">
+              <div class="stack-icon-wrapper">
+                <div class="stack-icon-glow" style="--glow-color: #f0db4f"></div>
+                <div class="stack-icon">
+                  <svg viewBox="0 0 100 100" width="48" height="48">
+                    <rect fill="#f0db4f" width="100" height="100" rx="10"/>
+                    <text x="50" y="65" font-family="sans-serif" font-size="24" font-weight="bold" fill="#323330" text-anchor="middle">TS</text>
+                  </svg>
+                </div>
+              </div>
+              <h4 class="stack-name">TypeScript</h4>
+              <p class="stack-desc">Type-safe frontend development</p>
+            </div>
+          </div>
+
+          <div class="stack-card" data-animate="fade-up" style="--delay: 0.3s">
+            <div class="stack-card-inner">
+              <div class="stack-icon-wrapper">
+                <div class="stack-icon-glow" style="--glow-color: #0769ad"></div>
+                <div class="stack-icon">
+                  <svg viewBox="0 0 100 100" width="48" height="48">
+                    <rect fill="#0769ad" width="100" height="100" rx="10"/>
+                    <text x="50" y="65" font-family="sans-serif" font-size="24" font-weight="bold" fill="#fff" text-anchor="middle">T</text>
+                  </svg>
+                </div>
+              </div>
+              <h4 class="stack-name">Tera</h4>
+              <p class="stack-desc">Powerful template engine</p>
+            </div>
+          </div>
+
+          <div class="stack-card" data-animate="fade-up" style="--delay: 0.35s">
+            <div class="stack-card-inner">
+              <div class="stack-icon-wrapper">
+                <div class="stack-icon-glow" style="--glow-color: #2496ed"></div>
+                <div class="stack-icon">
+                  <svg viewBox="0 0 100 100" width="48" height="48">
+                    <rect fill="#2496ed" width="100" height="100" rx="10"/>
+                    <text x="50" y="65" font-family="sans-serif" font-size="24" font-weight="bold" fill="#fff" text-anchor="middle">D</text>
+                  </svg>
+                </div>
+              </div>
+              <h4 class="stack-name">Docker</h4>
+              <p class="stack-desc">Containerized deployment</p>
+            </div>
           </div>
         </div>
-        <a href="/careers" class="btn btn--primary btn--glow btn--lg">
-          View Open Positions
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- Founder Section -->
+  <section class="founder-section section">
+    <div class="container">
+      <div class="section-header text-center" data-animate="fade-up">
+        <span class="section-label">Leadership</span>
+        <h2 class="section-title">Meet the <span class="text-gradient">Founder</span></h2>
+        <p class="section-subtitle">The visionary engineer behind RustPress</p>
+      </div>
+
+      <div class="founder-showcase" data-animate="fade-up">
+        <div class="founder-card-modern">
+          <!-- Animated Background -->
+          <div class="founder-card-bg"></div>
+          <div class="founder-card-glow"></div>
+
+          <!-- Avatar with Ring Animation -->
+          <div class="founder-avatar-wrapper" data-animate="scale-in">
+            <div class="avatar-ring"></div>
+            <div class="avatar-ring avatar-ring--delayed"></div>
+            <div class="founder-avatar">
+              <img src="/themes/rustpress-enterprise/assets/images/founder.jpg" alt="Mauro Tommasi" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+              <div class="founder-avatar-fallback" style="display:none;">MT</div>
+            </div>
+          </div>
+
+          <!-- Founder Info -->
+          <div class="founder-info text-center" data-animate="fade-up">
+            <h3 class="founder-name">Mauro Tommasi</h3>
+            <p class="founder-title">Founder & Full Stack Engineer</p>
+            <div class="founder-location">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Zurich, Switzerland
+            </div>
+          </div>
+
+          <!-- Bio -->
+          <div class="founder-bio-card" data-animate="fade-up">
+            <p class="founder-bio">
+              AI Engineer and Full Stack Developer with expertise in DevOps, cloud infrastructure, and machine learning.
+              With a background in fintech, blockchain, and enterprise software development, Mauro brings over 10 years
+              of experience building scalable, high-performance applications.
+            </p>
+          </div>
+
+          <!-- Skills with Staggered Animation -->
+          <div class="founder-skills-wrapper" data-animate="fade-up">
+            <h4 class="skills-title">Expertise</h4>
+            <div class="founder-skills">
+              <span class="skill-tag" style="--delay: 0.1s">Rust</span>
+              <span class="skill-tag" style="--delay: 0.15s">Python</span>
+              <span class="skill-tag" style="--delay: 0.2s">TypeScript</span>
+              <span class="skill-tag" style="--delay: 0.25s">React</span>
+              <span class="skill-tag" style="--delay: 0.3s">DevOps</span>
+              <span class="skill-tag" style="--delay: 0.35s">AI/ML</span>
+              <span class="skill-tag" style="--delay: 0.4s">Cloud Architecture</span>
+            </div>
+          </div>
+
+          <!-- Credentials -->
+          <div class="founder-credentials" data-animate="fade-up">
+            <div class="credential">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+              <span>B.Sc. Computer & Automation Engineering</span>
+            </div>
+            <div class="credential">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
+              <span>AI, Cloud & DevOps Certified</span>
+            </div>
+          </div>
+
+          <!-- Social Links -->
+          <div class="founder-links">
+            <a href="https://www.linkedin.com/in/maurotommasi/" target="_blank" rel="noopener" class="founder-social-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+              LinkedIn
+            </a>
+            <a href="/#contact" class="founder-social-btn founder-social-btn--primary">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              Get in Touch
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Free for Everyone -->
+  <section class="opensource-section section section--muted">
+    <div class="container">
+      <div class="opensource-content" data-animate="fade-up">
+        <div class="free-logo">
+          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+        </div>
+        <h2 class="section-title">Free for <span class="text-gradient">Everyone</span></h2>
+        <p class="section-description">
+          RustPress core is completely free to use. Starter, Pro, Business, and Enterprise versions
+          are available for teams needing advanced features and priority support.
+        </p>
+        <div class="pricing-tiers">
+          <div class="pricing-tier" data-animate="fade-up" style="animation-delay: 0.1s">
+            <span class="tier-name">Free</span>
+            <span class="tier-desc">Core features for everyone</span>
+          </div>
+          <div class="pricing-tier" data-animate="fade-up" style="animation-delay: 0.2s">
+            <span class="tier-name">Starter</span>
+            <span class="tier-desc">For individuals</span>
+          </div>
+          <div class="pricing-tier" data-animate="fade-up" style="animation-delay: 0.3s">
+            <span class="tier-name">Pro</span>
+            <span class="tier-desc">Advanced features</span>
+          </div>
+          <div class="pricing-tier" data-animate="fade-up" style="animation-delay: 0.4s">
+            <span class="tier-name">Business</span>
+            <span class="tier-desc">Team collaboration</span>
+          </div>
+          <div class="pricing-tier" data-animate="fade-up" style="animation-delay: 0.5s">
+            <span class="tier-name">Enterprise</span>
+            <span class="tier-desc">Custom solutions</span>
+          </div>
+        </div>
+        <a href="/pricing" class="btn btn--primary btn--xl btn--glow">
+          View Pricing
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </a>
       </div>
     </div>
-  </div>
-</section>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section section">
+    <div class="container">
+      <div class="cta-content" data-animate="fade-up">
+        <h2 class="cta-title">Help Us Build <span class="text-gradient">Faster</span></h2>
+        <p class="cta-description">Your sponsorship accelerates development and helps bring RustPress to life.</p>
+        <div class="cta-actions">
+          <a href="/#donate" class="btn btn--primary btn--xl btn--glow">
+            Become a Sponsor
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </a>
+          <a href="/#contact" class="btn btn--outline btn--xl">Contact Us</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* About Hero */
+.about-hero {
+  padding: var(--space-20) 0;
+  background: var(--gradient-dark);
+  text-align: center;
+}
+
+.about-hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero-badge {
+  display: inline-block;
+  padding: var(--space-2) var(--space-4);
+  background: rgba(206, 66, 43, 0.1);
+  border: 1px solid var(--border-rust);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-rust-light);
+  margin-bottom: var(--space-6);
+}
+
+.hero-title {
+  font-size: var(--text-5xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  margin-bottom: var(--space-6);
+}
+
+.hero-description {
+  font-size: var(--text-xl);
+  color: var(--color-text-secondary);
+}
+
+/* Mission Section */
+.mission-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-16);
+  align-items: center;
+}
+
+.section-text {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+  line-height: var(--leading-relaxed);
+}
+
+.mission-stats {
+  display: flex;
+  gap: var(--space-10);
+  margin-top: var(--space-10);
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-value {
+  display: block;
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-rust-light);
+}
+
+.stat-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.rust-logo {
+  text-align: center;
+}
+
+.rust-logo svg {
+  margin-bottom: var(--space-4);
+}
+
+.rust-tagline {
+  display: block;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  color: var(--color-rust);
+}
+
+/* Values Section */
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-6);
+}
+
+.value-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.value-card:hover {
+  border-color: var(--color-rust);
+  transform: translateY(-4px);
+}
+
+.value-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(206, 66, 43, 0.1);
+  border-radius: var(--radius-lg);
+  color: var(--color-rust);
+  margin-bottom: var(--space-4);
+}
+
+.value-card h4 {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-3);
+}
+
+.value-card p {
+  color: var(--color-text-secondary);
+}
+
+/* Story Section */
+.story-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.story-text p {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-6);
+}
+
+/* Tech Stack - Modern */
+.stack-showcase {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.stack-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+}
+
+.stack-card {
+  opacity: 0;
+  animation: stackFadeIn 0.6s ease forwards;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes stackFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stack-card-inner {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  text-align: center;
+  transition: all var(--duration-normal) var(--ease-out);
+  height: 100%;
+}
+
+.stack-card:hover .stack-card-inner {
+  border-color: var(--color-rust);
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(206, 66, 43, 0.15);
+}
+
+.stack-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  margin-bottom: var(--space-4);
+}
+
+.stack-icon-glow {
+  position: absolute;
+  inset: -10px;
+  background: radial-gradient(circle, var(--glow-color, var(--color-rust)) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-out);
+  filter: blur(15px);
+}
+
+.stack-card:hover .stack-icon-glow {
+  opacity: 0.3;
+}
+
+.stack-icon {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.stack-card:hover .stack-icon {
+  transform: scale(1.1);
+}
+
+.stack-name {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-2);
+}
+
+.stack-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Founder Section - Modern Centered */
+.founder-section {
+  overflow: hidden;
+}
+
+.founder-section .section-header {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto var(--space-12);
+}
+
+.founder-section .section-subtitle {
+  text-align: center;
+  margin: 0 auto;
+}
+
+.founder-showcase {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.founder-card-modern {
+  position: relative;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--space-10);
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-2xl);
+  text-align: center;
+  overflow: hidden;
+}
+
+.founder-card-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(206, 66, 43, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.founder-card-glow {
+  position: absolute;
+  top: -50%;
+  left: 50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(206, 66, 43, 0.1) 0%, transparent 50%);
+  transform: translateX(-50%);
+  animation: founderGlow 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes founderGlow {
+  0%, 100% { opacity: 0.5; transform: translateX(-50%) scale(1); }
+  50% { opacity: 0.8; transform: translateX(-50%) scale(1.1); }
+}
+
+.founder-avatar-wrapper {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: var(--space-6);
+}
+
+.avatar-ring {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border: 2px solid var(--color-rust);
+  border-radius: 50%;
+  opacity: 0.3;
+  animation: ringPulse 3s ease-in-out infinite;
+}
+
+.avatar-ring--delayed {
+  animation-delay: 1.5s;
+}
+
+@keyframes ringPulse {
+  0% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.15); opacity: 0; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+.founder-avatar {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--color-rust) 0%, var(--color-rust-light) 100%);
+  box-shadow: 0 10px 40px rgba(206, 66, 43, 0.3);
+  z-index: 1;
+}
+
+.founder-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.founder-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-5xl);
+  font-weight: var(--weight-bold);
+  color: white;
+}
+
+.founder-info {
+  position: relative;
+  z-index: 1;
+}
+
+.founder-name {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  margin-bottom: var(--space-1);
+}
+
+.founder-title {
+  font-size: var(--text-lg);
+  color: var(--color-rust-light);
+  font-weight: var(--weight-medium);
+  margin-bottom: var(--space-2);
+}
+
+.founder-location {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+}
+
+.founder-bio-card {
+  position: relative;
+  z-index: 1;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.founder-bio {
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0;
+}
+
+.founder-skills-wrapper {
+  position: relative;
+  z-index: 1;
+  margin-bottom: var(--space-6);
+}
+
+.skills-title {
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.founder-skills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.skill-tag {
+  padding: var(--space-1) var(--space-3);
+  background: rgba(206, 66, 43, 0.1);
+  border: 1px solid var(--border-rust);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  color: var(--color-rust-light);
+  opacity: 0;
+  animation: skillFadeIn 0.4s ease forwards;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes skillFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.founder-credentials {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.credential {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.credential svg {
+  color: var(--color-rust);
+}
+
+.founder-links {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.founder-social-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  font-weight: var(--weight-medium);
+  font-size: var(--text-sm);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.founder-social-btn:hover {
+  border-color: var(--color-rust);
+  color: var(--color-rust-light);
+  transform: translateY(-2px);
+}
+
+.founder-social-btn--primary {
+  background: var(--gradient-rust);
+  border-color: transparent;
+  color: white;
+}
+
+.founder-social-btn--primary:hover {
+  color: white;
+  box-shadow: 0 4px 20px rgba(206, 66, 43, 0.4);
+}
+
+/* Pricing Tiers */
+.pricing-tiers {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.pricing-tier {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  min-width: 120px;
+  transition: all var(--duration-normal) var(--ease-out);
+  opacity: 0;
+  animation: tierFadeIn 0.5s ease forwards;
+}
+
+@keyframes tierFadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pricing-tier:hover {
+  border-color: var(--color-rust);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(206, 66, 43, 0.15);
+}
+
+.tier-name {
+  font-weight: var(--weight-semibold);
+  color: var(--color-rust-light);
+  margin-bottom: var(--space-1);
+}
+
+.tier-desc {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Free Section */
+.opensource-content {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.free-logo {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(206, 66, 43, 0.1) 0%, rgba(206, 66, 43, 0.05) 100%);
+  border: 1px solid var(--border-rust);
+  border-radius: 50%;
+  color: var(--color-rust);
+  animation: freeLogoFloat 3s ease-in-out infinite;
+}
+
+@keyframes freeLogoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.section-description {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-8);
+}
+
+.github-stats {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-8);
+  margin-bottom: var(--space-8);
+}
+
+.github-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.github-stat:hover {
+  color: var(--color-rust-light);
+}
+
+/* CTA Section */
+.cta-content {
+  max-width: 700px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.cta-title {
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-bold);
+  margin-bottom: var(--space-4);
+}
+
+.cta-description {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-8);
+}
+
+.cta-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .mission-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mission-visual {
+    display: none;
+  }
+
+  .stack-grid-modern {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: var(--text-3xl);
+  }
+
+  .mission-stats {
+    flex-wrap: wrap;
+    gap: var(--space-6);
+  }
+
+  .values-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cta-actions {
+    flex-direction: column;
+  }
+
+  .founder-card-modern {
+    padding: var(--space-6);
+  }
+
+  .founder-avatar {
+    width: 120px;
+    height: 120px;
+  }
+
+  .avatar-ring {
+    width: 150px;
+    height: 150px;
+  }
+
+  .founder-links {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .founder-social-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .stack-grid-modern {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .pricing-tiers {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .pricing-tier {
+    min-width: calc(50% - var(--space-2));
+    flex: 1 1 calc(50% - var(--space-2));
+  }
+}
+</style>
 {% endblock %}

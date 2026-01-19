@@ -834,11 +834,11 @@ const WIDGET_TEMPLATES: Record<string, WidgetTemplate[]> = {
     { id: 'newsletter-stacked', name: 'Stacked', description: 'Vertical layout', preview: '', config: { title: 'Join our newsletter', subtitle: 'Get updates in your inbox', placeholder: 'Email address', buttonText: 'Sign Up', style: { layout: 'stacked', buttonColor: '#10b981' } } },
     { id: 'newsletter-minimal', name: 'Minimal', description: 'Simple email input', preview: '', config: { title: '', placeholder: 'Email', buttonText: '', showIcon: true, style: { layout: 'inline', minimal: true } } },
     { id: 'newsletter-boxed', name: 'Boxed', description: 'With background', preview: '', config: { title: 'Stay Updated', subtitle: 'No spam, we promise', placeholder: 'Your email', buttonText: 'Subscribe', style: { backgroundColor: '#f3f4f6', padding: 24, borderRadius: 12 } } },
-    { id: 'newsletter-gradient', name: 'Gradient', description: 'Colorful background', preview: '', config: { title: 'Join 10,000+ subscribers', placeholder: 'Email address', buttonText: 'Get Started', style: { background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', textColor: '#ffffff' } } },
+    { id: 'newsletter-gradient', name: 'Gradient', description: 'Colorful background', preview: '', config: { title: 'Join Our Newsletter', placeholder: 'Email address', buttonText: 'Get Started', style: { background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', textColor: '#ffffff' } } },
     { id: 'newsletter-dark', name: 'Dark Theme', description: 'Dark background', preview: '', config: { title: 'Newsletter', placeholder: 'Enter email', buttonText: 'Subscribe', style: { backgroundColor: '#1e293b', textColor: '#ffffff', inputBg: '#334155' } } },
     { id: 'newsletter-popup', name: 'Popup Style', description: 'Modal-like design', preview: '', config: { title: 'Wait!', subtitle: "Don't miss our updates", placeholder: 'Email', buttonText: 'Yes, Sign Me Up', style: { backgroundColor: '#ffffff', shadow: 'xl', borderRadius: 16 } } },
     { id: 'newsletter-icon', name: 'With Icon', description: 'Mail icon included', preview: '', config: { title: 'Subscribe', placeholder: 'Email', buttonText: 'Join', showIcon: true, iconType: 'mail', style: { layout: 'inline' } } },
-    { id: 'newsletter-social', name: 'With Social Proof', description: 'Shows subscriber count', preview: '', config: { title: 'Join 50,000+ readers', placeholder: 'Email', buttonText: 'Subscribe', showSocialProof: true, style: { layout: 'stacked' } } },
+    { id: 'newsletter-social', name: 'With Social Proof', description: 'Shows subscriber count', preview: '', config: { title: 'Join Our Community', placeholder: 'Email', buttonText: 'Subscribe', showSocialProof: true, style: { layout: 'stacked' } } },
     { id: 'newsletter-animated', name: 'Animated', description: 'Animated button', preview: '', config: { title: 'Get Updates', placeholder: 'Your email', buttonText: 'Subscribe', style: { buttonAnimation: 'pulse', buttonColor: '#ef4444' } } },
   ],
 
@@ -4859,7 +4859,7 @@ const renderWidgetPreview = (widget: MegaMenuWidget, isDark: boolean, data: Widg
       return (
         <div className={clsx("p-4 rounded-lg border text-center", isDark ? "border-gray-700 bg-gray-800/50" : "border-gray-200 bg-gray-50")}>
           <Flag size={32} className="mx-auto text-primary-600 mb-2" />
-          <h4 className={clsx("text-2xl font-bold", headingColor)}>{milestoneCfg.value || '10,000+'}</h4>
+          <h4 className={clsx("text-2xl font-bold", headingColor)}>{milestoneCfg.value || '100%'}</h4>
           <p className={clsx("text-sm", textColor)}>{milestoneCfg.label || 'Happy Customers'}</p>
           <div className="mt-3 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div className="h-full bg-primary-600 rounded-full" style={{ width: milestoneCfg.progress || '75%' }} />

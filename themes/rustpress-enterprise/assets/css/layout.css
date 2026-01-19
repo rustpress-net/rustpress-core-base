@@ -1,0 +1,357 @@
+/* ==========================================================================
+   RustPress Enterprise Theme - Layout
+   ========================================================================== */
+
+/* ========== Container ========== */
+.container {
+  width: 100%;
+  max-width: var(--container-xl);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--container-padding);
+  padding-right: var(--container-padding);
+}
+
+.container-sm { max-width: var(--container-sm); }
+.container-md { max-width: var(--container-md); }
+.container-lg { max-width: var(--container-lg); }
+.container-xl { max-width: var(--container-xl); }
+.container-2xl { max-width: var(--container-2xl); }
+.container-fluid { max-width: 100%; }
+
+/* ========== Section ========== */
+.section {
+  padding-top: var(--section-padding);
+  padding-bottom: var(--section-padding);
+  position: relative;
+}
+
+.section-sm {
+  padding-top: calc(var(--section-padding) * 0.5);
+  padding-bottom: calc(var(--section-padding) * 0.5);
+}
+
+.section-lg {
+  padding-top: calc(var(--section-padding) * 1.5);
+  padding-bottom: calc(var(--section-padding) * 1.5);
+}
+
+/* Section Backgrounds */
+.section-dark {
+  background-color: var(--color-bg-secondary);
+}
+
+.section-gradient {
+  background: var(--gradient-dark);
+}
+
+.section-mesh {
+  background: var(--gradient-mesh);
+}
+
+/* ========== Grid System ========== */
+.grid {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+
+/* Auto-fit grids */
+.grid-auto-fit-sm {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.grid-auto-fit {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.grid-auto-fit-lg {
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+}
+
+/* Grid Span */
+.col-span-1 { grid-column: span 1 / span 1; }
+.col-span-2 { grid-column: span 2 / span 2; }
+.col-span-3 { grid-column: span 3 / span 3; }
+.col-span-4 { grid-column: span 4 / span 4; }
+.col-span-6 { grid-column: span 6 / span 6; }
+.col-span-full { grid-column: 1 / -1; }
+
+.row-span-1 { grid-row: span 1 / span 1; }
+.row-span-2 { grid-row: span 2 / span 2; }
+.row-span-3 { grid-row: span 3 / span 3; }
+
+/* Grid Alignment */
+.place-items-center { place-items: center; }
+.place-content-center { place-content: center; }
+
+/* ========== Flexbox Layouts ========== */
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-start {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.flex-end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.flex-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ========== Two Column Layout ========== */
+.layout-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-12);
+  align-items: center;
+}
+
+/* Hero section: much larger dashboard preview */
+.hero .layout-two-col {
+  grid-template-columns: 1fr 1.5fr;
+  gap: var(--space-16);
+  align-items: center;
+}
+
+.layout-two-col.reverse {
+  direction: rtl;
+}
+
+.layout-two-col.reverse > * {
+  direction: ltr;
+}
+
+/* ========== Content + Sidebar ========== */
+.layout-with-sidebar {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--space-8);
+}
+
+.layout-with-sidebar-left {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: var(--space-8);
+}
+
+/* ========== Stack Layout ========== */
+.stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.stack > * + * {
+  margin-top: var(--space-4);
+}
+
+.stack-sm > * + * { margin-top: var(--space-2); }
+.stack-lg > * + * { margin-top: var(--space-8); }
+.stack-xl > * + * { margin-top: var(--space-12); }
+
+/* ========== Cluster Layout ========== */
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.cluster-sm { gap: var(--space-2); }
+.cluster-lg { gap: var(--space-6); }
+
+/* ========== Main Site Layout ========== */
+.site-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  padding-top: var(--header-height);
+}
+
+/* ========== Background Elements ========== */
+.bg-effects {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-behind);
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.4;
+  animation: float 20s ease-in-out infinite;
+}
+
+.gradient-orb--1 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, var(--color-rust) 0%, transparent 70%);
+  top: -200px;
+  right: -100px;
+  animation-delay: 0s;
+}
+
+.gradient-orb--2 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, var(--color-copper) 0%, transparent 70%);
+  bottom: -150px;
+  left: -100px;
+  animation-delay: -7s;
+}
+
+.gradient-orb--3 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, var(--color-accent) 0%, transparent 70%);
+  top: 40%;
+  left: 30%;
+  animation-delay: -14s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -30px) scale(1.05);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.95);
+  }
+}
+
+/* Grid Pattern */
+.grid-pattern {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
+}
+
+/* Noise Overlay */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-max);
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* ========== Dividers ========== */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+  margin: var(--space-12) 0;
+}
+
+.divider-rust {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-rust), transparent);
+}
+
+.divider-glow {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-rust), var(--color-accent), var(--color-rust), transparent);
+  box-shadow: 0 0 20px var(--color-rust-glow);
+}
+
+/* ========== Scroll Progress ========== */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 3px;
+  background: var(--gradient-rust);
+  z-index: var(--z-max);
+  transition: width 0.1s linear;
+}
+
+/* ========== Responsive Layouts ========== */
+@media (max-width: 1024px) {
+  .layout-two-col {
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+  }
+
+  .layout-two-col.reverse {
+    direction: ltr;
+  }
+
+  .layout-with-sidebar,
+  .layout-with-sidebar-left {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .grid-cols-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .col-span-2,
+  .col-span-3,
+  .col-span-4 {
+    grid-column: span 1;
+  }
+
+  .gradient-orb {
+    opacity: 0.2;
+  }
+}
+
+/* ========== Print Styles ========== */
+@media print {
+  .bg-effects,
+  .noise-overlay,
+  .scroll-progress,
+  .gradient-orb {
+    display: none;
+  }
+}

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" fill="none">
+  <rect width="800" height="500" fill="#0f0f0f"/>
+  <!-- Editor UI -->
+  <rect x="0" y="0" width="200" height="500" fill="#1a1a1a"/>
+  <rect x="200" y="0" width="600" height="40" fill="#1a1a1a"/>
+
+  <!-- Sidebar icons -->
+  <rect x="20" y="60" width="160" height="30" rx="4" fill="#2a2a2a"/>
+  <rect x="20" y="100" width="160" height="30" rx="4" fill="#2a2a2a"/>
+  <rect x="20" y="140" width="160" height="30" rx="4" fill="#CE422B"/>
+  <rect x="20" y="180" width="160" height="30" rx="4" fill="#2a2a2a"/>
+
+  <!-- Editor content area -->
+  <rect x="220" y="60" width="560" height="420" fill="#151515" rx="8"/>
+
+  <!-- Text lines -->
+  <rect x="240" y="80" width="300" height="24" rx="2" fill="#CE422B" opacity="0.5"/>
+  <rect x="240" y="120" width="500" height="16" rx="2" fill="#3a3a3a"/>
+  <rect x="240" y="145" width="480" height="16" rx="2" fill="#3a3a3a"/>
+  <rect x="240" y="170" width="420" height="16" rx="2" fill="#3a3a3a"/>
+  <rect x="240" y="210" width="520" height="16" rx="2" fill="#3a3a3a"/>
+  <rect x="240" y="235" width="490" height="16" rx="2" fill="#3a3a3a"/>
+  <rect x="240" y="260" width="440" height="16" rx="2" fill="#3a3a3a"/>
+
+  <!-- Code block -->
+  <rect x="240" y="300" width="520" height="120" rx="6" fill="#1a1a1a"/>
+  <rect x="260" y="320" width="200" height="12" rx="2" fill="#CE422B" opacity="0.7"/>
+  <rect x="260" y="340" width="300" height="12" rx="2" fill="#4a9eff" opacity="0.7"/>
+  <rect x="260" y="360" width="250" height="12" rx="2" fill="#85e89d" opacity="0.7"/>
+  <rect x="260" y="380" width="280" height="12" rx="2" fill="#4a9eff" opacity="0.7"/>
+
+  <!-- Cursor -->
+  <rect x="240" y="435" width="2" height="20" fill="#CE422B">
+    <animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite"/>
+  </rect>
+
+  <text x="400" y="485" text-anchor="middle" fill="#666" font-family="system-ui" font-size="12">Content Editor Preview</text>
+</svg>

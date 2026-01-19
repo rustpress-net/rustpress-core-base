@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" fill="none">
+  <rect width="800" height="500" fill="#0f0f0f"/>
+
+  <!-- Header -->
+  <rect x="0" y="0" width="800" height="50" fill="#1a1a1a"/>
+  <text x="30" y="32" fill="#fff" font-family="system-ui" font-size="16" font-weight="600">Media Library</text>
+
+  <!-- Search bar -->
+  <rect x="200" y="12" width="300" height="28" rx="14" fill="#2a2a2a"/>
+
+  <!-- Upload button -->
+  <rect x="680" y="10" width="100" height="32" rx="6" fill="#CE422B"/>
+  <text x="730" y="30" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="12">Upload</text>
+
+  <!-- Sidebar filters -->
+  <rect x="0" y="50" width="180" height="450" fill="#151515"/>
+  <rect x="15" y="70" width="150" height="30" rx="4" fill="#CE422B" opacity="0.3"/>
+  <text x="90" y="90" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="12">All Files</text>
+  <rect x="15" y="110" width="150" height="30" rx="4" fill="transparent"/>
+  <text x="90" y="130" text-anchor="middle" fill="#888" font-family="system-ui" font-size="12">Images</text>
+  <rect x="15" y="150" width="150" height="30" rx="4" fill="transparent"/>
+  <text x="90" y="170" text-anchor="middle" fill="#888" font-family="system-ui" font-size="12">Videos</text>
+  <rect x="15" y="190" width="150" height="30" rx="4" fill="transparent"/>
+  <text x="90" y="210" text-anchor="middle" fill="#888" font-family="system-ui" font-size="12">Documents</text>
+
+  <!-- Image grid -->
+  <rect x="200" y="70" width="140" height="100" rx="8" fill="#2a2a2a"/>
+  <rect x="350" y="70" width="140" height="100" rx="8" fill="#CE422B" opacity="0.3"/>
+  <rect x="500" y="70" width="140" height="100" rx="8" fill="#2a2a2a"/>
+  <rect x="650" y="70" width="130" height="100" rx="8" fill="#2a2a2a"/>
+
+  <rect x="200" y="180" width="140" height="100" rx="8" fill="#2a2a2a"/>
+  <rect x="350" y="180" width="140" height="100" rx="8" fill="#2a2a2a"/>
+  <rect x="500" y="180" width="140" height="100" rx="8" fill="#2a2a2a"/>
+  <rect x="650" y="180" width="130" height="100" rx="8" fill="#2a2a2a"/>
+
+  <rect x="200" y="290" width="140" height="100" rx="8" fill="#2a2a2a"/>
+  <rect x="350" y="290" width="140" height="100" rx="8" fill="#2a2a2a"/>
+  <rect x="500" y="290" width="140" height="100" rx="8" fill="#2a2a2a"/>
+  <rect x="650" y="290" width="130" height="100" rx="8" fill="#2a2a2a"/>
+
+  <!-- Selected indicator -->
+  <rect x="350" y="70" width="140" height="100" rx="8" fill="transparent" stroke="#CE422B" stroke-width="3"/>
+  <circle cx="475" cy="85" r="12" fill="#CE422B"/>
+  <path d="M469 85l4 4 8-8" stroke="#fff" stroke-width="2" fill="none"/>
+
+  <!-- Image placeholders with icons -->
+  <circle cx="270" cy="120" r="20" fill="#3a3a3a"/>
+  <circle cx="570" cy="120" r="20" fill="#3a3a3a"/>
+  <circle cx="715" cy="120" r="20" fill="#3a3a3a"/>
+
+  <text x="400" y="485" text-anchor="middle" fill="#666" font-family="system-ui" font-size="12">Media Library Preview</text>
+</svg>

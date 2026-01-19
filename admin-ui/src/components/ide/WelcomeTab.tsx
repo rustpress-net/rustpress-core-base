@@ -7,7 +7,8 @@ import { motion } from 'framer-motion';
 import {
   FileText, FolderOpen, Clock, Star, BookOpen, Keyboard,
   GitBranch, Palette, Terminal, Search, Settings, Zap,
-  ArrowRight, ExternalLink, Play
+  ArrowRight, ExternalLink, Play, Code2, Sparkles, Blocks,
+  Puzzle, FunctionSquare, Layers, GitCommit, Brain
 } from 'lucide-react';
 
 interface RecentFile {
@@ -153,6 +154,62 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
             )}
           </motion.div>
         </div>
+
+        {/* Highlighted Feature - Centered */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="w-full flex justify-center mb-8"
+        >
+          <div className="flex flex-col items-center justify-center text-center p-8 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-blue-600/20 border border-blue-500/30 rounded-xl max-w-3xl w-full mx-auto">
+            <div className="p-3 bg-blue-600/20 rounded-xl mb-4">
+              <Code2 className="w-8 h-8 text-blue-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2 text-center">
+              Edit any file type with full syntax support
+            </h3>
+            <p className="text-sm text-gray-400 max-w-lg text-center mb-6">
+              JavaScript, TypeScript, Rust, Python, Go, PHP, HTML, CSS, SCSS, JSON, SQL, and more
+            </p>
+
+            {/* Create Extensions Grid */}
+            <div className="grid grid-cols-4 gap-3 mb-6 w-full max-w-xl">
+              <div className="flex flex-col items-center gap-2 p-3 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer">
+                <Palette className="w-5 h-5 text-pink-400" />
+                <span className="text-xs text-gray-300">Themes</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 p-3 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer">
+                <Puzzle className="w-5 h-5 text-green-400" />
+                <span className="text-xs text-gray-300">Plugins</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 p-3 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer">
+                <FunctionSquare className="w-5 h-5 text-yellow-400" />
+                <span className="text-xs text-gray-300">Functions</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 p-3 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer">
+                <Blocks className="w-5 h-5 text-blue-400" />
+                <span className="text-xs text-gray-300">Apps</span>
+              </div>
+            </div>
+
+            {/* Key Capabilities */}
+            <div className="flex flex-wrap items-center justify-center gap-4 text-xs">
+              <div className="flex items-center gap-1.5 text-gray-400">
+                <GitCommit className="w-4 h-4 text-orange-400" />
+                <span>Version Control</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-gray-400">
+                <Brain className="w-4 h-4 text-purple-400" />
+                <span>AI-Powered</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-gray-400">
+                <Sparkles className="w-4 h-4 text-cyan-400" />
+                <span>Simple & Intuitive</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Features */}
         <motion.div

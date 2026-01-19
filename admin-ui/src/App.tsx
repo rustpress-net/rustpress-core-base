@@ -47,6 +47,7 @@ const SidebarManagerComponent = lazy(() => import('./components/themes/SidebarMa
 const MenuManager = lazy(() => import('./components/themes/MenuManager'));
 const PageTemplateSelector = lazy(() => import('./components/themes/PageTemplateSelector'));
 const ThemeEditorFull = lazy(() => import('./pages/ThemeEditor'));
+const IDEOverview = lazy(() => import('./pages/IDEOverview'));
 const Plugins = lazy(() => import('./pages/Plugins'));
 const DetachedTabWindow = lazy(() => import('./components/ide/DetachedTabWindow'));
 
@@ -65,6 +66,15 @@ const AppSelectionPage = lazy(() => import('./pages/apps/AppSelectionPage'));
 
 // Settings Pages
 const SiteModeSettings = lazy(() => import('./pages/settings/SiteModeSettings'));
+const StorageSettings = lazy(() => import('./pages/settings/StorageSettings'));
+const MediaSettings = lazy(() => import('./pages/settings/MediaSettings'));
+const PreloaderSettings = lazy(() => import('./pages/settings/PreloaderSettings'));
+const WritingSettings = lazy(() => import('./pages/settings/WritingSettings'));
+const ReadingSettings = lazy(() => import('./pages/settings/ReadingSettings'));
+const DiscussionSettings = lazy(() => import('./pages/settings/DiscussionSettings'));
+const PermalinksSettings = lazy(() => import('./pages/settings/PermalinksSettings'));
+const PrivacySettings = lazy(() => import('./pages/settings/PrivacySettings'));
+const SubscriptionSettings = lazy(() => import('./pages/settings/SubscriptionSettings'));
 
 // App Components (for Site Mode)
 const TaskManagerApp = lazy(() => import('./apps/TaskManagerApp'));
@@ -390,6 +400,20 @@ const UsersListPage = () => (
   </motion.div>
 );
 
+// Settings menu items with routes
+const settingsMenuItems = [
+  { name: 'General', path: '/settings', icon: '⚙️' },
+  { name: 'Writing', path: '/settings/writing', icon: '✍️' },
+  { name: 'Reading', path: '/settings/reading', icon: '📖' },
+  { name: 'Discussion', path: '/settings/discussion', icon: '💬' },
+  { name: 'Media', path: '/settings/media', icon: '🖼️' },
+  { name: 'Permalinks', path: '/settings/permalinks', icon: '🔗' },
+  { name: 'Privacy', path: '/settings/privacy', icon: '🔒' },
+  { name: 'Storage', path: '/settings/storage', icon: '💾' },
+  { name: 'Preloader', path: '/settings/preloader', icon: '⏳' },
+  { name: 'Subscription', path: '/settings/subscription', icon: '💳' },
+];
+
 // Settings Page
 const SettingsListPage = () => (
   <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="space-y-6">
@@ -401,17 +425,19 @@ const SettingsListPage = () => (
       <motion.div variants={fadeInUp}>
         <Card>
           <CardBody className="space-y-1">
-            {['General', 'Writing', 'Reading', 'Discussion', 'Media', 'Permalinks', 'Privacy'].map((item, i) => (
-              <button
-                key={item}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-all ${
+            {settingsMenuItems.map((item, i) => (
+              <Link
+                key={item.name}
+                to={item.path}
+                className={`flex items-center gap-2 w-full text-left px-4 py-2 rounded-lg transition-all ${
                   i === 0
                     ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
                     : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                 }`}
               >
-                {item}
-              </button>
+                <span>{item.icon}</span>
+                {item.name}
+              </Link>
             ))}
           </CardBody>
         </Card>
@@ -589,7 +615,7 @@ const RolesPage = () => (
 function App() {
   return (
     <Routes>
-      {/* IDE - Full page without layout wrapper - MUST BE BEFORE catch-all route */}
+      {/* IDE - Full IDE directly */}
       <Route path="/ide" element={
         <Suspense fallback={
           <div className="h-screen flex items-center justify-center bg-gray-900">
@@ -597,6 +623,17 @@ function App() {
           </div>
         }>
           <ThemeEditorFull />
+        </Suspense>
+      } />
+
+      {/* IDE Overview - Optional landing page */}
+      <Route path="/ide/overview" element={
+        <Suspense fallback={
+          <div className="h-screen flex items-center justify-center bg-gray-900">
+            <div className="text-white">Loading...</div>
+          </div>
+        }>
+          <IDEOverview />
         </Suspense>
       } />
 
@@ -771,7 +808,6 @@ function App() {
 
         {/* Plugins */}
         <Route path="plugins" element={<Plugins />} />
-        <Route path="plugins/add" element={<Plugins />} />
 
         {/* Apps */}
         <Route path="apps" element={
@@ -821,6 +857,51 @@ function App() {
         <Route path="settings/site-mode" element={
           <Suspense fallback={<PageLoader />}>
             <SiteModeSettings />
+          </Suspense>
+        } />
+        <Route path="settings/storage" element={
+          <Suspense fallback={<PageLoader />}>
+            <StorageSettings />
+          </Suspense>
+        } />
+        <Route path="settings/media" element={
+          <Suspense fallback={<PageLoader />}>
+            <MediaSettings />
+          </Suspense>
+        } />
+        <Route path="settings/preloader" element={
+          <Suspense fallback={<PageLoader />}>
+            <PreloaderSettings />
+          </Suspense>
+        } />
+        <Route path="settings/writing" element={
+          <Suspense fallback={<PageLoader />}>
+            <WritingSettings />
+          </Suspense>
+        } />
+        <Route path="settings/reading" element={
+          <Suspense fallback={<PageLoader />}>
+            <ReadingSettings />
+          </Suspense>
+        } />
+        <Route path="settings/discussion" element={
+          <Suspense fallback={<PageLoader />}>
+            <DiscussionSettings />
+          </Suspense>
+        } />
+        <Route path="settings/permalinks" element={
+          <Suspense fallback={<PageLoader />}>
+            <PermalinksSettings />
+          </Suspense>
+        } />
+        <Route path="settings/privacy" element={
+          <Suspense fallback={<PageLoader />}>
+            <PrivacySettings />
+          </Suspense>
+        } />
+        <Route path="settings/subscription" element={
+          <Suspense fallback={<PageLoader />}>
+            <SubscriptionSettings />
           </Suspense>
         } />
         <Route path="cache" element={

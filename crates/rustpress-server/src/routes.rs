@@ -261,6 +261,8 @@ fn api_v1_routes() -> Router<AppState> {
         .nest("/comments", comment_routes())
         // Settings routes
         .nest("/settings", settings_routes())
+        // Storage configuration routes
+        .nest("/storage", storage_routes())
         // Plugin routes
         .nest("/plugins", plugin_routes())
         // Theme routes
@@ -451,6 +453,19 @@ fn settings_routes() -> Router<AppState> {
         .route(
             "/:key",
             get(get_setting_handler).put(update_setting_handler),
+        )
+}
+
+/// Storage configuration routes
+fn storage_routes() -> Router<AppState> {
+    Router::new()
+        .route("/", get(list_storage_configurations_handler))
+        .route("/test", post(test_storage_connection_handler))
+        .route("/migrations", post(start_migration_handler))
+        .route("/migrations/:id", get(get_migration_status_handler).delete(cancel_migration_handler))
+        .route(
+            "/:category",
+            get(get_storage_configuration_handler).put(update_storage_configuration_handler),
         )
 }
 
@@ -2394,6 +2409,120 @@ async fn get_permalinks_settings_handler(
     let service = SettingsService::new(state.db().inner().clone());
     let settings = service.get_by_group("permalinks").await?;
     Ok(json(settings))
+}
+
+// =============================================================================
+// Storage Configuration Handlers
+// =============================================================================
+
+use rustpress_api::services::storage_service::{
+    StorageService as StorageConfigService,
+    StorageCategory, StorageProvider, ProviderConfig,
+    StorageConfigRequest, MigrationRequest,
+};
+
+/// List all storage configurations
+async fn list_storage_configurations_handler(
+    user: AuthUser,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let service = StorageConfigService::new(state.db().inner().clone());
+    let configurations = service.get_all_configurations().await?;
+    Ok(json(serde_json::json!({ "configurations": configurations })))
+}
+
+/// Get storage configuration for a specific category
+async fn get_storage_configuration_handler(
+    user: AuthUser,
+    axum::extract::Path(category): axum::extract::Path<String>,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let category: StorageCategory = category.parse().map_err(|e| {
+        rustpress_core::error::Error::validation(format!("Invalid category: {}", category))
+    })?;
+
+    let service = StorageConfigService::new(state.db().inner().clone());
+    let configuration = service.get_or_create_default(&category).await?;
+    Ok(json(configuration))
+}
+
+/// Update storage configuration for a category
+async fn update_storage_configuration_handler(
+    user: AuthUser,
+    axum::extract::Path(category): axum::extract::Path<String>,
+    State(state): State<AppState>,
+    Json(request): Json<StorageConfigRequest>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let category: StorageCategory = category.parse().map_err(|e| {
+        rustpress_core::error::Error::validation(format!("Invalid category: {}", category))
+    })?;
+
+    let service = StorageConfigService::new(state.db().inner().clone());
+    let configuration = service.update_configuration(&category, request).await?;
+    Ok(json(serde_json::json!({
+        "message": "Storage configuration updated",
+        "configuration": configuration
+    })))
+}
+
+/// Test storage connection request
+#[derive(Debug, Deserialize)]
+struct TestConnectionRequest {
+    provider: StorageProvider,
+    config: ProviderConfig,
+}
+
+/// Test storage connection
+async fn test_storage_connection_handler(
+    user: AuthUser,
+    State(state): State<AppState>,
+    Json(request): Json<TestConnectionRequest>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let service = StorageConfigService::new(state.db().inner().clone());
+    let result = service.test_connection(&request.provider, &request.config).await?;
+    Ok(json(result))
+}
+
+/// Start a migration job
+async fn start_migration_handler(
+    user: AuthUser,
+    State(state): State<AppState>,
+    Json(request): Json<MigrationRequest>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let service = StorageConfigService::new(state.db().inner().clone());
+    let status = service.start_migration(request).await?;
+    Ok(created(status))
+}
+
+/// Get migration status
+async fn get_migration_status_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let service = StorageConfigService::new(state.db().inner().clone());
+    let status = service.get_migration_status(id).await?;
+
+    match status {
+        Some(s) => Ok(json(s)),
+        None => Err(rustpress_core::error::Error::not_found("Migration not found")),
+    }
+}
+
+/// Cancel a running migration
+async fn cancel_migration_handler(
+    user: AuthUser,
+    PathId(id): PathId,
+    State(state): State<AppState>,
+) -> HttpResult<impl axum::response::IntoResponse> {
+    let service = StorageConfigService::new(state.db().inner().clone());
+    let cancelled = service.cancel_migration(id).await?;
+
+    if cancelled {
+        Ok(json(serde_json::json!({ "message": "Migration cancelled" })))
+    } else {
+        Err(rustpress_core::error::Error::validation("Migration not found or already completed"))
+    }
 }
 
 // =============================================================================

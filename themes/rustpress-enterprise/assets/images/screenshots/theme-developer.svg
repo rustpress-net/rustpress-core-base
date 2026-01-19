@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 400" fill="none">
+  <rect width="320" height="400" fill="#0d1117"/>
+
+  <!-- Header -->
+  <rect x="0" y="0" width="320" height="50" fill="#161b22"/>
+  <rect x="20" y="18" width="80" height="14" rx="2" fill="#58a6ff"/>
+  <rect x="200" y="18" width="40" height="14" rx="2" fill="#30363d"/>
+  <rect x="250" y="18" width="50" height="14" rx="2" fill="#30363d"/>
+
+  <!-- Hero -->
+  <rect x="0" y="50" width="320" height="160" fill="#0d1117"/>
+  <rect x="40" y="80" width="240" height="20" rx="2" fill="#c9d1d9"/>
+  <rect x="60" y="110" width="200" height="12" rx="2" fill="#8b949e"/>
+  <rect x="80" y="130" width="160" height="12" rx="2" fill="#8b949e"/>
+  <rect x="90" y="160" width="60" height="30" rx="6" fill="#238636"/>
+  <rect x="160" y="160" width="70" height="30" rx="6" fill="transparent" stroke="#30363d" stroke-width="1"/>
+
+  <!-- Code block -->
+  <rect x="20" y="230" width="280" height="70" rx="8" fill="#161b22"/>
+  <rect x="35" y="245" width="120" height="10" rx="2" fill="#ff7b72"/>
+  <rect x="35" y="260" width="180" height="10" rx="2" fill="#79c0ff"/>
+  <rect x="35" y="275" width="150" height="10" rx="2" fill="#a5d6ff"/>
+
+  <!-- Content -->
+  <rect x="20" y="320" width="280" height="60" rx="8" fill="#161b22"/>
+
+  <text x="160" y="395" text-anchor="middle" fill="#58a6ff" font-family="system-ui" font-size="10" font-weight="600">Developer Theme</text>
+</svg>

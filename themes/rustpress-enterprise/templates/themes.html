@@ -1,0 +1,713 @@
+{% extends "templates/base.html" %}
+
+{% block title %}Themes - {{ site.name | default(value="RustPress") }}{% endblock %}
+
+{% block content %}
+<main class="main-content">
+  <!-- Hero Section -->
+  <section class="themes-hero">
+    <div class="container">
+      <div class="themes-hero-content" data-animate="fade-up">
+        <span class="hero-badge">Theme Marketplace</span>
+        <h1 class="hero-title">Beautiful Themes for <span class="text-gradient">Every Purpose</span></h1>
+        <p class="hero-description">
+          Discover professionally designed themes built specifically for RustPress.
+          Each theme is optimized for performance, SEO, and accessibility.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Theme Carousel -->
+  <section class="theme-showcase section">
+    <div class="container">
+      <div class="carousel-container" data-animate="fade-up">
+        <div class="carousel" id="theme-carousel">
+          <div class="carousel-track">
+            <!-- Theme 1: Enterprise -->
+            <div class="carousel-slide">
+              <div class="theme-preview">
+                <img src="/themes/{{ theme.id | default(value='rustpress-enterprise') }}/assets/images/screenshots/theme-enterprise.svg" alt="Enterprise Theme" loading="lazy">
+                <div class="theme-overlay">
+                  <a href="#" class="btn btn--primary">Preview</a>
+                </div>
+              </div>
+              <div class="theme-info">
+                <h3>Enterprise</h3>
+                <p>Professional business theme with modern aesthetics</p>
+                <div class="theme-meta">
+                  <span class="theme-price">Free</span>
+                  <span class="theme-rating">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    4.9
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Theme 2: Minimal -->
+            <div class="carousel-slide">
+              <div class="theme-preview">
+                <img src="/themes/{{ theme.id | default(value='rustpress-enterprise') }}/assets/images/screenshots/theme-minimal.svg" alt="Minimal Theme" loading="lazy">
+                <div class="theme-overlay">
+                  <a href="#" class="btn btn--primary">Preview</a>
+                </div>
+              </div>
+              <div class="theme-info">
+                <h3>Minimal</h3>
+                <p>Clean, distraction-free design for writers</p>
+                <div class="theme-meta">
+                  <span class="theme-price">Free</span>
+                  <span class="theme-rating">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    4.8
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Theme 3: Developer -->
+            <div class="carousel-slide">
+              <div class="theme-preview">
+                <img src="/themes/{{ theme.id | default(value='rustpress-enterprise') }}/assets/images/screenshots/theme-developer.svg" alt="Developer Theme" loading="lazy">
+                <div class="theme-overlay">
+                  <a href="#" class="btn btn--primary">Preview</a>
+                </div>
+              </div>
+              <div class="theme-info">
+                <h3>Developer</h3>
+                <p>Technical blog theme with code highlighting</p>
+                <div class="theme-meta">
+                  <span class="theme-price">$29</span>
+                  <span class="theme-rating">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    4.9
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Theme 4: Portfolio -->
+            <div class="carousel-slide">
+              <div class="theme-preview">
+                <div class="theme-placeholder">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span>Coming Soon</span>
+                </div>
+                <div class="theme-overlay">
+                  <span class="btn btn--outline">Coming Q2 2026</span>
+                </div>
+              </div>
+              <div class="theme-info">
+                <h3>Portfolio</h3>
+                <p>Showcase your work with stunning galleries</p>
+                <div class="theme-meta">
+                  <span class="theme-price theme-price--upcoming">$39</span>
+                  <span class="theme-badge">Coming Soon</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Theme 5: Magazine -->
+            <div class="carousel-slide">
+              <div class="theme-preview">
+                <div class="theme-placeholder">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                  <span>Coming Soon</span>
+                </div>
+                <div class="theme-overlay">
+                  <span class="btn btn--outline">Coming Q2 2026</span>
+                </div>
+              </div>
+              <div class="theme-info">
+                <h3>Magazine</h3>
+                <p>Multi-column layout for news and magazines</p>
+                <div class="theme-meta">
+                  <span class="theme-price theme-price--upcoming">$49</span>
+                  <span class="theme-badge">Coming Soon</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Carousel Controls -->
+        <div class="carousel-controls">
+          <button class="carousel-btn carousel-btn--prev" aria-label="Previous">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="carousel-dots"></div>
+          <button class="carousel-btn carousel-btn--next" aria-label="Next">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- What Are Themes -->
+  <section class="themes-explanation section section--muted">
+    <div class="container">
+      <div class="explanation-grid">
+        <div class="explanation-content" data-animate="fade-right">
+          <h2 class="section-title">What Are <span class="text-gradient">RustPress Themes?</span></h2>
+          <p class="section-text">
+            RustPress themes are complete design packages that control how your website looks and feels.
+            They include templates, styles, and layouts that work seamlessly with the RustPress CMS.
+          </p>
+          <ul class="feature-list">
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><strong>Tera Templates</strong> - Powerful templating with inheritance and macros</span>
+            </li>
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><strong>CSS Variables</strong> - Easily customize colors, fonts, and spacing</span>
+            </li>
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><strong>Responsive Design</strong> - Mobile-first layouts that look great everywhere</span>
+            </li>
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><strong>SEO Optimized</strong> - Structured data, meta tags, and fast loading</span>
+            </li>
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><strong>Accessibility</strong> - WCAG 2.1 compliant for all users</span>
+            </li>
+          </ul>
+        </div>
+        <div class="explanation-visual" data-animate="fade-left">
+          <div class="theme-structure">
+            <div class="structure-header">
+              <span class="structure-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              </span>
+              <span>my-theme/</span>
+            </div>
+            <div class="structure-tree">
+              <div class="tree-item"><span class="tree-folder">templates/</span></div>
+              <div class="tree-item tree-indent"><span class="tree-file">base.html</span></div>
+              <div class="tree-item tree-indent"><span class="tree-file">home.html</span></div>
+              <div class="tree-item tree-indent"><span class="tree-file">single.html</span></div>
+              <div class="tree-item tree-indent"><span class="tree-file">page.html</span></div>
+              <div class="tree-item"><span class="tree-folder">assets/</span></div>
+              <div class="tree-item tree-indent"><span class="tree-folder">css/</span></div>
+              <div class="tree-item tree-indent"><span class="tree-folder">js/</span></div>
+              <div class="tree-item tree-indent"><span class="tree-folder">images/</span></div>
+              <div class="tree-item"><span class="tree-file">theme.toml</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Theme Features -->
+  <section class="theme-features section">
+    <div class="container">
+      <div class="section-header" data-animate="fade-up">
+        <h2 class="section-title">Theme <span class="text-gradient">Features</span></h2>
+        <p class="section-subtitle">Every RustPress theme includes these powerful features</p>
+      </div>
+
+      <div class="features-grid" data-animate-stagger>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          </div>
+          <h4>Responsive Design</h4>
+          <p>All themes adapt perfectly to any screen size, from mobile to 4K displays.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+          <h4>Easy Customization</h4>
+          <p>Change colors, fonts, and layouts without touching code using CSS variables.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <h4>Lightning Fast</h4>
+          <p>Optimized CSS and minimal JavaScript for sub-50ms page loads.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          </div>
+          <h4>SEO Ready</h4>
+          <p>Schema.org markup, Open Graph tags, and semantic HTML built-in.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <h4>Internationalization</h4>
+          <p>RTL support and translation-ready with Fluent localization.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+          <h4>Accessibility</h4>
+          <p>WCAG 2.1 AA compliant with proper ARIA labels and keyboard navigation.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section section section--muted">
+    <div class="container">
+      <div class="cta-content" data-animate="fade-up">
+        <h2 class="cta-title">Create Your Own <span class="text-gradient">Theme</span></h2>
+        <p class="cta-description">Learn how to build custom themes for RustPress with our comprehensive documentation.</p>
+        <div class="cta-actions">
+          <a href="/docs" class="btn btn--primary btn--xl btn--glow">
+            Theme Documentation
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+          <a href="https://github.com/nicholaswinton2/RustPress" class="btn btn--outline btn--xl" target="_blank" rel="noopener">View on GitHub</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* Themes Hero */
+.themes-hero {
+  padding: var(--space-20) 0 var(--space-10);
+  background: var(--gradient-dark);
+  text-align: center;
+}
+
+.themes-hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero-badge {
+  display: inline-block;
+  padding: var(--space-2) var(--space-4);
+  background: rgba(206, 66, 43, 0.1);
+  border: 1px solid var(--border-rust);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-rust-light);
+  margin-bottom: var(--space-6);
+}
+
+.hero-title {
+  font-size: var(--text-5xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  margin-bottom: var(--space-6);
+}
+
+.hero-description {
+  font-size: var(--text-xl);
+  color: var(--color-text-secondary);
+}
+
+/* Carousel */
+.carousel-container {
+  position: relative;
+  padding: 0 var(--space-16);
+}
+
+.carousel {
+  overflow: hidden;
+}
+
+.carousel-track {
+  display: flex;
+  gap: var(--space-6);
+  transition: transform 0.5s var(--ease-out);
+}
+
+.carousel-slide {
+  flex: 0 0 calc(33.333% - var(--space-4));
+  min-width: 300px;
+}
+
+.theme-preview {
+  position: relative;
+  aspect-ratio: 16/10;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+}
+
+.theme-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.theme-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+}
+
+.theme-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-out);
+}
+
+.theme-preview:hover .theme-overlay {
+  opacity: 1;
+}
+
+.theme-info h3 {
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-1);
+}
+
+.theme-info p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.theme-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.theme-price {
+  font-weight: var(--weight-semibold);
+  color: var(--color-rust-light);
+}
+
+.theme-price--upcoming {
+  color: var(--color-text-muted);
+}
+
+.theme-rating {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: #fbbf24;
+}
+
+.theme-badge {
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-2);
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+  border-radius: var(--radius-sm);
+}
+
+/* Carousel Controls */
+.carousel-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+}
+
+.carousel-btn {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.carousel-btn:hover {
+  border-color: var(--color-rust);
+  color: var(--color-rust);
+}
+
+.carousel-dots {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.carousel-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--border-color);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.carousel-dot.active {
+  background: var(--color-rust);
+  width: 24px;
+  border-radius: var(--radius-full);
+}
+
+/* Explanation Grid */
+.explanation-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-16);
+  align-items: center;
+}
+
+.section-text {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-8);
+  line-height: var(--leading-relaxed);
+}
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+}
+
+.feature-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.feature-list li:last-child {
+  border-bottom: none;
+}
+
+.feature-list li svg {
+  flex-shrink: 0;
+  color: #27ca40;
+  margin-top: 2px;
+}
+
+/* Theme Structure */
+.theme-structure {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  font-family: monospace;
+  font-size: var(--text-sm);
+}
+
+.structure-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.structure-icon {
+  color: var(--color-rust);
+}
+
+.structure-tree {
+  padding: var(--space-4);
+}
+
+.tree-item {
+  padding: var(--space-1) 0;
+}
+
+.tree-indent {
+  padding-left: var(--space-6);
+}
+
+.tree-folder {
+  color: var(--color-rust-light);
+}
+
+.tree-file {
+  color: var(--color-text-secondary);
+}
+
+/* Features Grid */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+}
+
+.feature-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  text-align: center;
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.feature-card:hover {
+  border-color: var(--color-rust);
+  transform: translateY(-4px);
+}
+
+.feature-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(206, 66, 43, 0.1);
+  border-radius: var(--radius-lg);
+  color: var(--color-rust);
+}
+
+.feature-card h4 {
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-2);
+}
+
+.feature-card p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+/* CTA Section */
+.cta-content {
+  max-width: 700px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.cta-title {
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-bold);
+  margin-bottom: var(--space-4);
+}
+
+.cta-description {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-8);
+}
+
+.cta-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .carousel-slide {
+    flex: 0 0 calc(50% - var(--space-3));
+  }
+
+  .explanation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: var(--text-3xl);
+  }
+
+  .carousel-container {
+    padding: 0;
+  }
+
+  .carousel-slide {
+    flex: 0 0 100%;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cta-actions {
+    flex-direction: column;
+  }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const carousel = document.getElementById('theme-carousel');
+  if (!carousel) return;
+
+  const track = carousel.querySelector('.carousel-track');
+  const slides = carousel.querySelectorAll('.carousel-slide');
+  const prevBtn = document.querySelector('.carousel-btn--prev');
+  const nextBtn = document.querySelector('.carousel-btn--next');
+  const dotsContainer = document.querySelector('.carousel-dots');
+
+  let currentIndex = 0;
+  const slidesToShow = window.innerWidth < 768 ? 1 : window.innerWidth < 1024 ? 2 : 3;
+  const maxIndex = Math.max(0, slides.length - slidesToShow);
+
+  // Create dots
+  for (let i = 0; i <= maxIndex; i++) {
+    const dot = document.createElement('div');
+    dot.classList.add('carousel-dot');
+    if (i === 0) dot.classList.add('active');
+    dot.addEventListener('click', () => goToSlide(i));
+    dotsContainer.appendChild(dot);
+  }
+
+  function updateCarousel() {
+    const slideWidth = slides[0].offsetWidth + 24; // 24 = gap
+    track.style.transform = `translateX(-${currentIndex * slideWidth}px)`;
+
+    // Update dots
+    document.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+      dot.classList.toggle('active', i === currentIndex);
+    });
+  }
+
+  function goToSlide(index) {
+    currentIndex = Math.max(0, Math.min(index, maxIndex));
+    updateCarousel();
+  }
+
+  prevBtn.addEventListener('click', () => goToSlide(currentIndex - 1));
+  nextBtn.addEventListener('click', () => goToSlide(currentIndex + 1));
+
+  // Auto-play
+  setInterval(() => {
+    goToSlide(currentIndex >= maxIndex ? 0 : currentIndex + 1);
+  }, 5000);
+});
+</script>
+{% endblock %}
