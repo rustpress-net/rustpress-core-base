@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use tower_http::services::{ServeDir, ServeFile};
 use uuid::Uuid;
 
-use crate::error::HttpResult;
+use crate::error::{HttpError, HttpResult};
 use crate::extract::{AuthUser, PaginatedQuery, PathId, ValidatedJson};
 use crate::response::{created, json, no_content, paginated, SuccessResponse};
 use crate::state::AppState;
@@ -2511,9 +2511,7 @@ async fn get_migration_status_handler(
 
     match status {
         Some(s) => Ok(json(s)),
-        None => Err(rustpress_core::error::Error::not_found(
-            "Migration not found",
-        )),
+        None => Err(HttpError::not_found("Migration not found")),
     }
 }
 
@@ -2531,9 +2529,7 @@ async fn cancel_migration_handler(
             serde_json::json!({ "message": "Migration cancelled" }),
         ))
     } else {
-        Err(rustpress_core::error::Error::validation(
-            "Migration not found or already completed",
-        ))
+        Err(HttpError::bad_request("Migration not found or already completed"))
     }
 }
 
