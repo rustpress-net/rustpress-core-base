@@ -1,0 +1,552 @@
+{% extends "templates/base.html" %}
+
+{% block title %}{{ author.name | default(value="Author") }} - {{ site.name | default(value="RustPress") }}{% endblock %}
+
+{% block content %}
+<main class="main-content">
+  <!-- Author Header -->
+  <section class="author-header">
+    <div class="container">
+      <div class="author-header-content" data-animate="fade-up">
+        <nav class="breadcrumbs" aria-label="Breadcrumb">
+          <ol>
+            <li><a href="/">Home</a></li>
+            <li><a href="/blog">Blog</a></li>
+            <li><span aria-current="page">{{ author.name | default(value="Author") }}</span></li>
+          </ol>
+        </nav>
+
+        <div class="author-profile">
+          <div class="author-avatar-large">
+            {% if author.avatar %}
+            <img src="{{ author.avatar }}" alt="{{ author.name }}">
+            {% else %}
+            <div class="avatar-placeholder">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="author-info">
+            <span class="author-label">Author</span>
+            <h1 class="author-name">{{ author.name | default(value="Author") }}</h1>
+
+            {% if author.role %}
+            <p class="author-role">{{ author.role }}</p>
+            {% endif %}
+
+            {% if author.bio %}
+            <p class="author-bio">{{ author.bio }}</p>
+            {% endif %}
+
+            <div class="author-stats">
+              <span class="stat">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                {{ posts | length }} article{% if posts | length != 1 %}s{% endif %}
+              </span>
+            </div>
+
+            {% if author.social %}
+            <div class="author-social">
+              {% if author.social.twitter %}
+              <a href="{{ author.social.twitter }}" target="_blank" rel="noopener" aria-label="Twitter">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
+              </a>
+              {% endif %}
+              {% if author.social.github %}
+              <a href="{{ author.social.github }}" target="_blank" rel="noopener" aria-label="GitHub">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+              </a>
+              {% endif %}
+              {% if author.social.linkedin %}
+              <a href="{{ author.social.linkedin }}" target="_blank" rel="noopener" aria-label="LinkedIn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+              </a>
+              {% endif %}
+              {% if author.social.website %}
+              <a href="{{ author.social.website }}" target="_blank" rel="noopener" aria-label="Website">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              </a>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Author Content -->
+  <section class="author-content section">
+    <div class="container">
+      <div class="author-layout">
+        <!-- Posts List -->
+        <div class="posts-container">
+          <h2 class="section-title" data-animate="fade-up">
+            Articles by {{ author.name | default(value="this author") }}
+          </h2>
+
+          {% if posts %}
+          <div class="author-posts-list" data-animate-stagger>
+            {% for post in posts %}
+            <article class="author-post-card">
+              {% if post.featured_image %}
+              <a href="{{ post.url }}" class="author-post-image">
+                <img src="{{ post.featured_image }}" alt="{{ post.title }}" loading="lazy">
+              </a>
+              {% endif %}
+              <div class="author-post-content">
+                <div class="author-post-meta">
+                  {% if post.category %}
+                  <a href="/category/{{ post.category.slug }}" class="post-category">{{ post.category.name }}</a>
+                  <span class="sep">·</span>
+                  {% endif %}
+                  <time datetime="{{ post.date | date(format="Y-m-d") }}">{{ post.date | date(format="M d, Y") }}</time>
+                  {% if post.reading_time %}
+                  <span class="sep">·</span>
+                  <span>{{ post.reading_time }} min read</span>
+                  {% endif %}
+                </div>
+                <h3 class="author-post-title">
+                  <a href="{{ post.url }}">{{ post.title }}</a>
+                </h3>
+                <p class="author-post-excerpt">{{ post.excerpt | truncate(length=160) }}</p>
+                {% if post.tags %}
+                <div class="author-post-tags">
+                  {% for tag in post.tags | slice(end=4) %}
+                  <a href="/tag/{{ tag.slug }}" class="mini-tag">#{{ tag.name }}</a>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+            </article>
+            {% endfor %}
+          </div>
+
+          <!-- Pagination -->
+          {% if pagination %}
+          <nav class="pagination" aria-label="Author posts pagination">
+            {% if pagination.prev_url %}
+            <a href="{{ pagination.prev_url }}" class="pagination-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              Previous
+            </a>
+            {% endif %}
+
+            <div class="pagination-pages">
+              {% for page in pagination.pages %}
+                {% if page == '...' %}
+                  <span class="pagination-ellipsis">...</span>
+                {% else %}
+                  <a href="{{ page.url }}" class="pagination-page {% if page.current %}active{% endif %}">{{ page.number }}</a>
+                {% endif %}
+              {% endfor %}
+            </div>
+
+            {% if pagination.next_url %}
+            <a href="{{ pagination.next_url }}" class="pagination-btn">
+              Next
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+            {% endif %}
+          </nav>
+          {% endif %}
+
+          {% else %}
+          <div class="no-posts" data-animate="fade-up">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <h2>No articles yet</h2>
+            <p>This author hasn't published any articles yet. Check back later!</p>
+            <a href="/blog" class="btn btn--primary">View All Posts</a>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="author-sidebar">
+          {% include "templates/partials/sidebar.html" %}
+        </aside>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block styles %}
+<style>
+.author-header {
+  padding: var(--space-16) 0 var(--space-12);
+  background: var(--gradient-dark);
+}
+
+.author-header-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.breadcrumbs {
+  margin-bottom: var(--space-8);
+}
+
+.breadcrumbs ol {
+  display: flex;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.breadcrumbs li::after {
+  content: '/';
+  margin-left: var(--space-2);
+}
+
+.breadcrumbs li:last-child::after {
+  display: none;
+}
+
+.breadcrumbs a:hover {
+  color: var(--color-rust-light);
+}
+
+.author-profile {
+  display: flex;
+  gap: var(--space-8);
+  align-items: flex-start;
+}
+
+.author-avatar-large {
+  width: 140px;
+  height: 140px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--gradient-rust);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.author-avatar-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  color: white;
+}
+
+.author-info {
+  flex: 1;
+}
+
+.author-label {
+  display: inline-block;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--color-rust-light);
+  margin-bottom: var(--space-2);
+}
+
+.author-name {
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-bold);
+  margin-bottom: var(--space-2);
+}
+
+.author-role {
+  font-size: var(--text-lg);
+  color: var(--color-rust-light);
+  margin-bottom: var(--space-3);
+}
+
+.author-bio {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-4);
+}
+
+.author-stats {
+  display: flex;
+  gap: var(--space-6);
+  margin-bottom: var(--space-4);
+}
+
+.author-stats .stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.author-social {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.author-social a {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.author-social a:hover {
+  background: var(--color-rust);
+  color: white;
+}
+
+/* Author Layout */
+.author-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-12);
+}
+
+.section-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-8);
+}
+
+/* Posts List */
+.author-posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.author-post-card {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: var(--space-6);
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.author-post-card:hover {
+  border-color: var(--border-rust);
+  box-shadow: var(--shadow-lg);
+}
+
+.author-post-image {
+  aspect-ratio: 16/10;
+  overflow: hidden;
+}
+
+.author-post-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.author-post-card:hover .author-post-image img {
+  transform: scale(1.05);
+}
+
+.author-post-content {
+  padding: var(--space-5) var(--space-5) var(--space-5) 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.author-post-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.author-post-meta .sep {
+  color: var(--border-color);
+}
+
+.post-category {
+  color: var(--color-rust-light);
+  font-weight: var(--weight-medium);
+}
+
+.author-post-title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+  margin-bottom: var(--space-3);
+}
+
+.author-post-title a:hover {
+  color: var(--color-rust-light);
+}
+
+.author-post-excerpt {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-4);
+  flex: 1;
+}
+
+.author-post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.mini-tag {
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.mini-tag:hover {
+  background: var(--color-rust);
+  color: white;
+}
+
+/* No Posts */
+.no-posts {
+  text-align: center;
+  padding: var(--space-16) var(--space-8);
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+}
+
+.no-posts svg {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-6);
+}
+
+.no-posts h2 {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-3);
+}
+
+.no-posts p {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-12);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--border-color);
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.pagination-btn:hover {
+  border-color: var(--color-rust);
+  color: var(--color-rust-light);
+}
+
+.pagination-pages {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.pagination-page {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.pagination-page:hover {
+  background: var(--color-bg-tertiary);
+}
+
+.pagination-page.active {
+  background: var(--color-rust);
+  color: white;
+}
+
+@media (max-width: 1024px) {
+  .author-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .author-sidebar {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .author-header {
+    padding: var(--space-12) 0 var(--space-8);
+  }
+
+  .author-profile {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .author-avatar-large {
+    width: 120px;
+    height: 120px;
+  }
+
+  .author-name {
+    font-size: var(--text-3xl);
+  }
+
+  .author-stats {
+    justify-content: center;
+  }
+
+  .author-social {
+    justify-content: center;
+  }
+
+  .author-post-card {
+    grid-template-columns: 1fr;
+  }
+
+  .author-post-content {
+    padding: var(--space-5);
+  }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,412 @@
+{% extends "templates/base.html" %}
+
+{% block title %}{{ category.name | default(value="Category") }} - {{ site.name | default(value="RustPress") }}{% endblock %}
+
+{% block content %}
+<main class="main-content">
+  <!-- Category Header -->
+  <section class="category-header">
+    <div class="container">
+      <div class="category-header-content" data-animate="fade-up">
+        <nav class="breadcrumbs" aria-label="Breadcrumb">
+          <ol>
+            <li><a href="/">Home</a></li>
+            <li><a href="/blog">Blog</a></li>
+            <li><span aria-current="page">{{ category.name | default(value="Category") }}</span></li>
+          </ol>
+        </nav>
+
+        <div class="category-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+
+        <span class="category-label">Category</span>
+        <h1 class="category-title">{{ category.name | default(value="Category") }}</h1>
+
+        {% if category.description %}
+        <p class="category-description">{{ category.description }}</p>
+        {% endif %}
+
+        <div class="category-stats">
+          <span class="stat">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            {{ posts | length }} post{% if posts | length != 1 %}s{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Category Content -->
+  <section class="category-content section">
+    <div class="container">
+      <div class="category-layout">
+        <!-- Posts Grid -->
+        <div class="posts-container">
+          {% if posts %}
+          <div class="posts-grid" data-animate-stagger>
+            {% for post in posts %}
+            <article class="post-card">
+              {% if post.featured_image %}
+              <a href="{{ post.url }}" class="post-card-image">
+                <img src="{{ post.featured_image }}" alt="{{ post.title }}" loading="lazy">
+              </a>
+              {% endif %}
+              <div class="post-card-content">
+                <div class="post-card-meta">
+                  <time datetime="{{ post.date | date(format="Y-m-d") }}">{{ post.date | date(format="M d, Y") }}</time>
+                  {% if post.reading_time %}
+                  <span class="sep">·</span>
+                  <span>{{ post.reading_time }} min read</span>
+                  {% endif %}
+                </div>
+                <h2 class="post-card-title">
+                  <a href="{{ post.url }}">{{ post.title }}</a>
+                </h2>
+                <p class="post-card-excerpt">{{ post.excerpt | truncate(length=120) }}</p>
+                {% if post.author %}
+                <div class="post-card-author">
+                  {% if post.author.avatar %}
+                  <img src="{{ post.author.avatar }}" alt="{{ post.author.name }}" class="author-avatar-sm">
+                  {% endif %}
+                  <span>{{ post.author.name }}</span>
+                </div>
+                {% endif %}
+              </div>
+            </article>
+            {% endfor %}
+          </div>
+
+          <!-- Pagination -->
+          {% if pagination %}
+          <nav class="pagination" aria-label="Category pagination">
+            {% if pagination.prev_url %}
+            <a href="{{ pagination.prev_url }}" class="pagination-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              Previous
+            </a>
+            {% endif %}
+
+            <div class="pagination-pages">
+              {% for page in pagination.pages %}
+                {% if page == '...' %}
+                  <span class="pagination-ellipsis">...</span>
+                {% else %}
+                  <a href="{{ page.url }}" class="pagination-page {% if page.current %}active{% endif %}">{{ page.number }}</a>
+                {% endif %}
+              {% endfor %}
+            </div>
+
+            {% if pagination.next_url %}
+            <a href="{{ pagination.next_url }}" class="pagination-btn">
+              Next
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+            {% endif %}
+          </nav>
+          {% endif %}
+
+          {% else %}
+          <div class="no-posts" data-animate="fade-up">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <h2>No posts in this category</h2>
+            <p>Check back later for new content!</p>
+            <a href="/blog" class="btn btn--primary">View All Posts</a>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="category-sidebar">
+          {% include "templates/partials/sidebar.html" %}
+        </aside>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block styles %}
+<style>
+.category-header {
+  padding: var(--space-16) 0 var(--space-12);
+  background: var(--gradient-dark);
+}
+
+.category-header-content {
+  max-width: 700px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.breadcrumbs {
+  margin-bottom: var(--space-6);
+}
+
+.breadcrumbs ol {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.breadcrumbs li::after {
+  content: '/';
+  margin-left: var(--space-2);
+}
+
+.breadcrumbs li:last-child::after {
+  display: none;
+}
+
+.breadcrumbs a:hover {
+  color: var(--color-rust-light);
+}
+
+.category-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-rust);
+  border-radius: var(--radius-xl);
+  color: white;
+}
+
+.category-label {
+  display: inline-block;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--color-rust-light);
+  margin-bottom: var(--space-2);
+}
+
+.category-title {
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-bold);
+  margin-bottom: var(--space-4);
+}
+
+.category-description {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+}
+
+.category-stats {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-6);
+}
+
+.category-stats .stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* Category Layout */
+.category-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-12);
+}
+
+/* Posts Grid */
+.posts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-6);
+}
+
+.post-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.post-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-rust);
+}
+
+.post-card-image {
+  display: block;
+  aspect-ratio: 16/10;
+  overflow: hidden;
+}
+
+.post-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.post-card:hover .post-card-image img {
+  transform: scale(1.05);
+}
+
+.post-card-content {
+  padding: var(--space-5);
+}
+
+.post-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.post-card-meta .sep {
+  color: var(--border-color);
+}
+
+.post-card-title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+  margin-bottom: var(--space-3);
+}
+
+.post-card-title a:hover {
+  color: var(--color-rust-light);
+}
+
+.post-card-excerpt {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-4);
+}
+
+.post-card-author {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.author-avatar-sm {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* No Posts */
+.no-posts {
+  text-align: center;
+  padding: var(--space-16) var(--space-8);
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+}
+
+.no-posts svg {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-6);
+}
+
+.no-posts h2 {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-3);
+}
+
+.no-posts p {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-12);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--border-color);
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.pagination-btn:hover {
+  border-color: var(--color-rust);
+  color: var(--color-rust-light);
+}
+
+.pagination-pages {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.pagination-page {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.pagination-page:hover {
+  background: var(--color-bg-tertiary);
+}
+
+.pagination-page.active {
+  background: var(--color-rust);
+  color: white;
+}
+
+@media (max-width: 1024px) {
+  .category-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .category-sidebar {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .category-header {
+    padding: var(--space-12) 0 var(--space-8);
+  }
+
+  .category-title {
+    font-size: var(--text-3xl);
+  }
+
+  .posts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+{% endblock %}

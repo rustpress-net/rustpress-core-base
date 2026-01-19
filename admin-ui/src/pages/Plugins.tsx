@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
@@ -1282,6 +1283,7 @@ const PluginDetailsModal: React.FC<{
 // ============================================
 
 const Plugins: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [plugins, setPlugins] = useState<Plugin[]>(samplePlugins);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchQuery, setSearchQuery] = useState('');
@@ -1290,8 +1292,24 @@ const Plugins: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
-  const [tabView, setTabView] = useState<TabView>('browse');
+  const [tabView, setTabView] = useState<TabView>(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'installed' || tabParam === 'updates' || tabParam === 'browse') {
+      return tabParam;
+    }
+    return 'browse';
+  });
   const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null);
+
+  // Update URL when tab changes
+  useEffect(() => {
+    if (tabView === 'browse') {
+      searchParams.delete('tab');
+    } else {
+      searchParams.set('tab', tabView);
+    }
+    setSearchParams(searchParams, { replace: true });
+  }, [tabView, searchParams, setSearchParams]);
 
   // Filter and sort plugins
   const filteredPlugins = useMemo(() => {

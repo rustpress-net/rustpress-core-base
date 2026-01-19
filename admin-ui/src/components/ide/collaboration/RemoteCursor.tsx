@@ -4,26 +4,46 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import type { editor } from 'monaco-editor';
+import * as monaco from 'monaco-editor';
 import type { CursorPosition } from '../../../types/collaboration';
 
-interface RemoteCursorProps {
-  editor: editor.IStandaloneCodeEditor | null;
-  cursors: Map<string, { position: CursorPosition; color: string; username: string }>;
+// Monaco types
+type MonacoEditor = typeof monaco.editor;
+type Monaco = typeof monaco;
+
+// Type for cursor data that can be either from Map or Array
+interface CursorData {
+  userId: string;
+  position: CursorPosition;
+  color: string;
+  username: string;
 }
 
-// Store decoration IDs for cleanup
-const decorationIds: Map<string, string[]> = new Map();
+interface RemoteCursorProps {
+  editor: monaco.editor.IStandaloneCodeEditor | null;
+  cursors: Map<string, { position: CursorPosition; color: string; username: string }> | CursorData[];
+}
+
+// Store decoration IDs for cleanup per path
+const decorationIdsPerPath: Map<string, Map<string, string[]>> = new Map();
 
 export const useRemoteCursors = (
-  editor: editor.IStandaloneCodeEditor | null,
-  cursors: Map<string, { position: CursorPosition; color: string; username: string }>
+  editor: monaco.editor.IStandaloneCodeEditor | null,
+  monacoInstance: typeof monaco | null,
+  path: string,
+  cursors: CursorData[] | Map<string, { position: CursorPosition; color: string; username: string }> | undefined
 ): void => {
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || !monacoInstance) return;
 
     const model = editor.getModel();
     if (!model) return;
+
+    // Get or create decoration map for this path
+    if (!decorationIdsPerPath.has(path)) {
+      decorationIdsPerPath.set(path, new Map());
+    }
+    const decorationIds = decorationIdsPerPath.get(path)!;
 
     // Clear all previous decorations
     decorationIds.forEach((ids, userId) => {
@@ -31,9 +51,20 @@ export const useRemoteCursors = (
     });
     decorationIds.clear();
 
+    // Handle empty or undefined cursors
+    if (!cursors) return;
+
+    // Normalize cursors to array format
+    const cursorArray: CursorData[] = Array.isArray(cursors)
+      ? cursors
+      : Array.from(cursors.entries()).map(([userId, data]) => ({
+          userId,
+          ...data,
+        }));
+
     // Create new decorations for each cursor
-    cursors.forEach((cursor, userId) => {
-      const { position, color, username } = cursor;
+    cursorArray.forEach((cursor) => {
+      const { userId, position, color, username } = cursor;
 
       // Create CSS class for this user's cursor
       const cursorClassName = `remote-cursor-${userId.replace(/-/g, '')}`;
@@ -84,7 +115,7 @@ export const useRemoteCursors = (
       }
 
       // Create decorations
-      const decorations: editor.IModelDeltaDecoration[] = [
+      const decorations: monaco.editor.IModelDeltaDecoration[] = [
         {
           range: {
             startLineNumber: position.line,
@@ -106,17 +137,24 @@ export const useRemoteCursors = (
 
     // Cleanup on unmount
     return () => {
-      decorationIds.forEach((ids) => {
-        editor.removeDecorations(ids);
-      });
-      decorationIds.clear();
+      if (decorationIdsPerPath.has(path)) {
+        const pathDecorationIds = decorationIdsPerPath.get(path)!;
+        pathDecorationIds.forEach((ids) => {
+          try {
+            editor.removeDecorations(ids);
+          } catch (e) {
+            // Editor might be disposed
+          }
+        });
+        pathDecorationIds.clear();
+      }
     };
-  }, [editor, cursors]);
+  }, [editor, monacoInstance, path, cursors]);
 };
 
 // Component wrapper for class components if needed
-export const RemoteCursors: React.FC<RemoteCursorProps> = ({ editor, cursors }) => {
-  useRemoteCursors(editor, cursors);
+export const RemoteCursors: React.FC<RemoteCursorProps & { monaco?: typeof monaco; path?: string }> = ({ editor, cursors, monaco: monacoParam, path = '' }) => {
+  useRemoteCursors(editor, monacoParam || null, path, cursors as CursorData[]);
   return null;
 };
 

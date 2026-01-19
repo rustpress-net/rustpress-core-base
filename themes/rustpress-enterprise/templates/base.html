@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="{{ site.language | default(value="en") }}" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Primary Meta Tags -->
+  <meta name="description" content="{{ page.description | default(value="RustPress - The blazing-fast CMS built with Rust. 10x faster than WordPress with enterprise-grade security.") }}">
+  <meta name="keywords" content="{{ page.keywords | default(value="RustPress, CMS, Rust, content management, fast CMS, secure CMS, static site generator") }}">
+  <meta name="author" content="{{ site.author | default(value="RustPress Team") }}">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="generator" content="RustPress {{ site.version | default(value='0.9.5') }}">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="{{ site.url | default(value='https://rustpress.io') }}{{ page.url | default(value='/') }}">
+
+  <!-- Language Alternatives -->
+  <link rel="alternate" hreflang="{{ site.language | default(value='en') }}" href="{{ site.url | default(value='https://rustpress.io') }}{{ page.url | default(value='/') }}">
+  <link rel="alternate" hreflang="x-default" href="{{ site.url | default(value='https://rustpress.io') }}{{ page.url | default(value='/') }}">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="{{ page.og_type | default(value='website') }}">
+  <meta property="og:url" content="{{ site.url | default(value='https://rustpress.io') }}{{ page.url | default(value='/') }}">
+  <meta property="og:title" content="{{ page.title | default(value='RustPress') }} - {{ site.name | default(value='RustPress') }}">
+  <meta property="og:description" content="{{ page.description | default(value='The blazing-fast CMS built with Rust. 10x faster than WordPress with enterprise-grade security.') }}">
+  <meta property="og:image" content="{{ site.url | default(value='https://rustpress.io') }}{{ page.image | default(value='/assets/images/og-image.png') }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="{{ page.title | default(value='RustPress') }}">
+  <meta property="og:site_name" content="{{ site.name | default(value='RustPress') }}">
+  <meta property="og:locale" content="{{ site.locale | default(value='en_US') }}">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="{{ site.twitter | default(value='@rustpress') }}">
+  <meta name="twitter:creator" content="{{ page.author_twitter | default(value='@rustpress') }}">
+  <meta name="twitter:title" content="{{ page.title | default(value='RustPress') }} - {{ site.name | default(value='RustPress') }}">
+  <meta name="twitter:description" content="{{ page.description | default(value='The blazing-fast CMS built with Rust. 10x faster than WordPress with enterprise-grade security.') }}">
+  <meta name="twitter:image" content="{{ site.url | default(value='https://rustpress.io') }}{{ page.image | default(value='/assets/images/og-image.png') }}">
+
+  <!-- Article Meta (for blog posts) -->
+  {% if page.type == "post" %}
+  <meta property="article:published_time" content="{{ page.date | date(format='%Y-%m-%dT%H:%M:%SZ') }}">
+  <meta property="article:modified_time" content="{{ page.modified | default(value=page.date) | date(format='%Y-%m-%dT%H:%M:%SZ') }}">
+  <meta property="article:author" content="{{ page.author.name | default(value='RustPress Team') }}">
+  {% if page.category %}
+  <meta property="article:section" content="{{ page.category.name }}">
+  {% endif %}
+  {% for tag in page.tags %}
+  <meta property="article:tag" content="{{ tag.name }}">
+  {% endfor %}
+  {% endif %}
+
+  <title>{% block title %}{{ page.title | default(value="Home") }} - {{ site.name | default(value="RustPress") }}{% endblock %}</title>
+
+  <!-- Structured Data - Organization -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "{{ site.name | default(value='RustPress') }}",
+    "url": "{{ site.url | default(value='https://rustpress.io') }}",
+    "logo": "{{ site.url | default(value='https://rustpress.io') }}/assets/images/logo.svg",
+    "description": "{{ site.description | default(value='The blazing-fast CMS built with Rust') }}",
+    "sameAs": [
+      "https://github.com/rustpress/rustpress",
+      "https://twitter.com/rustpress"
+    ]
+  }
+  </script>
+
+  <!-- Structured Data - WebSite -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "{{ site.name | default(value='RustPress') }}",
+    "url": "{{ site.url | default(value='https://rustpress.io') }}",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "{{ site.url | default(value='https://rustpress.io') }}/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <!-- Structured Data - Software Application -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "RustPress",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Windows, macOS, Linux",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "ratingCount": "256"
+    }
+  }
+  </script>
+
+  {% block structured_data %}{% endblock %}
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/themes/rustpress-enterprise/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/themes/rustpress-enterprise/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/themes/rustpress-enterprise/assets/images/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/themes/rustpress-enterprise/assets/images/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="mask-icon" href="/themes/rustpress-enterprise/assets/images/safari-pinned-tab.svg" color="#CE422B">
+  <meta name="msapplication-TileColor" content="#CE422B">
+
+  <!-- RSS Feed & Sitemap -->
+  <link rel="alternate" type="application/rss+xml" title="{{ site.name | default(value='RustPress') }} RSS Feed" href="{{ site.url | default(value='https://rustpress.io') }}/feed.xml">
+  <link rel="alternate" type="application/atom+xml" title="{{ site.name | default(value='RustPress') }} Atom Feed" href="{{ site.url | default(value='https://rustpress.io') }}/atom.xml">
+  <link rel="sitemap" type="application/xml" title="Sitemap" href="{{ site.url | default(value='https://rustpress.io') }}/sitemap.xml">
+
+  <!-- DNS Prefetch for performance -->
+  <link rel="dns-prefetch" href="//fonts.googleapis.com">
+  <link rel="dns-prefetch" href="//fonts.gstatic.com">
+
+  <!-- Preconnect to external resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/themes/rustpress-enterprise/assets/css/variables.css">
+  <link rel="stylesheet" href="/themes/rustpress-enterprise/assets/css/base.css">
+  <link rel="stylesheet" href="/themes/rustpress-enterprise/assets/css/typography.css">
+  <link rel="stylesheet" href="/themes/rustpress-enterprise/assets/css/layout.css">
+  <link rel="stylesheet" href="/themes/rustpress-enterprise/assets/css/components.css">
+  <link rel="stylesheet" href="/themes/rustpress-enterprise/assets/css/animations.css">
+  <link rel="stylesheet" href="/themes/rustpress-enterprise/assets/css/sections.css">
+  <link rel="stylesheet" href="/themes/rustpress-enterprise/assets/css/responsive.css">
+
+  <!-- Theme Color for browsers -->
+  <meta name="theme-color" content="#CE422B" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#CE422B" media="(prefers-color-scheme: light)">
+  <meta name="color-scheme" content="dark light">
+
+  <!-- Page-specific head content -->
+  {% block head %}{% endblock %}
+
+  <!-- Page-specific styles -->
+  {% block styles %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <!-- Scroll Progress Bar -->
+  <div class="scroll-progress" id="scroll-progress"></div>
+
+  <!-- Noise Texture Overlay -->
+  <div class="noise-overlay"></div>
+
+  <!-- Background Effects -->
+  <div class="bg-effects">
+    <div class="gradient-orb gradient-orb--1"></div>
+    <div class="gradient-orb gradient-orb--2"></div>
+    <div class="gradient-orb gradient-orb--3"></div>
+    <div class="grid-pattern"></div>
+  </div>
+
+  <!-- Site Wrapper -->
+  <div class="site-wrapper">
+    <!-- Header -->
+    {% include "templates/partials/header.html" %}
+
+    <!-- Mobile Menu -->
+    {% include "templates/partials/mobile-menu.html" %}
+
+    <!-- Main Content -->
+    <main id="main-content" class="main-content">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    {% include "templates/partials/footer.html" %}
+  </div>
+
+  <!-- Back to Top Button -->
+  <button class="back-to-top" id="back-to-top" aria-label="Back to top">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+  </button>
+
+  <!-- Scripts -->
+  <script src="/themes/rustpress-enterprise/assets/js/animations.js" defer></script>
+  <script src="/themes/rustpress-enterprise/assets/js/navigation.js" defer></script>
+  <script src="/themes/rustpress-enterprise/assets/js/particles.js" defer></script>
+  <script src="/themes/rustpress-enterprise/assets/js/counters.js" defer></script>
+  <script src="/themes/rustpress-enterprise/assets/js/forms.js" defer></script>
+  <script src="/themes/rustpress-enterprise/assets/js/gallery.js" defer></script>
+  <script src="/themes/rustpress-enterprise/assets/js/main.js" defer></script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

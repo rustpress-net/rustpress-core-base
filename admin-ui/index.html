@@ -5,8 +5,469 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RustPress Admin</title>
+    <style id="preloader-styles">
+      /* RustPress Animated Preloader - Dynamic Styles Applied via JS */
+      :root {
+        --rp-primary: #f97316;
+        --rp-secondary: #eab308;
+        --rp-bg: #0f0f0f;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--rp-bg);
+        min-height: 100vh;
+      }
+
+      #rustpress-preloader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: var(--rp-bg);
+        z-index: 99999;
+        opacity: 1;
+        transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+      }
+
+      #rustpress-preloader.fade-out {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .preloader-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+      }
+
+      /* Animation wrapper */
+      .animation-wrapper {
+        position: relative;
+        width: 100px;
+        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Rust Crab (default) */
+      .rust-crab .logo-ring {
+        position: absolute;
+        inset: 0;
+        border: 3px solid transparent;
+        border-top-color: var(--rp-primary);
+        border-right-color: var(--rp-secondary);
+        border-radius: 50%;
+        animation: ring-spin 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+      }
+
+      .rust-crab .logo-ring-inner {
+        position: absolute;
+        inset: 12px;
+        border: 2px solid transparent;
+        border-bottom-color: var(--rp-primary);
+        border-left-color: var(--rp-secondary);
+        border-radius: 50%;
+        animation: ring-spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite reverse;
+      }
+
+      .rust-crab .logo-icon {
+        font-size: 2.5rem;
+        animation: pulse-scale 2s ease-in-out infinite;
+      }
+
+      .rust-crab .logo-glow {
+        position: absolute;
+        inset: -20px;
+        background: radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, transparent 70%);
+        animation: glow-pulse 2s ease-in-out infinite;
+      }
+
+      /* Spinning Rings */
+      .spinning-rings .ring {
+        position: absolute;
+        border: 2px solid transparent;
+        border-radius: 50%;
+      }
+      .spinning-rings .ring-1 { inset: 0; border-top-color: var(--rp-primary); animation: ring-spin 1s linear infinite; }
+      .spinning-rings .ring-2 { inset: 10px; border-right-color: var(--rp-secondary); animation: ring-spin 1.3s linear infinite reverse; }
+      .spinning-rings .ring-3 { inset: 20px; border-bottom-color: var(--rp-primary); animation: ring-spin 1.6s linear infinite; }
+
+      /* Pulsing Dots */
+      .pulsing-dots {
+        display: flex;
+        gap: 8px;
+        width: auto;
+        height: auto;
+      }
+      .pulsing-dots .dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--rp-primary);
+        animation: dot-pulse 1.4s ease-in-out infinite;
+      }
+      .pulsing-dots .dot:nth-child(2) { animation-delay: 0.2s; background: var(--rp-secondary); }
+      .pulsing-dots .dot:nth-child(3) { animation-delay: 0.4s; }
+
+      /* Morphing Square */
+      .morphing-square .square {
+        width: 50px;
+        height: 50px;
+        background: var(--rp-primary);
+        animation: morph 2s ease-in-out infinite;
+      }
+
+      /* Wave Bars */
+      .wave-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 4px;
+        height: 50px;
+        width: auto;
+      }
+      .wave-bars .bar {
+        width: 8px;
+        background: var(--rp-primary);
+        border-radius: 4px;
+        animation: wave 0.8s ease-in-out infinite;
+      }
+      .wave-bars .bar:nth-child(2) { animation-delay: 0.1s; background: var(--rp-secondary); }
+      .wave-bars .bar:nth-child(3) { animation-delay: 0.2s; }
+      .wave-bars .bar:nth-child(4) { animation-delay: 0.3s; background: var(--rp-secondary); }
+      .wave-bars .bar:nth-child(5) { animation-delay: 0.4s; }
+
+      /* Orbiting Dots */
+      .orbiting-dots .center {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: var(--rp-secondary);
+        border-radius: 50%;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .orbiting-dots .orbit {
+        position: absolute;
+        inset: 0;
+        animation: ring-spin 2s linear infinite;
+      }
+      .orbiting-dots .orbit:nth-child(2) { animation-duration: 2.5s; }
+      .orbiting-dots .orbit:nth-child(3) { animation-duration: 3s; }
+      .orbiting-dots .orbit .dot {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: var(--rp-primary);
+        border-radius: 50%;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      /* Typing Dots */
+      .typing-dots {
+        display: flex;
+        gap: 6px;
+        width: auto;
+        height: auto;
+      }
+      .typing-dots .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--rp-primary);
+        animation: typing 0.6s ease-in-out infinite;
+      }
+      .typing-dots .dot:nth-child(2) { animation-delay: 0.15s; }
+      .typing-dots .dot:nth-child(3) { animation-delay: 0.3s; }
+
+      /* Bouncing Balls */
+      .bouncing-balls {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        height: 50px;
+        width: auto;
+      }
+      .bouncing-balls .ball {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--rp-primary);
+        animation: bounce 0.5s ease infinite alternate;
+      }
+      .bouncing-balls .ball:nth-child(2) { animation-delay: 0.1s; background: var(--rp-secondary); }
+      .bouncing-balls .ball:nth-child(3) { animation-delay: 0.2s; }
+
+      /* Gradient Spinner */
+      .gradient-spinner .spinner {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: conic-gradient(from 0deg, var(--rp-primary), var(--rp-secondary), transparent);
+        animation: ring-spin 1s linear infinite;
+      }
+
+      /* Minimal */
+      .minimal .spinner {
+        width: 40px;
+        height: 40px;
+        border: 2px solid transparent;
+        border-top-color: var(--rp-primary);
+        border-radius: 50%;
+        animation: ring-spin 0.8s linear infinite;
+      }
+
+      /* Brand text */
+      .brand-text {
+        display: flex;
+        align-items: center;
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+      }
+
+      .brand-rust {
+        color: var(--rp-primary);
+      }
+
+      .brand-press {
+        color: #e5e5e5;
+      }
+
+      /* Loading bar */
+      .loading-bar-container {
+        width: 180px;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      .loading-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--rp-primary), var(--rp-secondary), var(--rp-primary));
+        background-size: 200% 100%;
+        border-radius: 3px;
+        animation: loading-progress 2s ease-in-out infinite, gradient-shift 1s linear infinite;
+      }
+
+      /* Loading message */
+      .loading-text {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 0.875rem;
+        color: #737373;
+      }
+
+      .loading-dots-text {
+        display: flex;
+        gap: 3px;
+      }
+
+      .loading-dots-text span {
+        width: 4px;
+        height: 4px;
+        background: var(--rp-primary);
+        border-radius: 50%;
+        animation: dot-bounce 1.4s ease-in-out infinite;
+      }
+      .loading-dots-text span:nth-child(1) { animation-delay: 0s; }
+      .loading-dots-text span:nth-child(2) { animation-delay: 0.2s; }
+      .loading-dots-text span:nth-child(3) { animation-delay: 0.4s; }
+
+      /* Keyframes */
+      @keyframes ring-spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      @keyframes pulse-scale {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+      }
+
+      @keyframes glow-pulse {
+        0%, 100% { opacity: 0.5; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.1); }
+      }
+
+      @keyframes loading-progress {
+        0% { width: 0%; }
+        50% { width: 70%; }
+        100% { width: 100%; }
+      }
+
+      @keyframes gradient-shift {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 200% 50%; }
+      }
+
+      @keyframes dot-bounce {
+        0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+        40% { transform: translateY(-6px); opacity: 1; }
+      }
+
+      @keyframes dot-pulse {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.3); opacity: 1; }
+      }
+
+      @keyframes morph {
+        0%, 100% { border-radius: 20%; transform: rotate(0deg) scale(1); }
+        25% { border-radius: 50%; transform: rotate(90deg) scale(0.8); }
+        50% { border-radius: 20%; transform: rotate(180deg) scale(1); }
+        75% { border-radius: 50%; transform: rotate(270deg) scale(0.8); }
+      }
+
+      @keyframes wave {
+        0%, 100% { height: 12px; }
+        50% { height: 48px; }
+      }
+
+      @keyframes typing {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-12px); }
+      }
+
+      @keyframes bounce {
+        from { transform: translateY(0); }
+        to { transform: translateY(-30px); }
+      }
+    </style>
+    <script>
+      // Load preloader config from localStorage and apply
+      (function() {
+        try {
+          var saved = localStorage.getItem('rustpress-preloader-config');
+          if (saved) {
+            var config = JSON.parse(saved);
+            var root = document.documentElement;
+            root.style.setProperty('--rp-primary', config.primaryColor || '#f97316');
+            root.style.setProperty('--rp-secondary', config.secondaryColor || '#eab308');
+            root.style.setProperty('--rp-bg', config.backgroundColor || '#0f0f0f');
+
+            // Store config for later use
+            window.__preloaderConfig = config;
+          }
+        } catch (e) {
+          console.warn('Failed to load preloader config:', e);
+        }
+      })();
+    </script>
   </head>
   <body>
+    <!-- RustPress Animated Preloader -->
+    <div id="rustpress-preloader">
+      <div class="preloader-container">
+        <div id="animation-container" class="animation-wrapper rust-crab">
+          <!-- Default: Rust Crab Animation -->
+          <div class="logo-glow"></div>
+          <div class="logo-ring"></div>
+          <div class="logo-ring-inner"></div>
+          <div class="logo-icon">🦀</div>
+        </div>
+
+        <div id="brand-container" class="brand-text">
+          <span class="brand-rust">Rust</span><span class="brand-press">Press</span>
+        </div>
+
+        <div id="progress-container" class="loading-bar-container">
+          <div class="loading-bar"></div>
+        </div>
+
+        <div id="message-container" class="loading-text">
+          <span id="loading-message">Loading</span>
+          <div class="loading-dots-text">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Apply saved preloader variant
+      (function() {
+        var config = window.__preloaderConfig;
+        if (!config) return;
+
+        var container = document.getElementById('animation-container');
+        var brandContainer = document.getElementById('brand-container');
+        var progressContainer = document.getElementById('progress-container');
+        var messageContainer = document.getElementById('message-container');
+        var loadingMessage = document.getElementById('loading-message');
+
+        // Hide elements based on config
+        if (!config.showBrand && brandContainer) brandContainer.style.display = 'none';
+        if (!config.showProgress && progressContainer) progressContainer.style.display = 'none';
+        if (!config.showMessage && messageContainer) messageContainer.style.display = 'none';
+        if (config.customMessage && loadingMessage) loadingMessage.textContent = config.customMessage;
+
+        // Apply variant
+        var variant = config.variant || 'rustCrab';
+        var html = '';
+
+        switch (variant) {
+          case 'spinningRings':
+            container.className = 'animation-wrapper spinning-rings';
+            html = '<div class="ring ring-1"></div><div class="ring ring-2"></div><div class="ring ring-3"></div>';
+            break;
+          case 'pulsingDots':
+            container.className = 'animation-wrapper pulsing-dots';
+            html = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+            break;
+          case 'morphingSquare':
+            container.className = 'animation-wrapper morphing-square';
+            html = '<div class="square"></div>';
+            break;
+          case 'waveBars':
+            container.className = 'animation-wrapper wave-bars';
+            html = '<div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>';
+            break;
+          case 'orbitingDots':
+            container.className = 'animation-wrapper orbiting-dots';
+            html = '<div class="center"></div><div class="orbit"><div class="dot"></div></div><div class="orbit"><div class="dot"></div></div><div class="orbit"><div class="dot"></div></div>';
+            break;
+          case 'typingDots':
+            container.className = 'animation-wrapper typing-dots';
+            html = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+            break;
+          case 'bouncingBalls':
+            container.className = 'animation-wrapper bouncing-balls';
+            html = '<div class="ball"></div><div class="ball"></div><div class="ball"></div>';
+            break;
+          case 'gradient':
+            container.className = 'animation-wrapper gradient-spinner';
+            html = '<div class="spinner"></div>';
+            break;
+          case 'minimal':
+            container.className = 'animation-wrapper minimal';
+            html = '<div class="spinner"></div>';
+            break;
+          default:
+            // Keep default rust-crab
+            break;
+        }
+
+        if (html && variant !== 'rustCrab') {
+          container.innerHTML = html;
+        }
+      })();
+    </script>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

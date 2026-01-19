@@ -1,0 +1,867 @@
+{% extends "templates/base.html" %}
+
+{% block title %}Built-in IDE - {{ site.name | default(value="RustPress") }}{% endblock %}
+
+{% block content %}
+<main class="main-content">
+  <!-- Hero Section -->
+  <section class="ide-hero">
+    <div class="container">
+      <div class="ide-hero-content" data-animate="fade-up">
+        <span class="hero-badge">Developer Tools</span>
+        <h1 class="hero-title">The RustPress <span class="text-gradient">Built-in IDE</span></h1>
+        <p class="hero-description">
+          Create themes, plugins, apps, and functions directly from your browser. A powerful yet simple
+          code editor with AI assistance, version control, and live preview built right in.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- IDE Features Showcase -->
+  <section class="ide-showcase section">
+    <div class="container">
+      <div class="ide-preview" data-animate="fade-up">
+        <img src="/themes/rustpress-enterprise/assets/images/dashbord-ide.png" alt="RustPress Built-in IDE" class="ide-screenshot" />
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Create Anything Section -->
+  <section class="create-section section section--muted">
+    <div class="container">
+      <div class="section-header text-center" data-animate="fade-up">
+        <span class="section-label">Build Anything</span>
+        <h2 class="section-title">Create Directly in the <span class="text-gradient">IDE</span></h2>
+        <p class="section-subtitle">No external tools needed. Build everything from your browser.</p>
+      </div>
+
+      <div class="create-grid" data-animate-stagger>
+        <div class="create-card">
+          <div class="create-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3>Themes</h3>
+          <p>Design beautiful themes with live preview, CSS editing, and template customization.</p>
+          <div class="create-features">
+            <span>Live Preview</span>
+            <span>CSS Variables</span>
+            <span>Responsive</span>
+          </div>
+        </div>
+
+        <div class="create-card">
+          <div class="create-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="2"/><rect x="14" y="2" width="8" height="8" rx="2"/><rect x="2" y="14" width="8" height="8" rx="2"/><rect x="14" y="14" width="8" height="8" rx="2"/></svg>
+          </div>
+          <h3>Plugins</h3>
+          <p>Extend RustPress functionality with custom plugins. Full API access included.</p>
+          <div class="create-features">
+            <span>Hooks System</span>
+            <span>API Access</span>
+            <span>Events</span>
+          </div>
+        </div>
+
+        <div class="create-card">
+          <div class="create-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <h3>Apps</h3>
+          <p>Build full applications with routing, state management, and database access.</p>
+          <div class="create-features">
+            <span>Routing</span>
+            <span>Database</span>
+            <span>Auth</span>
+          </div>
+        </div>
+
+        <div class="create-card">
+          <div class="create-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </div>
+          <h3>Functions</h3>
+          <p>Create serverless functions for APIs, webhooks, and background tasks.</p>
+          <div class="create-features">
+            <span>Serverless</span>
+            <span>Scheduled</span>
+            <span>Webhooks</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI Features Section -->
+  <section class="ai-section section">
+    <div class="container">
+      <div class="ai-grid">
+        <div class="ai-content" data-animate="fade-right">
+          <span class="section-label">AI-Powered</span>
+          <h2 class="section-title">Code Smarter with <span class="text-gradient">AI Assistance</span></h2>
+          <p class="section-text">
+            Let AI help you write better code faster. Get intelligent suggestions, auto-complete,
+            code generation, and instant answers to your questions.
+          </p>
+          <ul class="ai-features-list">
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><strong>AI Code Generation</strong> - Describe what you want, AI writes the code</span>
+            </li>
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><strong>Smart Autocomplete</strong> - Context-aware suggestions as you type</span>
+            </li>
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><strong>Code Explanation</strong> - Highlight code and ask AI to explain it</span>
+            </li>
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><strong>Bug Detection</strong> - AI identifies potential issues before they happen</span>
+            </li>
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><strong>Refactoring Help</strong> - Get suggestions to improve your code quality</span>
+            </li>
+          </ul>
+        </div>
+        <div class="ai-visual" data-animate="fade-left">
+          <div class="ai-chat-preview">
+            <div class="ai-chat-header">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 12l4-4"/><circle cx="12" cy="12" r="2"/></svg>
+              AI Assistant
+            </div>
+            <div class="ai-chat-messages">
+              <div class="ai-message user">Create a responsive navigation menu</div>
+              <div class="ai-message assistant">
+                <p>Here's a responsive navigation component:</p>
+                <div class="ai-code-block">
+                  <code>&lt;nav class="nav-responsive"&gt;...</code>
+                </div>
+                <p>This includes mobile hamburger menu, smooth animations, and accessibility features.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Version Control Section -->
+  <section class="version-section section section--muted">
+    <div class="container">
+      <div class="section-header text-center" data-animate="fade-up">
+        <span class="section-label">Version Control</span>
+        <h2 class="section-title">Complete <span class="text-gradient">History</span> at Your Fingertips</h2>
+        <p class="section-subtitle">Never lose your work. Every change is tracked and reversible.</p>
+      </div>
+
+      <div class="version-grid" data-animate-stagger>
+        <div class="version-card">
+          <div class="version-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <h3>Auto-Save</h3>
+          <p>Changes saved automatically every few seconds. Never worry about losing work.</p>
+        </div>
+
+        <div class="version-card">
+          <div class="version-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          </div>
+          <h3>Instant Rollback</h3>
+          <p>Restore any previous version with a single click. Compare changes side-by-side.</p>
+        </div>
+
+        <div class="version-card">
+          <div class="version-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          </div>
+          <h3>Branch & Merge</h3>
+          <p>Create branches to experiment. Merge changes when ready for production.</p>
+        </div>
+
+        <div class="version-card">
+          <div class="version-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h3>Team Collaboration</h3>
+          <p>See who changed what. Resolve conflicts easily with visual diff tools.</p>
+        </div>
+
+        <div class="version-card">
+          <div class="version-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          </div>
+          <h3>Change Log</h3>
+          <p>Detailed history with timestamps, authors, and commit messages.</p>
+        </div>
+
+        <div class="version-card">
+          <div class="version-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <h3>One-Click Deploy</h3>
+          <p>Push changes to production instantly. Automatic backups before deploy.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Simplicity Section -->
+  <section class="simplicity-section section">
+    <div class="container">
+      <div class="simplicity-grid">
+        <div class="simplicity-visual" data-animate="fade-right">
+          <div class="simplicity-stats">
+            <div class="simplicity-stat">
+              <span class="stat-number">0</span>
+              <span class="stat-text">Setup Required</span>
+            </div>
+            <div class="simplicity-stat">
+              <span class="stat-number">1</span>
+              <span class="stat-text">Click to Start</span>
+            </div>
+            <div class="simplicity-stat">
+              <span class="stat-number">&infin;</span>
+              <span class="stat-text">Possibilities</span>
+            </div>
+          </div>
+        </div>
+        <div class="simplicity-content" data-animate="fade-left">
+          <span class="section-label">Dead Simple</span>
+          <h2 class="section-title">No Setup. No Confusion. <span class="text-gradient">Just Code.</span></h2>
+          <p class="section-text">
+            We believe powerful tools should be simple to use. The RustPress IDE works out of the box
+            with zero configuration. Just open and start creating.
+          </p>
+          <ul class="simplicity-list">
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              No installations or downloads
+            </li>
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              Works on any device with a browser
+            </li>
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              Intuitive interface for beginners
+            </li>
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              Advanced features for professionals
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section section section--muted">
+    <div class="container">
+      <div class="cta-content" data-animate="fade-up">
+        <h2 class="cta-title">Start Creating <span class="text-gradient">Today</span></h2>
+        <p class="cta-description">The RustPress IDE is included free with every installation. No setup required.</p>
+        <div class="cta-actions">
+          <a href="/#donate" class="btn btn--primary btn--xl btn--glow">
+            Become a Sponsor
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </a>
+          <a href="/features" class="btn btn--outline btn--xl">Explore Features</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* IDE Hero */
+.ide-hero {
+  padding: var(--space-20) 0 var(--space-10);
+  background: var(--gradient-dark);
+  text-align: center;
+}
+
+.ide-hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero-badge {
+  display: inline-block;
+  padding: var(--space-2) var(--space-4);
+  background: rgba(206, 66, 43, 0.1);
+  border: 1px solid var(--border-rust);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-rust-light);
+  margin-bottom: var(--space-6);
+}
+
+.hero-title {
+  font-size: var(--text-5xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  margin-bottom: var(--space-6);
+}
+
+.hero-description {
+  font-size: var(--text-xl);
+  color: var(--color-text-secondary);
+}
+
+/* IDE Preview */
+.ide-preview {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.ide-screenshot {
+  width: 100%;
+  max-width: 1200px;
+  height: auto;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: float 6s ease-in-out infinite;
+  transform: perspective(1000px) rotateX(2deg);
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: perspective(1000px) rotateX(2deg) translateY(0);
+  }
+  50% {
+    transform: perspective(1000px) rotateX(2deg) translateY(-20px);
+  }
+}
+
+.ide-code-preview {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.ide-window {
+  background: #1e1e1e;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.ide-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: #2d2d2d;
+  border-bottom: 1px solid #404040;
+}
+
+.window-controls {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.window-controls span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.window-controls span:first-child { background: #ff5f57; }
+.window-controls span:nth-child(2) { background: #ffbd2e; }
+.window-controls span:last-child { background: #27ca40; }
+
+.ide-title {
+  flex: 1;
+  font-size: var(--text-sm);
+  color: #888;
+}
+
+.ide-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.ide-action-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  background: #3c3c3c;
+  border: 1px solid #505050;
+  border-radius: var(--radius-md);
+  color: #ccc;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.ide-action-btn:hover {
+  background: #4c4c4c;
+}
+
+.ide-action-btn--primary {
+  background: var(--color-rust);
+  border-color: var(--color-rust);
+  color: white;
+}
+
+.ide-action-btn--primary:hover {
+  background: var(--color-rust-dark);
+}
+
+.ide-body {
+  display: flex;
+  min-height: 350px;
+}
+
+.ide-sidebar {
+  width: 180px;
+  background: #252526;
+  border-right: 1px solid #404040;
+  padding: var(--space-2);
+}
+
+.file-tree {
+  font-size: var(--text-sm);
+}
+
+.file-tree-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  color: #ccc;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.file-tree-item:hover {
+  background: #2a2d2e;
+}
+
+.file-tree-item.active {
+  background: #094771;
+  color: white;
+}
+
+.file-tree-item svg {
+  flex-shrink: 0;
+}
+
+.ide-editor {
+  flex: 1;
+  padding: var(--space-4);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--text-sm);
+  position: relative;
+}
+
+.code-line {
+  display: flex;
+  gap: var(--space-4);
+  line-height: 1.8;
+}
+
+.line-number {
+  color: #6a737d;
+  min-width: 24px;
+  text-align: right;
+  user-select: none;
+}
+
+.code-tag { color: #e6e6e6; }
+.code-keyword { color: #c678dd; }
+.code-string { color: #98c379; }
+.code-variable { color: #e5c07b; }
+.code-html { color: #569cd6; }
+.code-attr { color: #9cdcfe; }
+.code-filter { color: #ce9178; }
+
+.cursor {
+  animation: blink 1s step-end infinite;
+  background: #fff;
+  width: 2px;
+  display: inline-block;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.autocomplete-popup {
+  position: absolute;
+  left: 220px;
+  top: 145px;
+  background: #252526;
+  border: 1px solid #454545;
+  border-radius: var(--radius-md);
+  padding: var(--space-1);
+  min-width: 180px;
+  z-index: 10;
+}
+
+.autocomplete-item {
+  padding: var(--space-1) var(--space-2);
+  color: #ccc;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+}
+
+.autocomplete-item.active {
+  background: #094771;
+  color: white;
+}
+
+.autocomplete-item.ai-suggest {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: #a855f7;
+  background: rgba(168, 85, 247, 0.1);
+  border-bottom: 1px solid #454545;
+  margin-bottom: var(--space-1);
+}
+
+/* Create Section */
+.create-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-6);
+}
+
+.create-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  text-align: center;
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.create-card:hover {
+  border-color: var(--color-rust);
+  transform: translateY(-4px);
+}
+
+.create-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(206, 66, 43, 0.1);
+  border-radius: var(--radius-lg);
+  color: var(--color-rust-light);
+}
+
+.create-card h3 {
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-2);
+}
+
+.create-card p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.create-features {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.create-features span {
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+/* AI Section */
+.ai-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-16);
+  align-items: center;
+}
+
+.section-text {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+  line-height: var(--leading-relaxed);
+}
+
+.ai-features-list {
+  list-style: none;
+  padding: 0;
+}
+
+.ai-features-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.ai-features-list li:last-child {
+  border-bottom: none;
+}
+
+.ai-features-list li svg {
+  flex-shrink: 0;
+  color: #27ca40;
+  margin-top: 2px;
+}
+
+.ai-chat-preview {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.ai-chat-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(168, 85, 247, 0.1);
+  border-bottom: 1px solid var(--border-color);
+  color: #a855f7;
+  font-weight: var(--weight-medium);
+}
+
+.ai-chat-messages {
+  padding: var(--space-4);
+}
+
+.ai-message {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-3);
+}
+
+.ai-message.user {
+  background: var(--color-bg-tertiary);
+  margin-left: var(--space-8);
+}
+
+.ai-message.assistant {
+  background: rgba(168, 85, 247, 0.05);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.ai-message p {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.ai-code-block {
+  background: #1e1e1e;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  margin: var(--space-2) 0;
+}
+
+.ai-code-block code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--text-xs);
+  color: #98c379;
+}
+
+/* Version Section */
+.version-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+}
+
+.version-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  text-align: center;
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.version-card:hover {
+  border-color: var(--color-rust);
+}
+
+.version-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(206, 66, 43, 0.1);
+  border-radius: var(--radius-lg);
+  color: var(--color-rust-light);
+}
+
+.version-card h3 {
+  font-size: var(--text-base);
+  margin-bottom: var(--space-2);
+}
+
+.version-card p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Simplicity Section */
+.simplicity-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-16);
+  align-items: center;
+}
+
+.simplicity-stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.simplicity-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+}
+
+.stat-number {
+  font-size: var(--text-5xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-rust);
+  min-width: 80px;
+  text-align: center;
+}
+
+.stat-text {
+  font-size: var(--text-xl);
+  color: var(--color-text-primary);
+}
+
+.simplicity-list {
+  list-style: none;
+  padding: 0;
+  margin-top: var(--space-6);
+}
+
+.simplicity-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  color: var(--color-text-secondary);
+}
+
+.simplicity-list li svg {
+  color: #27ca40;
+  flex-shrink: 0;
+}
+
+/* CTA Section */
+.cta-content {
+  max-width: 700px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.cta-title {
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-bold);
+  margin-bottom: var(--space-4);
+}
+
+.cta-description {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-8);
+}
+
+.cta-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .create-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .version-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: var(--text-3xl);
+  }
+
+  .ide-body {
+    flex-direction: column;
+  }
+
+  .ide-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #404040;
+  }
+
+  .file-tree {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+
+  .create-grid,
+  .version-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-grid,
+  .simplicity-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .simplicity-visual {
+    order: 2;
+  }
+
+  .cta-actions {
+    flex-direction: column;
+  }
+
+  .autocomplete-popup {
+    left: 160px;
+    top: 200px;
+  }
+}
+</style>
+{% endblock %}

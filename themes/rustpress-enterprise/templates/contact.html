@@ -1,323 +1,427 @@
-{% extends "layouts/base.html" %}
+{% extends "templates/base.html" %}
 
-{% block title %}Contact Us - {{ site.title }}{% endblock %}
+{% block title %}Contact Us - {{ site.name }}{% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<section class="page-hero contact-hero">
-  <div class="hero-particles"></div>
-  <div class="container">
-    <div class="page-hero-content" data-animate="fade-up">
-      <span class="hero-badge">
-        <span class="badge-dot"></span>
-        Get in Touch
-      </span>
-      <h1 class="page-hero-title">
-        We'd love to <span class="gradient-text">hear from you</span>
-      </h1>
-      <p class="page-hero-description">
-        Have a question, need help, or want to learn more? Our team is here to help.
-      </p>
-    </div>
-  </div>
-</section>
-
-<!-- Contact Options -->
-<section class="contact-options-section">
-  <div class="container">
-    <div class="contact-options-grid" data-animate="fade-up">
-      <div class="contact-option-card">
-        <div class="contact-option-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-        </div>
-        <h3>Sales</h3>
-        <p>Learn about our products and pricing. Get a personalized demo.</p>
-        <a href="/demo" class="btn btn--primary">Request Demo</a>
-      </div>
-
-      <div class="contact-option-card">
-        <div class="contact-option-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
-        </div>
-        <h3>Support</h3>
-        <p>Need help with your account? Our support team is available 24/7.</p>
-        <a href="#" class="btn btn--outline">Contact Support</a>
-      </div>
-
-      <div class="contact-option-card">
-        <div class="contact-option-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
-        </div>
-        <h3>Partnerships</h3>
-        <p>Interested in partnering with us? Let's explore opportunities together.</p>
-        <a href="#contact-form" class="btn btn--outline">Partner With Us</a>
-      </div>
-
-      <div class="contact-option-card">
-        <div class="contact-option-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-          </svg>
-        </div>
-        <h3>Press</h3>
-        <p>For media inquiries and press resources.</p>
-        <a href="#" class="btn btn--outline">Press Kit</a>
+<main class="main-content">
+  <!-- Contact Header -->
+  <section class="contact-header">
+    <div class="container">
+      <div class="contact-header-content" data-animate="fade-up">
+        <h1 class="contact-title">Get in Touch</h1>
+        <p class="contact-description">Have a question, suggestion, or want to collaborate? We'd love to hear from you.</p>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- Contact Form Section -->
-<section id="contact-form" class="contact-form-section">
-  <div class="container">
-    <div class="contact-form-layout">
-      <div class="contact-info" data-animate="fade-right">
-        <h2>Send us a message</h2>
-        <p>Fill out the form and our team will get back to you within 24 hours.</p>
-
-        <div class="contact-details">
-          <div class="contact-detail">
-            <div class="detail-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                <polyline points="22,6 12,13 2,6"/>
-              </svg>
-            </div>
-            <div class="detail-content">
-              <h4>Email</h4>
-              <a href="mailto:hello@rustpress.io">hello@rustpress.io</a>
-            </div>
-          </div>
-
-          <div class="contact-detail">
-            <div class="detail-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-              </svg>
-            </div>
-            <div class="detail-content">
-              <h4>Phone</h4>
-              <a href="tel:+1-888-123-4567">+1 (888) 123-4567</a>
-            </div>
-          </div>
-
-          <div class="contact-detail">
-            <div class="detail-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
-              </svg>
-            </div>
-            <div class="detail-content">
-              <h4>GitHub</h4>
-              <a href="https://github.com/rustpress">github.com/rustpress</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="contact-social">
-          <h4>Follow Us</h4>
-          <div class="social-links">
-            <a href="#" aria-label="Twitter">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/>
-              </svg>
-            </a>
-            <a href="#" aria-label="LinkedIn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-                <rect x="2" y="9" width="4" height="12"/>
-                <circle cx="4" cy="4" r="2"/>
-              </svg>
-            </a>
-            <a href="#" aria-label="GitHub">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div class="contact-form-container" data-animate="fade-left">
-        <div class="contact-form-card glass-card">
-          <form class="contact-form" id="contact-form-element">
+  <!-- Contact Content -->
+  <section class="contact-content section">
+    <div class="container">
+      <div class="contact-layout">
+        <!-- Contact Form -->
+        <div class="contact-form-wrapper" data-animate="fade-up">
+          <form class="contact-form" action="/api/contact" method="POST">
             <div class="form-row">
               <div class="form-group">
-                <label for="contact-name">Name *</label>
-                <input type="text" id="contact-name" name="name" required>
+                <label for="contact-name" class="form-label">Name <span class="required">*</span></label>
+                <input type="text" id="contact-name" name="name" class="input" placeholder="Your name" data-validate="required|minLength:2" required>
               </div>
               <div class="form-group">
-                <label for="contact-email">Email *</label>
-                <input type="email" id="contact-email" name="email" required>
+                <label for="contact-email" class="form-label">Email <span class="required">*</span></label>
+                <input type="email" id="contact-email" name="email" class="input" placeholder="your@email.com" data-validate="required|email" required>
               </div>
             </div>
 
             <div class="form-group">
-              <label for="contact-subject">Subject *</label>
-              <select id="contact-subject" name="subject" required>
-                <option value="">Select a topic...</option>
-                <option value="sales">Sales Inquiry</option>
+              <label for="contact-subject" class="form-label">Subject <span class="required">*</span></label>
+              <select id="contact-subject" name="subject" class="input" data-validate="required" required>
+                <option value="">Select a subject</option>
+                <option value="general">General Inquiry</option>
                 <option value="support">Technical Support</option>
-                <option value="billing">Billing Question</option>
                 <option value="partnership">Partnership</option>
-                <option value="press">Press/Media</option>
+                <option value="enterprise">Enterprise License</option>
+                <option value="feedback">Feedback</option>
                 <option value="other">Other</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label for="contact-message">Message *</label>
-              <textarea id="contact-message" name="message" rows="5" required placeholder="How can we help you?"></textarea>
+              <label for="contact-message" class="form-label">Message <span class="required">*</span></label>
+              <textarea id="contact-message" name="message" class="input input--textarea" rows="6" placeholder="How can we help you?" data-validate="required|minLength:20" maxlength="2000" required></textarea>
             </div>
 
-            <button type="submit" class="btn btn--primary btn--glow btn--full btn--lg">
-              Send Message
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="22" y1="2" x2="11" y2="13"/>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-              </svg>
+            <div class="form-group form-group--checkbox">
+              <label class="checkbox-label">
+                <input type="checkbox" name="newsletter" class="checkbox">
+                <span class="checkbox-text">Subscribe to our newsletter for updates and tips</span>
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--lg btn--block">
+              <span class="btn-text">Send Message</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             </button>
           </form>
         </div>
-      </div>
-    </div>
-  </div>
-</section>
 
-<!-- Community Section -->
-<section class="offices-section">
-  <div class="container">
-    <div class="section-header" data-animate="fade-up">
-      <span class="section-badge">Community</span>
-      <h2 class="section-title">Connect with RustPress</h2>
-    </div>
+        <!-- Contact Info -->
+        <div class="contact-info" data-animate="fade-up" data-delay="100">
+          <!-- Info Cards -->
+          <div class="info-card">
+            <div class="info-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            </div>
+            <div class="info-content">
+              <h3>Email Us</h3>
+              <p>For general inquiries</p>
+              <a href="mailto:hello@rustpress.dev">hello@rustpress.dev</a>
+            </div>
+          </div>
 
-    <div class="offices-grid" data-animate="fade-up">
-      <div class="office-card">
-        <div class="office-image">
-          <div class="office-placeholder">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-            </svg>
+          <div class="info-card">
+            <div class="info-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            </div>
+            <div class="info-content">
+              <h3>Community</h3>
+              <p>Join our Discord</p>
+              <a href="https://discord.gg/rustpress" target="_blank" rel="noopener">discord.gg/rustpress</a>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <div class="info-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+            </div>
+            <div class="info-content">
+              <h3>GitHub</h3>
+              <p>Report issues & contribute</p>
+              <a href="https://github.com/rustpress" target="_blank" rel="noopener">github.com/rustpress</a>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <div class="info-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="info-content">
+              <h3>Response Time</h3>
+              <p>We typically respond within</p>
+              <span class="response-time">24-48 hours</span>
+            </div>
+          </div>
+
+          <!-- Social Links -->
+          <div class="contact-social">
+            <h4>Follow Us</h4>
+            <div class="social-links">
+              <a href="https://twitter.com/rustpress" target="_blank" rel="noopener" class="social-link" aria-label="Twitter">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </a>
+              <a href="https://github.com/rustpress" target="_blank" rel="noopener" class="social-link" aria-label="GitHub">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+              </a>
+              <a href="https://discord.gg/rustpress" target="_blank" rel="noopener" class="social-link" aria-label="Discord">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>
+              </a>
+              <a href="https://www.youtube.com/@rustpress" target="_blank" rel="noopener" class="social-link" aria-label="YouTube">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              </a>
+            </div>
           </div>
         </div>
-        <div class="office-content">
-          <h4>GitHub</h4>
-          <span class="office-tag">Source Code</span>
-          <p>Explore source code, report issues, and contribute to RustPress</p>
-          <a href="https://github.com/rustpress" class="office-link">View Repository</a>
-        </div>
       </div>
+    </div>
+  </section>
 
-      <div class="office-card">
-        <div class="office-image">
-          <div class="office-placeholder">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286z"/>
-            </svg>
-          </div>
+  <!-- FAQ Section -->
+  <section class="faq-section section section--muted">
+    <div class="container">
+      <h2 class="section-title" data-animate="fade-up">Frequently Asked Questions</h2>
+      <div class="faq-grid" data-animate-stagger>
+        <div class="faq-item">
+          <h3>What is RustPress?</h3>
+          <p>RustPress is a modern, high-performance content management system built with Rust. It combines the speed and safety of Rust with an intuitive interface for content creators.</p>
         </div>
-        <div class="office-content">
-          <h4>Discord</h4>
-          <span class="office-tag">Community Chat</span>
-          <p>Join our Discord for real-time help and community discussions</p>
-          <a href="#" class="office-link">Join Discord</a>
+        <div class="faq-item">
+          <h3>Is RustPress free to use?</h3>
+          <p>Yes! RustPress is open-source and free to use. We also offer enterprise plans with additional features and support for larger organizations.</p>
         </div>
-      </div>
-
-      <div class="office-card">
-        <div class="office-image">
-          <div class="office-placeholder">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-            </svg>
-          </div>
+        <div class="faq-item">
+          <h3>How do I get technical support?</h3>
+          <p>You can get help through our Discord community, GitHub issues, or by contacting us directly via email for enterprise support.</p>
         </div>
-        <div class="office-content">
-          <h4>Documentation</h4>
-          <span class="office-tag">Learn</span>
-          <p>Comprehensive guides, API references, and tutorials</p>
-          <a href="/docs" class="office-link">Read Docs</a>
-        </div>
-      </div>
-
-      <div class="office-card">
-        <div class="office-image">
-          <div class="office-placeholder">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-            </svg>
-          </div>
-        </div>
-        <div class="office-content">
-          <h4>Twitter</h4>
-          <span class="office-tag">Updates</span>
-          <p>Follow for the latest news, features, and announcements</p>
-          <a href="#" class="office-link">Follow @rustpress</a>
+        <div class="faq-item">
+          <h3>Can I contribute to RustPress?</h3>
+          <p>Absolutely! We welcome contributions from the community. Check out our GitHub repository for contribution guidelines and open issues.</p>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
+</main>
+{% endblock %}
 
-<!-- FAQ Section -->
-<section class="faq-section">
-  <div class="container">
-    <div class="section-header" data-animate="fade-up">
-      <span class="section-badge">FAQ</span>
-      <h2 class="section-title">Common questions</h2>
-    </div>
+{% block styles %}
+<style>
+.contact-header {
+  padding: var(--space-16) 0 var(--space-10);
+  background: var(--gradient-dark);
+  text-align: center;
+}
 
-    <div class="faq-list" data-animate="fade-up">
-      <div class="faq-item">
-        <button class="faq-question">
-          <span>How quickly will I get a response?</span>
-          <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </button>
-        <div class="faq-answer">
-          <p>We aim to respond to all inquiries within 24 hours during business days. For urgent support issues, our Enterprise customers have access to 24/7 priority support with 1-hour response times.</p>
-        </div>
-      </div>
+.contact-title {
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-bold);
+  margin-bottom: var(--space-4);
+}
 
-      <div class="faq-item">
-        <button class="faq-question">
-          <span>What are your business hours?</span>
-          <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </button>
-        <div class="faq-answer">
-          <p>Our sales team is available Monday through Friday, 9am to 6pm in your local timezone. Technical support is available 24/7 for all customers.</p>
-        </div>
-      </div>
+.contact-description {
+  font-size: var(--text-xl);
+  color: var(--color-text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
 
-      <div class="faq-item">
-        <button class="faq-question">
-          <span>Can I schedule a call instead?</span>
-          <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </button>
-        <div class="faq-answer">
-          <p>Absolutely! You can <a href="/demo">request a demo</a> to schedule a call with our sales team, or reach out to your account manager if you're an existing customer.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+.contact-layout {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: var(--space-12);
+}
+
+/* Contact Form */
+.contact-form-wrapper {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-10);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+}
+
+.form-group {
+  margin-bottom: var(--space-6);
+}
+
+.form-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  margin-bottom: var(--space-2);
+}
+
+.required {
+  color: var(--color-rust);
+}
+
+.form-group--checkbox {
+  margin-top: var(--space-2);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--color-rust);
+}
+
+.checkbox-text {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.contact-form .btn {
+  margin-top: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+/* Contact Info */
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.info-card {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.info-card:hover {
+  border-color: var(--border-rust);
+  transform: translateX(4px);
+}
+
+.info-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(206, 66, 43, 0.15) 0%, rgba(233, 116, 81, 0.05) 100%);
+  border-radius: var(--radius-lg);
+  color: var(--color-rust);
+  flex-shrink: 0;
+}
+
+.info-content h3 {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-1);
+}
+
+.info-content p {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-1);
+}
+
+.info-content a {
+  font-size: var(--text-sm);
+  color: var(--color-rust-light);
+  font-weight: var(--weight-medium);
+}
+
+.response-time {
+  font-size: var(--text-sm);
+  color: var(--color-rust-light);
+  font-weight: var(--weight-semibold);
+}
+
+/* Contact Social */
+.contact-social {
+  padding: var(--space-6);
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  margin-top: var(--space-4);
+}
+
+.contact-social h4 {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  margin-bottom: var(--space-4);
+}
+
+.social-links {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.social-link {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.social-link:hover {
+  background: var(--color-rust);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* FAQ Section */
+.faq-section {
+  background: var(--color-bg-secondary);
+}
+
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-6);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.faq-item {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+}
+
+.faq-item h3 {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-3);
+}
+
+.faq-item p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+@media (max-width: 1024px) {
+  .contact-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-info {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .contact-social {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 768px) {
+  .contact-header {
+    padding: var(--space-12) 0 var(--space-8);
+  }
+
+  .contact-title {
+    font-size: var(--text-3xl);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-form-wrapper {
+    padding: var(--space-6);
+  }
+
+  .contact-info {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-social {
+    grid-column: span 1;
+  }
+
+  .faq-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
 {% endblock %}

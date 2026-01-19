@@ -25,12 +25,13 @@ export interface Extension {
 }
 
 interface ExtensionsPanelProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
   extensions: Extension[];
   onInstall: (id: string) => void;
   onUninstall: (id: string) => void;
   onToggle: (id: string) => void;
+  embedded?: boolean; // When true, renders as sidebar panel instead of modal
 }
 
 const categories = [
@@ -45,16 +46,17 @@ const categories = [
 ];
 
 export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({
-  isOpen,
+  isOpen = true,
   onClose,
   extensions,
   onInstall,
   onUninstall,
-  onToggle
+  onToggle,
+  embedded = false
 }) => {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [view, setView] = useState<'installed' | 'marketplace'>('installed');
+  const [view, setView] = useState<'installed' | 'marketplace'>('marketplace');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filteredExtensions = useMemo(() => {
@@ -87,6 +89,214 @@ export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({
     ));
   };
 
+  // Embedded sidebar panel content
+  const panelContent = (
+    <div className={embedded ? "flex flex-col h-full" : "flex flex-col h-full"}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700">
+        <div className="flex items-center gap-2">
+          <Puzzle className="w-4 h-4 text-purple-400" />
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Extensions</h3>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+            title="Refresh"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+          {onClose && !embedded && (
+            <button
+              onClick={onClose}
+              className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="p-2 border-b border-gray-700">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search extensions..."
+            className="w-full pl-8 pr-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-gray-700">
+        <button
+          onClick={() => setView('marketplace')}
+          className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
+            view === 'marketplace'
+              ? 'text-white border-b-2 border-blue-500'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          Marketplace
+        </button>
+        <button
+          onClick={() => setView('installed')}
+          className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
+            view === 'installed'
+              ? 'text-white border-b-2 border-blue-500'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          Installed ({extensions.filter(e => e.installed).length})
+        </button>
+      </div>
+
+      {/* Categories */}
+      <div className="px-2 py-1.5 border-b border-gray-700 flex items-center gap-1 overflow-x-auto scrollbar-hide">
+        {categories.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`px-2 py-0.5 rounded-full text-[10px] whitespace-nowrap transition-colors ${
+              selectedCategory === cat
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Extensions List */}
+      <div className="flex-1 overflow-auto">
+        {filteredExtensions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-32 text-gray-500">
+            <Puzzle className="w-8 h-8 mb-2 opacity-50" />
+            <p className="text-xs">No extensions found</p>
+          </div>
+        ) : (
+          filteredExtensions.map(ext => (
+            <div
+              key={ext.id}
+              className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors"
+            >
+              <div
+                className="flex items-start gap-2 p-2 cursor-pointer"
+                onClick={() => setExpandedId(expandedId === ext.id ? null : ext.id)}
+              >
+                {/* Icon */}
+                <div className="w-8 h-8 bg-gray-800 rounded flex items-center justify-center flex-shrink-0">
+                  {ext.icon ? (
+                    <img src={ext.icon} alt={ext.name} className="w-6 h-6" />
+                  ) : (
+                    <Puzzle className="w-4 h-4 text-purple-400" />
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1">
+                    <h4 className="text-xs font-medium text-white truncate">{ext.name}</h4>
+                    <span className="text-[10px] text-gray-500">v{ext.version}</span>
+                  </div>
+                  <p className="text-[10px] text-gray-500 truncate">{ext.author}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex items-center gap-0.5">
+                      {renderStars(ext.rating)}
+                    </div>
+                    <span className="text-[10px] text-gray-500">
+                      {formatDownloads(ext.downloads)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1">
+                  {ext.installed ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onToggle(ext.id); }}
+                      className={`p-1 rounded text-[10px] transition-colors ${
+                        ext.enabled
+                          ? 'text-green-400'
+                          : 'text-gray-500'
+                      }`}
+                      title={ext.enabled ? 'Disable' : 'Enable'}
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onInstall(ext.id); }}
+                      className="p-1 text-blue-400 hover:bg-blue-500/20 rounded transition-colors"
+                      title="Install"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Expanded Details */}
+              <AnimatePresence>
+                {expandedId === ext.id && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden border-t border-gray-800"
+                  >
+                    <div className="p-2 bg-gray-800/30">
+                      <p className="text-[11px] text-gray-300 mb-2">{ext.description}</p>
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {ext.tags.map(tag => (
+                          <span
+                            key={tag}
+                            className="px-1.5 py-0.5 bg-gray-700 rounded text-[10px] text-gray-400"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {ext.installed ? (
+                          <button
+                            onClick={() => onUninstall(ext.id)}
+                            className="px-2 py-1 bg-red-600/20 hover:bg-red-600/30 rounded text-[10px] text-red-400 transition-colors flex items-center gap-1"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Uninstall
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => onInstall(ext.id)}
+                            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-[10px] text-white transition-colors flex items-center gap-1"
+                          >
+                            <Download className="w-3 h-3" />
+                            Install
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+
+  // If embedded, return content directly
+  if (embedded) {
+    return panelContent;
+  }
+
+  // Modal version
   return (
     <AnimatePresence>
       {isOpen && (
@@ -105,200 +315,7 @@ export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({
             exit={{ opacity: 0, x: 300 }}
             className="fixed top-0 right-0 bottom-0 w-[450px] z-50 bg-gray-900 border-l border-gray-700 flex flex-col"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
-              <div className="flex items-center gap-2">
-                <Puzzle className="w-5 h-5 text-purple-400" />
-                <h3 className="text-sm font-medium text-white">Extensions</h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
-                  title="Refresh"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={onClose}
-                  className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex border-b border-gray-700">
-              <button
-                onClick={() => setView('installed')}
-                className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
-                  view === 'installed'
-                    ? 'text-white border-b-2 border-blue-500'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Installed ({extensions.filter(e => e.installed).length})
-              </button>
-              <button
-                onClick={() => setView('marketplace')}
-                className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
-                  view === 'marketplace'
-                    ? 'text-white border-b-2 border-blue-500'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Marketplace
-              </button>
-            </div>
-
-            {/* Search */}
-            <div className="p-4 border-b border-gray-700">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search extensions..."
-                  className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* Categories */}
-            <div className="px-4 py-2 border-b border-gray-700 flex items-center gap-2 overflow-x-auto">
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors ${
-                    selectedCategory === cat
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-
-            {/* Extensions List */}
-            <div className="flex-1 overflow-auto">
-              {filteredExtensions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                  <Puzzle className="w-12 h-12 mb-3 opacity-50" />
-                  <p className="text-sm">No extensions found</p>
-                </div>
-              ) : (
-                filteredExtensions.map(ext => (
-                  <div
-                    key={ext.id}
-                    className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors"
-                  >
-                    <div
-                      className="flex items-start gap-3 p-4 cursor-pointer"
-                      onClick={() => setExpandedId(expandedId === ext.id ? null : ext.id)}
-                    >
-                      {/* Icon */}
-                      <div className="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0">
-                        {ext.icon ? (
-                          <img src={ext.icon} alt={ext.name} className="w-8 h-8" />
-                        ) : (
-                          <Puzzle className="w-6 h-6 text-purple-400" />
-                        )}
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-medium text-white truncate">{ext.name}</h4>
-                          <span className="text-xs text-gray-500">v{ext.version}</span>
-                        </div>
-                        <p className="text-xs text-gray-500 truncate">{ext.author}</p>
-                        <p className="text-xs text-gray-400 mt-1 line-clamp-2">{ext.description}</p>
-                        <div className="flex items-center gap-3 mt-2">
-                          <div className="flex items-center gap-0.5">
-                            {renderStars(ext.rating)}
-                          </div>
-                          <span className="text-xs text-gray-500">
-                            <Download className="w-3 h-3 inline mr-1" />
-                            {formatDownloads(ext.downloads)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-2">
-                        {ext.installed ? (
-                          <>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); onToggle(ext.id); }}
-                              className={`px-3 py-1 rounded text-xs transition-colors ${
-                                ext.enabled
-                                  ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
-                                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-                              }`}
-                            >
-                              {ext.enabled ? 'Enabled' : 'Disabled'}
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); onUninstall(ext.id); }}
-                              className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded"
-                              title="Uninstall"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onInstall(ext.id); }}
-                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs text-white transition-colors flex items-center gap-1"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            Install
-                          </button>
-                        )}
-                        {expandedId === ext.id ? (
-                          <ChevronDown className="w-4 h-4 text-gray-500" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-gray-500" />
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Expanded Details */}
-                    <AnimatePresence>
-                      {expandedId === ext.id && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden border-t border-gray-800"
-                        >
-                          <div className="p-4 bg-gray-800/30">
-                            <p className="text-sm text-gray-300 mb-3">{ext.description}</p>
-                            <div className="flex flex-wrap gap-2 mb-3">
-                              {ext.tags.map(tag => (
-                                <span
-                                  key={tag}
-                                  className="px-2 py-0.5 bg-gray-700 rounded text-xs text-gray-400"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                            <div className="flex items-center gap-4 text-xs text-gray-500">
-                              <span>Category: {ext.category}</span>
-                              <span>Version: {ext.version}</span>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ))
-              )}
-            </div>
+            {panelContent}
           </motion.div>
         </>
       )}
