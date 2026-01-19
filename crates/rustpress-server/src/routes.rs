@@ -2529,7 +2529,9 @@ async fn cancel_migration_handler(
             serde_json::json!({ "message": "Migration cancelled" }),
         ))
     } else {
-        Err(HttpError::bad_request("Migration not found or already completed"))
+        Err(HttpError::bad_request(
+            "Migration not found or already completed",
+        ))
     }
 }
 
