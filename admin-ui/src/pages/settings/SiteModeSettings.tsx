@@ -12,10 +12,10 @@ import { motion } from 'framer-motion';
 import {
   Globe, AppWindow, Layers, Check, Save, Info,
   LayoutGrid, List, Image, Type, FileText, ChevronRight,
-  Package
+  Package, Server, Monitor, Shield, Gauge, Link2
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
-import type { SiteMode, SiteModeSettings as SiteModeSettingsType } from '../../types/app';
+import type { SiteMode, SiteModeSettings as SiteModeSettingsType, AppDeploymentType } from '../../types/app';
 
 interface ModeOption {
   id: SiteMode;
@@ -216,8 +216,225 @@ const SiteModeSettingsPage: React.FC = () => {
               </h2>
             </div>
 
-            {/* Default App Selection */}
+            {/* Deployment Type Selection */}
             <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-300">
+                Deployment Type
+              </label>
+              <p className="text-xs text-gray-500">
+                Choose how your application will be deployed and accessed.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Fullstack Option */}
+                <div
+                  onClick={() => handleSettingChange('deploymentType', 'fullstack')}
+                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    (settings.deploymentType || 'fullstack') === 'fullstack'
+                      ? 'bg-purple-500/10 border-purple-500'
+                      : 'bg-gray-900 border-gray-700 hover:border-gray-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`p-2 rounded-lg ${
+                      (settings.deploymentType || 'fullstack') === 'fullstack'
+                        ? 'bg-purple-500/20'
+                        : 'bg-gray-800'
+                    }`}>
+                      <Monitor className={`w-5 h-5 ${
+                        (settings.deploymentType || 'fullstack') === 'fullstack'
+                          ? 'text-purple-400'
+                          : 'text-gray-500'
+                      }`} />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-white font-medium">Fullstack</h4>
+                    </div>
+                    {(settings.deploymentType || 'fullstack') === 'fullstack' && (
+                      <Check className="w-5 h-5 text-purple-400" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Complete application with React frontend and Rust backend.
+                    Includes admin UI, app selector, and full user interface.
+                  </p>
+                  <ul className="mt-3 space-y-1">
+                    <li className="text-xs text-gray-500 flex items-center gap-1">
+                      <ChevronRight className="w-3 h-3 text-purple-400" />
+                      React frontend included
+                    </li>
+                    <li className="text-xs text-gray-500 flex items-center gap-1">
+                      <ChevronRight className="w-3 h-3 text-purple-400" />
+                      Admin dashboard
+                    </li>
+                    <li className="text-xs text-gray-500 flex items-center gap-1">
+                      <ChevronRight className="w-3 h-3 text-purple-400" />
+                      App selector page
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Backend Only Option */}
+                <div
+                  onClick={() => handleSettingChange('deploymentType', 'backend')}
+                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    settings.deploymentType === 'backend'
+                      ? 'bg-blue-500/10 border-blue-500'
+                      : 'bg-gray-900 border-gray-700 hover:border-gray-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`p-2 rounded-lg ${
+                      settings.deploymentType === 'backend'
+                        ? 'bg-blue-500/20'
+                        : 'bg-gray-800'
+                    }`}>
+                      <Server className={`w-5 h-5 ${
+                        settings.deploymentType === 'backend'
+                          ? 'text-blue-400'
+                          : 'text-gray-500'
+                      }`} />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-white font-medium">Backend Only</h4>
+                    </div>
+                    {settings.deploymentType === 'backend' && (
+                      <Check className="w-5 h-5 text-blue-400" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    API-only deployment without UI. RustPress acts as a
+                    headless backend for external applications.
+                  </p>
+                  <ul className="mt-3 space-y-1">
+                    <li className="text-xs text-gray-500 flex items-center gap-1">
+                      <ChevronRight className="w-3 h-3 text-blue-400" />
+                      REST API endpoints
+                    </li>
+                    <li className="text-xs text-gray-500 flex items-center gap-1">
+                      <ChevronRight className="w-3 h-3 text-blue-400" />
+                      External app integration
+                    </li>
+                    <li className="text-xs text-gray-500 flex items-center gap-1">
+                      <ChevronRight className="w-3 h-3 text-blue-400" />
+                      No bundled UI
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Backend Mode Specific Settings */}
+            {settings.deploymentType === 'backend' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-4 pt-4 border-t border-gray-700"
+              >
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <div className="flex gap-3">
+                    <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-blue-300 text-sm">
+                        Backend mode disables the admin UI and app selector. RustPress will serve
+                        only API endpoints for external applications to consume.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* API Prefix */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-300">
+                    <Link2 className="w-4 h-4 inline mr-2" />
+                    API Prefix
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.backendApiPrefix || '/api'}
+                    onChange={(e) =>
+                      handleSettingChange('backendApiPrefix', e.target.value)
+                    }
+                    placeholder="/api"
+                    className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Base path for all API endpoints (e.g., /api/v1/posts)
+                  </p>
+                </div>
+
+                {/* CORS Origins */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-300">
+                    <Globe className="w-4 h-4 inline mr-2" />
+                    Allowed CORS Origins
+                  </label>
+                  <textarea
+                    value={(settings.backendCorsOrigins || []).join('\n')}
+                    onChange={(e) =>
+                      handleSettingChange(
+                        'backendCorsOrigins',
+                        e.target.value.split('\n').filter(Boolean)
+                      )
+                    }
+                    placeholder="https://example.com&#10;https://app.example.com"
+                    rows={3}
+                    className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none font-mono text-sm"
+                  />
+                  <p className="text-xs text-gray-500">
+                    One origin per line. External domains allowed to make API requests.
+                  </p>
+                </div>
+
+                {/* Rate Limiting */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-300">
+                    <Gauge className="w-4 h-4 inline mr-2" />
+                    Rate Limit (requests per minute)
+                  </label>
+                  <input
+                    type="number"
+                    value={settings.backendRateLimitPerMinute || 60}
+                    onChange={(e) =>
+                      handleSettingChange('backendRateLimitPerMinute', parseInt(e.target.value) || 60)
+                    }
+                    min={1}
+                    max={10000}
+                    className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Maximum number of requests per minute per client IP.
+                  </p>
+                </div>
+
+                {/* Require Authentication */}
+                <label className="flex items-center gap-3 cursor-pointer p-4 bg-gray-900 rounded-lg border border-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={settings.backendAuthRequired ?? true}
+                    onChange={(e) =>
+                      handleSettingChange('backendAuthRequired', e.target.checked)
+                    }
+                    className="w-5 h-5 rounded bg-gray-800 border-gray-600 text-blue-500 focus:ring-blue-500"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-blue-400" />
+                      <span className="text-white font-medium">Require Authentication</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      All API endpoints require a valid JWT token. Disable for public APIs.
+                    </p>
+                  </div>
+                </label>
+              </motion.div>
+            )}
+
+            {/* Fullstack-specific settings (existing settings) */}
+            {(settings.deploymentType || 'fullstack') === 'fullstack' && (
+              <>
+                {/* Default App Selection */}
+                <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-300">
                 Default Application
               </label>
@@ -335,6 +552,8 @@ const SiteModeSettingsPage: React.FC = () => {
                 />
               </div>
             </div>
+              </>
+            )}
           </motion.div>
         )}
 

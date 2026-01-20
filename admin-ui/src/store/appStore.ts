@@ -291,10 +291,16 @@ const defaultUserAccess: Record<string, UserAppAccess> = {
 // Default site mode settings
 const defaultSiteModeSettings: SiteModeSettings = {
   mode: 'hybrid',
+  deploymentType: 'fullstack',
   appSelectorStyle: 'grid',
   showAppSelectorLogo: true,
   appSelectorTitle: 'Select an Application',
   appSelectorDescription: 'Choose an application to get started',
+  // Backend mode defaults
+  backendApiPrefix: '/api',
+  backendCorsOrigins: [],
+  backendRateLimitPerMinute: 60,
+  backendAuthRequired: true,
 };
 
 export const useAppStore = create<AppState>()(
