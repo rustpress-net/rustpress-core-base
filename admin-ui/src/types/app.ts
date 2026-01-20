@@ -11,14 +11,27 @@
  */
 export type SiteMode = 'website' | 'app' | 'hybrid';
 
+/**
+ * App Deployment Type - Determines how the app is deployed
+ * - fullstack: Full application with UI (React frontend + Rust backend)
+ * - backend: Backend only, no UI - just API/backend interfacing with RustPress
+ */
+export type AppDeploymentType = 'fullstack' | 'backend';
+
 export interface SiteModeSettings {
   mode: SiteMode;
+  deploymentType?: AppDeploymentType; // For app mode - fullstack or backend only
   defaultAppId?: string; // For app mode - which app to launch by default
   allowedAppsInHybrid?: string[]; // For hybrid mode - which apps are URL-accessible
   appSelectorStyle?: 'grid' | 'list'; // Style for app selector page
   showAppSelectorLogo?: boolean;
   appSelectorTitle?: string;
   appSelectorDescription?: string;
+  // Backend mode specific settings
+  backendApiPrefix?: string; // Custom API prefix for backend mode (default: /api)
+  backendCorsOrigins?: string[]; // Allowed CORS origins for backend mode
+  backendRateLimitPerMinute?: number; // Rate limiting for backend API
+  backendAuthRequired?: boolean; // Require authentication for all endpoints
 }
 
 export type AppCategory =
