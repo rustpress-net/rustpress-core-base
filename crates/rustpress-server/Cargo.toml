@@ -17,6 +17,8 @@ rustpress-jobs = { path = "../rustpress-jobs" }
 rustpress-api = { path = "../rustpress-api" }
 rustpress-themes = { path = "../rustpress-themes" }
 rustcloudflare = { path = "../../plugins/rustcloudflare" }
+visual-queue-manager = { path = "../../plugins/visual-queue-manager" }
+rustbuilder = { path = "../../plugins/rustbuilder" }
 
 # Templating
 tera = "1.19"
