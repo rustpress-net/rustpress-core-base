@@ -245,9 +245,9 @@ pub struct ToggleFavoriteRequest {
     pub template_id: Uuid,
 }
 
-/// Toggle favorite response
+/// Toggle favorite response for templates
 #[derive(Debug, Serialize)]
-pub struct ToggleFavoriteResponse {
+pub struct TemplateToggleFavoriteResponse {
     pub template_id: Uuid,
     pub is_favorited: bool,
 }

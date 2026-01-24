@@ -11,8 +11,8 @@ use uuid::Uuid;
 
 use crate::handlers::blocks::{
     BlockAnalyticsResponse, BlockCategory, BlockDefinition, BlockLibraryResponse,
-    BlockSupports, BlockUsageEntry, CreateCustomBlockRequest, CustomBlockListQuery,
-    CustomBlockListResponse, CustomBlockResponse, ToggleFavoriteResponse,
+    BlockSupports, BlockToggleFavoriteResponse, BlockUsageEntry, CreateCustomBlockRequest, CustomBlockListQuery,
+    CustomBlockListResponse, CustomBlockResponse,
     TrackBlockUsageRequest, UpdateBlockSettingsRequest, UpdateCustomBlockRequest,
     UpdateRecentBlocksRequest, UserBlockPreferencesResponse,
 };
@@ -609,7 +609,7 @@ impl BlockService {
         &self,
         user_id: Uuid,
         block_id: String,
-    ) -> Result<ToggleFavoriteResponse> {
+    ) -> Result<BlockToggleFavoriteResponse> {
         let prefs = self.get_user_preferences(user_id).await?;
 
         let mut favorites = prefs.favorite_blocks;
@@ -634,7 +634,7 @@ impl BlockService {
         .await
         .map_err(|e| Error::database_with_source("Failed to update favorite blocks", e))?;
 
-        Ok(ToggleFavoriteResponse {
+        Ok(BlockToggleFavoriteResponse {
             block_id,
             is_favorite,
         })
