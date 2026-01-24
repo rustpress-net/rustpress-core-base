@@ -213,14 +213,9 @@ impl PostDocument {
     pub fn move_block(&mut self, block_id: BlockId, new_index: usize) -> bool {
         if let Some(current_index) = self.content.blocks.iter().position(|b| b.id == block_id) {
             let block = self.content.blocks.remove(current_index);
-            let insert_index = if new_index > current_index {
-                new_index.saturating_sub(1)
-            } else {
-                new_index
-            };
-            self.content
-                .blocks
-                .insert(insert_index.min(self.content.blocks.len()), block);
+            // Clamp the insert index to valid range after removal
+            let insert_index = new_index.min(self.content.blocks.len());
+            self.content.blocks.insert(insert_index, block);
             true
         } else {
             false

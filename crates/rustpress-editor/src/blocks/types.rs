@@ -1023,7 +1023,7 @@ pub enum Spacing {
 }
 
 /// Block visibility settings
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockVisibility {
     /// Show on desktop
     #[serde(default = "default_true")]
@@ -1048,6 +1048,19 @@ pub struct BlockVisibility {
     /// Schedule visibility
     #[serde(skip_serializing_if = "Option::is_none")]
     pub schedule: Option<VisibilitySchedule>,
+}
+
+impl Default for BlockVisibility {
+    fn default() -> Self {
+        Self {
+            desktop: true,
+            tablet: true,
+            mobile: true,
+            logged_in_only: false,
+            roles: Vec::new(),
+            schedule: None,
+        }
+    }
 }
 
 fn default_true() -> bool {
