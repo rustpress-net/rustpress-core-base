@@ -611,12 +611,16 @@ impl From<MediaItem> for MediaResponse {
             description: None,
             width: item.width,
             height: item.height,
-            thumbnails: item.variants.iter().map(|v| ThumbnailInfo {
-                size: v.variant_type.clone(),
-                url: v.url.clone(),
-                width: v.width.unwrap_or(0),
-                height: v.height.unwrap_or(0),
-            }).collect(),
+            thumbnails: item
+                .variants
+                .iter()
+                .map(|v| ThumbnailInfo {
+                    size: v.variant_type.clone(),
+                    url: v.url.clone(),
+                    width: v.width.unwrap_or(0),
+                    height: v.height.unwrap_or(0),
+                })
+                .collect(),
             uploader: UploaderInfo {
                 id: item.uploaded_by,
                 name: item.uploader_name.unwrap_or_default(),

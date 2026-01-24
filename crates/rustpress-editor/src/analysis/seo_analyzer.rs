@@ -62,7 +62,11 @@ impl SeoAnalyzer {
         if let Some(ref keyword) = self.focus_keyword {
             checks.push(self.check_keyword_in_title(keyword, &content.title));
             checks.push(self.check_keyword_in_first_paragraph(keyword, &content.first_paragraph));
-            checks.push(self.check_keyword_density(keyword, &content.plain_text, content.word_count));
+            checks.push(self.check_keyword_density(
+                keyword,
+                &content.plain_text,
+                content.word_count,
+            ));
             checks.push(self.check_keyword_in_headings(keyword, &content.headings));
             checks.push(self.check_keyword_in_url(keyword, &content.slug));
             max_score += 50;
@@ -108,9 +112,21 @@ impl SeoAnalyzer {
         let (passed, message) = if length == 0 {
             (false, "Title is missing".to_string())
         } else if length < ideal_min {
-            (false, format!("Title is too short ({} chars). Aim for {}-{} characters.", length, ideal_min, ideal_max))
+            (
+                false,
+                format!(
+                    "Title is too short ({} chars). Aim for {}-{} characters.",
+                    length, ideal_min, ideal_max
+                ),
+            )
         } else if length > ideal_max {
-            (false, format!("Title is too long ({} chars). Keep it under {} characters.", length, ideal_max))
+            (
+                false,
+                format!(
+                    "Title is too long ({} chars). Keep it under {} characters.",
+                    length, ideal_max
+                ),
+            )
         } else {
             (true, format!("Title length is good ({} chars)", length))
         };
@@ -134,11 +150,26 @@ impl SeoAnalyzer {
                 let max = self.config.meta_desc_max_length;
 
                 if length < min {
-                    (false, format!("Meta description is too short ({} chars). Aim for {}-{} characters.", length, min, max))
+                    (
+                        false,
+                        format!(
+                            "Meta description is too short ({} chars). Aim for {}-{} characters.",
+                            length, min, max
+                        ),
+                    )
                 } else if length > max {
-                    (false, format!("Meta description is too long ({} chars). Keep it under {} characters.", length, max))
+                    (
+                        false,
+                        format!(
+                            "Meta description is too long ({} chars). Keep it under {} characters.",
+                            length, max
+                        ),
+                    )
                 } else {
-                    (true, format!("Meta description length is good ({} chars)", length))
+                    (
+                        true,
+                        format!("Meta description length is good ({} chars)", length),
+                    )
                 }
             }
         };
@@ -156,9 +187,18 @@ impl SeoAnalyzer {
     fn check_content_length(&self, word_count: u32) -> SeoCheck {
         let min = self.config.min_word_count;
         let (passed, message) = if word_count < min {
-            (false, format!("Content is too short ({} words). Aim for at least {} words.", word_count, min))
+            (
+                false,
+                format!(
+                    "Content is too short ({} words). Aim for at least {} words.",
+                    word_count, min
+                ),
+            )
         } else if word_count >= 1500 {
-            (true, format!("Excellent content length ({} words)", word_count))
+            (
+                true,
+                format!("Excellent content length ({} words)", word_count),
+            )
         } else {
             (true, format!("Good content length ({} words)", word_count))
         };
@@ -178,13 +218,28 @@ impl SeoAnalyzer {
         let h2_count = headings.iter().filter(|h| h.level == 2).count();
 
         let (passed, message) = if h1_count == 0 {
-            (false, "No H1 heading found. Add a main heading.".to_string())
+            (
+                false,
+                "No H1 heading found. Add a main heading.".to_string(),
+            )
         } else if h1_count > 1 {
-            (false, format!("Multiple H1 headings found ({}). Use only one H1.", h1_count))
+            (
+                false,
+                format!(
+                    "Multiple H1 headings found ({}). Use only one H1.",
+                    h1_count
+                ),
+            )
         } else if h2_count == 0 {
-            (false, "No H2 subheadings found. Add subheadings to structure content.".to_string())
+            (
+                false,
+                "No H2 subheadings found. Add subheadings to structure content.".to_string(),
+            )
         } else {
-            (true, format!("Good heading structure (1 H1, {} H2s)", h2_count))
+            (
+                true,
+                format!("Good heading structure (1 H1, {} H2s)", h2_count),
+            )
         };
 
         SeoCheck {
@@ -253,9 +308,21 @@ impl SeoAnalyzer {
         let max = self.config.keyword_density_max;
 
         let (passed, message) = if density < min {
-            (false, format!("Keyword density is too low ({:.1}%). Aim for {:.1}%-{:.1}%.", density, min, max))
+            (
+                false,
+                format!(
+                    "Keyword density is too low ({:.1}%). Aim for {:.1}%-{:.1}%.",
+                    density, min, max
+                ),
+            )
         } else if density > max {
-            (false, format!("Keyword density is too high ({:.1}%). Keep it between {:.1}%-{:.1}%.", density, min, max))
+            (
+                false,
+                format!(
+                    "Keyword density is too high ({:.1}%). Keep it between {:.1}%-{:.1}%.",
+                    density, min, max
+                ),
+            )
         } else {
             (true, format!("Good keyword density ({:.1}%)", density))
         };
@@ -272,7 +339,9 @@ impl SeoAnalyzer {
 
     fn check_keyword_in_headings(&self, keyword: &str, headings: &[HeadingInfo]) -> SeoCheck {
         let keyword_lower = keyword.to_lowercase();
-        let found = headings.iter().any(|h| h.text.to_lowercase().contains(&keyword_lower));
+        let found = headings
+            .iter()
+            .any(|h| h.text.to_lowercase().contains(&keyword_lower));
 
         let message = if found {
             "Focus keyword appears in subheadings".to_string()
@@ -293,8 +362,10 @@ impl SeoAnalyzer {
     fn check_keyword_in_url(&self, keyword: &str, slug: &str) -> SeoCheck {
         let slug_lower = slug.to_lowercase().replace('-', " ");
         let keyword_lower = keyword.to_lowercase();
-        let passed = slug_lower.contains(&keyword_lower) ||
-                     slug.to_lowercase().contains(&keyword_lower.replace(' ', "-"));
+        let passed = slug_lower.contains(&keyword_lower)
+            || slug
+                .to_lowercase()
+                .contains(&keyword_lower.replace(' ', "-"));
 
         let message = if passed {
             "Focus keyword appears in URL".to_string()
@@ -324,7 +395,10 @@ impl SeoAnalyzer {
             };
         }
 
-        let missing_alt = images.iter().filter(|i| i.alt.is_none() || i.alt.as_ref().map(|a| a.is_empty()).unwrap_or(true)).count();
+        let missing_alt = images
+            .iter()
+            .filter(|i| i.alt.is_none() || i.alt.as_ref().map(|a| a.is_empty()).unwrap_or(true))
+            .count();
 
         let (passed, message) = if missing_alt > 0 {
             (false, format!("{} image(s) missing alt text", missing_alt))
@@ -347,13 +421,25 @@ impl SeoAnalyzer {
         let external_count = links.iter().filter(|l| !l.is_internal).count();
 
         let (passed, message) = if internal_count == 0 && external_count == 0 {
-            (false, "No links found. Add internal and external links.".to_string())
+            (
+                false,
+                "No links found. Add internal and external links.".to_string(),
+            )
         } else if internal_count == 0 {
-            (false, "No internal links found. Add links to other pages on your site.".to_string())
+            (
+                false,
+                "No internal links found. Add links to other pages on your site.".to_string(),
+            )
         } else if external_count == 0 {
             (true, format!("{} internal links found. Consider adding external links to authoritative sources.", internal_count))
         } else {
-            (true, format!("{} internal and {} external links found", internal_count, external_count))
+            (
+                true,
+                format!(
+                    "{} internal and {} external links found",
+                    internal_count, external_count
+                ),
+            )
         };
 
         SeoCheck {

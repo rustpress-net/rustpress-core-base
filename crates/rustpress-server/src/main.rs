@@ -30,8 +30,11 @@ struct Cli {
 use rustpress_auth::{JwtConfig, JwtManager, PermissionChecker};
 use rustpress_cache::{Cache, CacheConfig, MemoryBackend};
 use rustpress_core::config::AppConfig;
+use rustpress_core::context::AppContext;
+use rustpress_core::discovery::{ComponentType, DiscoveryService};
 use rustpress_core::hook::HookRegistry;
 use rustpress_core::plugin::PluginManager;
+use rustpress_core::plugin_loader::PluginLoader;
 use rustpress_database::{DatabasePool, PoolConfig};
 use rustpress_events::EventBus;
 use rustpress_jobs::JobQueue;
@@ -373,6 +376,46 @@ async fn run_app(cli: &Cli) -> Result<(), Box<dyn std::error::Error>> {
         jwt,
     )?;
 
+    // Load plugins from the plugins directory
+    info!("Loading plugins...");
+    let plugins_dir = std::env::current_dir()?.join("plugins");
+    let mut plugin_loader = PluginLoader::new(&plugins_dir);
+
+    // Register plugin factories - these map plugin IDs to their Rust implementations
+    plugin_loader.register_factory("visual-queue-manager", || {
+        Arc::new(visual_queue_manager::VisualQueueManager::new())
+    });
+    plugin_loader.register_factory("rustbuilder", || {
+        Arc::new(rustbuilder::RustBuilderPlugin::new())
+    });
+
+    // Create app context for plugin activation
+    let app_context = AppContext::new(config.clone());
+
+    // Load and activate all discovered plugins
+    match plugin_loader
+        .load_all(state.plugins.clone(), &app_context)
+        .await
+    {
+        Ok(result) => {
+            info!(
+                loaded = result.loaded.len(),
+                skipped = result.skipped.len(),
+                errors = result.errors.len(),
+                "Plugin loading complete"
+            );
+            for plugin_id in &result.loaded {
+                info!(plugin_id = %plugin_id, "Plugin loaded and activated");
+            }
+            for error in &result.errors {
+                warn!("Plugin error: {}", error);
+            }
+        }
+        Err(e) => {
+            warn!("Failed to load plugins: {}", e);
+        }
+    }
+
     // Auto-scan themes on startup
     info!("Scanning themes directory...");
     match state.theme_manager().scan_themes().await {
@@ -392,6 +435,29 @@ async fn run_app(cli: &Cli) -> Result<(), Box<dyn std::error::Error>> {
         Err(e) => {
             warn!("Failed to scan themes: {}", e);
         }
+    }
+
+    // Auto-discover apps
+    info!("Discovering apps...");
+    let apps_dir = std::env::current_dir()?.join("apps");
+    let app_discovery = DiscoveryService::new(&apps_dir);
+    let app_result = app_discovery.discover(ComponentType::App).await;
+    info!(
+        discovered = app_result.discovered.len(),
+        errors = app_result.errors.len(),
+        skipped = app_result.skipped.len(),
+        "App discovery complete"
+    );
+    for app in &app_result.discovered {
+        info!(
+            app_id = %app.id,
+            app_name = %app.name,
+            version = %app.version,
+            "Discovered app"
+        );
+    }
+    for error in &app_result.errors {
+        warn!("App discovery error: {}", error);
     }
 
     // Create server address

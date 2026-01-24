@@ -1,8 +1,8 @@
 //! Worker Data Models
 
-use serde::{Serialize, Deserialize};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validator::Validate;
 
 /// Worker status
@@ -119,9 +119,15 @@ pub struct CreateWorkerGroupRequest {
     pub metadata: serde_json::Value,
 }
 
-fn default_scale_up_threshold() -> f64 { 0.8 }
-fn default_scale_down_threshold() -> f64 { 0.2 }
-fn default_cooldown() -> i32 { 300 }
+fn default_scale_up_threshold() -> f64 {
+    0.8
+}
+fn default_scale_down_threshold() -> f64 {
+    0.2
+}
+fn default_cooldown() -> i32 {
+    300
+}
 
 /// Scale worker group request
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]

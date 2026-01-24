@@ -5,23 +5,23 @@
 // metrics retrieval, and administrative operations.
 // =============================================================================
 
-pub mod queues;
-pub mod messages;
-pub mod workers;
-pub mod metrics;
 pub mod admin;
 pub mod handlers;
-pub mod subscriptions;
+pub mod messages;
+pub mod metrics;
+pub mod queues;
 pub mod scheduled;
+pub mod subscriptions;
+pub mod workers;
 
+use crate::VisualQueueManager;
 use axum::{
-    Router,
-    routing::{get, post, put, patch, delete},
-    middleware,
     extract::Extension,
+    middleware,
+    routing::{delete, get, patch, post, put},
+    Router,
 };
 use std::sync::Arc;
-use crate::VisualQueueManager;
 
 // -----------------------------------------------------------------------------
 // API Router Configuration
@@ -54,9 +54,9 @@ pub fn build_router(plugin: Arc<VisualQueueManager>) -> Router {
 // Common API Types
 // -----------------------------------------------------------------------------
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 /// Standard API response wrapper
 #[derive(Debug, Serialize)]
@@ -177,8 +177,12 @@ pub struct PaginationParams {
     pub per_page: i32,
 }
 
-fn default_page() -> i32 { 1 }
-fn default_per_page() -> i32 { 20 }
+fn default_page() -> i32 {
+    1
+}
+fn default_per_page() -> i32 {
+    20
+}
 
 /// Common sorting parameters
 #[derive(Debug, Deserialize)]
@@ -189,7 +193,9 @@ pub struct SortParams {
     pub sort_order: String,
 }
 
-fn default_sort_order() -> String { "desc".to_string() }
+fn default_sort_order() -> String {
+    "desc".to_string()
+}
 
 /// Date range filter
 #[derive(Debug, Deserialize)]
@@ -203,8 +209,8 @@ pub struct DateRangeParams {
 // -----------------------------------------------------------------------------
 
 use axum::{
-    response::{IntoResponse, Response},
     http::StatusCode,
+    response::{IntoResponse, Response},
     Json,
 };
 
@@ -227,7 +233,10 @@ impl AppError {
     }
 
     pub fn internal(message: impl Into<String>) -> Self {
-        Self::new(StatusCode::INTERNAL_SERVER_ERROR, ApiError::internal(message))
+        Self::new(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            ApiError::internal(message),
+        )
     }
 
     pub fn unauthorized() -> Self {
@@ -316,7 +325,8 @@ where
         // This integrates with RustPress's authentication system
 
         // Get auth header or session cookie
-        let auth_header = parts.headers
+        let auth_header = parts
+            .headers
             .get("Authorization")
             .and_then(|h| h.to_str().ok());
 
@@ -327,11 +337,13 @@ where
         }
 
         // Check session cookie
-        let session_cookie = parts.headers
+        let session_cookie = parts
+            .headers
             .get("Cookie")
             .and_then(|h| h.to_str().ok())
             .and_then(|cookies| {
-                cookies.split(';')
+                cookies
+                    .split(';')
                     .find(|c| c.trim().starts_with("rustpress_session="))
                     .map(|c| c.trim().strip_prefix("rustpress_session=").unwrap_or(""))
             });
@@ -414,9 +426,8 @@ impl RateLimiter {
 use validator::Validate;
 
 pub fn validate_request<T: Validate>(data: &T) -> Result<(), AppError> {
-    data.validate().map_err(|e| {
-        AppError::validation(format!("Validation failed: {}", e))
-    })
+    data.validate()
+        .map_err(|e| AppError::validation(format!("Validation failed: {}", e)))
 }
 
 // -----------------------------------------------------------------------------

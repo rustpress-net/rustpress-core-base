@@ -6,22 +6,21 @@
 // =============================================================================
 
 use axum::{
-    Router,
-    routing::{get, post, put, delete},
-    extract::{Path, Query, Extension, Json},
+    extract::{Extension, Json, Path, Query},
     http::StatusCode,
+    routing::{delete, get, post, put},
+    Router,
 };
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use validator::Validate;
 use std::sync::Arc;
+use uuid::Uuid;
+use validator::Validate;
 
 use super::{
-    ApiResponse, ApiError, AppError, ResponseMeta,
-    PaginationParams, AuthUser,
-    validate_request, parse_uuid,
+    parse_uuid, validate_request, ApiError, ApiResponse, AppError, AuthUser, PaginationParams,
+    ResponseMeta,
 };
 use crate::VisualQueueManager;
 
@@ -280,7 +279,9 @@ async fn create_handler(
     let config_json = serde_json::to_value(&req.config)
         .map_err(|_| AppError::internal("Failed to serialize config"))?;
 
-    let retry_config = req.retry_config.map(|c| serde_json::to_value(c).unwrap())
+    let retry_config = req
+        .retry_config
+        .map(|c| serde_json::to_value(c).unwrap())
         .unwrap_or(serde_json::json!({
             "max_retries": 3,
             "retry_delay_ms": 1000,
@@ -288,7 +289,9 @@ async fn create_handler(
             "max_delay_ms": 30000
         }));
 
-    let cb_config = req.circuit_breaker_config.map(|c| serde_json::to_value(c).unwrap())
+    let cb_config = req
+        .circuit_breaker_config
+        .map(|c| serde_json::to_value(c).unwrap())
         .unwrap_or(serde_json::json!({
             "failure_threshold": 5,
             "success_threshold": 2,
@@ -301,7 +304,7 @@ async fn create_handler(
             id, name, description, event_types, handler_type, config,
             priority, is_enabled, retry_config, circuit_breaker_config
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        "#
+        "#,
     )
     .bind(handler_id)
     .bind(&req.name)
@@ -322,7 +325,7 @@ async fn create_handler(
             r#"
             INSERT INTO vqm_handler_routes (handler_id, event_type, priority)
             VALUES ($1, $2, $3)
-            "#
+            "#,
         )
         .bind(handler_id)
         .bind(event_type)
@@ -331,15 +334,17 @@ async fn create_handler(
         .await?;
     }
 
-    plugin.log_audit(
-        "handler.created",
-        "event_handler",
-        "create",
-        Some(handler_id),
-        Some(&req.name),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "handler.created",
+            "event_handler",
+            "create",
+            Some(handler_id),
+            Some(&req.name),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     let handler = get_handler_by_id(pool, handler_id).await?;
 
@@ -382,10 +387,14 @@ async fn update_handler(
     let config_json = serde_json::to_value(&req.config)
         .map_err(|_| AppError::internal("Failed to serialize config"))?;
 
-    let retry_config = req.retry_config.map(|c| serde_json::to_value(c).unwrap())
+    let retry_config = req
+        .retry_config
+        .map(|c| serde_json::to_value(c).unwrap())
         .unwrap_or(serde_json::json!({}));
 
-    let cb_config = req.circuit_breaker_config.map(|c| serde_json::to_value(c).unwrap())
+    let cb_config = req
+        .circuit_breaker_config
+        .map(|c| serde_json::to_value(c).unwrap())
         .unwrap_or(serde_json::json!({}));
 
     sqlx::query(
@@ -395,7 +404,7 @@ async fn update_handler(
             config = $5, priority = $6, is_enabled = $7, retry_config = $8,
             circuit_breaker_config = $9, updated_at = CURRENT_TIMESTAMP
         WHERE id = $10
-        "#
+        "#,
     )
     .bind(&req.name)
     .bind(&req.description)
@@ -410,15 +419,17 @@ async fn update_handler(
     .execute(pool)
     .await?;
 
-    plugin.log_audit(
-        "handler.updated",
-        "event_handler",
-        "update",
-        Some(handler_id),
-        Some(&req.name),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "handler.updated",
+            "event_handler",
+            "update",
+            Some(handler_id),
+            Some(&req.name),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     let handler = get_handler_by_id(pool, handler_id).await?;
 
@@ -450,15 +461,17 @@ async fn delete_handler(
         .execute(pool)
         .await?;
 
-    plugin.log_audit(
-        "handler.deleted",
-        "event_handler",
-        "delete",
-        Some(handler_id),
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "handler.deleted",
+            "event_handler",
+            "delete",
+            Some(handler_id),
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -512,7 +525,7 @@ async fn get_handler_executions(
         WHERE handler_id = $1
         ORDER BY started_at DESC
         LIMIT $2 OFFSET $3
-        "#
+        "#,
     )
     .bind(handler_id)
     .bind(params.per_page)
@@ -546,15 +559,14 @@ async fn test_handler(
     let result = match handler.handler_type.as_str() {
         "webhook" => {
             // Test webhook call
-            let url = handler.config.get("url")
+            let url = handler
+                .config
+                .get("url")
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| AppError::validation("Webhook URL not configured"))?;
 
             let client = reqwest::Client::new();
-            let response = client.post(url)
-                .json(&req.payload)
-                .send()
-                .await;
+            let response = client.post(url).json(&req.payload).send().await;
 
             match response {
                 Ok(resp) => {
@@ -571,18 +583,18 @@ async fn test_handler(
         }
         "queue" => {
             // Test queue routing
-            let target_queue_id = handler.config.get("target_queue_id")
+            let target_queue_id = handler
+                .config
+                .get("target_queue_id")
                 .and_then(|v| v.as_str())
                 .and_then(|s| Uuid::parse_str(s).ok())
                 .ok_or_else(|| AppError::validation("Target queue not configured"))?;
 
             // Verify queue exists
-            let exists: Option<(Uuid,)> = sqlx::query_as(
-                "SELECT id FROM vqm_queues WHERE id = $1"
-            )
-            .bind(target_queue_id)
-            .fetch_optional(pool)
-            .await?;
+            let exists: Option<(Uuid,)> = sqlx::query_as("SELECT id FROM vqm_queues WHERE id = $1")
+                .bind(target_queue_id)
+                .fetch_optional(pool)
+                .await?;
 
             if exists.is_some() {
                 Ok(serde_json::json!({ "target_queue_id": target_queue_id, "routed": true }))
@@ -632,7 +644,7 @@ async fn list_handler_routes(
         FROM vqm_handler_routes
         WHERE handler_id = $1
         ORDER BY priority DESC
-        "#
+        "#,
     )
     .bind(handler_id)
     .fetch_all(pool)
@@ -660,7 +672,7 @@ async fn create_handler_route(
         r#"
         INSERT INTO vqm_handler_routes (id, handler_id, event_type, condition, priority)
         VALUES ($1, $2, $3, $4, $5)
-        "#
+        "#,
     )
     .bind(route_id)
     .bind(handler_id)
@@ -722,7 +734,7 @@ async fn get_circuit_breaker_status(
                cb_last_failure_at, cb_last_state_change
         FROM vqm_event_handlers
         WHERE id = $1
-        "#
+        "#,
     )
     .bind(handler_id)
     .fetch_optional(pool)
@@ -770,21 +782,23 @@ async fn reset_circuit_breaker(
             cb_success_count = 0,
             cb_last_state_change = CURRENT_TIMESTAMP
         WHERE id = $1
-        "#
+        "#,
     )
     .bind(handler_id)
     .execute(pool)
     .await?;
 
-    plugin.log_audit(
-        "handler.circuit_breaker_reset",
-        "event_handler",
-        "reset_circuit_breaker",
-        Some(handler_id),
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "handler.circuit_breaker_reset",
+            "event_handler",
+            "reset_circuit_breaker",
+            Some(handler_id),
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     // Return updated status
     get_circuit_breaker_status(Extension(plugin), Path(id), auth).await
@@ -848,7 +862,7 @@ async fn get_handler_by_id(pool: &PgPool, handler_id: Uuid) -> Result<HandlerRes
                last_execution_at, created_at, updated_at
         FROM vqm_event_handlers
         WHERE id = $1
-        "#
+        "#,
     )
     .bind(handler_id)
     .fetch_optional(pool)

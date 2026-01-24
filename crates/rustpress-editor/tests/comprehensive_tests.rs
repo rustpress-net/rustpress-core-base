@@ -15,20 +15,19 @@
 //! - Block transformations
 //! - Nested blocks and ordering
 
+use chrono::{Duration, Utc};
 use rustpress_editor::blocks::{
-    Block, BlockType, BlockCategory, BlockAttributes,
-    BlockTransformer, BlockSerializer, ListType, SeparatorStyle, ButtonStyle,
-    AlertType, TextAlign, Spacing,
-};
-use rustpress_editor::post::{
-    PostDocument, PostContent, PostFormat, PublishStatus,
-    FeaturedMedia, Author, Term, CommentStatus, RevisionType, HeadingCounts,
+    AlertType, Block, BlockAttributes, BlockCategory, BlockSerializer, BlockTransformer, BlockType,
+    ButtonStyle, ListType, SeparatorStyle, Spacing, TextAlign,
 };
 use rustpress_editor::collaboration::{
-    CollaborationSession, CollaboratorInfo, CollaboratorRole, CursorInfo,
-    Operation, OperationType, get_collaborator_color, CURSOR_COLORS,
+    get_collaborator_color, CollaborationSession, CollaboratorInfo, CollaboratorRole, CursorInfo,
+    Operation, OperationType, CURSOR_COLORS,
 };
-use chrono::{Utc, Duration};
+use rustpress_editor::post::{
+    Author, CommentStatus, FeaturedMedia, HeadingCounts, PostContent, PostDocument, PostFormat,
+    PublishStatus, RevisionType, Term,
+};
 use std::collections::HashSet;
 
 // ============================================================================
@@ -98,7 +97,10 @@ fn test_008_block_type_spacer() {
 fn test_009_block_type_separator() {
     let block = Block::new(BlockType::Separator);
     assert_eq!(block.block_type, BlockType::Separator);
-    assert_eq!(block.attributes.separator_style, Some(SeparatorStyle::Solid));
+    assert_eq!(
+        block.attributes.separator_style,
+        Some(SeparatorStyle::Solid)
+    );
 }
 
 #[test]
@@ -165,7 +167,10 @@ fn test_016_category_widget_blocks() {
 fn test_017_block_type_display_name() {
     assert_eq!(BlockType::Paragraph.display_name(), "Paragraph");
     assert_eq!(BlockType::Heading.display_name(), "Heading");
-    assert_eq!(BlockType::TableOfContents.display_name(), "Table of Contents");
+    assert_eq!(
+        BlockType::TableOfContents.display_name(),
+        "Table of Contents"
+    );
     assert_eq!(BlockType::MediaText.display_name(), "Media & Text");
 }
 
@@ -264,7 +269,10 @@ fn test_029_block_styles_padding_individual() {
         bottom: Some("10px".to_string()),
         left: Some("20px".to_string()),
     });
-    assert!(matches!(block.styles.padding, Some(Spacing::Individual { .. })));
+    assert!(matches!(
+        block.styles.padding,
+        Some(Spacing::Individual { .. })
+    ));
 }
 
 #[test]
@@ -568,9 +576,18 @@ fn test_058_post_format_variants() {
     for format in formats {
         let mut post = PostDocument::new_post("Test");
         post.format = format;
-        assert!(matches!(post.format, PostFormat::Standard | PostFormat::Aside |
-            PostFormat::Gallery | PostFormat::Link | PostFormat::Image |
-            PostFormat::Quote | PostFormat::Video | PostFormat::Audio | _));
+        assert!(matches!(
+            post.format,
+            PostFormat::Standard
+                | PostFormat::Aside
+                | PostFormat::Gallery
+                | PostFormat::Link
+                | PostFormat::Image
+                | PostFormat::Quote
+                | PostFormat::Video
+                | PostFormat::Audio
+                | _
+        ));
     }
 }
 
@@ -866,21 +883,15 @@ fn test_085_post_revision_invalid_restore() {
 fn test_086_post_revision_type() {
     use rustpress_editor::post::PostRevision;
 
-    let revision = PostRevision::autosave(
-        1,
-        1,
-        "Test".to_string(),
-        PostContent::default(),
-        None,
-    );
+    let revision = PostRevision::autosave(1, 1, "Test".to_string(), PostContent::default(), None);
 
     assert_eq!(revision.revision_type, RevisionType::Autosave);
 }
 
 #[test]
 fn test_087_post_revision_changes_calculation() {
-    use rustpress_editor::post::RevisionChanges;
     use rustpress_editor::post::PostRevision;
+    use rustpress_editor::post::RevisionChanges;
 
     let old = PostRevision::new(1, 1, "Old".to_string(), PostContent::default(), None, None);
     let new = PostRevision::new(2, 1, "New".to_string(), PostContent::default(), None, None);
@@ -1002,8 +1013,14 @@ fn test_099_featured_media_get_url_for_size() {
     let mut media = FeaturedMedia::from_url(1, "https://example.com/image.jpg".to_string());
     media.sizes.thumbnail = Some("https://example.com/thumb.jpg".to_string());
 
-    assert_eq!(media.get_url_for_size(ImageSize::Thumbnail), "https://example.com/thumb.jpg");
-    assert_eq!(media.get_url_for_size(ImageSize::Full), "https://example.com/image.jpg");
+    assert_eq!(
+        media.get_url_for_size(ImageSize::Thumbnail),
+        "https://example.com/thumb.jpg"
+    );
+    assert_eq!(
+        media.get_url_for_size(ImageSize::Full),
+        "https://example.com/image.jpg"
+    );
 }
 
 #[test]
@@ -1278,7 +1295,10 @@ fn test_122_post_get_block() {
 
     let found = post.get_block(id);
     assert!(found.is_some());
-    assert_eq!(found.unwrap().attributes.content, Some("Test content".to_string()));
+    assert_eq!(
+        found.unwrap().attributes.content,
+        Some("Test content".to_string())
+    );
 }
 
 #[test]
@@ -1292,7 +1312,10 @@ fn test_123_post_get_block_mut() {
         b.attributes.content = Some("Modified".to_string());
     }
 
-    assert_eq!(post.get_block(id).unwrap().attributes.content, Some("Modified".to_string()));
+    assert_eq!(
+        post.get_block(id).unwrap().attributes.content,
+        Some("Modified".to_string())
+    );
 }
 
 // ============================================================================
@@ -1351,7 +1374,10 @@ fn test_127_nested_blocks_deep() {
     section.children.push(group);
 
     // Verify 4 levels of nesting
-    assert_eq!(section.children[0].children[0].children[0].children.len(), 1);
+    assert_eq!(
+        section.children[0].children[0].children[0].children.len(),
+        1
+    );
 }
 
 #[test]
@@ -1578,7 +1604,10 @@ fn test_144_block_meta_locked() {
 #[test]
 fn test_145_block_meta_html_attributes() {
     let mut block = Block::new(BlockType::Button);
-    block.meta.html_attributes.insert("data-action".to_string(), "submit".to_string());
+    block
+        .meta
+        .html_attributes
+        .insert("data-action".to_string(), "submit".to_string());
 
     assert!(block.meta.html_attributes.contains_key("data-action"));
 }

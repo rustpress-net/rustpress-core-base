@@ -6,22 +6,21 @@
 // =============================================================================
 
 use axum::{
-    Router,
-    routing::{get, post, put, delete},
-    extract::{Path, Query, Extension, Json},
+    extract::{Extension, Json, Path, Query},
     http::StatusCode,
+    routing::{delete, get, post, put},
+    Router,
 };
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use validator::Validate;
 use std::sync::Arc;
+use uuid::Uuid;
+use validator::Validate;
 
 use super::{
-    ApiResponse, ApiError, AppError, ResponseMeta,
-    PaginationParams, AuthUser,
-    validate_request, parse_uuid,
+    parse_uuid, validate_request, ApiError, ApiResponse, AppError, AuthUser, PaginationParams,
+    ResponseMeta,
 };
 use crate::VisualQueueManager;
 
@@ -225,7 +224,8 @@ async fn list_subscriptions(
     .fetch_one(pool)
     .await?;
 
-    let responses: Vec<SubscriptionResponse> = subscriptions.into_iter().map(|s| s.into()).collect();
+    let responses: Vec<SubscriptionResponse> =
+        subscriptions.into_iter().map(|s| s.into()).collect();
     let meta = ResponseMeta::new(total.0, params.pagination.page, params.pagination.per_page);
 
     Ok(Json(ApiResponse::success_with_meta(responses, meta)))
@@ -258,7 +258,7 @@ async fn create_subscription(
             id, name, description, subscription_type, event_types,
             config, filter, is_active, secret_key, created_by
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        "#
+        "#,
     )
     .bind(sub_id)
     .bind(&req.name)
@@ -273,21 +273,26 @@ async fn create_subscription(
     .execute(pool)
     .await?;
 
-    plugin.log_audit(
-        "subscription.created",
-        "subscription",
-        "create",
-        Some(sub_id),
-        Some(&req.name),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "subscription.created",
+            "subscription",
+            "create",
+            Some(sub_id),
+            Some(&req.name),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     let mut subscription = get_subscription_by_id(pool, sub_id).await?;
     // Include secret key only on creation
     subscription.secret_key = Some(secret_key);
 
-    Ok((StatusCode::CREATED, Json(ApiResponse::success(subscription))))
+    Ok((
+        StatusCode::CREATED,
+        Json(ApiResponse::success(subscription)),
+    ))
 }
 
 /// Get subscription
@@ -333,7 +338,7 @@ async fn update_subscription(
             event_types = $4, config = $5, filter = $6, is_active = $7,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $8
-        "#
+        "#,
     )
     .bind(&req.name)
     .bind(&req.description)
@@ -346,15 +351,17 @@ async fn update_subscription(
     .execute(pool)
     .await?;
 
-    plugin.log_audit(
-        "subscription.updated",
-        "subscription",
-        "update",
-        Some(sub_id),
-        Some(&req.name),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "subscription.updated",
+            "subscription",
+            "update",
+            Some(sub_id),
+            Some(&req.name),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     let subscription = get_subscription_by_id(pool, sub_id).await?;
 
@@ -379,15 +386,17 @@ async fn delete_subscription(
         .execute(pool)
         .await?;
 
-    plugin.log_audit(
-        "subscription.deleted",
-        "subscription",
-        "delete",
-        Some(sub_id),
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "subscription.deleted",
+            "subscription",
+            "delete",
+            Some(sub_id),
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -441,7 +450,7 @@ async fn get_deliveries(
         WHERE subscription_id = $1
         ORDER BY delivered_at DESC
         LIMIT $2 OFFSET $3
-        "#
+        "#,
     )
     .bind(sub_id)
     .bind(params.per_page)
@@ -450,7 +459,7 @@ async fn get_deliveries(
     .await?;
 
     let total: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM vqm_subscription_deliveries WHERE subscription_id = $1"
+        "SELECT COUNT(*) FROM vqm_subscription_deliveries WHERE subscription_id = $1",
     )
     .bind(sub_id)
     .fetch_one(pool)
@@ -472,7 +481,8 @@ async fn retry_delivery(
     }
 
     let sub_id = parse_uuid(&id)?;
-    let delivery_id: i64 = delivery_id.parse()
+    let delivery_id: i64 = delivery_id
+        .parse()
         .map_err(|_| AppError::validation("Invalid delivery ID"))?;
 
     let pool = plugin.db_pool();
@@ -484,25 +494,21 @@ async fn retry_delivery(
         FROM vqm_subscription_deliveries d
         JOIN vqm_subscription_events e ON d.event_id = e.id
         WHERE d.id = $1 AND d.subscription_id = $2
-        "#
+        "#,
     )
     .bind(delivery_id)
     .bind(sub_id)
     .fetch_optional(pool)
     .await?;
 
-    let (event_type, event_id, payload) = delivery
-        .ok_or_else(|| AppError::not_found("Delivery"))?;
+    let (event_type, event_id, payload) =
+        delivery.ok_or_else(|| AppError::not_found("Delivery"))?;
 
     // Get subscription config
     let subscription = get_subscription_by_id(pool, sub_id).await?;
 
     // Attempt redelivery
-    let result = deliver_webhook(
-        &subscription,
-        &event_type,
-        &payload,
-    ).await;
+    let result = deliver_webhook(&subscription, &event_type, &payload).await;
 
     // Record new delivery attempt
     let new_delivery: DeliveryRecord = match result {
@@ -516,7 +522,7 @@ async fn retry_delivery(
                 RETURNING id, subscription_id, event_type, event_id, status,
                           attempt, http_status, response_body, error_message,
                           delivered_at, duration_ms
-                "#
+                "#,
             )
             .bind(sub_id)
             .bind(&event_type)
@@ -537,7 +543,7 @@ async fn retry_delivery(
                 RETURNING id, subscription_id, event_type, event_id, status,
                           attempt, http_status, response_body, error_message,
                           delivered_at, duration_ms
-                "#
+                "#,
             )
             .bind(sub_id)
             .bind(&event_type)
@@ -608,10 +614,14 @@ async fn verify_subscription(
     let subscription = get_subscription_by_id(pool, sub_id).await?;
 
     if subscription.subscription_type != "webhook" {
-        return Err(AppError::validation("Only webhook subscriptions can be verified"));
+        return Err(AppError::validation(
+            "Only webhook subscriptions can be verified",
+        ));
     }
 
-    let url = subscription.config.get("url")
+    let url = subscription
+        .config
+        .get("url")
         .and_then(|v| v.as_str())
         .ok_or_else(|| AppError::validation("Webhook URL not configured"))?;
 
@@ -625,10 +635,7 @@ async fn verify_subscription(
         "subscription_id": sub_id
     });
 
-    let response = client.post(url)
-        .json(&verification_payload)
-        .send()
-        .await;
+    let response = client.post(url).json(&verification_payload).send().await;
 
     match response {
         Ok(resp) => {
@@ -647,9 +654,14 @@ async fn verify_subscription(
                 return Ok(Json(ApiResponse::success(updated)));
             }
 
-            Err(AppError::validation("Verification challenge not echoed correctly"))
+            Err(AppError::validation(
+                "Verification challenge not echoed correctly",
+            ))
         }
-        Err(e) => Err(AppError::validation(format!("Verification request failed: {}", e))),
+        Err(e) => Err(AppError::validation(format!(
+            "Verification request failed: {}",
+            e
+        ))),
     }
 }
 
@@ -676,15 +688,17 @@ async fn regenerate_secret(
     .execute(pool)
     .await?;
 
-    plugin.log_audit(
-        "subscription.secret_regenerated",
-        "subscription",
-        "regenerate_secret",
-        Some(sub_id),
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "subscription.secret_regenerated",
+            "subscription",
+            "regenerate_secret",
+            Some(sub_id),
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(Json(ApiResponse::success(SecretResponse {
         secret_key: new_secret,
@@ -712,7 +726,7 @@ async fn list_ws_connections(
         WHERE is_active = true
         ORDER BY connected_at DESC
         LIMIT $1 OFFSET $2
-        "#
+        "#,
     )
     .bind(params.per_page)
     .bind(offset)
@@ -744,15 +758,21 @@ async fn deliver_webhook(
     event_type: &str,
     payload: &serde_json::Value,
 ) -> Result<(i32, Option<String>, i64), String> {
-    let url = subscription.config.get("url")
+    let url = subscription
+        .config
+        .get("url")
         .and_then(|v| v.as_str())
         .ok_or("Webhook URL not configured")?;
 
-    let method = subscription.config.get("method")
+    let method = subscription
+        .config
+        .get("method")
         .and_then(|v| v.as_str())
         .unwrap_or("POST");
 
-    let timeout_ms = subscription.config.get("timeout_ms")
+    let timeout_ms = subscription
+        .config
+        .get("timeout_ms")
         .and_then(|v| v.as_i64())
         .unwrap_or(30000) as u64;
 
@@ -778,7 +798,11 @@ async fn deliver_webhook(
     // Add custom headers if configured
     let mut request = request.json(&event_payload);
 
-    if let Some(headers) = subscription.config.get("headers").and_then(|v| v.as_object()) {
+    if let Some(headers) = subscription
+        .config
+        .get("headers")
+        .and_then(|v| v.as_object())
+    {
         for (key, value) in headers {
             if let Some(v) = value.as_str() {
                 request = request.header(key.as_str(), v);
@@ -850,7 +874,10 @@ impl From<SubscriptionRow> for SubscriptionResponse {
     }
 }
 
-async fn get_subscription_by_id(pool: &PgPool, sub_id: Uuid) -> Result<SubscriptionResponse, AppError> {
+async fn get_subscription_by_id(
+    pool: &PgPool,
+    sub_id: Uuid,
+) -> Result<SubscriptionResponse, AppError> {
     let row: SubscriptionRow = sqlx::query_as(
         r#"
         SELECT id, name, description, subscription_type, event_types, config,
@@ -858,7 +885,7 @@ async fn get_subscription_by_id(pool: &PgPool, sub_id: Uuid) -> Result<Subscript
                failure_count, last_delivery_at, created_at, updated_at
         FROM vqm_subscriptions
         WHERE id = $1
-        "#
+        "#,
     )
     .bind(sub_id)
     .fetch_optional(pool)

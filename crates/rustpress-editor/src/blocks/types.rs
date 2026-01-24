@@ -1064,8 +1064,8 @@ pub struct VisibilitySchedule {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockAnimation {
     pub animation_type: AnimationType,
-    pub duration: u32,      // milliseconds
-    pub delay: u32,         // milliseconds
+    pub duration: u32, // milliseconds
+    pub delay: u32,    // milliseconds
     pub easing: String,
     pub trigger: AnimationTrigger,
     pub repeat: bool,

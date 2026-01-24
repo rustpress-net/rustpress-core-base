@@ -58,8 +58,14 @@ impl ComplianceManager {
     }
 
     /// Check retention policy compliance
-    pub async fn check_retention(&self, resource_type: &str, created_at: chrono::DateTime<chrono::Utc>) -> RetentionStatus {
-        self.retention_manager.check(resource_type, created_at).await
+    pub async fn check_retention(
+        &self,
+        resource_type: &str,
+        created_at: chrono::DateTime<chrono::Utc>,
+    ) -> RetentionStatus {
+        self.retention_manager
+            .check(resource_type, created_at)
+            .await
     }
 
     /// Get audit logger reference
@@ -97,10 +103,7 @@ impl ComplianceManager {
             if pii_result.contains_pii && !action.allow_pii {
                 violations.push(ComplianceViolation {
                     rule: "PII_DETECTED".to_string(),
-                    message: format!(
-                        "PII detected: {:?}",
-                        pii_result.detected_types
-                    ),
+                    message: format!("PII detected: {:?}", pii_result.detected_types),
                     severity: ViolationSeverity::High,
                 });
             }
@@ -108,8 +111,7 @@ impl ComplianceManager {
 
         // Check geo restrictions
         if let Some(ref geo) = action.geo_location {
-            if !self.config.allowed_regions.is_empty()
-                && !self.config.allowed_regions.contains(geo)
+            if !self.config.allowed_regions.is_empty() && !self.config.allowed_regions.contains(geo)
             {
                 violations.push(ComplianceViolation {
                     rule: "GEO_RESTRICTION".to_string(),
@@ -296,7 +298,8 @@ impl DataClassifier {
             },
             ClassificationRule {
                 name: "api_key".to_string(),
-                pattern: r#"(?i)(api[_-]?key|apikey|access[_-]?token)\s*[:=]\s*['"]?[\w-]+['"]?"#.to_string(),
+                pattern: r#"(?i)(api[_-]?key|apikey|access[_-]?token)\s*[:=]\s*['"]?[\w-]+['"]?"#
+                    .to_string(),
                 classification: ClassificationLevel::Restricted,
             },
         ]

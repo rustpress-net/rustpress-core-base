@@ -247,8 +247,14 @@ impl WxrParser {
                             let mut cat = WxrItemCategory::default();
                             for attr in e.attributes().flatten() {
                                 match attr.key.as_ref() {
-                                    b"domain" => cat.domain = String::from_utf8_lossy(&attr.value).to_string(),
-                                    b"nicename" => cat.nicename = String::from_utf8_lossy(&attr.value).to_string(),
+                                    b"domain" => {
+                                        cat.domain =
+                                            String::from_utf8_lossy(&attr.value).to_string()
+                                    }
+                                    b"nicename" => {
+                                        cat.nicename =
+                                            String::from_utf8_lossy(&attr.value).to_string()
+                                    }
                                     _ => {}
                                 }
                             }
@@ -315,8 +321,12 @@ impl WxrParser {
                             "wp:comment_content" => current_comment.content = text,
                             "wp:comment_approved" => current_comment.approved = text,
                             "wp:comment_type" => current_comment.comment_type = text,
-                            "wp:comment_parent" => current_comment.parent = text.parse().unwrap_or(0),
-                            "wp:comment_user_id" => current_comment.user_id = text.parse().unwrap_or(0),
+                            "wp:comment_parent" => {
+                                current_comment.parent = text.parse().unwrap_or(0)
+                            }
+                            "wp:comment_user_id" => {
+                                current_comment.user_id = text.parse().unwrap_or(0)
+                            }
                             _ => {}
                         }
                     } else if in_author {
@@ -360,12 +370,16 @@ impl WxrParser {
                             "wp:post_date" => current_item.post_date = parse_date(&text),
                             "wp:post_date_gmt" => current_item.post_date_gmt = parse_date(&text),
                             "wp:post_modified" => current_item.post_modified = parse_date(&text),
-                            "wp:post_modified_gmt" => current_item.post_modified_gmt = parse_date(&text),
+                            "wp:post_modified_gmt" => {
+                                current_item.post_modified_gmt = parse_date(&text)
+                            }
                             "wp:comment_status" => current_item.comment_status = text,
                             "wp:ping_status" => current_item.ping_status = text,
                             "wp:post_name" => current_item.post_name = text,
                             "wp:status" => current_item.status = text,
-                            "wp:post_parent" => current_item.post_parent = text.parse().unwrap_or(0),
+                            "wp:post_parent" => {
+                                current_item.post_parent = text.parse().unwrap_or(0)
+                            }
                             "wp:menu_order" => current_item.menu_order = text.parse().unwrap_or(0),
                             "wp:post_type" => current_item.post_type = text,
                             "wp:post_password" => current_item.post_password = text,
@@ -424,7 +438,11 @@ impl WxrWriter {
         let mut writer = Writer::new_with_indent(Cursor::new(&mut buffer), b' ', 2);
 
         // XML declaration
-        writer.write_event(Event::Decl(quick_xml::events::BytesDecl::new("1.0", Some("UTF-8"), None)))?;
+        writer.write_event(Event::Decl(quick_xml::events::BytesDecl::new(
+            "1.0",
+            Some("UTF-8"),
+            None,
+        )))?;
 
         // RSS root element with namespaces
         let mut rss = BytesStart::new("rss");
@@ -488,7 +506,11 @@ impl WxrWriter {
             Self::write_element(&mut writer, "title", &item.title)?;
             Self::write_element(&mut writer, "link", &item.link)?;
             if let Some(date) = item.pubdate {
-                Self::write_element(&mut writer, "pubDate", &date.format("%a, %d %b %Y %H:%M:%S %z").to_string())?;
+                Self::write_element(
+                    &mut writer,
+                    "pubDate",
+                    &date.format("%a, %d %b %Y %H:%M:%S %z").to_string(),
+                )?;
             }
             Self::write_cdata_element(&mut writer, "dc:creator", &item.creator)?;
             Self::write_element(&mut writer, "guid", &item.guid)?;
@@ -497,10 +519,18 @@ impl WxrWriter {
             Self::write_cdata_element(&mut writer, "excerpt:encoded", &item.excerpt)?;
             Self::write_element(&mut writer, "wp:post_id", &item.post_id.to_string())?;
             if let Some(date) = item.post_date {
-                Self::write_element(&mut writer, "wp:post_date", &date.format("%Y-%m-%d %H:%M:%S").to_string())?;
+                Self::write_element(
+                    &mut writer,
+                    "wp:post_date",
+                    &date.format("%Y-%m-%d %H:%M:%S").to_string(),
+                )?;
             }
             if let Some(date) = item.post_date_gmt {
-                Self::write_element(&mut writer, "wp:post_date_gmt", &date.format("%Y-%m-%d %H:%M:%S").to_string())?;
+                Self::write_element(
+                    &mut writer,
+                    "wp:post_date_gmt",
+                    &date.format("%Y-%m-%d %H:%M:%S").to_string(),
+                )?;
             }
             Self::write_element(&mut writer, "wp:comment_status", &item.comment_status)?;
             Self::write_element(&mut writer, "wp:ping_status", &item.ping_status)?;
@@ -510,7 +540,11 @@ impl WxrWriter {
             Self::write_element(&mut writer, "wp:menu_order", &item.menu_order.to_string())?;
             Self::write_element(&mut writer, "wp:post_type", &item.post_type)?;
             Self::write_element(&mut writer, "wp:post_password", &item.post_password)?;
-            Self::write_element(&mut writer, "wp:is_sticky", if item.is_sticky { "1" } else { "0" })?;
+            Self::write_element(
+                &mut writer,
+                "wp:is_sticky",
+                if item.is_sticky { "1" } else { "0" },
+            )?;
 
             if let Some(ref url) = item.attachment_url {
                 Self::write_element(&mut writer, "wp:attachment_url", url)?;
@@ -539,20 +573,40 @@ impl WxrWriter {
                 writer.write_event(Event::Start(BytesStart::new("wp:comment")))?;
                 Self::write_element(&mut writer, "wp:comment_id", &comment.id.to_string())?;
                 Self::write_cdata_element(&mut writer, "wp:comment_author", &comment.author)?;
-                Self::write_element(&mut writer, "wp:comment_author_email", &comment.author_email)?;
+                Self::write_element(
+                    &mut writer,
+                    "wp:comment_author_email",
+                    &comment.author_email,
+                )?;
                 Self::write_element(&mut writer, "wp:comment_author_url", &comment.author_url)?;
                 Self::write_element(&mut writer, "wp:comment_author_IP", &comment.author_ip)?;
                 if let Some(date) = comment.date {
-                    Self::write_element(&mut writer, "wp:comment_date", &date.format("%Y-%m-%d %H:%M:%S").to_string())?;
+                    Self::write_element(
+                        &mut writer,
+                        "wp:comment_date",
+                        &date.format("%Y-%m-%d %H:%M:%S").to_string(),
+                    )?;
                 }
                 if let Some(date) = comment.date_gmt {
-                    Self::write_element(&mut writer, "wp:comment_date_gmt", &date.format("%Y-%m-%d %H:%M:%S").to_string())?;
+                    Self::write_element(
+                        &mut writer,
+                        "wp:comment_date_gmt",
+                        &date.format("%Y-%m-%d %H:%M:%S").to_string(),
+                    )?;
                 }
                 Self::write_cdata_element(&mut writer, "wp:comment_content", &comment.content)?;
                 Self::write_element(&mut writer, "wp:comment_approved", &comment.approved)?;
                 Self::write_element(&mut writer, "wp:comment_type", &comment.comment_type)?;
-                Self::write_element(&mut writer, "wp:comment_parent", &comment.parent.to_string())?;
-                Self::write_element(&mut writer, "wp:comment_user_id", &comment.user_id.to_string())?;
+                Self::write_element(
+                    &mut writer,
+                    "wp:comment_parent",
+                    &comment.parent.to_string(),
+                )?;
+                Self::write_element(
+                    &mut writer,
+                    "wp:comment_user_id",
+                    &comment.user_id.to_string(),
+                )?;
                 writer.write_event(Event::End(BytesEnd::new("wp:comment")))?;
             }
 
@@ -565,14 +619,22 @@ impl WxrWriter {
         Ok(String::from_utf8(buffer).unwrap_or_default())
     }
 
-    fn write_element<W: Write>(writer: &mut Writer<W>, name: &str, value: &str) -> Result<(), WxrError> {
+    fn write_element<W: Write>(
+        writer: &mut Writer<W>,
+        name: &str,
+        value: &str,
+    ) -> Result<(), WxrError> {
         writer.write_event(Event::Start(BytesStart::new(name)))?;
         writer.write_event(Event::Text(BytesText::new(value)))?;
         writer.write_event(Event::End(BytesEnd::new(name)))?;
         Ok(())
     }
 
-    fn write_cdata_element<W: Write>(writer: &mut Writer<W>, name: &str, value: &str) -> Result<(), WxrError> {
+    fn write_cdata_element<W: Write>(
+        writer: &mut Writer<W>,
+        name: &str,
+        value: &str,
+    ) -> Result<(), WxrError> {
         writer.write_event(Event::Start(BytesStart::new(name)))?;
         writer.write_event(Event::CData(quick_xml::events::BytesCData::new(value)))?;
         writer.write_event(Event::End(BytesEnd::new(name)))?;

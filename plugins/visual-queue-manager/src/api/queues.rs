@@ -6,22 +6,21 @@
 // =============================================================================
 
 use axum::{
-    Router,
-    routing::{get, post, put, patch, delete},
-    extract::{Path, Query, Extension, Json},
+    extract::{Extension, Json, Path, Query},
     http::StatusCode,
+    routing::{delete, get, patch, post, put},
+    Router,
 };
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use validator::Validate;
 use std::sync::Arc;
+use uuid::Uuid;
+use validator::Validate;
 
 use super::{
-    ApiResponse, ApiError, AppError, ResponseMeta,
-    PaginationParams, SortParams, AuthUser,
-    validate_request, parse_uuid,
+    parse_uuid, validate_request, ApiError, ApiResponse, AppError, AuthUser, PaginationParams,
+    ResponseMeta, SortParams,
 };
 use crate::VisualQueueManager;
 
@@ -243,7 +242,7 @@ async fn list_queues(
         LEFT JOIN vqm_queue_tags qt ON q.id = qt.queue_id
         LEFT JOIN vqm_tags t ON qt.tag_id = t.id
         WHERE q.is_system_queue = false
-        "#
+        "#,
     );
 
     // Add filters
@@ -276,22 +275,25 @@ async fn list_queues(
         Some("status") => "q.status",
         _ => "q.created_at",
     };
-    let sort_order = if params.sort.sort_order == "asc" { "ASC" } else { "DESC" };
+    let sort_order = if params.sort.sort_order == "asc" {
+        "ASC"
+    } else {
+        "DESC"
+    };
     query.push_str(&format!(" ORDER BY {} {}", sort_column, sort_order));
-    query.push_str(&format!(" LIMIT {} OFFSET {}", params.pagination.per_page, offset));
+    query.push_str(&format!(
+        " LIMIT {} OFFSET {}",
+        params.pagination.per_page, offset
+    ));
 
     // Execute query
-    let rows: Vec<QueueRow> = sqlx::query_as(&query)
-        .fetch_all(pool)
-        .await?;
+    let rows: Vec<QueueRow> = sqlx::query_as(&query).fetch_all(pool).await?;
 
     // Get total count
     let count_query = r#"
         SELECT COUNT(*) as count FROM vqm_queues WHERE is_system_queue = false
     "#;
-    let total: (i64,) = sqlx::query_as(count_query)
-        .fetch_one(pool)
-        .await?;
+    let total: (i64,) = sqlx::query_as(count_query).fetch_one(pool).await?;
 
     let queues: Vec<QueueResponse> = rows.into_iter().map(|r| r.into()).collect();
     let meta = ResponseMeta::new(total.0, params.pagination.page, params.pagination.per_page);
@@ -314,12 +316,10 @@ async fn create_queue(
     let pool = plugin.db_pool();
 
     // Check for duplicate slug
-    let existing: Option<(Uuid,)> = sqlx::query_as(
-        "SELECT id FROM vqm_queues WHERE slug = $1"
-    )
-    .bind(&req.slug)
-    .fetch_optional(pool)
-    .await?;
+    let existing: Option<(Uuid,)> = sqlx::query_as("SELECT id FROM vqm_queues WHERE slug = $1")
+        .bind(&req.slug)
+        .fetch_optional(pool)
+        .await?;
 
     if existing.is_some() {
         return Err(AppError::conflict("Queue with this slug already exists"));
@@ -339,7 +339,7 @@ async fn create_queue(
         INSERT INTO vqm_queues (
             id, name, slug, description, queue_type, config, group_id, created_by
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        "#
+        "#,
     )
     .bind(queue_id)
     .bind(&req.name)
@@ -361,7 +361,7 @@ async fn create_queue(
                 INSERT INTO vqm_tags (name) VALUES ($1)
                 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
                 RETURNING id
-                "#
+                "#,
             )
             .bind(&tag_name)
             .fetch_one(pool)
@@ -379,15 +379,17 @@ async fn create_queue(
     }
 
     // Log audit event
-    plugin.log_audit(
-        "queue.created",
-        "queue",
-        "create",
-        Some(queue_id),
-        Some(&req.name),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "queue.created",
+            "queue",
+            "create",
+            Some(queue_id),
+            Some(&req.name),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     // Fetch the created queue
     let queue = get_queue_by_id(pool, queue_id).await?;
@@ -445,7 +447,7 @@ async fn update_queue(
         UPDATE vqm_queues
         SET name = $1, description = $2, config = $3, group_id = $4, updated_at = CURRENT_TIMESTAMP
         WHERE id = $5
-        "#
+        "#,
     )
     .bind(&name)
     .bind(&description)
@@ -470,7 +472,7 @@ async fn update_queue(
                 INSERT INTO vqm_tags (name) VALUES ($1)
                 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
                 RETURNING id
-                "#
+                "#,
             )
             .bind(&tag_name)
             .fetch_one(pool)
@@ -487,15 +489,17 @@ async fn update_queue(
     }
 
     // Log audit event
-    plugin.log_audit(
-        "queue.updated",
-        "queue",
-        "update",
-        Some(queue_id),
-        Some(&name),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "queue.updated",
+            "queue",
+            "update",
+            Some(queue_id),
+            Some(&name),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     let queue = get_queue_by_id(pool, queue_id).await?;
     Ok(Json(ApiResponse::success(queue)))
@@ -531,28 +535,30 @@ async fn delete_queue(
     // Check if queue has pending messages
     if queue.pending_count > 0 || queue.processing_count > 0 {
         return Err(AppError::conflict(
-            "Cannot delete queue with pending or processing messages. Purge the queue first."
+            "Cannot delete queue with pending or processing messages. Purge the queue first.",
         ));
     }
 
     // Soft delete the queue
     sqlx::query(
-        "UPDATE vqm_queues SET status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id = $1"
+        "UPDATE vqm_queues SET status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
     )
     .bind(queue_id)
     .execute(pool)
     .await?;
 
     // Log audit event
-    plugin.log_audit(
-        "queue.deleted",
-        "queue",
-        "delete",
-        Some(queue_id),
-        Some(&queue.name),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "queue.deleted",
+            "queue",
+            "delete",
+            Some(queue_id),
+            Some(&queue.name),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -576,7 +582,9 @@ async fn get_queue_stats(
 
     // Calculate time range
     let end_time = params.end_date.unwrap_or_else(Utc::now);
-    let start_time = params.start_date.unwrap_or_else(|| end_time - chrono::Duration::hours(1));
+    let start_time = params
+        .start_date
+        .unwrap_or_else(|| end_time - chrono::Duration::hours(1));
 
     // Get throughput stats
     let throughput: (f64, f64, f64) = sqlx::query_as(
@@ -587,7 +595,7 @@ async fn get_queue_stats(
             COALESCE(COUNT(*) / NULLIF(EXTRACT(EPOCH FROM ($2 - $1)) / 3600, 0), 0) as per_hour
         FROM vqm_messages
         WHERE queue_id = $3 AND completed_at BETWEEN $1 AND $2
-        "#
+        "#,
     )
     .bind(start_time)
     .bind(end_time)
@@ -607,7 +615,7 @@ async fn get_queue_stats(
             COALESCE(PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY processing_time_ms), 0) as p99
         FROM vqm_messages
         WHERE queue_id = $1 AND completed_at BETWEEN $2 AND $3
-        "#
+        "#,
     )
     .bind(queue_id)
     .bind(start_time)
@@ -624,7 +632,7 @@ async fn get_queue_stats(
             COUNT(*) FILTER (WHERE status = 'idle') as idle
         FROM vqm_workers
         WHERE $1 = ANY(queue_ids) AND status != 'offline'
-        "#
+        "#,
     )
     .bind(queue_id)
     .fetch_one(pool)
@@ -641,13 +649,12 @@ async fn get_queue_stats(
     let failure_rate = 100.0 - success_rate;
 
     // Get retry count
-    let retry_count: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM vqm_messages WHERE queue_id = $1 AND attempts > 1"
-    )
-    .bind(queue_id)
-    .fetch_one(pool)
-    .await
-    .unwrap_or((0,));
+    let retry_count: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM vqm_messages WHERE queue_id = $1 AND attempts > 1")
+            .bind(queue_id)
+            .fetch_one(pool)
+            .await
+            .unwrap_or((0,));
 
     let retry_rate = if queue.message_count > 0 {
         (retry_count.0 as f64 / queue.message_count as f64) * 100.0
@@ -657,7 +664,7 @@ async fn get_queue_stats(
 
     // Get scheduled count
     let scheduled: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM vqm_messages WHERE queue_id = $1 AND status = 'scheduled'"
+        "SELECT COUNT(*) FROM vqm_messages WHERE queue_id = $1 AND status = 'scheduled'",
     )
     .bind(queue_id)
     .fetch_one(pool)
@@ -715,7 +722,7 @@ async fn list_queue_messages(
                created_at, scheduled_at, started_at, completed_at
         FROM vqm_messages
         WHERE queue_id = $1
-        "#
+        "#,
     );
 
     if let Some(ref status) = params.status {
@@ -733,12 +740,10 @@ async fn list_queue_messages(
         .await?;
 
     // Get total count
-    let total: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM vqm_messages WHERE queue_id = $1"
-    )
-    .bind(queue_id)
-    .fetch_one(pool)
-    .await?;
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM vqm_messages WHERE queue_id = $1")
+        .bind(queue_id)
+        .fetch_one(pool)
+        .await?;
 
     let meta = ResponseMeta::new(total.0, params.pagination.page, params.pagination.per_page);
 
@@ -771,10 +776,7 @@ async fn purge_queue(
         query.push_str(" AND status IN ('completed', 'failed', 'dead', 'cancelled')");
     }
 
-    let result = sqlx::query(&query)
-        .bind(queue_id)
-        .execute(pool)
-        .await?;
+    let result = sqlx::query(&query).bind(queue_id).execute(pool).await?;
 
     let deleted_count = result.rows_affected() as i64;
 
@@ -785,15 +787,17 @@ async fn purge_queue(
         .await?;
 
     // Log audit event
-    plugin.log_audit(
-        "queue.purged",
-        "queue",
-        "purge",
-        Some(queue_id),
-        Some(&queue.name),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "queue.purged",
+            "queue",
+            "purge",
+            Some(queue_id),
+            Some(&queue.name),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(Json(ApiResponse::success(PurgeResult {
         queue_id,
@@ -815,7 +819,7 @@ async fn pause_queue(
     let pool = plugin.db_pool();
 
     sqlx::query(
-        "UPDATE vqm_queues SET status = 'paused', updated_at = CURRENT_TIMESTAMP WHERE id = $1"
+        "UPDATE vqm_queues SET status = 'paused', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
     )
     .bind(queue_id)
     .execute(pool)
@@ -823,15 +827,17 @@ async fn pause_queue(
 
     let queue = get_queue_by_id(pool, queue_id).await?;
 
-    plugin.log_audit(
-        "queue.paused",
-        "queue",
-        "pause",
-        Some(queue_id),
-        Some(&queue.name),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "queue.paused",
+            "queue",
+            "pause",
+            Some(queue_id),
+            Some(&queue.name),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(Json(ApiResponse::success(queue)))
 }
@@ -850,7 +856,7 @@ async fn resume_queue(
     let pool = plugin.db_pool();
 
     sqlx::query(
-        "UPDATE vqm_queues SET status = 'active', updated_at = CURRENT_TIMESTAMP WHERE id = $1"
+        "UPDATE vqm_queues SET status = 'active', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
     )
     .bind(queue_id)
     .execute(pool)
@@ -858,15 +864,17 @@ async fn resume_queue(
 
     let queue = get_queue_by_id(pool, queue_id).await?;
 
-    plugin.log_audit(
-        "queue.resumed",
-        "queue",
-        "resume",
-        Some(queue_id),
-        Some(&queue.name),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "queue.resumed",
+            "queue",
+            "resume",
+            Some(queue_id),
+            Some(&queue.name),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(Json(ApiResponse::success(queue)))
 }
@@ -884,12 +892,11 @@ async fn get_queue_config(
     let queue_id = parse_uuid(&id)?;
     let pool = plugin.db_pool();
 
-    let config: (serde_json::Value,) = sqlx::query_as(
-        "SELECT config FROM vqm_queues WHERE id = $1"
-    )
-    .bind(queue_id)
-    .fetch_one(pool)
-    .await?;
+    let config: (serde_json::Value,) =
+        sqlx::query_as("SELECT config FROM vqm_queues WHERE id = $1")
+            .bind(queue_id)
+            .fetch_one(pool)
+            .await?;
 
     Ok(Json(ApiResponse::success(config.0)))
 }
@@ -911,23 +918,23 @@ async fn update_queue_config(
     let config_json = serde_json::to_value(&config)
         .map_err(|_| AppError::internal("Failed to serialize config"))?;
 
-    sqlx::query(
-        "UPDATE vqm_queues SET config = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2"
-    )
-    .bind(&config_json)
-    .bind(queue_id)
-    .execute(pool)
-    .await?;
+    sqlx::query("UPDATE vqm_queues SET config = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2")
+        .bind(&config_json)
+        .bind(queue_id)
+        .execute(pool)
+        .await?;
 
-    plugin.log_audit(
-        "queue.config_updated",
-        "queue",
-        "update_config",
-        Some(queue_id),
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "queue.config_updated",
+            "queue",
+            "update_config",
+            Some(queue_id),
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(Json(ApiResponse::success(config_json)))
 }
@@ -951,7 +958,7 @@ async fn list_queue_workers(
         FROM vqm_workers
         WHERE $1 = ANY(queue_ids) AND status != 'offline'
         ORDER BY last_heartbeat DESC
-        "#
+        "#,
     )
     .bind(queue_id)
     .fetch_all(pool)
@@ -1086,7 +1093,9 @@ async fn get_queue_template(
 ) -> Result<Json<ApiResponse<QueueTemplate>>, AppError> {
     let templates_response = list_queue_templates(Extension(plugin), auth).await?;
 
-    let template = templates_response.0.data
+    let template = templates_response
+        .0
+        .data
         .and_then(|templates| templates.into_iter().find(|t| t.name == name))
         .ok_or_else(|| AppError::not_found("Template"))?;
 
@@ -1156,7 +1165,7 @@ async fn get_queue_by_id(pool: &PgPool, queue_id: Uuid) -> Result<QueueResponse,
         LEFT JOIN vqm_tags t ON qt.tag_id = t.id
         WHERE q.id = $1
         GROUP BY q.id
-        "#
+        "#,
     )
     .bind(queue_id)
     .fetch_optional(pool)

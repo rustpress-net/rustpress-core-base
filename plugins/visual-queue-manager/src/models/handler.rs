@@ -1,8 +1,8 @@
 //! Handler Data Models
 
-use serde::{Serialize, Deserialize};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validator::Validate;
 
 /// Handler type
@@ -45,9 +45,15 @@ pub struct CreateHandlerRequest {
     pub metadata: serde_json::Value,
 }
 
-fn default_method() -> String { "POST".to_string() }
-fn default_timeout() -> i64 { 30000 }
-fn default_enabled() -> bool { true }
+fn default_method() -> String {
+    "POST".to_string()
+}
+fn default_timeout() -> i64 {
+    30000
+}
+fn default_enabled() -> bool {
+    true
+}
 
 /// Retry configuration for handlers
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
@@ -62,7 +68,9 @@ pub struct RetryConfigRequest {
     pub backoff_multiplier: f64,
 }
 
-fn default_multiplier() -> f64 { 2.0 }
+fn default_multiplier() -> f64 {
+    2.0
+}
 
 /// Update handler request
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]

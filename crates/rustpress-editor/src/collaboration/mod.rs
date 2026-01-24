@@ -363,34 +363,56 @@ pub struct CommentReply {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum CollaborationMessage {
     /// User joined
-    UserJoined { user: CollaboratorInfo },
+    UserJoined {
+        user: CollaboratorInfo,
+    },
 
     /// User left
-    UserLeft { user_id: i64 },
+    UserLeft {
+        user_id: i64,
+    },
 
     /// Cursor update
-    CursorUpdate { user_id: i64, cursor: CursorInfo },
+    CursorUpdate {
+        user_id: i64,
+        cursor: CursorInfo,
+    },
 
     /// Operation
-    Operation { operation: Operation },
+    Operation {
+        operation: Operation,
+    },
 
     /// Operations batch
-    OperationsBatch { operations: Vec<Operation> },
+    OperationsBatch {
+        operations: Vec<Operation>,
+    },
 
     /// Comment added
-    CommentAdded { comment: Comment },
+    CommentAdded {
+        comment: Comment,
+    },
 
     /// Comment updated
-    CommentUpdated { comment: Comment },
+    CommentUpdated {
+        comment: Comment,
+    },
 
     /// Comment deleted
-    CommentDeleted { comment_id: Uuid },
+    CommentDeleted {
+        comment_id: Uuid,
+    },
 
     /// Document saved
-    DocumentSaved { version: u32, saved_by: i64 },
+    DocumentSaved {
+        version: u32,
+        saved_by: i64,
+    },
 
     /// Sync request
-    SyncRequest { from_version: u64 },
+    SyncRequest {
+        from_version: u64,
+    },
 
     /// Sync response
     SyncResponse {
@@ -399,13 +421,21 @@ pub enum CollaborationMessage {
     },
 
     /// Lock block (prevent editing)
-    LockBlock { block_id: Uuid, user_id: i64 },
+    LockBlock {
+        block_id: Uuid,
+        user_id: i64,
+    },
 
     /// Unlock block
-    UnlockBlock { block_id: Uuid },
+    UnlockBlock {
+        block_id: Uuid,
+    },
 
     /// Error
-    Error { code: String, message: String },
+    Error {
+        code: String,
+        message: String,
+    },
 
     /// Ping/Pong for keepalive
     Ping,

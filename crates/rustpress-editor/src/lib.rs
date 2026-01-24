@@ -38,22 +38,21 @@
 //! post.publishing.publish();
 //! ```
 
-pub mod blocks;
-pub mod post;
-pub mod collaboration;
 pub mod analysis;
 pub mod api;
+pub mod blocks;
+pub mod collaboration;
+pub mod post;
 
 /// Prelude for common imports
 pub mod prelude {
     pub use crate::blocks::{
-        Block, BlockAttributes, BlockCategory, BlockId, BlockStyles, BlockType,
-        BlockVisibility, TextAlign,
+        Block, BlockAttributes, BlockCategory, BlockId, BlockStyles, BlockType, BlockVisibility,
+        TextAlign,
     };
     pub use crate::post::{
-        Author, CommentStatus, FeaturedMedia, PostContent, PostDocument, PostFormat,
-        PostId, PostMetadata, PostPublishing, PostRevision, PostSeo, PostStats,
-        PublishStatus, Term,
+        Author, CommentStatus, FeaturedMedia, PostContent, PostDocument, PostFormat, PostId,
+        PostMetadata, PostPublishing, PostRevision, PostSeo, PostStats, PublishStatus, Term,
     };
 }
 

@@ -188,7 +188,11 @@ impl RelatedFinder {
             .collect();
 
         // Sort by score descending
-        scored.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        scored.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
 
         // Limit results
         scored.truncate(self.config.max_results);
@@ -202,10 +206,7 @@ impl RelatedFinder {
 
         // Category score
         scored.shared_categories = self.find_shared(&source.categories, &candidate.categories);
-        scored.category_score = self.calculate_jaccard(
-            &source.categories,
-            &candidate.categories,
-        );
+        scored.category_score = self.calculate_jaccard(&source.categories, &candidate.categories);
 
         // Tag score
         scored.shared_tags = self.find_shared(&source.tags, &candidate.tags);
@@ -218,7 +219,11 @@ impl RelatedFinder {
         scored.recency_score = self.calculate_recency_score(candidate.published_at);
 
         // Author score (bonus for same author)
-        scored.author_score = if source.author_id == candidate.author_id { 1.0 } else { 0.0 };
+        scored.author_score = if source.author_id == candidate.author_id {
+            1.0
+        } else {
+            0.0
+        };
 
         // Calculate total
         scored.calculate_total(&self.config);
@@ -318,9 +323,7 @@ impl RelatedFinder {
 
         for word in text.split_whitespace() {
             // Clean word
-            let clean: String = word.chars()
-                .filter(|c| c.is_alphanumeric())
-                .collect();
+            let clean: String = word.chars().filter(|c| c.is_alphanumeric()).collect();
 
             if clean.len() >= 3 && !stopwords.contains(&clean.as_str()) {
                 if !keywords.contains(&clean) {
@@ -337,20 +340,122 @@ impl RelatedFinder {
     /// Get stopwords to filter out
     fn get_stopwords(&self) -> HashSet<&'static str> {
         [
-            "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
-            "of", "with", "by", "from", "up", "about", "into", "through", "during",
-            "before", "after", "above", "below", "between", "under", "again",
-            "further", "then", "once", "here", "there", "when", "where", "why",
-            "how", "all", "each", "few", "more", "most", "other", "some", "such",
-            "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very",
-            "can", "will", "just", "should", "now", "this", "that", "these", "those",
-            "is", "are", "was", "were", "be", "been", "being", "have", "has", "had",
-            "do", "does", "did", "doing", "would", "could", "ought", "you", "your",
-            "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she",
-            "her", "hers", "herself", "it", "its", "itself", "they", "them", "their",
-            "theirs", "themselves", "what", "which", "who", "whom", "i", "me", "my",
-            "myself", "we", "our", "ours", "ourselves",
-        ].into_iter().collect()
+            "the",
+            "a",
+            "an",
+            "and",
+            "or",
+            "but",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "by",
+            "from",
+            "up",
+            "about",
+            "into",
+            "through",
+            "during",
+            "before",
+            "after",
+            "above",
+            "below",
+            "between",
+            "under",
+            "again",
+            "further",
+            "then",
+            "once",
+            "here",
+            "there",
+            "when",
+            "where",
+            "why",
+            "how",
+            "all",
+            "each",
+            "few",
+            "more",
+            "most",
+            "other",
+            "some",
+            "such",
+            "no",
+            "nor",
+            "not",
+            "only",
+            "own",
+            "same",
+            "so",
+            "than",
+            "too",
+            "very",
+            "can",
+            "will",
+            "just",
+            "should",
+            "now",
+            "this",
+            "that",
+            "these",
+            "those",
+            "is",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "being",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "doing",
+            "would",
+            "could",
+            "ought",
+            "you",
+            "your",
+            "yours",
+            "yourself",
+            "yourselves",
+            "he",
+            "him",
+            "his",
+            "himself",
+            "she",
+            "her",
+            "hers",
+            "herself",
+            "it",
+            "its",
+            "itself",
+            "they",
+            "them",
+            "their",
+            "theirs",
+            "themselves",
+            "what",
+            "which",
+            "who",
+            "whom",
+            "i",
+            "me",
+            "my",
+            "myself",
+            "we",
+            "our",
+            "ours",
+            "ourselves",
+        ]
+        .into_iter()
+        .collect()
     }
 }
 
@@ -521,7 +626,8 @@ mod tests {
     #[test]
     fn test_keyword_extraction() {
         let finder = RelatedFinder::default();
-        let keywords = finder.extract_keywords("Rust Programming Guide", "Learn how to program in Rust");
+        let keywords =
+            finder.extract_keywords("Rust Programming Guide", "Learn how to program in Rust");
 
         assert!(keywords.contains(&"rust".to_string()));
         assert!(keywords.contains(&"programming".to_string()));
@@ -530,11 +636,7 @@ mod tests {
 
     #[test]
     fn test_find_by_categories() {
-        let posts = vec![
-            (1, vec![1, 2]),
-            (2, vec![1, 3]),
-            (3, vec![4, 5]),
-        ];
+        let posts = vec![(1, vec![1, 2]), (2, vec![1, 3]), (3, vec![4, 5])];
 
         let related = find_by_categories(1, &[1, 2], &posts, 5);
 

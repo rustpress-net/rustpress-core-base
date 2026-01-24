@@ -35,71 +35,98 @@ impl HookRegistry {
         let mut hooks = self.registered_hooks.write().await;
 
         // Queue lifecycle hooks
-        hooks.insert("vqm_queue_created".to_string(), HookHandler {
-            name: "vqm_queue_created".to_string(),
-            description: "Triggered when a new queue is created".to_string(),
-            priority: 10,
-            callback_type: CallbackType::Action,
-        });
+        hooks.insert(
+            "vqm_queue_created".to_string(),
+            HookHandler {
+                name: "vqm_queue_created".to_string(),
+                description: "Triggered when a new queue is created".to_string(),
+                priority: 10,
+                callback_type: CallbackType::Action,
+            },
+        );
 
-        hooks.insert("vqm_queue_deleted".to_string(), HookHandler {
-            name: "vqm_queue_deleted".to_string(),
-            description: "Triggered when a queue is deleted".to_string(),
-            priority: 10,
-            callback_type: CallbackType::Action,
-        });
+        hooks.insert(
+            "vqm_queue_deleted".to_string(),
+            HookHandler {
+                name: "vqm_queue_deleted".to_string(),
+                description: "Triggered when a queue is deleted".to_string(),
+                priority: 10,
+                callback_type: CallbackType::Action,
+            },
+        );
 
         // Message lifecycle hooks
-        hooks.insert("vqm_message_enqueued".to_string(), HookHandler {
-            name: "vqm_message_enqueued".to_string(),
-            description: "Triggered when a message is enqueued".to_string(),
-            priority: 10,
-            callback_type: CallbackType::Action,
-        });
+        hooks.insert(
+            "vqm_message_enqueued".to_string(),
+            HookHandler {
+                name: "vqm_message_enqueued".to_string(),
+                description: "Triggered when a message is enqueued".to_string(),
+                priority: 10,
+                callback_type: CallbackType::Action,
+            },
+        );
 
-        hooks.insert("vqm_message_processed".to_string(), HookHandler {
-            name: "vqm_message_processed".to_string(),
-            description: "Triggered when a message is successfully processed".to_string(),
-            priority: 10,
-            callback_type: CallbackType::Action,
-        });
+        hooks.insert(
+            "vqm_message_processed".to_string(),
+            HookHandler {
+                name: "vqm_message_processed".to_string(),
+                description: "Triggered when a message is successfully processed".to_string(),
+                priority: 10,
+                callback_type: CallbackType::Action,
+            },
+        );
 
-        hooks.insert("vqm_message_failed".to_string(), HookHandler {
-            name: "vqm_message_failed".to_string(),
-            description: "Triggered when message processing fails".to_string(),
-            priority: 10,
-            callback_type: CallbackType::Action,
-        });
+        hooks.insert(
+            "vqm_message_failed".to_string(),
+            HookHandler {
+                name: "vqm_message_failed".to_string(),
+                description: "Triggered when message processing fails".to_string(),
+                priority: 10,
+                callback_type: CallbackType::Action,
+            },
+        );
 
-        hooks.insert("vqm_message_dlq".to_string(), HookHandler {
-            name: "vqm_message_dlq".to_string(),
-            description: "Triggered when a message is moved to DLQ".to_string(),
-            priority: 10,
-            callback_type: CallbackType::Action,
-        });
+        hooks.insert(
+            "vqm_message_dlq".to_string(),
+            HookHandler {
+                name: "vqm_message_dlq".to_string(),
+                description: "Triggered when a message is moved to DLQ".to_string(),
+                priority: 10,
+                callback_type: CallbackType::Action,
+            },
+        );
 
         // Worker hooks
-        hooks.insert("vqm_worker_registered".to_string(), HookHandler {
-            name: "vqm_worker_registered".to_string(),
-            description: "Triggered when a worker registers".to_string(),
-            priority: 10,
-            callback_type: CallbackType::Action,
-        });
+        hooks.insert(
+            "vqm_worker_registered".to_string(),
+            HookHandler {
+                name: "vqm_worker_registered".to_string(),
+                description: "Triggered when a worker registers".to_string(),
+                priority: 10,
+                callback_type: CallbackType::Action,
+            },
+        );
 
-        hooks.insert("vqm_worker_offline".to_string(), HookHandler {
-            name: "vqm_worker_offline".to_string(),
-            description: "Triggered when a worker goes offline".to_string(),
-            priority: 10,
-            callback_type: CallbackType::Action,
-        });
+        hooks.insert(
+            "vqm_worker_offline".to_string(),
+            HookHandler {
+                name: "vqm_worker_offline".to_string(),
+                description: "Triggered when a worker goes offline".to_string(),
+                priority: 10,
+                callback_type: CallbackType::Action,
+            },
+        );
 
         // Alert hooks
-        hooks.insert("vqm_alert_triggered".to_string(), HookHandler {
-            name: "vqm_alert_triggered".to_string(),
-            description: "Triggered when an alert is raised".to_string(),
-            priority: 10,
-            callback_type: CallbackType::Action,
-        });
+        hooks.insert(
+            "vqm_alert_triggered".to_string(),
+            HookHandler {
+                name: "vqm_alert_triggered".to_string(),
+                description: "Triggered when an alert is raised".to_string(),
+                priority: 10,
+                callback_type: CallbackType::Action,
+            },
+        );
 
         Ok(())
     }
@@ -108,35 +135,47 @@ impl HookRegistry {
         let mut hooks = self.registered_hooks.write().await;
 
         // Message filters
-        hooks.insert("vqm_filter_message_body".to_string(), HookHandler {
-            name: "vqm_filter_message_body".to_string(),
-            description: "Filter message body before enqueue".to_string(),
-            priority: 10,
-            callback_type: CallbackType::Filter,
-        });
+        hooks.insert(
+            "vqm_filter_message_body".to_string(),
+            HookHandler {
+                name: "vqm_filter_message_body".to_string(),
+                description: "Filter message body before enqueue".to_string(),
+                priority: 10,
+                callback_type: CallbackType::Filter,
+            },
+        );
 
-        hooks.insert("vqm_filter_message_headers".to_string(), HookHandler {
-            name: "vqm_filter_message_headers".to_string(),
-            description: "Filter message headers before enqueue".to_string(),
-            priority: 10,
-            callback_type: CallbackType::Filter,
-        });
+        hooks.insert(
+            "vqm_filter_message_headers".to_string(),
+            HookHandler {
+                name: "vqm_filter_message_headers".to_string(),
+                description: "Filter message headers before enqueue".to_string(),
+                priority: 10,
+                callback_type: CallbackType::Filter,
+            },
+        );
 
         // Handler filters
-        hooks.insert("vqm_filter_handler_payload".to_string(), HookHandler {
-            name: "vqm_filter_handler_payload".to_string(),
-            description: "Filter payload before sending to handler".to_string(),
-            priority: 10,
-            callback_type: CallbackType::Filter,
-        });
+        hooks.insert(
+            "vqm_filter_handler_payload".to_string(),
+            HookHandler {
+                name: "vqm_filter_handler_payload".to_string(),
+                description: "Filter payload before sending to handler".to_string(),
+                priority: 10,
+                callback_type: CallbackType::Filter,
+            },
+        );
 
         // API response filters
-        hooks.insert("vqm_filter_api_response".to_string(), HookHandler {
-            name: "vqm_filter_api_response".to_string(),
-            description: "Filter API response before sending to client".to_string(),
-            priority: 10,
-            callback_type: CallbackType::Filter,
-        });
+        hooks.insert(
+            "vqm_filter_api_response".to_string(),
+            HookHandler {
+                name: "vqm_filter_api_response".to_string(),
+                description: "Filter API response before sending to client".to_string(),
+                priority: 10,
+                callback_type: CallbackType::Filter,
+            },
+        );
 
         Ok(())
     }
@@ -171,12 +210,7 @@ impl HookRegistry {
     }
 
     /// Register a custom filter callback
-    pub async fn add_filter(
-        &self,
-        hook_name: &str,
-        callback: FilterCallback,
-        priority: i32,
-    ) {
+    pub async fn add_filter(&self, hook_name: &str, callback: FilterCallback, priority: i32) {
         let mut filters = self.filters.write().await;
         filters
             .entry(hook_name.to_string())

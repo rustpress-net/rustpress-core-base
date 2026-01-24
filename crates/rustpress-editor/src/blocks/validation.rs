@@ -83,7 +83,12 @@ impl BlockValidator {
         }
     }
 
-    fn validate_block_type(&self, block: &Block, errors: &mut Vec<ValidationError>, _warnings: &mut Vec<ValidationWarning>) {
+    fn validate_block_type(
+        &self,
+        block: &Block,
+        errors: &mut Vec<ValidationError>,
+        _warnings: &mut Vec<ValidationWarning>,
+    ) {
         // Check if block type is valid
         match &block.block_type {
             BlockType::Custom(id) if *id == 0 => {
@@ -98,7 +103,12 @@ impl BlockValidator {
         }
     }
 
-    fn validate_content(&self, block: &Block, errors: &mut Vec<ValidationError>, warnings: &mut Vec<ValidationWarning>) {
+    fn validate_content(
+        &self,
+        block: &Block,
+        errors: &mut Vec<ValidationError>,
+        warnings: &mut Vec<ValidationWarning>,
+    ) {
         let attrs = &block.attributes;
 
         match &block.block_type {
@@ -109,7 +119,12 @@ impl BlockValidator {
 
             // Headings should have content
             BlockType::Heading => {
-                if attrs.content.as_ref().map(|c| c.trim().is_empty()).unwrap_or(true) {
+                if attrs
+                    .content
+                    .as_ref()
+                    .map(|c| c.trim().is_empty())
+                    .unwrap_or(true)
+                {
                     warnings.push(ValidationWarning {
                         code: "EMPTY_HEADING".to_string(),
                         message: "Heading block has no content".to_string(),
@@ -167,8 +182,16 @@ impl BlockValidator {
 
             // Button requires text
             BlockType::Button => {
-                let has_text = attrs.button_text.as_ref().map(|t| !t.is_empty()).unwrap_or(false)
-                    || attrs.content.as_ref().map(|c| !c.is_empty()).unwrap_or(false);
+                let has_text = attrs
+                    .button_text
+                    .as_ref()
+                    .map(|t| !t.is_empty())
+                    .unwrap_or(false)
+                    || attrs
+                        .content
+                        .as_ref()
+                        .map(|c| !c.is_empty())
+                        .unwrap_or(false);
 
                 if !has_text {
                     warnings.push(ValidationWarning {
@@ -231,7 +254,12 @@ impl BlockValidator {
         }
     }
 
-    fn validate_children(&self, block: &Block, errors: &mut Vec<ValidationError>, warnings: &mut Vec<ValidationWarning>) {
+    fn validate_children(
+        &self,
+        block: &Block,
+        errors: &mut Vec<ValidationError>,
+        warnings: &mut Vec<ValidationWarning>,
+    ) {
         // Check if block can have children
         let can_have_children = matches!(
             block.block_type,
@@ -257,10 +285,7 @@ impl BlockValidator {
         if !can_have_children && !block.children.is_empty() {
             errors.push(ValidationError {
                 code: "UNEXPECTED_CHILDREN".to_string(),
-                message: format!(
-                    "{:?} blocks cannot contain children",
-                    block.block_type
-                ),
+                message: format!("{:?} blocks cannot contain children", block.block_type),
                 path: vec!["children".to_string()],
                 severity: ErrorSeverity::Error,
             });
@@ -301,7 +326,8 @@ impl BlockValidator {
                     if child.block_type != BlockType::AccordionItem {
                         errors.push(ValidationError {
                             code: "INVALID_ACCORDION_CHILD".to_string(),
-                            message: "Accordion block can only contain AccordionItem blocks".to_string(),
+                            message: "Accordion block can only contain AccordionItem blocks"
+                                .to_string(),
                             path: vec!["children".to_string()],
                             severity: ErrorSeverity::Error,
                         });
@@ -372,7 +398,12 @@ impl BlockValidator {
         if block.children.is_empty() {
             1
         } else {
-            1 + block.children.iter().map(|c| self.calculate_depth(c)).max().unwrap_or(0)
+            1 + block
+                .children
+                .iter()
+                .map(|c| self.calculate_depth(c))
+                .max()
+                .unwrap_or(0)
         }
     }
 }

@@ -139,14 +139,24 @@ impl FieldType {
     pub fn is_layout(&self) -> bool {
         matches!(
             self,
-            Self::Message | Self::Accordion | Self::Tab | Self::Group | Self::Repeater | Self::FlexibleContent
+            Self::Message
+                | Self::Accordion
+                | Self::Tab
+                | Self::Group
+                | Self::Repeater
+                | Self::FlexibleContent
         )
     }
 
     pub fn supports_multiple(&self) -> bool {
         matches!(
             self,
-            Self::MultiSelect | Self::Checkbox | Self::Gallery | Self::Relationship | Self::Repeater | Self::FlexibleContent
+            Self::MultiSelect
+                | Self::Checkbox
+                | Self::Gallery
+                | Self::Relationship
+                | Self::Repeater
+                | Self::FlexibleContent
         )
     }
 }
@@ -361,14 +371,20 @@ impl Field {
             FieldType::Email => {
                 if let Some(s) = value.as_str() {
                     if !s.is_empty() && !s.contains('@') {
-                        return Err(FieldError::ValidationError(format!("{} must be a valid email", self.label)));
+                        return Err(FieldError::ValidationError(format!(
+                            "{} must be a valid email",
+                            self.label
+                        )));
                     }
                 }
             }
             FieldType::Url => {
                 if let Some(s) = value.as_str() {
                     if !s.is_empty() && !s.starts_with("http://") && !s.starts_with("https://") {
-                        return Err(FieldError::ValidationError(format!("{} must be a valid URL", self.label)));
+                        return Err(FieldError::ValidationError(format!(
+                            "{} must be a valid URL",
+                            self.label
+                        )));
                     }
                 }
             }
@@ -376,12 +392,18 @@ impl Field {
                 if let Some(n) = value.as_f64() {
                     if let Some(min) = self.min {
                         if n < min {
-                            return Err(FieldError::ValidationError(format!("{} must be at least {}", self.label, min)));
+                            return Err(FieldError::ValidationError(format!(
+                                "{} must be at least {}",
+                                self.label, min
+                            )));
                         }
                     }
                     if let Some(max) = self.max {
                         if n > max {
-                            return Err(FieldError::ValidationError(format!("{} must be at most {}", self.label, max)));
+                            return Err(FieldError::ValidationError(format!(
+                                "{} must be at most {}",
+                                self.label, max
+                            )));
                         }
                     }
                 }
@@ -390,7 +412,10 @@ impl Field {
                 if let Some(s) = value.as_str() {
                     if let Some(max) = self.maxlength {
                         if s.len() > max {
-                            return Err(FieldError::ValidationError(format!("{} must be {} characters or less", self.label, max)));
+                            return Err(FieldError::ValidationError(format!(
+                                "{} must be {} characters or less",
+                                self.label, max
+                            )));
                         }
                     }
                 }
@@ -609,46 +634,35 @@ impl ConditionalRule {
         let field_value = values.get(&self.field);
 
         match self.operator {
-            ConditionalOperator::Equals => {
-                field_value.map(|v| v == &self.value).unwrap_or(false)
-            }
-            ConditionalOperator::NotEquals => {
-                field_value.map(|v| v != &self.value).unwrap_or(true)
-            }
-            ConditionalOperator::Contains => {
-                field_value
-                    .and_then(|v| v.as_str())
-                    .and_then(|s| self.value.as_str().map(|v| s.contains(v)))
-                    .unwrap_or(false)
-            }
-            ConditionalOperator::Empty => {
-                field_value.map(|v| v.is_null() || v == "" || v == &JsonValue::Array(vec![])).unwrap_or(true)
-            }
-            ConditionalOperator::NotEmpty => {
-                field_value.map(|v| !v.is_null() && v != "" && v != &JsonValue::Array(vec![])).unwrap_or(false)
-            }
-            ConditionalOperator::GreaterThan => {
-                field_value
-                    .and_then(|v| v.as_f64())
-                    .and_then(|fv| self.value.as_f64().map(|cv| fv > cv))
-                    .unwrap_or(false)
-            }
-            ConditionalOperator::LessThan => {
-                field_value
-                    .and_then(|v| v.as_f64())
-                    .and_then(|fv| self.value.as_f64().map(|cv| fv < cv))
-                    .unwrap_or(false)
-            }
-            ConditionalOperator::Pattern => {
-                field_value
-                    .and_then(|v| v.as_str())
-                    .and_then(|s| {
-                        self.value.as_str()
-                            .and_then(|p| regex::Regex::new(p).ok())
-                            .map(|re| re.is_match(s))
-                    })
-                    .unwrap_or(false)
-            }
+            ConditionalOperator::Equals => field_value.map(|v| v == &self.value).unwrap_or(false),
+            ConditionalOperator::NotEquals => field_value.map(|v| v != &self.value).unwrap_or(true),
+            ConditionalOperator::Contains => field_value
+                .and_then(|v| v.as_str())
+                .and_then(|s| self.value.as_str().map(|v| s.contains(v)))
+                .unwrap_or(false),
+            ConditionalOperator::Empty => field_value
+                .map(|v| v.is_null() || v == "" || v == &JsonValue::Array(vec![]))
+                .unwrap_or(true),
+            ConditionalOperator::NotEmpty => field_value
+                .map(|v| !v.is_null() && v != "" && v != &JsonValue::Array(vec![]))
+                .unwrap_or(false),
+            ConditionalOperator::GreaterThan => field_value
+                .and_then(|v| v.as_f64())
+                .and_then(|fv| self.value.as_f64().map(|cv| fv > cv))
+                .unwrap_or(false),
+            ConditionalOperator::LessThan => field_value
+                .and_then(|v| v.as_f64())
+                .and_then(|fv| self.value.as_f64().map(|cv| fv < cv))
+                .unwrap_or(false),
+            ConditionalOperator::Pattern => field_value
+                .and_then(|v| v.as_str())
+                .and_then(|s| {
+                    self.value
+                        .as_str()
+                        .and_then(|p| regex::Regex::new(p).ok())
+                        .map(|re| re.is_match(s))
+                })
+                .unwrap_or(false),
         }
     }
 }
@@ -821,25 +835,33 @@ impl FieldRegistry {
 
     /// Get field groups for a location
     pub fn get_for_location(&self, post_type: &str, template: Option<&str>) -> Vec<&FieldGroup> {
-        self.groups.values()
+        self.groups
+            .values()
             .filter(|group| {
-                group.active && group.location.iter().any(|rule| {
-                    match rule.param.as_str() {
+                group.active
+                    && group.location.iter().any(|rule| match rule.param.as_str() {
                         "post_type" => {
                             let matches = rule.value == post_type;
-                            if rule.operator == "==" { matches } else { !matches }
+                            if rule.operator == "==" {
+                                matches
+                            } else {
+                                !matches
+                            }
                         }
                         "page_template" => {
                             if let Some(tpl) = template {
                                 let matches = rule.value == tpl;
-                                if rule.operator == "==" { matches } else { !matches }
+                                if rule.operator == "==" {
+                                    matches
+                                } else {
+                                    !matches
+                                }
                             } else {
                                 false
                             }
                         }
-                        _ => false
-                    }
-                })
+                        _ => false,
+                    })
             })
             .collect()
     }
@@ -875,10 +897,14 @@ mod tests {
         let field = Field::new("email", "email", FieldType::Email).required(true);
 
         // Valid email
-        assert!(field.validate(&JsonValue::String("test@example.com".to_string())).is_ok());
+        assert!(field
+            .validate(&JsonValue::String("test@example.com".to_string()))
+            .is_ok());
 
         // Invalid email
-        assert!(field.validate(&JsonValue::String("invalid".to_string())).is_err());
+        assert!(field
+            .validate(&JsonValue::String("invalid".to_string()))
+            .is_err());
 
         // Empty required
         assert!(field.validate(&JsonValue::Null).is_err());
@@ -886,8 +912,8 @@ mod tests {
 
     #[test]
     fn test_conditional_logic() {
-        let logic = ConditionalLogic::and()
-            .add_rule(ConditionalRule::equals("show_subtitle", true));
+        let logic =
+            ConditionalLogic::and().add_rule(ConditionalRule::equals("show_subtitle", true));
 
         let mut values = HashMap::new();
         values.insert("show_subtitle".to_string(), JsonValue::Bool(true));
@@ -899,10 +925,14 @@ mod tests {
 
     #[test]
     fn test_repeater_field() {
-        let repeater = Field::repeater("slides", "slides", vec![
-            Field::image("slide_image", "image"),
-            Field::text("slide_title", "title"),
-        ]);
+        let repeater = Field::repeater(
+            "slides",
+            "slides",
+            vec![
+                Field::image("slide_image", "image"),
+                Field::text("slide_title", "title"),
+            ],
+        );
 
         assert_eq!(repeater.field_type, FieldType::Repeater);
         assert_eq!(repeater.sub_fields.len(), 2);

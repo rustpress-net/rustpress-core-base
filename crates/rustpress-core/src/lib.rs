@@ -22,13 +22,15 @@ pub mod types;
 // Re-exports for convenience
 pub use config::AppConfig;
 pub use context::{AppContext, RequestContext};
+pub use discovery::{
+    ComponentManifest, ComponentType, DiscoveryConfig, DiscoveryService, DiscoverySource,
+};
 pub use error::{Error, Result};
 pub use hook::{Action, Filter, Hook, HookRegistry};
 pub use id::TenantId;
 pub use id::{EntityId, Id};
 pub use plugin::{Plugin, PluginInfo, PluginManager};
-pub use plugin_loader::{PluginLoader, PluginManifest, LoadResult};
-pub use discovery::{DiscoveryService, DiscoverySource, DiscoveryConfig, ComponentType, ComponentManifest};
+pub use plugin_loader::{LoadResult, PluginLoader, PluginManifest};
 pub use tenant::Tenant;
 
 /// The current version of RustPress

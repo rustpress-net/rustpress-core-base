@@ -41,9 +41,7 @@ impl TemplateService {
             "#,
         );
 
-        let mut count_sql = String::from(
-            "SELECT COUNT(*) FROM templates t WHERE 1=1",
-        );
+        let mut count_sql = String::from("SELECT COUNT(*) FROM templates t WHERE 1=1");
 
         // Build WHERE clauses
         let mut conditions = Vec::new();
@@ -91,7 +89,10 @@ impl TemplateService {
             TemplateSortBy::Name => "t.name ASC",
             TemplateSortBy::Downloads => "t.downloads DESC",
         };
-        sql.push_str(&format!(" ORDER BY {} LIMIT {} OFFSET {}", order, per_page, offset));
+        sql.push_str(&format!(
+            " ORDER BY {} LIMIT {} OFFSET {}",
+            order, per_page, offset
+        ));
 
         // Execute queries
         let templates: Vec<TemplateListItem> = sqlx::query_as::<_, TemplateRow>(&sql)
@@ -115,9 +116,7 @@ impl TemplateService {
             })
             .collect();
 
-        let total: (i64,) = sqlx::query_as(&count_sql)
-            .fetch_one(pool)
-            .await?;
+        let total: (i64,) = sqlx::query_as(&count_sql).fetch_one(pool).await?;
 
         let total_pages = (total.0 as f64 / per_page as f64).ceil() as u64;
 
@@ -162,7 +161,7 @@ impl TemplateService {
         // Get user's rating if authenticated
         let user_rating = if let Some(uid) = user_id {
             sqlx::query_scalar::<_, i32>(
-                "SELECT rating FROM template_ratings WHERE template_id = $1 AND user_id = $2"
+                "SELECT rating FROM template_ratings WHERE template_id = $1 AND user_id = $2",
             )
             .bind(template_id)
             .bind(uid)
@@ -187,9 +186,9 @@ impl TemplateService {
         };
 
         // Parse variables
-        let variables: Vec<TemplateVariable> = serde_json::from_value(
-            template.variables.clone().unwrap_or(serde_json::json!([]))
-        ).unwrap_or_default();
+        let variables: Vec<TemplateVariable> =
+            serde_json::from_value(template.variables.clone().unwrap_or(serde_json::json!([])))
+                .unwrap_or_default();
 
         // Build category
         let category = template.category_id.as_ref().map(|_| TemplateCategory {
@@ -284,13 +283,12 @@ impl TemplateService {
         request: UpdateTemplateRequest,
     ) -> Result<Template> {
         // Verify ownership
-        let owner_id: Option<Uuid> = sqlx::query_scalar(
-            "SELECT author_id FROM templates WHERE id = $1"
-        )
-        .bind(template_id)
-        .fetch_optional(pool)
-        .await?
-        .flatten();
+        let owner_id: Option<Uuid> =
+            sqlx::query_scalar("SELECT author_id FROM templates WHERE id = $1")
+                .bind(template_id)
+                .fetch_optional(pool)
+                .await?
+                .flatten();
 
         if owner_id != Some(user_id) {
             return Err(anyhow!("Not authorized to update this template"));
@@ -319,7 +317,11 @@ impl TemplateService {
         .bind(&request.thumbnail_url)
         .bind(&request.html_content)
         .bind(&request.css_content)
-        .bind(request.variables.map(|v| serde_json::to_value(v).unwrap_or_default()))
+        .bind(
+            request
+                .variables
+                .map(|v| serde_json::to_value(v).unwrap_or_default()),
+        )
         .bind(request.is_public)
         .bind(&request.tags)
         .bind(template_id)
@@ -330,13 +332,9 @@ impl TemplateService {
     }
 
     /// Delete a template
-    pub async fn delete_template(
-        pool: &PgPool,
-        user_id: Uuid,
-        template_id: Uuid,
-    ) -> Result<()> {
+    pub async fn delete_template(pool: &PgPool, user_id: Uuid, template_id: Uuid) -> Result<()> {
         let result = sqlx::query(
-            "DELETE FROM templates WHERE id = $1 AND author_id = $2 AND is_system = FALSE"
+            "DELETE FROM templates WHERE id = $1 AND author_id = $2 AND is_system = FALSE",
         )
         .bind(template_id)
         .bind(user_id)
@@ -398,12 +396,11 @@ impl TemplateService {
         .await?;
 
         // Get updated stats
-        let stats: (i32, i32) = sqlx::query_as(
-            "SELECT rating_sum, rating_count FROM templates WHERE id = $1"
-        )
-        .bind(template_id)
-        .fetch_one(pool)
-        .await?;
+        let stats: (i32, i32) =
+            sqlx::query_as("SELECT rating_sum, rating_count FROM templates WHERE id = $1")
+                .bind(template_id)
+                .fetch_one(pool)
+                .await?;
 
         let new_average = if stats.1 > 0 {
             stats.0 as f32 / stats.1 as f32
@@ -459,7 +456,7 @@ impl TemplateService {
 
         if exists {
             sqlx::query(
-                "DELETE FROM user_template_favorites WHERE user_id = $1 AND template_id = $2"
+                "DELETE FROM user_template_favorites WHERE user_id = $1 AND template_id = $2",
             )
             .bind(user_id)
             .bind(template_id)
@@ -467,7 +464,7 @@ impl TemplateService {
             .await?;
         } else {
             sqlx::query(
-                "INSERT INTO user_template_favorites (user_id, template_id) VALUES ($1, $2)"
+                "INSERT INTO user_template_favorites (user_id, template_id) VALUES ($1, $2)",
             )
             .bind(user_id)
             .bind(template_id)
@@ -482,10 +479,7 @@ impl TemplateService {
     }
 
     /// Get user's favorite templates
-    pub async fn get_favorites(
-        pool: &PgPool,
-        user_id: Uuid,
-    ) -> Result<UserFavoritesResponse> {
+    pub async fn get_favorites(pool: &PgPool, user_id: Uuid) -> Result<UserFavoritesResponse> {
         let favorites: Vec<TemplateListItem> = sqlx::query_as::<_, TemplateRow>(
             r#"
             SELECT
@@ -536,7 +530,7 @@ impl TemplateService {
         request: ProcessTemplateRequest,
     ) -> Result<ProcessTemplateResponse> {
         let template = sqlx::query_as::<_, (String, Option<String>)>(
-            "SELECT html_content, css_content FROM templates WHERE id = $1"
+            "SELECT html_content, css_content FROM templates WHERE id = $1",
         )
         .bind(request.template_id)
         .fetch_one(pool)
@@ -560,7 +554,11 @@ impl TemplateService {
 
         Ok(ProcessTemplateResponse {
             html,
-            css: if request.include_css.unwrap_or(true) { css } else { None },
+            css: if request.include_css.unwrap_or(true) {
+                css
+            } else {
+                None
+            },
             variables_replaced,
         })
     }
@@ -580,7 +578,11 @@ impl TemplateService {
                 seen.insert(name.clone(), idx);
 
                 // Guess variable type from name
-                let suggested_type = if name.contains("image") || name.contains("img") || name.contains("avatar") || name.contains("photo") {
+                let suggested_type = if name.contains("image")
+                    || name.contains("img")
+                    || name.contains("avatar")
+                    || name.contains("photo")
+                {
                     TemplateVariableType::Image
                 } else if name.contains("link") || name.contains("url") || name.contains("href") {
                     TemplateVariableType::Link
@@ -697,7 +699,7 @@ impl TemplateService {
         // Get favorites
         let favorites = if let Some(uid) = user_id {
             sqlx::query_scalar::<_, Uuid>(
-                "SELECT template_id FROM user_template_favorites WHERE user_id = $1"
+                "SELECT template_id FROM user_template_favorites WHERE user_id = $1",
             )
             .bind(uid)
             .fetch_all(pool)
@@ -715,7 +717,7 @@ impl TemplateService {
                 WHERE user_id = $1 AND action = 'insert'
                 ORDER BY created_at DESC
                 LIMIT 10
-                "#
+                "#,
             )
             .bind(uid)
             .fetch_all(pool)
@@ -747,26 +749,28 @@ impl TemplateService {
         }
 
         // Total templates
-        let total_templates: (i64,) = sqlx::query_as(
-            &format!("SELECT COUNT(*) FROM templates{}", total_cond)
-        )
-        .fetch_one(pool)
-        .await?;
+        let total_templates: (i64,) =
+            sqlx::query_as(&format!("SELECT COUNT(*) FROM templates{}", total_cond))
+                .fetch_one(pool)
+                .await?;
 
         // Total downloads
-        let total_downloads: (i64,) = sqlx::query_as(
-            &format!("SELECT COALESCE(SUM(downloads), 0) FROM templates{}", total_cond)
-        )
+        let total_downloads: (i64,) = sqlx::query_as(&format!(
+            "SELECT COALESCE(SUM(downloads), 0) FROM templates{}",
+            total_cond
+        ))
         .fetch_one(pool)
         .await?;
 
         // Total inserts
-        let total_inserts: (i64,) = sqlx::query_as(
-            &format!(
-                "SELECT COUNT(*) FROM template_usage{} AND action = 'insert'",
-                if usage_cond.is_empty() { " WHERE 1=1" } else { &usage_cond }
-            )
-        )
+        let total_inserts: (i64,) = sqlx::query_as(&format!(
+            "SELECT COUNT(*) FROM template_usage{} AND action = 'insert'",
+            if usage_cond.is_empty() {
+                " WHERE 1=1"
+            } else {
+                &usage_cond
+            }
+        ))
         .fetch_one(pool)
         .await?;
 
@@ -844,9 +848,9 @@ impl TemplateService {
 
     /// Convert database row to Template
     fn row_to_template(row: TemplateFullRow) -> Template {
-        let variables: Vec<TemplateVariable> = serde_json::from_value(
-            row.variables.clone().unwrap_or(serde_json::json!([]))
-        ).unwrap_or_default();
+        let variables: Vec<TemplateVariable> =
+            serde_json::from_value(row.variables.clone().unwrap_or(serde_json::json!([])))
+                .unwrap_or_default();
 
         let rating = if row.rating_count > 0 {
             row.rating_sum as f32 / row.rating_count as f32

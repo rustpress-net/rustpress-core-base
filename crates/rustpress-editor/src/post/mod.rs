@@ -9,17 +9,17 @@
 //! - Media attachments
 
 pub mod document;
-pub mod metadata;
-pub mod seo;
-pub mod revision;
-pub mod publishing;
 pub mod media;
+pub mod metadata;
+pub mod publishing;
+pub mod revision;
+pub mod seo;
 pub mod stats;
 
 pub use document::*;
-pub use metadata::*;
-pub use seo::*;
-pub use revision::*;
-pub use publishing::*;
 pub use media::*;
+pub use metadata::*;
+pub use publishing::*;
+pub use revision::*;
+pub use seo::*;
 pub use stats::*;

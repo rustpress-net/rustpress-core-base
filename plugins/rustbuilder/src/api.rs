@@ -2,9 +2,9 @@
 //!
 //! Provides the API routes for the visual page builder.
 
-use axum::{Router, routing::get, extract::State, Json};
-use sqlx::PgPool;
+use axum::{extract::State, routing::get, Json, Router};
 use serde::Serialize;
+use sqlx::PgPool;
 
 /// API state for RustBuilder
 #[derive(Clone)]

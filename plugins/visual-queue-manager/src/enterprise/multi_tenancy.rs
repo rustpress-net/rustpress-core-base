@@ -227,7 +227,10 @@ impl TenancyManager {
     }
 
     /// Validate tenant context for an operation
-    pub async fn validate_context(&self, ctx: &TenantContext) -> Result<(), super::EnterpriseError> {
+    pub async fn validate_context(
+        &self,
+        ctx: &TenantContext,
+    ) -> Result<(), super::EnterpriseError> {
         let tenants = self.tenants.read().await;
 
         let tenant = tenants

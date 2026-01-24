@@ -2,27 +2,27 @@
 //!
 //! Contains all data transfer objects and domain models.
 
-pub mod queue;
-pub mod message;
-pub mod worker;
-pub mod handler;
-pub mod subscription;
-pub mod job;
 pub mod alert;
 pub mod audit;
+pub mod handler;
+pub mod job;
+pub mod message;
+pub mod queue;
+pub mod subscription;
+pub mod worker;
 
-pub use queue::*;
-pub use message::*;
-pub use worker::*;
-pub use handler::*;
-pub use subscription::*;
-pub use job::*;
 pub use alert::*;
 pub use audit::*;
+pub use handler::*;
+pub use job::*;
+pub use message::*;
+pub use queue::*;
+pub use subscription::*;
+pub use worker::*;
 
-use serde::{Serialize, Deserialize};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /// Common pagination parameters
 #[derive(Debug, Clone, Serialize, Deserialize)]

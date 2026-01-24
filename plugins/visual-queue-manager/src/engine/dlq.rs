@@ -2,15 +2,15 @@
 //!
 //! Handles messages that have failed processing after all retry attempts.
 
-use std::sync::Arc;
-use sqlx::{PgPool, Row, FromRow};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use sqlx::{FromRow, PgPool, Row};
+use std::sync::Arc;
 use tokio::sync::broadcast;
+use uuid::Uuid;
 
-use super::{EngineError, EngineEvent};
 use super::storage::StorageBackend;
+use super::{EngineError, EngineEvent};
 
 /// DLQ policy configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -188,7 +188,7 @@ impl DeadLetterQueue {
             SELECT id, queue_id, message_type, payload, headers, created_at,
                    attempt_count, last_error, metadata
             FROM vqm_messages WHERE id = $1
-            "#
+            "#,
         )
         .bind(message_id)
         .fetch_optional(&self.pool)
@@ -204,7 +204,7 @@ impl DeadLetterQueue {
                 original_created_at, moved_to_dlq_at, reason, failure_count,
                 last_error, metadata
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-            "#
+            "#,
         )
         .bind(dlq_id)
         .bind(message_id)
@@ -227,7 +227,7 @@ impl DeadLetterQueue {
             UPDATE vqm_messages
             SET status = 'dead_letter', completed_at = $2
             WHERE id = $1
-            "#
+            "#,
         )
         .bind(message_id)
         .bind(now)
@@ -241,11 +241,7 @@ impl DeadLetterQueue {
             reason: reason.to_string(),
         });
 
-        tracing::info!(
-            "Message {} moved to DLQ: {}",
-            message_id,
-            reason
-        );
+        tracing::info!("Message {} moved to DLQ: {}", message_id, reason);
 
         Ok(())
     }
@@ -260,7 +256,7 @@ impl DeadLetterQueue {
             SELECT id, original_message_id, queue_id, message_type, payload,
                    headers, retry_count, metadata
             FROM vqm_dead_letter_queue WHERE id = $1
-            "#
+            "#,
         )
         .bind(dlq_id)
         .fetch_optional(&self.pool)
@@ -275,7 +271,7 @@ impl DeadLetterQueue {
                 id, queue_id, message_type, payload, headers, status,
                 attempt_count, created_at, metadata
             ) VALUES ($1, $2, $3, $4, $5, 'pending', 0, $6, $7)
-            "#
+            "#,
         )
         .bind(new_message_id)
         .bind(entry.queue_id)
@@ -295,7 +291,7 @@ impl DeadLetterQueue {
                 last_retry_at = $2,
                 retried_message_id = $3
             WHERE id = $1
-            "#
+            "#,
         )
         .bind(dlq_id)
         .bind(now)
@@ -334,7 +330,7 @@ impl DeadLetterQueue {
             AND can_retry = true
             ORDER BY moved_to_dlq_at ASC
             LIMIT $3
-            "#
+            "#,
         )
         .bind(queue_id)
         .bind(reason_filter)
@@ -357,12 +353,10 @@ impl DeadLetterQueue {
 
     /// Delete a DLQ message
     pub async fn delete_message(&self, dlq_id: Uuid) -> Result<bool, EngineError> {
-        let result = sqlx::query(
-            "DELETE FROM vqm_dead_letter_queue WHERE id = $1"
-        )
-        .bind(dlq_id)
-        .execute(&self.pool)
-        .await?;
+        let result = sqlx::query("DELETE FROM vqm_dead_letter_queue WHERE id = $1")
+            .bind(dlq_id)
+            .execute(&self.pool)
+            .await?;
 
         Ok(result.rows_affected() > 0)
     }
@@ -378,7 +372,7 @@ impl DeadLetterQueue {
             DELETE FROM vqm_dead_letter_queue
             WHERE ($1::uuid IS NULL OR queue_id = $1)
             AND ($2::timestamptz IS NULL OR moved_to_dlq_at < $2)
-            "#
+            "#,
         )
         .bind(queue_id)
         .bind(older_than)
@@ -396,7 +390,7 @@ impl DeadLetterQueue {
                    original_created_at, moved_to_dlq_at, reason, failure_count,
                    last_error, retry_count, can_retry, metadata
             FROM vqm_dead_letter_queue WHERE id = $1
-            "#
+            "#,
         )
         .bind(dlq_id)
         .fetch_optional(&self.pool)
@@ -434,7 +428,7 @@ impl DeadLetterQueue {
             SELECT COUNT(*) FROM vqm_dead_letter_queue
             WHERE ($1::uuid IS NULL OR queue_id = $1)
             AND ($2::text IS NULL OR reason ILIKE '%' || $2 || '%')
-            "#
+            "#,
         )
         .bind(queue_id)
         .bind(reason_filter)
@@ -451,7 +445,7 @@ impl DeadLetterQueue {
             AND ($2::text IS NULL OR reason ILIKE '%' || $2 || '%')
             ORDER BY moved_to_dlq_at DESC
             OFFSET $3 LIMIT $4
-            "#
+            "#,
         )
         .bind(queue_id)
         .bind(reason_filter)
@@ -460,8 +454,9 @@ impl DeadLetterQueue {
         .fetch_all(&self.pool)
         .await?;
 
-        let messages: Vec<DlqMessage> = rows.into_iter().map(|row| {
-            DlqMessage {
+        let messages: Vec<DlqMessage> = rows
+            .into_iter()
+            .map(|row| DlqMessage {
                 id: row.id,
                 original_message_id: row.original_message_id,
                 queue_id: row.queue_id,
@@ -476,19 +471,18 @@ impl DeadLetterQueue {
                 retry_count: row.retry_count.unwrap_or(0),
                 can_retry: row.can_retry.unwrap_or(true),
                 metadata: row.metadata.unwrap_or(serde_json::json!({})),
-            }
-        }).collect();
+            })
+            .collect();
 
         Ok((messages, total))
     }
 
     /// Get DLQ statistics
     pub async fn get_stats(&self) -> Result<DlqStats, EngineError> {
-        let total: i64 = sqlx::query_scalar::<_, i64>(
-            r#"SELECT COUNT(*) FROM vqm_dead_letter_queue"#
-        )
-        .fetch_one(&self.pool)
-        .await?;
+        let total: i64 =
+            sqlx::query_scalar::<_, i64>(r#"SELECT COUNT(*) FROM vqm_dead_letter_queue"#)
+                .fetch_one(&self.pool)
+                .await?;
 
         let by_queue = sqlx::query_as::<_, QueueStatsRow>(
             r#"
@@ -497,7 +491,7 @@ impl DeadLetterQueue {
             JOIN vqm_queues q ON d.queue_id = q.id
             GROUP BY d.queue_id, q.name
             ORDER BY count DESC
-            "#
+            "#,
         )
         .fetch_all(&self.pool)
         .await?;
@@ -508,7 +502,7 @@ impl DeadLetterQueue {
             FROM vqm_dead_letter_queue
             GROUP BY reason
             ORDER BY count DESC
-            "#
+            "#,
         )
         .fetch_all(&self.pool)
         .await?;
@@ -520,23 +514,25 @@ impl DeadLetterQueue {
                 MAX(moved_to_dlq_at) as newest,
                 AVG(EXTRACT(EPOCH FROM (NOW() - moved_to_dlq_at)) / 3600) as avg_age_hours
             FROM vqm_dead_letter_queue
-            "#
+            "#,
         )
         .fetch_one(&self.pool)
         .await?;
 
         let retry_pending: i64 = sqlx::query_scalar::<_, i64>(
-            r#"SELECT COUNT(*) FROM vqm_dead_letter_queue WHERE can_retry = true"#
+            r#"SELECT COUNT(*) FROM vqm_dead_letter_queue WHERE can_retry = true"#,
         )
         .fetch_one(&self.pool)
         .await?;
 
         Ok(DlqStats {
             total_messages: total as u64,
-            messages_by_queue: by_queue.into_iter()
+            messages_by_queue: by_queue
+                .into_iter()
                 .map(|r| (r.queue_id, r.name, r.count as u64))
                 .collect(),
-            messages_by_reason: by_reason.into_iter()
+            messages_by_reason: by_reason
+                .into_iter()
                 .map(|r| (r.reason, r.count as u64))
                 .collect(),
             oldest_message: time_stats.oldest,
@@ -548,12 +544,10 @@ impl DeadLetterQueue {
 
     /// Mark a DLQ message as non-retryable
     pub async fn mark_non_retryable(&self, dlq_id: Uuid) -> Result<(), EngineError> {
-        sqlx::query(
-            "UPDATE vqm_dead_letter_queue SET can_retry = false WHERE id = $1"
-        )
-        .bind(dlq_id)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("UPDATE vqm_dead_letter_queue SET can_retry = false WHERE id = $1")
+            .bind(dlq_id)
+            .execute(&self.pool)
+            .await?;
 
         Ok(())
     }
@@ -594,12 +588,10 @@ impl DeadLetterQueue {
     pub async fn cleanup(&self, retention_days: u32) -> Result<u64, EngineError> {
         let cutoff = Utc::now() - chrono::Duration::days(retention_days as i64);
 
-        let result = sqlx::query(
-            "DELETE FROM vqm_dead_letter_queue WHERE moved_to_dlq_at < $1"
-        )
-        .bind(cutoff)
-        .execute(&self.pool)
-        .await?;
+        let result = sqlx::query("DELETE FROM vqm_dead_letter_queue WHERE moved_to_dlq_at < $1")
+            .bind(cutoff)
+            .execute(&self.pool)
+            .await?;
 
         let deleted = result.rows_affected();
         if deleted > 0 {

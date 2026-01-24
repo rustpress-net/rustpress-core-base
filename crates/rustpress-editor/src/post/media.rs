@@ -250,7 +250,7 @@ pub struct GpsCoordinates {
 pub struct VideoMeta {
     pub width: u32,
     pub height: u32,
-    pub duration: u32,    // seconds
+    pub duration: u32, // seconds
     pub frame_rate: Option<f32>,
     pub bitrate: Option<u32>,
     pub codec: Option<String>,
@@ -262,7 +262,7 @@ pub struct VideoMeta {
 /// Audio-specific metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AudioMeta {
-    pub duration: u32,    // seconds
+    pub duration: u32, // seconds
     pub bitrate: Option<u32>,
     pub sample_rate: Option<u32>,
     pub channels: Option<u8>,

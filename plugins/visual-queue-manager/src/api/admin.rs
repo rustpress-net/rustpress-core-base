@@ -6,21 +6,20 @@
 // =============================================================================
 
 use axum::{
-    Router,
-    routing::{get, post, put, delete},
-    extract::{Path, Query, Extension, Json},
+    extract::{Extension, Json, Path, Query},
     http::StatusCode,
+    routing::{delete, get, post, put},
+    Router,
 };
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
 use std::sync::Arc;
+use uuid::Uuid;
 
 use super::{
-    ApiResponse, ApiError, AppError, ResponseMeta,
-    PaginationParams, DateRangeParams, AuthUser,
-    parse_uuid,
+    parse_uuid, ApiError, ApiResponse, AppError, AuthUser, DateRangeParams, PaginationParams,
+    ResponseMeta,
 };
 use crate::VisualQueueManager;
 
@@ -368,7 +367,7 @@ async fn get_system_status(
             COUNT(*) FILTER (WHERE status = 'idle'),
             COUNT(*) FILTER (WHERE status = 'offline')
         FROM vqm_workers
-        "#
+        "#,
     )
     .fetch_one(pool)
     .await
@@ -385,7 +384,7 @@ async fn get_system_status(
             SUM(pending_count)
         FROM vqm_queues
         WHERE is_system_queue = false
-        "#
+        "#,
     )
     .fetch_one(pool)
     .await
@@ -435,21 +434,22 @@ async fn get_config(
 
     let pool = plugin.db_pool();
 
-    let config: Option<(serde_json::Value, DateTime<Utc>, Option<String>)> = sqlx::query_as(
-        "SELECT settings, updated_at, updated_by FROM vqm_config WHERE id = 1"
-    )
-    .fetch_optional(pool)
-    .await?;
+    let config: Option<(serde_json::Value, DateTime<Utc>, Option<String>)> =
+        sqlx::query_as("SELECT settings, updated_at, updated_by FROM vqm_config WHERE id = 1")
+            .fetch_optional(pool)
+            .await?;
 
-    let response = config.map(|(settings, updated, by)| ConfigResponse {
-        settings,
-        last_updated: updated,
-        updated_by: by,
-    }).unwrap_or(ConfigResponse {
-        settings: serde_json::json!({}),
-        last_updated: Utc::now(),
-        updated_by: None,
-    });
+    let response = config
+        .map(|(settings, updated, by)| ConfigResponse {
+            settings,
+            last_updated: updated,
+            updated_by: by,
+        })
+        .unwrap_or(ConfigResponse {
+            settings: serde_json::json!({}),
+            last_updated: Utc::now(),
+            updated_by: None,
+        });
 
     Ok(Json(ApiResponse::success(response)))
 }
@@ -472,22 +472,24 @@ async fn update_config(
         VALUES (1, $1, CURRENT_TIMESTAMP, $2)
         ON CONFLICT (id) DO UPDATE
         SET settings = $1, updated_at = CURRENT_TIMESTAMP, updated_by = $2
-        "#
+        "#,
     )
     .bind(&req.settings)
     .bind(&auth.username)
     .execute(pool)
     .await?;
 
-    plugin.log_audit(
-        "config.updated",
-        "config",
-        "update",
-        None,
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "config.updated",
+            "config",
+            "update",
+            None,
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     get_config(Extension(plugin), auth).await
 }
@@ -504,11 +506,10 @@ async fn get_config_value(
 
     let pool = plugin.db_pool();
 
-    let config: Option<(serde_json::Value,)> = sqlx::query_as(
-        "SELECT settings FROM vqm_config WHERE id = 1"
-    )
-    .fetch_optional(pool)
-    .await?;
+    let config: Option<(serde_json::Value,)> =
+        sqlx::query_as("SELECT settings FROM vqm_config WHERE id = 1")
+            .fetch_optional(pool)
+            .await?;
 
     let value = config
         .map(|(settings,)| settings.get(&key).cloned())
@@ -538,7 +539,7 @@ async fn set_config_value(
         ON CONFLICT (id) DO UPDATE
         SET settings = vqm_config.settings || jsonb_build_object($1, $2),
             updated_at = CURRENT_TIMESTAMP, updated_by = $3
-        "#
+        "#,
     )
     .bind(&key)
     .bind(&value)
@@ -561,7 +562,9 @@ async fn start_maintenance(
 
     let pool = plugin.db_pool();
 
-    let estimated_end = req.estimated_duration_minutes.map(|m| Utc::now() + Duration::minutes(m as i64));
+    let estimated_end = req
+        .estimated_duration_minutes
+        .map(|m| Utc::now() + Duration::minutes(m as i64));
 
     sqlx::query(
         r#"
@@ -582,15 +585,17 @@ async fn start_maintenance(
         .execute(pool)
         .await?;
 
-    plugin.log_audit(
-        "maintenance.started",
-        "system",
-        "start_maintenance",
-        None,
-        req.reason.as_deref(),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "maintenance.started",
+            "system",
+            "start_maintenance",
+            None,
+            req.reason.as_deref(),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     get_maintenance_status(Extension(plugin), auth).await
 }
@@ -615,15 +620,17 @@ async fn stop_maintenance(
         .execute(pool)
         .await?;
 
-    plugin.log_audit(
-        "maintenance.stopped",
-        "system",
-        "stop_maintenance",
-        None,
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "maintenance.stopped",
+            "system",
+            "stop_maintenance",
+            None,
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     get_maintenance_status(Extension(plugin), auth).await
 }
@@ -645,19 +652,21 @@ async fn get_maintenance_status(
     .fetch_optional(pool)
     .await?;
 
-    let response = status.map(|(active, started, by, reason, end)| MaintenanceStatus {
-        is_active: active,
-        started_at: started,
-        started_by: by,
-        reason,
-        estimated_end: end,
-    }).unwrap_or(MaintenanceStatus {
-        is_active: false,
-        started_at: None,
-        started_by: None,
-        reason: None,
-        estimated_end: None,
-    });
+    let response = status
+        .map(|(active, started, by, reason, end)| MaintenanceStatus {
+            is_active: active,
+            started_at: started,
+            started_by: by,
+            reason,
+            estimated_end: end,
+        })
+        .unwrap_or(MaintenanceStatus {
+            is_active: false,
+            started_at: None,
+            started_by: None,
+            reason: None,
+            estimated_end: None,
+        });
 
     Ok(Json(ApiResponse::success(response)))
 }
@@ -677,12 +686,14 @@ async fn cleanup_old_messages(
     let dry_run = req.dry_run.unwrap_or(false);
     let start = std::time::Instant::now();
 
-    let statuses = req.statuses.unwrap_or_else(|| vec![
-        "completed".to_string(),
-        "failed".to_string(),
-        "dead".to_string(),
-        "cancelled".to_string(),
-    ]);
+    let statuses = req.statuses.unwrap_or_else(|| {
+        vec![
+            "completed".to_string(),
+            "failed".to_string(),
+            "dead".to_string(),
+            "cancelled".to_string(),
+        ]
+    });
 
     let count: (i64,) = if dry_run {
         sqlx::query_as(
@@ -690,7 +701,7 @@ async fn cleanup_old_messages(
             SELECT COUNT(*) FROM vqm_messages
             WHERE status = ANY($1)
             AND completed_at < CURRENT_TIMESTAMP - ($2 || ' days')::INTERVAL
-            "#
+            "#,
         )
         .bind(&statuses)
         .bind(days.to_string())
@@ -702,7 +713,7 @@ async fn cleanup_old_messages(
             DELETE FROM vqm_messages
             WHERE status = ANY($1)
             AND completed_at < CURRENT_TIMESTAMP - ($2 || ' days')::INTERVAL
-            "#
+            "#,
         )
         .bind(&statuses)
         .bind(days.to_string())
@@ -713,15 +724,17 @@ async fn cleanup_old_messages(
     };
 
     if !dry_run {
-        plugin.log_audit(
-            "cleanup.messages",
-            "system",
-            "cleanup",
-            None,
-            Some(&format!("Deleted {} messages", count.0)),
-            Some(auth.id),
-            Some(&auth.username),
-        ).await;
+        plugin
+            .log_audit(
+                "cleanup.messages",
+                "system",
+                "cleanup",
+                None,
+                Some(&format!("Deleted {} messages", count.0)),
+                Some(auth.id),
+                Some(&auth.username),
+            )
+            .await;
     }
 
     Ok(Json(ApiResponse::success(CleanupResult {
@@ -753,7 +766,7 @@ async fn cleanup_audit_logs(
             SELECT COUNT(*) FROM vqm_audit_logs
             WHERE event_time < CURRENT_TIMESTAMP - ($1 || ' days')::INTERVAL
             AND is_sensitive = false
-            "#
+            "#,
         )
         .bind(days.to_string())
         .fetch_one(pool)
@@ -764,7 +777,7 @@ async fn cleanup_audit_logs(
             DELETE FROM vqm_audit_logs
             WHERE event_time < CURRENT_TIMESTAMP - ($1 || ' days')::INTERVAL
             AND is_sensitive = false
-            "#
+            "#,
         )
         .bind(days.to_string())
         .execute(pool)
@@ -901,20 +914,23 @@ async fn get_db_stats(
         JOIN pg_stat_user_tables s ON c.relname = s.relname
         WHERE c.relname LIKE 'vqm_%'
         ORDER BY pg_total_relation_size(c.oid) DESC
-        "#
+        "#,
     )
     .fetch_all(pool)
     .await
     .unwrap_or_default();
 
-    let table_stats: Vec<TableStats> = tables.into_iter().map(|(name, rows, total, idx)| TableStats {
-        table_name: name,
-        row_count: rows,
-        total_size_bytes: total,
-        index_size_bytes: idx,
-        last_vacuum: None,
-        last_analyze: None,
-    }).collect();
+    let table_stats: Vec<TableStats> = tables
+        .into_iter()
+        .map(|(name, rows, total, idx)| TableStats {
+            table_name: name,
+            row_count: rows,
+            total_size_bytes: total,
+            index_size_bytes: idx,
+            last_vacuum: None,
+            last_analyze: None,
+        })
+        .collect();
 
     let total_size: i64 = table_stats.iter().map(|t| t.total_size_bytes).sum();
 
@@ -950,15 +966,17 @@ async fn vacuum_database(
         .execute(pool)
         .await?;
 
-    plugin.log_audit(
-        "database.vacuumed",
-        "system",
-        "vacuum",
-        None,
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "database.vacuumed",
+            "system",
+            "vacuum",
+            None,
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(Json(ApiResponse::success(())))
 }
@@ -978,15 +996,17 @@ async fn reindex_tables(
         .execute(pool)
         .await?;
 
-    plugin.log_audit(
-        "database.reindexed",
-        "system",
-        "reindex",
-        None,
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "database.reindexed",
+            "system",
+            "reindex",
+            None,
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(Json(ApiResponse::success(())))
 }
@@ -1187,13 +1207,19 @@ async fn create_api_key(
     }
 
     let key_id = Uuid::new_v4();
-    let full_key = format!("vqm_{}_{}", key_id.to_string().replace("-", "")[..8].to_string(), generate_random_string(32));
+    let full_key = format!(
+        "vqm_{}_{}",
+        key_id.to_string().replace("-", "")[..8].to_string(),
+        generate_random_string(32)
+    );
 
     Ok(Json(ApiResponse::success(CreateApiKeyResponse {
         id: key_id,
         name: req.name,
         key: full_key,
-        expires_at: req.expires_in_days.map(|d| Utc::now() + Duration::days(d as i64)),
+        expires_at: req
+            .expires_in_days
+            .map(|d| Utc::now() + Duration::days(d as i64)),
     })))
 }
 
@@ -1225,7 +1251,11 @@ async fn create_backup(
         size_bytes: 0,
         created_at: Utc::now(),
         created_by: auth.username,
-        includes: vec!["queues".to_string(), "messages".to_string(), "config".to_string()],
+        includes: vec![
+            "queues".to_string(),
+            "messages".to_string(),
+            "config".to_string(),
+        ],
     };
 
     Ok(Json(ApiResponse::success(backup)))
@@ -1269,12 +1299,11 @@ async fn debug_queue(
     let queue_id = parse_uuid(&id)?;
     let pool = plugin.db_pool();
 
-    let raw: Option<serde_json::Value> = sqlx::query_scalar(
-        "SELECT to_jsonb(q.*) FROM vqm_queues q WHERE id = $1"
-    )
-    .bind(queue_id)
-    .fetch_optional(pool)
-    .await?;
+    let raw: Option<serde_json::Value> =
+        sqlx::query_scalar("SELECT to_jsonb(q.*) FROM vqm_queues q WHERE id = $1")
+            .bind(queue_id)
+            .fetch_optional(pool)
+            .await?;
 
     let diagnostics = serde_json::json!({
         "lock_status": "none",
@@ -1304,12 +1333,11 @@ async fn debug_message(
     let message_id = parse_uuid(&id)?;
     let pool = plugin.db_pool();
 
-    let raw: Option<serde_json::Value> = sqlx::query_scalar(
-        "SELECT to_jsonb(m.*) FROM vqm_messages m WHERE id = $1"
-    )
-    .bind(message_id)
-    .fetch_optional(pool)
-    .await?;
+    let raw: Option<serde_json::Value> =
+        sqlx::query_scalar("SELECT to_jsonb(m.*) FROM vqm_messages m WHERE id = $1")
+            .bind(message_id)
+            .fetch_optional(pool)
+            .await?;
 
     Ok(Json(ApiResponse::success(DebugInfo {
         entity_type: "message".to_string(),

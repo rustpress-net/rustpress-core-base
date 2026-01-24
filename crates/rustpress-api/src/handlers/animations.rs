@@ -73,12 +73,24 @@ pub struct AnimationSettings {
     pub scroll_offset: i32,
 }
 
-fn default_duration() -> i32 { 500 }
-fn default_easing() -> String { "ease".to_string() }
-fn default_repeat() -> i32 { 1 }
-fn default_direction() -> String { "normal".to_string() }
-fn default_fill_mode() -> String { "forwards".to_string() }
-fn default_trigger() -> String { "load".to_string() }
+fn default_duration() -> i32 {
+    500
+}
+fn default_easing() -> String {
+    "ease".to_string()
+}
+fn default_repeat() -> i32 {
+    1
+}
+fn default_direction() -> String {
+    "normal".to_string()
+}
+fn default_fill_mode() -> String {
+    "forwards".to_string()
+}
+fn default_trigger() -> String {
+    "load".to_string()
+}
 
 impl Default for AnimationSettings {
     fn default() -> Self {

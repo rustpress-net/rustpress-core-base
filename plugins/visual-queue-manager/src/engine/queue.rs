@@ -2,17 +2,17 @@
 //!
 //! Handles queue creation, configuration, and operations.
 
-use std::sync::Arc;
-use std::collections::HashMap;
-use tokio::sync::RwLock;
-use sqlx::{PgPool, FromRow, Row};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use sqlx::{FromRow, PgPool, Row};
+use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::sync::broadcast;
+use tokio::sync::RwLock;
+use uuid::Uuid;
 
-use super::{EngineError, EngineEvent};
 use super::storage::StorageBackend;
+use super::{EngineError, EngineEvent};
 
 /// Queue state
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -238,17 +238,17 @@ impl QueueManager {
         self.validate_config(&config)?;
 
         // Check for duplicate name
-        let existing: Option<Uuid> = sqlx::query_scalar(
-            "SELECT id FROM vqm_queues WHERE name = $1"
-        )
-        .bind(&config.name)
-        .fetch_optional(&self.pool)
-        .await?;
+        let existing: Option<Uuid> =
+            sqlx::query_scalar("SELECT id FROM vqm_queues WHERE name = $1")
+                .bind(&config.name)
+                .fetch_optional(&self.pool)
+                .await?;
 
         if existing.is_some() {
-            return Err(EngineError::InvalidConfig(
-                format!("Queue with name '{}' already exists", config.name)
-            ));
+            return Err(EngineError::InvalidConfig(format!(
+                "Queue with name '{}' already exists",
+                config.name
+            )));
         }
 
         // Insert into database
@@ -263,7 +263,7 @@ impl QueueManager {
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
             )
-            "#
+            "#,
         )
         .bind(id)
         .bind(&config.name)
@@ -325,7 +325,7 @@ impl QueueManager {
                    content_based_deduplication, deduplication_window_secs,
                    rate_limit_per_second, dlq_queue_id, metadata, created_at, updated_at
             FROM vqm_queues WHERE id = $1
-            "#
+            "#,
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -342,13 +342,11 @@ impl QueueManager {
 
     /// Get queue by name
     pub async fn get_queue_by_name(&self, name: &str) -> Result<QueueInfo, EngineError> {
-        let id: Uuid = sqlx::query_scalar(
-            "SELECT id FROM vqm_queues WHERE name = $1"
-        )
-        .bind(name)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or_else(|| EngineError::InvalidConfig(format!("Queue '{}' not found", name)))?;
+        let id: Uuid = sqlx::query_scalar("SELECT id FROM vqm_queues WHERE name = $1")
+            .bind(name)
+            .fetch_optional(&self.pool)
+            .await?
+            .ok_or_else(|| EngineError::InvalidConfig(format!("Queue '{}' not found", name)))?;
 
         self.get_queue(id).await
     }
@@ -383,7 +381,7 @@ impl QueueManager {
                 metadata = $15,
                 updated_at = $16
             WHERE id = $1
-            "#
+            "#,
         )
         .bind(id)
         .bind(&config.name)
@@ -418,16 +416,17 @@ impl QueueManager {
             r#"
             SELECT COUNT(*) FROM vqm_messages
             WHERE queue_id = $1 AND status IN ('pending', 'processing')
-            "#
+            "#,
         )
         .bind(id)
         .fetch_one(&self.pool)
         .await?;
 
         if pending_count > 0 {
-            return Err(EngineError::InvalidConfig(
-                format!("Cannot delete queue with {} pending messages", pending_count)
-            ));
+            return Err(EngineError::InvalidConfig(format!(
+                "Cannot delete queue with {} pending messages",
+                pending_count
+            )));
         }
 
         // Delete the queue
@@ -444,12 +443,10 @@ impl QueueManager {
 
     /// Pause a queue
     pub async fn pause_queue(&self, id: Uuid) -> Result<(), EngineError> {
-        sqlx::query(
-            "UPDATE vqm_queues SET status = 'paused', updated_at = NOW() WHERE id = $1"
-        )
-        .bind(id)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("UPDATE vqm_queues SET status = 'paused', updated_at = NOW() WHERE id = $1")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
 
         // Update cache
         if let Some(info) = self.cache.write().await.get_mut(&id) {
@@ -457,19 +454,19 @@ impl QueueManager {
             info.updated_at = Utc::now();
         }
 
-        let _ = self.event_tx.send(EngineEvent::QueuePaused { queue_id: id });
+        let _ = self
+            .event_tx
+            .send(EngineEvent::QueuePaused { queue_id: id });
 
         Ok(())
     }
 
     /// Resume a queue
     pub async fn resume_queue(&self, id: Uuid) -> Result<(), EngineError> {
-        sqlx::query(
-            "UPDATE vqm_queues SET status = 'active', updated_at = NOW() WHERE id = $1"
-        )
-        .bind(id)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("UPDATE vqm_queues SET status = 'active', updated_at = NOW() WHERE id = $1")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
 
         // Update cache
         if let Some(info) = self.cache.write().await.get_mut(&id) {
@@ -477,19 +474,19 @@ impl QueueManager {
             info.updated_at = Utc::now();
         }
 
-        let _ = self.event_tx.send(EngineEvent::QueueResumed { queue_id: id });
+        let _ = self
+            .event_tx
+            .send(EngineEvent::QueueResumed { queue_id: id });
 
         Ok(())
     }
 
     /// Purge all messages from a queue
     pub async fn purge_queue(&self, id: Uuid) -> Result<u64, EngineError> {
-        let result = sqlx::query(
-            "DELETE FROM vqm_messages WHERE queue_id = $1"
-        )
-        .bind(id)
-        .execute(&self.pool)
-        .await?;
+        let result = sqlx::query("DELETE FROM vqm_messages WHERE queue_id = $1")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
 
         Ok(result.rows_affected())
     }
@@ -511,7 +508,7 @@ impl QueueManager {
                     FILTER (WHERE completed_at IS NOT NULL) as avg_processing_ms,
                 MIN(created_at) FILTER (WHERE status = 'pending') as oldest_pending
             FROM vqm_messages WHERE queue_id = $1
-            "#
+            "#,
         )
         .bind(id)
         .fetch_one(&self.pool)
@@ -531,7 +528,7 @@ impl QueueManager {
             r#"
             SELECT COUNT(*) FROM vqm_messages
             WHERE queue_id = $1 AND created_at > NOW() - INTERVAL '5 minutes'
-            "#
+            "#,
         )
         .bind(id)
         .fetch_one(&self.pool)
@@ -539,9 +536,7 @@ impl QueueManager {
 
         let messages_per_minute = recent_count as f64 / 5.0;
 
-        let oldest_age = oldest_pending.map(|t| {
-            (Utc::now() - t).num_seconds() as u64
-        });
+        let oldest_age = oldest_pending.map(|t| (Utc::now() - t).num_seconds() as u64);
 
         Ok(QueueStats {
             queue_id: id,
@@ -568,7 +563,7 @@ impl QueueManager {
                 COUNT(*) as total,
                 COUNT(*) FILTER (WHERE status = 'active') as active
             FROM vqm_queues
-            "#
+            "#,
         )
         .fetch_one(&self.pool)
         .await?;
@@ -583,7 +578,7 @@ impl QueueManager {
                 COUNT(*) FILTER (WHERE status = 'pending') as pending,
                 COUNT(*) FILTER (WHERE status = 'processing') as processing
             FROM vqm_messages
-            "#
+            "#,
         )
         .fetch_one(&self.pool)
         .await?;
@@ -614,7 +609,7 @@ impl QueueManager {
             r#"
             SELECT COUNT(*) FROM vqm_queues
             WHERE ($1::text IS NULL OR status = $1)
-            "#
+            "#,
         )
         .bind(&state_str)
         .fetch_one(&self.pool)
@@ -631,7 +626,7 @@ impl QueueManager {
             WHERE ($1::text IS NULL OR status = $1)
             ORDER BY created_at DESC
             OFFSET $2 LIMIT $3
-            "#
+            "#,
         )
         .bind(&state_str)
         .bind(offset)
@@ -655,7 +650,9 @@ impl QueueManager {
     /// Validate queue configuration
     fn validate_config(&self, config: &QueueConfig) -> Result<(), EngineError> {
         if config.name.is_empty() {
-            return Err(EngineError::InvalidConfig("Queue name cannot be empty".into()));
+            return Err(EngineError::InvalidConfig(
+                "Queue name cannot be empty".into(),
+            ));
         }
 
         if config.name.len() > 255 {
@@ -664,19 +661,19 @@ impl QueueManager {
 
         if config.max_message_size > 10 * 1024 * 1024 {
             return Err(EngineError::InvalidConfig(
-                "Max message size cannot exceed 10MB".into()
+                "Max message size cannot exceed 10MB".into(),
             ));
         }
 
         if config.max_retries > 100 {
             return Err(EngineError::InvalidConfig(
-                "Max retries cannot exceed 100".into()
+                "Max retries cannot exceed 100".into(),
             ));
         }
 
         if config.visibility_timeout_secs < 1 {
             return Err(EngineError::InvalidConfig(
-                "Visibility timeout must be at least 1 second".into()
+                "Visibility timeout must be at least 1 second".into(),
             ));
         }
 

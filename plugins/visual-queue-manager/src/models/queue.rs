@@ -1,8 +1,8 @@
 //! Queue Data Models
 
-use serde::{Serialize, Deserialize};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validator::Validate;
 
 /// Queue status

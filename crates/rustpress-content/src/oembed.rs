@@ -122,7 +122,10 @@ impl OembedResponse {
                     title, provider
                 )
             } else {
-                format!("<div class=\"wp-embed-link\"><a href=\"#\">{}</a></div>", title)
+                format!(
+                    "<div class=\"wp-embed-link\"><a href=\"#\">{}</a></div>",
+                    title
+                )
             }
         }
     }
@@ -133,17 +136,21 @@ fn make_iframe_responsive(html: &str, max_width: Option<u32>) -> String {
     let width_re = Regex::new(r#"width="(\d+)""#).unwrap();
     let height_re = Regex::new(r#"height="(\d+)""#).unwrap();
 
-    let width: f64 = width_re.captures(html)
+    let width: f64 = width_re
+        .captures(html)
         .and_then(|c| c[1].parse().ok())
         .unwrap_or(560.0);
 
-    let height: f64 = height_re.captures(html)
+    let height: f64 = height_re
+        .captures(html)
         .and_then(|c| c[1].parse().ok())
         .unwrap_or(315.0);
 
     let aspect_ratio = height / width * 100.0;
 
-    let max_w = max_width.map(|w| format!("max-width: {}px;", w)).unwrap_or_default();
+    let max_w = max_width
+        .map(|w| format!("max-width: {}px;", w))
+        .unwrap_or_default();
 
     format!(
         r#"<div class="wp-embed-responsive" style="position: relative; padding-bottom: {:.2}%; height: 0; overflow: hidden; {}">
@@ -190,15 +197,20 @@ impl OembedProvider {
     /// Check if URL matches this provider
     pub fn matches(&self, url: &str) -> bool {
         self.url_patterns.iter().any(|pattern| {
-            let regex_pattern = pattern
-                .replace(".", r"\.")
-                .replace("*", ".*");
-            Regex::new(&regex_pattern).map(|re| re.is_match(url)).unwrap_or(false)
+            let regex_pattern = pattern.replace(".", r"\.").replace("*", ".*");
+            Regex::new(&regex_pattern)
+                .map(|re| re.is_match(url))
+                .unwrap_or(false)
         })
     }
 
     /// Build oEmbed request URL
-    pub fn build_request_url(&self, content_url: &str, max_width: Option<u32>, max_height: Option<u32>) -> String {
+    pub fn build_request_url(
+        &self,
+        content_url: &str,
+        max_width: Option<u32>,
+        max_height: Option<u32>,
+    ) -> String {
         let mut url = if self.endpoint.contains('?') {
             format!("{}&url={}", self.endpoint, urlencoding::encode(content_url))
         } else {
@@ -281,20 +293,14 @@ impl OembedRegistry {
         // Vimeo
         self.register(OembedProvider::new(
             "Vimeo",
-            vec![
-                "https://vimeo.com/*",
-                "https://player.vimeo.com/video/*",
-            ],
+            vec!["https://vimeo.com/*", "https://player.vimeo.com/video/*"],
             "https://vimeo.com/api/oembed.json",
         ));
 
         // Twitter/X
         self.register(OembedProvider::new(
             "Twitter",
-            vec![
-                "https://twitter.com/*/status/*",
-                "https://x.com/*/status/*",
-            ],
+            vec!["https://twitter.com/*/status/*", "https://x.com/*/status/*"],
             "https://publish.twitter.com/oembed",
         ));
 
@@ -311,55 +317,42 @@ impl OembedRegistry {
         // Spotify
         self.register(OembedProvider::new(
             "Spotify",
-            vec![
-                "https://open.spotify.com/*",
-            ],
+            vec!["https://open.spotify.com/*"],
             "https://open.spotify.com/oembed",
         ));
 
         // SoundCloud
         self.register(OembedProvider::new(
             "SoundCloud",
-            vec![
-                "https://soundcloud.com/*",
-            ],
+            vec!["https://soundcloud.com/*"],
             "https://soundcloud.com/oembed",
         ));
 
         // TikTok
         self.register(OembedProvider::new(
             "TikTok",
-            vec![
-                "https://www.tiktok.com/*/video/*",
-            ],
+            vec!["https://www.tiktok.com/*/video/*"],
             "https://www.tiktok.com/oembed",
         ));
 
         // CodePen
         self.register(OembedProvider::new(
             "CodePen",
-            vec![
-                "https://codepen.io/*/pen/*",
-            ],
+            vec!["https://codepen.io/*/pen/*"],
             "https://codepen.io/api/oembed",
         ));
 
         // Flickr
         self.register(OembedProvider::new(
             "Flickr",
-            vec![
-                "https://www.flickr.com/photos/*",
-                "https://flic.kr/p/*",
-            ],
+            vec!["https://www.flickr.com/photos/*", "https://flic.kr/p/*"],
             "https://www.flickr.com/services/oembed/",
         ));
 
         // SlideShare
         self.register(OembedProvider::new(
             "SlideShare",
-            vec![
-                "https://www.slideshare.net/*/*",
-            ],
+            vec!["https://www.slideshare.net/*/*"],
             "https://www.slideshare.net/api/oembed/2",
         ));
     }
@@ -381,24 +374,29 @@ impl OembedRegistry {
 
     /// Get cached response
     pub fn get_cached(&self, url: &str) -> Option<&OembedResponse> {
-        self.cache.get(url).filter(|c| !c.is_expired()).map(|c| &c.response)
+        self.cache
+            .get(url)
+            .filter(|c| !c.is_expired())
+            .map(|c| &c.response)
     }
 
     /// Cache a response
     pub fn cache_response(&mut self, url: &str, response: OembedResponse) {
         let cache_duration = response.cache_age.unwrap_or(self.default_cache_time);
-        self.cache.insert(url.to_string(), CachedEmbed {
-            response,
-            cached_at: std::time::Instant::now(),
-            cache_duration,
-        });
+        self.cache.insert(
+            url.to_string(),
+            CachedEmbed {
+                response,
+                cached_at: std::time::Instant::now(),
+                cache_duration,
+            },
+        );
     }
 
     /// Get embed request URL for provider
     pub fn get_request_url(&self, url: &str) -> Option<String> {
-        self.find_provider(url).map(|p| {
-            p.build_request_url(url, self.max_width, self.max_height)
-        })
+        self.find_provider(url)
+            .map(|p| p.build_request_url(url, self.max_width, self.max_height))
     }
 
     /// Clear expired cache entries

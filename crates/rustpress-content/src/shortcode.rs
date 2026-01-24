@@ -81,7 +81,10 @@ impl ShortcodeAttributes {
 
     /// Get a named attribute or default
     pub fn get_or(&self, key: &str, default: &str) -> String {
-        self.named.get(key).cloned().unwrap_or_else(|| default.to_string())
+        self.named
+            .get(key)
+            .cloned()
+            .unwrap_or_else(|| default.to_string())
     }
 
     /// Get a named attribute as integer
@@ -91,9 +94,9 @@ impl ShortcodeAttributes {
 
     /// Get a named attribute as boolean
     pub fn get_bool(&self, key: &str) -> Option<bool> {
-        self.named.get(key).map(|v| {
-            matches!(v.to_lowercase().as_str(), "true" | "yes" | "1" | "on")
-        })
+        self.named
+            .get(key)
+            .map(|v| matches!(v.to_lowercase().as_str(), "true" | "yes" | "1" | "on"))
     }
 
     /// Get a named attribute as comma-separated list
@@ -277,7 +280,11 @@ pub trait ShortcodeHandler: Send + Sync {
 pub struct FnShortcodeHandler {
     tag: String,
     description: String,
-    handler: Box<dyn Fn(&Shortcode, &ShortcodeContext) -> Result<ShortcodeOutput, ShortcodeError> + Send + Sync>,
+    handler: Box<
+        dyn Fn(&Shortcode, &ShortcodeContext) -> Result<ShortcodeOutput, ShortcodeError>
+            + Send
+            + Sync,
+    >,
     supports_enclosing: bool,
     supports_nesting: bool,
 }
@@ -285,7 +292,10 @@ pub struct FnShortcodeHandler {
 impl FnShortcodeHandler {
     pub fn new<F>(tag: impl Into<String>, handler: F) -> Self
     where
-        F: Fn(&Shortcode, &ShortcodeContext) -> Result<ShortcodeOutput, ShortcodeError> + Send + Sync + 'static,
+        F: Fn(&Shortcode, &ShortcodeContext) -> Result<ShortcodeOutput, ShortcodeError>
+            + Send
+            + Sync
+            + 'static,
     {
         Self {
             tag: tag.into(),
@@ -410,7 +420,8 @@ impl ShortcodeParser {
 
                     let after_opening = pos + full_match.end();
                     if let Some(closing_match) = closing_re.find(&content[after_opening..]) {
-                        let inner_content = &content[after_opening..after_opening + closing_match.start()];
+                        let inner_content =
+                            &content[after_opening..after_opening + closing_match.start()];
                         let full_end = after_opening + closing_match.end();
                         let full_raw = &content[start_pos..full_end];
 
@@ -463,7 +474,9 @@ impl ShortcodeParser {
         }
 
         // Regex for named attributes: key="value" or key='value' or key=value
-        let named_re = Regex::new(r#"([a-zA-Z_][a-zA-Z0-9_-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s\]]+))"#).unwrap();
+        let named_re =
+            Regex::new(r#"([a-zA-Z_][a-zA-Z0-9_-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s\]]+))"#)
+                .unwrap();
 
         // Regex for positional attributes (quoted strings without key=)
         let positional_re = Regex::new(r#"(?:^|\s)(?:"([^"]*)"|'([^']*)')"#).unwrap();
@@ -472,7 +485,8 @@ impl ShortcodeParser {
         let mut named_positions: Vec<(usize, usize)> = Vec::new();
         for caps in named_re.captures_iter(trimmed) {
             let key = caps.get(1).unwrap().as_str().to_string();
-            let value = caps.get(2)
+            let value = caps
+                .get(2)
                 .or_else(|| caps.get(3))
                 .or_else(|| caps.get(4))
                 .map(|m| m.as_str())
@@ -488,9 +502,12 @@ impl ShortcodeParser {
             let start = full_match.start();
 
             // Skip if this was part of a named attribute
-            let is_named = named_positions.iter().any(|(s, e)| start >= *s && start < *e);
+            let is_named = named_positions
+                .iter()
+                .any(|(s, e)| start >= *s && start < *e);
             if !is_named {
-                let value = caps.get(1)
+                let value = caps
+                    .get(1)
                     .or_else(|| caps.get(2))
                     .map(|m| m.as_str())
                     .unwrap_or("");
@@ -545,13 +562,19 @@ impl ShortcodeRegistry {
     /// Register a shortcode handler
     pub fn register<H: ShortcodeHandler + 'static>(&self, handler: H) {
         let tag = handler.tag().to_string();
-        self.handlers.write().unwrap().insert(tag, Box::new(handler));
+        self.handlers
+            .write()
+            .unwrap()
+            .insert(tag, Box::new(handler));
     }
 
     /// Register a function-based shortcode
     pub fn register_fn<F>(&self, tag: impl Into<String>, handler: F)
     where
-        F: Fn(&Shortcode, &ShortcodeContext) -> Result<ShortcodeOutput, ShortcodeError> + Send + Sync + 'static,
+        F: Fn(&Shortcode, &ShortcodeContext) -> Result<ShortcodeOutput, ShortcodeError>
+            + Send
+            + Sync
+            + 'static,
     {
         let tag_str = tag.into();
         self.register(FnShortcodeHandler::new(tag_str, handler));
@@ -573,7 +596,11 @@ impl ShortcodeRegistry {
     }
 
     /// Process shortcodes in content
-    pub fn process(&self, content: &str, context: &ShortcodeContext) -> Result<String, ShortcodeError> {
+    pub fn process(
+        &self,
+        content: &str,
+        context: &ShortcodeContext,
+    ) -> Result<String, ShortcodeError> {
         if !self.parser.has_shortcodes(content) {
             return Ok(content.to_string());
         }
@@ -748,7 +775,9 @@ impl ShortcodeRegistry {
 
         // [embed] - oEmbed wrapper
         self.register_fn("embed", |sc, _ctx| {
-            let url = sc.content.as_deref()
+            let url = sc
+                .content
+                .as_deref()
                 .or_else(|| sc.attributes.get("url"))
                 .or_else(|| sc.attributes.positional(0))
                 .unwrap_or("");
@@ -780,7 +809,9 @@ impl ShortcodeRegistry {
 
         // [code] - Code block
         self.register_fn("code", |sc, _ctx| {
-            let language = sc.attributes.get("lang")
+            let language = sc
+                .attributes
+                .get("lang")
                 .or_else(|| sc.attributes.get("language"))
                 .or_else(|| sc.attributes.positional(0))
                 .unwrap_or("plaintext");
@@ -991,7 +1022,9 @@ mod tests {
     #[test]
     fn test_parse_attributes() {
         let parser = ShortcodeParser::new();
-        let attrs = parser.parse_attributes(r#"id="test" width='300' height=200"#).unwrap();
+        let attrs = parser
+            .parse_attributes(r#"id="test" width='300' height=200"#)
+            .unwrap();
 
         assert_eq!(attrs.get("id"), Some("test"));
         assert_eq!(attrs.get("width"), Some("300"));
@@ -1003,7 +1036,9 @@ mod tests {
         let registry = ShortcodeRegistry::new();
         let ctx = ShortcodeContext::new();
 
-        let result = registry.process("[code lang=\"rust\"]fn main() {}[/code]", &ctx).unwrap();
+        let result = registry
+            .process("[code lang=\"rust\"]fn main() {}[/code]", &ctx)
+            .unwrap();
         assert!(result.contains("<pre><code"));
         assert!(result.contains("language-rust"));
     }

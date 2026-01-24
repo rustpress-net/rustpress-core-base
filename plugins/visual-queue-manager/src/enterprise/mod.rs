@@ -3,15 +3,15 @@
 //! Advanced features for enterprise deployments including multi-tenancy,
 //! encryption, rate limiting, and compliance features.
 
-mod multi_tenancy;
-mod encryption;
-mod rate_limiter;
 mod compliance;
+mod encryption;
+mod multi_tenancy;
+mod rate_limiter;
 
-pub use multi_tenancy::*;
-pub use encryption::*;
-pub use rate_limiter::*;
 pub use compliance::*;
+pub use encryption::*;
+pub use multi_tenancy::*;
+pub use rate_limiter::*;
 
 use std::sync::Arc;
 

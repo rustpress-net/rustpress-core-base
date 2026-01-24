@@ -12,7 +12,7 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use similar::{ChangeTag, TextDiff, Algorithm};
+use similar::{Algorithm, ChangeTag, TextDiff};
 use std::collections::HashMap;
 use thiserror::Error;
 use uuid::Uuid;
@@ -612,8 +612,7 @@ impl RevisionManager {
         excerpt: &str,
         revision_type: RevisionType,
     ) -> Revision {
-        Revision::from_post(post_id, author_id, title, content, excerpt)
-            .with_type(revision_type)
+        Revision::from_post(post_id, author_id, title, content, excerpt).with_type(revision_type)
     }
 
     /// Compare two revisions
@@ -665,7 +664,9 @@ impl RevisionManager {
                 // Conflict - both changed differently
                 return Err(RevisionError::ConflictDetected(format!(
                     "Conflict at line {}: '{}' vs '{}'",
-                    i + 1, our_line, their_line
+                    i + 1,
+                    our_line,
+                    their_line
                 )));
             }
         }
@@ -684,7 +685,8 @@ impl RevisionManager {
 
         // Keep publishes if configured
         let mut to_keep: Vec<&Revision> = if self.keep_all_publishes {
-            revisions.iter()
+            revisions
+                .iter()
                 .filter(|r| r.revision_type == RevisionType::Publish)
                 .collect()
         } else {
@@ -757,7 +759,12 @@ impl AutosaveManager {
     }
 
     /// Check if autosave should be triggered
-    pub fn should_autosave(&self, last_content: &str, current_content: &str, elapsed_seconds: u64) -> bool {
+    pub fn should_autosave(
+        &self,
+        last_content: &str,
+        current_content: &str,
+        elapsed_seconds: u64,
+    ) -> bool {
         if !self.config.enabled {
             return false;
         }
@@ -784,16 +791,13 @@ impl AutosaveManager {
         content: &str,
         excerpt: &str,
     ) -> Revision {
-        Revision::from_post(post_id, author_id, title, content, excerpt)
-            .as_autosave()
+        Revision::from_post(post_id, author_id, title, content, excerpt).as_autosave()
     }
 
     /// Clean up old autosaves
     pub fn cleanup_autosaves(&self, revisions: &mut Vec<Revision>) {
         // Get only autosaves
-        let mut autosaves: Vec<&Revision> = revisions.iter()
-            .filter(|r| r.is_autosave)
-            .collect();
+        let mut autosaves: Vec<&Revision> = revisions.iter().filter(|r| r.is_autosave).collect();
 
         if autosaves.len() <= self.config.max_autosaves {
             return;
@@ -833,9 +837,15 @@ mod tests {
 
         let changes = diff.diff_text(old, new);
 
-        assert!(changes.iter().any(|c| c.change_type == ChangeType::Equal && c.text.contains("Hello")));
-        assert!(changes.iter().any(|c| c.change_type == ChangeType::Delete && c.text.contains("World")));
-        assert!(changes.iter().any(|c| c.change_type == ChangeType::Insert && c.text.contains("Rust")));
+        assert!(changes
+            .iter()
+            .any(|c| c.change_type == ChangeType::Equal && c.text.contains("Hello")));
+        assert!(changes
+            .iter()
+            .any(|c| c.change_type == ChangeType::Delete && c.text.contains("World")));
+        assert!(changes
+            .iter()
+            .any(|c| c.change_type == ChangeType::Insert && c.text.contains("Rust")));
     }
 
     #[test]

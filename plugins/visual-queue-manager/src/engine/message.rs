@@ -2,19 +2,19 @@
 //!
 //! Handles message enqueueing, claiming, acknowledgment, and processing.
 
+use chrono::{DateTime, Duration, Utc};
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use sqlx::{FromRow, PgPool, Row};
 use std::sync::Arc;
 use std::time::Instant;
-use tokio::sync::RwLock;
-use sqlx::{PgPool, Row, FromRow};
-use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
-use serde::{Serialize, Deserialize};
 use tokio::sync::broadcast;
-use sha2::{Sha256, Digest};
+use tokio::sync::RwLock;
+use uuid::Uuid;
 
-use super::{EngineError, EngineEvent};
-use super::storage::StorageBackend;
 use super::retry::RetryPolicy;
+use super::storage::StorageBackend;
+use super::{EngineError, EngineEvent};
 
 /// Message status
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -259,13 +259,12 @@ impl MessageProcessor {
         }
 
         // Get queue configuration for max_attempts
-        let queue_config: QueueConfigRow = sqlx::query_as::<_, QueueConfigRow>(
-            "SELECT max_retries FROM vqm_queues WHERE id = $1",
-        )
-        .bind(request.queue_id)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or(EngineError::QueueNotFound(request.queue_id))?;
+        let queue_config: QueueConfigRow =
+            sqlx::query_as::<_, QueueConfigRow>("SELECT max_retries FROM vqm_queues WHERE id = $1")
+                .bind(request.queue_id)
+                .fetch_optional(&self.pool)
+                .await?
+                .ok_or(EngineError::QueueNotFound(request.queue_id))?;
 
         let max_attempts = queue_config.max_retries.unwrap_or(3);
         let status = if request.scheduled_at.is_some() {
@@ -494,48 +493,47 @@ impl MessageProcessor {
         .fetch_all(&self.pool)
         .await?;
 
-        let messages: Vec<Message> = rows.into_iter().map(|row| {
-            // Emit event for each claimed message
-            let _ = self.event_tx.send(EngineEvent::MessageProcessingStarted {
-                queue_id: row.queue_id,
-                message_id: row.id,
-                worker_id,
-            });
+        let messages: Vec<Message> = rows
+            .into_iter()
+            .map(|row| {
+                // Emit event for each claimed message
+                let _ = self.event_tx.send(EngineEvent::MessageProcessingStarted {
+                    queue_id: row.queue_id,
+                    message_id: row.id,
+                    worker_id,
+                });
 
-            Message {
-                id: row.id,
-                queue_id: row.queue_id,
-                message_type: row.message_type,
-                payload: row.payload,
-                headers: row.headers.unwrap_or(serde_json::json!({})),
-                priority: row.priority.unwrap_or(0),
-                status: MessageStatus::Processing,
-                attempt_count: row.attempt_count.unwrap_or(1),
-                max_attempts: row.max_attempts.unwrap_or(3),
-                created_at: row.created_at,
-                scheduled_at: row.scheduled_at,
-                processing_started_at: row.processing_started_at,
-                completed_at: row.completed_at,
-                visibility_timeout_at: row.visibility_timeout_at,
-                deduplication_id: row.deduplication_id,
-                group_id: row.group_id,
-                correlation_id: row.correlation_id,
-                trace_id: row.trace_id,
-                claimed_by: row.claimed_by,
-                last_error: row.last_error,
-                metadata: row.metadata.unwrap_or(serde_json::json!({})),
-            }
-        }).collect();
+                Message {
+                    id: row.id,
+                    queue_id: row.queue_id,
+                    message_type: row.message_type,
+                    payload: row.payload,
+                    headers: row.headers.unwrap_or(serde_json::json!({})),
+                    priority: row.priority.unwrap_or(0),
+                    status: MessageStatus::Processing,
+                    attempt_count: row.attempt_count.unwrap_or(1),
+                    max_attempts: row.max_attempts.unwrap_or(3),
+                    created_at: row.created_at,
+                    scheduled_at: row.scheduled_at,
+                    processing_started_at: row.processing_started_at,
+                    completed_at: row.completed_at,
+                    visibility_timeout_at: row.visibility_timeout_at,
+                    deduplication_id: row.deduplication_id,
+                    group_id: row.group_id,
+                    correlation_id: row.correlation_id,
+                    trace_id: row.trace_id,
+                    claimed_by: row.claimed_by,
+                    last_error: row.last_error,
+                    metadata: row.metadata.unwrap_or(serde_json::json!({})),
+                }
+            })
+            .collect();
 
         Ok(messages)
     }
 
     /// Acknowledge successful message processing
-    pub async fn acknowledge(
-        &self,
-        message_id: Uuid,
-        worker_id: Uuid,
-    ) -> Result<(), EngineError> {
+    pub async fn acknowledge(&self, message_id: Uuid, worker_id: Uuid) -> Result<(), EngineError> {
         let now = Utc::now();
 
         let result: Option<AcknowledgeRow> = sqlx::query_as::<_, AcknowledgeRow>(
@@ -556,7 +554,8 @@ impl MessageProcessor {
         let row = result.ok_or(EngineError::MessageNotFound(message_id))?;
 
         // Calculate processing time
-        let processing_time_ms = row.processing_started_at
+        let processing_time_ms = row
+            .processing_started_at
             .map(|start| (now - start).num_milliseconds() as u64)
             .unwrap_or(0);
 
@@ -591,7 +590,9 @@ impl MessageProcessor {
         let should_retry = message.attempt_count < message.max_attempts;
 
         if should_retry {
-            let delay = self.retry_policy.calculate_delay(message.attempt_count as u32);
+            let delay = self
+                .retry_policy
+                .calculate_delay(message.attempt_count as u32);
             let retry_at = Utc::now() + Duration::milliseconds(delay as i64);
 
             sqlx::query(
@@ -657,11 +658,7 @@ impl MessageProcessor {
     }
 
     /// Schedule a message for retry
-    pub async fn schedule_retry(
-        &self,
-        message_id: Uuid,
-        delay_ms: u64,
-    ) -> Result<(), EngineError> {
+    pub async fn schedule_retry(&self, message_id: Uuid, delay_ms: u64) -> Result<(), EngineError> {
         let retry_at = Utc::now() + Duration::milliseconds(delay_ms as i64);
 
         sqlx::query(
@@ -807,13 +804,11 @@ impl MessageProcessor {
         queue_id: Uuid,
         status: MessageStatus,
     ) -> Result<u64, EngineError> {
-        let result = sqlx::query(
-            "DELETE FROM vqm_messages WHERE queue_id = $1 AND status = $2",
-        )
-        .bind(queue_id)
-        .bind(status.to_string())
-        .execute(&self.pool)
-        .await?;
+        let result = sqlx::query("DELETE FROM vqm_messages WHERE queue_id = $1 AND status = $2")
+            .bind(queue_id)
+            .bind(status.to_string())
+            .execute(&self.pool)
+            .await?;
 
         Ok(result.rows_affected())
     }
@@ -843,13 +838,11 @@ impl MessageProcessor {
         message_id: Uuid,
         priority: i32,
     ) -> Result<(), EngineError> {
-        sqlx::query(
-            "UPDATE vqm_messages SET priority = $2 WHERE id = $1 AND status = 'pending'",
-        )
-        .bind(message_id)
-        .bind(priority)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("UPDATE vqm_messages SET priority = $2 WHERE id = $1 AND status = 'pending'")
+            .bind(message_id)
+            .bind(priority)
+            .execute(&self.pool)
+            .await?;
 
         Ok(())
     }

@@ -185,57 +185,67 @@ impl WorkflowManager {
     /// Initialize default status transitions
     fn init_default_transitions(&mut self) {
         // Draft can go to: Pending, Publish, Future, Private, Trash
-        self.transitions.insert(PostStatus::Draft, vec![
-            PostStatus::Pending,
-            PostStatus::Publish,
-            PostStatus::Future,
-            PostStatus::Private,
-            PostStatus::Trash,
-        ]);
+        self.transitions.insert(
+            PostStatus::Draft,
+            vec![
+                PostStatus::Pending,
+                PostStatus::Publish,
+                PostStatus::Future,
+                PostStatus::Private,
+                PostStatus::Trash,
+            ],
+        );
 
         // Auto-draft can go to: Draft, Trash
-        self.transitions.insert(PostStatus::AutoDraft, vec![
-            PostStatus::Draft,
-            PostStatus::Trash,
-        ]);
+        self.transitions.insert(
+            PostStatus::AutoDraft,
+            vec![PostStatus::Draft, PostStatus::Trash],
+        );
 
         // Pending can go to: Draft, Publish, Future, Private, Trash
-        self.transitions.insert(PostStatus::Pending, vec![
-            PostStatus::Draft,
-            PostStatus::Publish,
-            PostStatus::Future,
-            PostStatus::Private,
-            PostStatus::Trash,
-        ]);
+        self.transitions.insert(
+            PostStatus::Pending,
+            vec![
+                PostStatus::Draft,
+                PostStatus::Publish,
+                PostStatus::Future,
+                PostStatus::Private,
+                PostStatus::Trash,
+            ],
+        );
 
         // Publish can go to: Draft, Pending, Private, Trash
-        self.transitions.insert(PostStatus::Publish, vec![
-            PostStatus::Draft,
-            PostStatus::Pending,
-            PostStatus::Private,
-            PostStatus::Trash,
-        ]);
+        self.transitions.insert(
+            PostStatus::Publish,
+            vec![
+                PostStatus::Draft,
+                PostStatus::Pending,
+                PostStatus::Private,
+                PostStatus::Trash,
+            ],
+        );
 
         // Future can go to: Draft, Pending, Publish, Private, Trash
-        self.transitions.insert(PostStatus::Future, vec![
-            PostStatus::Draft,
-            PostStatus::Pending,
-            PostStatus::Publish,
-            PostStatus::Private,
-            PostStatus::Trash,
-        ]);
+        self.transitions.insert(
+            PostStatus::Future,
+            vec![
+                PostStatus::Draft,
+                PostStatus::Pending,
+                PostStatus::Publish,
+                PostStatus::Private,
+                PostStatus::Trash,
+            ],
+        );
 
         // Private can go to: Draft, Publish, Trash
-        self.transitions.insert(PostStatus::Private, vec![
-            PostStatus::Draft,
-            PostStatus::Publish,
-            PostStatus::Trash,
-        ]);
+        self.transitions.insert(
+            PostStatus::Private,
+            vec![PostStatus::Draft, PostStatus::Publish, PostStatus::Trash],
+        );
 
         // Trash can go to: Draft (restore)
-        self.transitions.insert(PostStatus::Trash, vec![
-            PostStatus::Draft,
-        ]);
+        self.transitions
+            .insert(PostStatus::Trash, vec![PostStatus::Draft]);
     }
 
     /// Check if transition is allowed
@@ -270,12 +280,12 @@ impl WorkflowManager {
             if let Some(date) = context.scheduled_date {
                 if date <= Utc::now() {
                     return Err(WorkflowError::InvalidScheduleDate(
-                        "Schedule date must be in the future".to_string()
+                        "Schedule date must be in the future".to_string(),
                     ));
                 }
             } else {
                 return Err(WorkflowError::InvalidScheduleDate(
-                    "Schedule date is required for future posts".to_string()
+                    "Schedule date is required for future posts".to_string(),
                 ));
             }
         }
@@ -291,13 +301,18 @@ impl WorkflowManager {
     }
 
     /// Check if user has permission for transition
-    fn has_permission(&self, from: PostStatus, to: PostStatus, context: &TransitionContext) -> bool {
+    fn has_permission(
+        &self,
+        from: PostStatus,
+        to: PostStatus,
+        context: &TransitionContext,
+    ) -> bool {
         // Contributors can only create drafts and submit for pending
         if context.role == UserRole::Contributor {
             return matches!(
                 (from, to),
-                (PostStatus::Draft, PostStatus::Pending) |
-                (PostStatus::AutoDraft, PostStatus::Draft)
+                (PostStatus::Draft, PostStatus::Pending)
+                    | (PostStatus::AutoDraft, PostStatus::Draft)
             );
         }
 
@@ -423,7 +438,13 @@ pub struct ContentLock {
 }
 
 impl ContentLock {
-    pub fn new(content_id: i64, content_type: &str, user_id: i64, user_name: &str, duration_minutes: i64) -> Self {
+    pub fn new(
+        content_id: i64,
+        content_type: &str,
+        user_id: i64,
+        user_name: &str,
+        duration_minutes: i64,
+    ) -> Self {
         let now = Utc::now();
         Self {
             id: Uuid::new_v4(),
@@ -542,13 +563,24 @@ impl LockManager {
         }
 
         // Create new lock
-        let lock = ContentLock::new(content_id, content_type, user_id, user_name, self.default_duration);
+        let lock = ContentLock::new(
+            content_id,
+            content_type,
+            user_id,
+            user_name,
+            self.default_duration,
+        );
         self.locks.insert(content_id, lock.clone());
         Ok(lock)
     }
 
     /// Release a lock
-    pub fn release(&mut self, content_id: i64, user_id: i64, token: &str) -> Result<(), WorkflowError> {
+    pub fn release(
+        &mut self,
+        content_id: i64,
+        user_id: i64,
+        token: &str,
+    ) -> Result<(), WorkflowError> {
         if let Some(lock) = self.locks.get(&content_id) {
             if lock.user_id != user_id {
                 return Err(WorkflowError::NotAuthorized);
@@ -563,7 +595,12 @@ impl LockManager {
     }
 
     /// Update heartbeat for a lock
-    pub fn heartbeat(&mut self, content_id: i64, user_id: i64, token: &str) -> Result<(), WorkflowError> {
+    pub fn heartbeat(
+        &mut self,
+        content_id: i64,
+        user_id: i64,
+        token: &str,
+    ) -> Result<(), WorkflowError> {
         if let Some(lock) = self.locks.get_mut(&content_id) {
             if lock.user_id != user_id {
                 return Err(WorkflowError::NotAuthorized);
@@ -580,9 +617,9 @@ impl LockManager {
 
     /// Check if content is locked
     pub fn is_locked(&self, content_id: i64) -> Option<&ContentLock> {
-        self.locks.get(&content_id).filter(|lock| {
-            !lock.is_expired() && !lock.is_heartbeat_stale(self.heartbeat_timeout)
-        })
+        self.locks
+            .get(&content_id)
+            .filter(|lock| !lock.is_expired() && !lock.is_heartbeat_stale(self.heartbeat_timeout))
     }
 
     /// Check if user can edit content
@@ -618,14 +655,16 @@ impl LockManager {
 
     /// Get all active locks
     pub fn get_all_locks(&self) -> Vec<&ContentLock> {
-        self.locks.values()
+        self.locks
+            .values()
             .filter(|lock| !lock.is_expired() && !lock.is_heartbeat_stale(self.heartbeat_timeout))
             .collect()
     }
 
     /// Get locks by user
     pub fn get_user_locks(&self, user_id: i64) -> Vec<&ContentLock> {
-        self.locks.values()
+        self.locks
+            .values()
             .filter(|lock| lock.user_id == user_id && !lock.is_expired())
             .collect()
     }
@@ -711,7 +750,7 @@ impl WorkflowScheduler {
     ) -> Result<ScheduledPost, WorkflowError> {
         if date <= Utc::now() {
             return Err(WorkflowError::InvalidScheduleDate(
-                "Date must be in the future".to_string()
+                "Date must be in the future".to_string(),
             ));
         }
 
@@ -738,7 +777,8 @@ impl WorkflowScheduler {
     /// Get posts due for publication
     pub fn get_due_posts(&self) -> Vec<&ScheduledPost> {
         let now = Utc::now();
-        self.scheduled.iter()
+        self.scheduled
+            .iter()
             .filter(|s| s.scheduled_date <= now)
             .collect()
     }
@@ -746,7 +786,9 @@ impl WorkflowScheduler {
     /// Process due posts (returns post IDs to publish)
     pub fn process_due(&mut self) -> Vec<i64> {
         let now = Utc::now();
-        let due: Vec<i64> = self.scheduled.iter()
+        let due: Vec<i64> = self
+            .scheduled
+            .iter()
             .filter(|s| s.scheduled_date <= now)
             .map(|s| s.post_id)
             .collect();

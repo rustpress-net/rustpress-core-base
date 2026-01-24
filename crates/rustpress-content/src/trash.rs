@@ -59,7 +59,14 @@ pub struct TrashedItem {
 }
 
 impl TrashedItem {
-    pub fn new(id: i64, item_type: &str, title: &str, previous_status: &str, trashed_by: i64, retention_days: i64) -> Self {
+    pub fn new(
+        id: i64,
+        item_type: &str,
+        title: &str,
+        previous_status: &str,
+        trashed_by: i64,
+        retention_days: i64,
+    ) -> Self {
         let now = Utc::now();
         Self {
             id,
@@ -168,7 +175,9 @@ impl TrashManager {
 
             if self.items.len() >= self.config.max_items {
                 // Remove oldest item
-                if let Some(&oldest_id) = self.items.values()
+                if let Some(&oldest_id) = self
+                    .items
+                    .values()
                     .min_by_key(|item| item.trashed_at)
                     .map(|item| &item.id)
                 {
@@ -177,7 +186,14 @@ impl TrashManager {
             }
         }
 
-        let item = TrashedItem::new(id, item_type, title, previous_status, user_id, self.config.retention_days);
+        let item = TrashedItem::new(
+            id,
+            item_type,
+            title,
+            previous_status,
+            user_id,
+            self.config.retention_days,
+        );
         self.items.insert(id, item.clone());
 
         Ok(item)
@@ -205,21 +221,25 @@ impl TrashManager {
 
     /// Get trashed items by type
     pub fn get_by_type(&self, item_type: &str) -> Vec<&TrashedItem> {
-        self.items.values()
+        self.items
+            .values()
             .filter(|item| item.item_type == item_type)
             .collect()
     }
 
     /// Get expired items
     pub fn get_expired(&self) -> Vec<&TrashedItem> {
-        self.items.values()
+        self.items
+            .values()
             .filter(|item| item.is_expired())
             .collect()
     }
 
     /// Clean up expired items
     pub fn cleanup_expired(&mut self) -> Vec<i64> {
-        let expired_ids: Vec<i64> = self.items.values()
+        let expired_ids: Vec<i64> = self
+            .items
+            .values()
             .filter(|item| item.is_expired())
             .map(|item| item.id)
             .collect();
@@ -245,7 +265,9 @@ impl TrashManager {
 
     /// Empty trash for specific type
     pub fn empty_by_type(&mut self, item_type: &str) -> Vec<TrashedItem> {
-        let to_remove: Vec<i64> = self.items.values()
+        let to_remove: Vec<i64> = self
+            .items
+            .values()
             .filter(|item| item.item_type == item_type)
             .map(|item| item.id)
             .collect();
@@ -267,7 +289,8 @@ impl TrashManager {
 
     /// Get trash count by type
     pub fn count_by_type(&self, item_type: &str) -> usize {
-        self.items.values()
+        self.items
+            .values()
             .filter(|item| item.item_type == item_type)
             .count()
     }

@@ -2,16 +2,16 @@
 //!
 //! Handles scheduled job execution with cron and interval-based scheduling.
 
-use std::sync::Arc;
-use std::collections::HashMap;
-use tokio::sync::RwLock;
-use sqlx::{PgPool, Row, FromRow};
-use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
-use serde::{Serialize, Deserialize};
-use tokio::sync::broadcast;
+use chrono::{DateTime, Duration, Utc};
 use cron::Schedule;
+use serde::{Deserialize, Serialize};
+use sqlx::{FromRow, PgPool, Row};
+use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::Arc;
+use tokio::sync::broadcast;
+use tokio::sync::RwLock;
+use uuid::Uuid;
 
 use super::{EngineError, EngineEvent};
 
@@ -235,9 +235,7 @@ impl JobScheduler {
         let jobs_cache = self.jobs.clone();
 
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(
-                tokio::time::Duration::from_secs(1)
-            );
+            let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(1));
 
             loop {
                 interval.tick().await;
@@ -264,7 +262,7 @@ impl JobScheduler {
                    retry_on_failure, max_retries, total_runs, successful_runs,
                    failed_runs, last_run_at, next_run_at, metadata, created_at, updated_at
             FROM vqm_scheduled_jobs WHERE status IN ('active', 'paused')
-            "#
+            "#,
         )
         .fetch_all(&self.pool)
         .await?;
@@ -286,7 +284,7 @@ impl JobScheduler {
 
             // Fetch dependencies
             let deps: Vec<Uuid> = sqlx::query_scalar::<_, Uuid>(
-                "SELECT dependency_job_id FROM vqm_job_dependencies WHERE job_id = $1"
+                "SELECT dependency_job_id FROM vqm_job_dependencies WHERE job_id = $1",
             )
             .bind(row.id)
             .fetch_all(&self.pool)
@@ -341,14 +339,12 @@ impl JobScheduler {
             ScheduleType::Interval { seconds } => {
                 if *seconds < 1 {
                     return Err(EngineError::InvalidConfig(
-                        "Interval must be at least 1 second".into()
+                        "Interval must be at least 1 second".into(),
                     ));
                 }
                 ("interval", None, Some(*seconds as i64), None)
             }
-            ScheduleType::Once { at } => {
-                ("once", None, None, Some(*at))
-            }
+            ScheduleType::Once { at } => ("once", None, None, Some(*at)),
         };
 
         // Calculate next run time
@@ -396,7 +392,7 @@ impl JobScheduler {
                 r#"
                 INSERT INTO vqm_job_dependencies (job_id, dependency_job_id)
                 VALUES ($1, $2)
-                "#
+                "#,
             )
             .bind(id)
             .bind(dep_id)
@@ -449,7 +445,7 @@ impl JobScheduler {
     /// Pause a job
     pub async fn pause_job(&self, id: Uuid) -> Result<(), EngineError> {
         sqlx::query(
-            "UPDATE vqm_scheduled_jobs SET status = 'paused', updated_at = NOW() WHERE id = $1"
+            "UPDATE vqm_scheduled_jobs SET status = 'paused', updated_at = NOW() WHERE id = $1",
         )
         .bind(id)
         .execute(&self.pool)
@@ -478,7 +474,7 @@ impl JobScheduler {
             UPDATE vqm_scheduled_jobs
             SET status = 'active', next_run_at = $2, updated_at = NOW()
             WHERE id = $1
-            "#
+            "#,
         )
         .bind(id)
         .bind(next_run)
@@ -497,12 +493,10 @@ impl JobScheduler {
     /// Delete a job
     pub async fn delete_job(&self, id: Uuid) -> Result<(), EngineError> {
         // Delete dependencies first
-        sqlx::query(
-            "DELETE FROM vqm_job_dependencies WHERE job_id = $1 OR dependency_job_id = $1"
-        )
-        .bind(id)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("DELETE FROM vqm_job_dependencies WHERE job_id = $1 OR dependency_job_id = $1")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
 
         // Delete executions
         sqlx::query("DELETE FROM vqm_job_executions WHERE job_id = $1")
@@ -526,12 +520,14 @@ impl JobScheduler {
         let job = self.get_job(id).await?;
 
         if job.status == JobStatus::Paused {
-            return Err(EngineError::InvalidConfig("Cannot trigger paused job".into()));
+            return Err(EngineError::InvalidConfig(
+                "Cannot trigger paused job".into(),
+            ));
         }
 
         if job.current_concurrent >= job.max_concurrent {
             return Err(EngineError::InvalidConfig(
-                "Maximum concurrent executions reached".into()
+                "Maximum concurrent executions reached".into(),
             ));
         }
 
@@ -551,18 +547,19 @@ impl JobScheduler {
             r#"
             SELECT COUNT(*) FROM vqm_scheduled_jobs
             WHERE ($1::text IS NULL OR status = $1)
-            "#
+            "#,
         )
         .bind(&status_str)
         .fetch_one(&self.pool)
         .await?;
 
         // Simplified query - just return from cache for active jobs
-        let jobs: Vec<ScheduledJob> = self.jobs.read().await
+        let jobs: Vec<ScheduledJob> = self
+            .jobs
+            .read()
+            .await
             .values()
-            .filter(|j| {
-                status_filter.map_or(true, |s| j.status == s)
-            })
+            .filter(|j| status_filter.map_or(true, |s| j.status == s))
             .skip(offset as usize)
             .take(limit as usize)
             .cloned()
@@ -579,7 +576,7 @@ impl JobScheduler {
         limit: i64,
     ) -> Result<(Vec<JobExecution>, i64), EngineError> {
         let total: i64 = sqlx::query_scalar::<_, i64>(
-            r#"SELECT COUNT(*) FROM vqm_job_executions WHERE job_id = $1"#
+            r#"SELECT COUNT(*) FROM vqm_job_executions WHERE job_id = $1"#,
         )
         .bind(job_id)
         .fetch_one(&self.pool)
@@ -593,7 +590,7 @@ impl JobScheduler {
             WHERE job_id = $1
             ORDER BY started_at DESC
             OFFSET $2 LIMIT $3
-            "#
+            "#,
         )
         .bind(job_id)
         .bind(offset)
@@ -601,8 +598,9 @@ impl JobScheduler {
         .fetch_all(&self.pool)
         .await?;
 
-        let executions: Vec<JobExecution> = rows.into_iter().map(|row| {
-            JobExecution {
+        let executions: Vec<JobExecution> = rows
+            .into_iter()
+            .map(|row| JobExecution {
                 id: row.id,
                 job_id: row.job_id,
                 status: JobStatus::from(row.status),
@@ -613,8 +611,8 @@ impl JobScheduler {
                 error: row.error,
                 retry_count: row.retry_count.unwrap_or(0) as u32,
                 metadata: row.metadata.unwrap_or(serde_json::json!({})),
-            }
-        }).collect();
+            })
+            .collect();
 
         Ok((executions, total))
     }
@@ -640,7 +638,7 @@ async fn execute_due_jobs(
         WHERE status = 'active'
         AND next_run_at <= $1
         AND current_concurrent < max_concurrent
-        "#
+        "#,
     )
     .bind(now)
     .fetch_all(pool)
@@ -674,13 +672,11 @@ async fn execute_due_jobs(
 
             // Update next run time
             let next_run = calculate_next_run(&job.schedule, &job.timezone, Some(now))?;
-            sqlx::query(
-                "UPDATE vqm_scheduled_jobs SET next_run_at = $2 WHERE id = $1"
-            )
-            .bind(job_id)
-            .bind(next_run)
-            .execute(pool)
-            .await?;
+            sqlx::query("UPDATE vqm_scheduled_jobs SET next_run_at = $2 WHERE id = $1")
+                .bind(job_id)
+                .bind(next_run)
+                .execute(pool)
+                .await?;
 
             // Update cache
             if let Some(cached_job) = jobs_cache.write().await.get_mut(&job_id) {
@@ -705,7 +701,7 @@ async fn check_dependencies(pool: &PgPool, job: &ScheduledJob) -> Result<bool, E
             SELECT MAX(completed_at)
             FROM vqm_job_executions
             WHERE job_id = $1 AND status = 'completed'
-            "#
+            "#,
         )
         .bind(dep_id)
         .fetch_one(pool)
@@ -744,7 +740,7 @@ async fn execute_job(
         SET current_concurrent = current_concurrent + 1,
             status = 'running'
         WHERE id = $1
-        "#
+        "#,
     )
     .bind(job.id)
     .execute(pool)
@@ -755,7 +751,7 @@ async fn execute_job(
         r#"
         INSERT INTO vqm_job_executions (id, job_id, status, started_at)
         VALUES ($1, $2, 'running', $3)
-        "#
+        "#,
     )
     .bind(execution_id)
     .bind(job.id)
@@ -779,7 +775,7 @@ async fn execute_job(
         INSERT INTO vqm_messages (
             id, queue_id, message_type, payload, status, created_at
         ) VALUES ($1, $2, $3, $4, 'pending', $5)
-        "#
+        "#,
     )
     .bind(message_id)
     .bind(job.queue_id)
@@ -803,13 +799,17 @@ async fn execute_job(
         UPDATE vqm_job_executions
         SET status = $2, completed_at = $3, duration_ms = $4, message_id = $5, error = $6
         WHERE id = $1
-        "#
+        "#,
     )
     .bind(execution_id)
     .bind(status)
     .bind(completed_at)
     .bind(duration_ms)
-    .bind(if error.is_none() { Some(message_id) } else { None })
+    .bind(if error.is_none() {
+        Some(message_id)
+    } else {
+        None
+    })
     .bind(&error)
     .execute(pool)
     .await?;
@@ -826,7 +826,7 @@ async fn execute_job(
             failed_runs = failed_runs + $3,
             last_run_at = $4
         WHERE id = $1
-        "#
+        "#,
     )
     .bind(job.id)
     .bind(success_inc)
@@ -848,7 +848,11 @@ async fn execute_job(
         started_at: now,
         completed_at: Some(completed_at),
         duration_ms: Some(duration_ms as u64),
-        message_id: if error.is_none() { Some(message_id) } else { None },
+        message_id: if error.is_none() {
+            Some(message_id)
+        } else {
+            None
+        },
         error,
         retry_count: 0,
         metadata: serde_json::json!({}),
@@ -865,15 +869,12 @@ fn calculate_next_run(
 
     match schedule {
         ScheduleType::Cron { expression } => {
-            let cron_schedule = Schedule::from_str(expression).map_err(|e| {
-                EngineError::InvalidConfig(format!("Invalid cron: {}", e))
-            })?;
+            let cron_schedule = Schedule::from_str(expression)
+                .map_err(|e| EngineError::InvalidConfig(format!("Invalid cron: {}", e)))?;
 
             Ok(cron_schedule.after(&base).next())
         }
-        ScheduleType::Interval { seconds } => {
-            Ok(Some(base + Duration::seconds(*seconds as i64)))
-        }
+        ScheduleType::Interval { seconds } => Ok(Some(base + Duration::seconds(*seconds as i64))),
         ScheduleType::Once { at } => {
             if *at > base {
                 Ok(Some(*at))

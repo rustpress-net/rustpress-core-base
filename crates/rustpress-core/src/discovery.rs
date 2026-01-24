@@ -148,7 +148,8 @@ impl DiscoveryService {
 
     /// Add a local source
     pub fn add_local_source(&mut self, path: impl Into<PathBuf>) {
-        self.sources.push(DiscoverySource::Local { path: path.into() });
+        self.sources
+            .push(DiscoverySource::Local { path: path.into() });
     }
 
     /// Add a remote source
@@ -227,9 +228,11 @@ impl DiscoveryService {
         let entries = match std::fs::read_dir(path) {
             Ok(entries) => entries,
             Err(e) => {
-                result
-                    .errors
-                    .push(format!("Failed to read directory {}: {}", path.display(), e));
+                result.errors.push(format!(
+                    "Failed to read directory {}: {}",
+                    path.display(),
+                    e
+                ));
                 return result;
             }
         };
@@ -297,8 +300,8 @@ impl DiscoveryService {
         path: &Path,
         component_type: ComponentType,
     ) -> Result<ComponentManifest, String> {
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| format!("Failed to read file: {}", e))?;
+        let content =
+            std::fs::read_to_string(path).map_err(|e| format!("Failed to read file: {}", e))?;
 
         // Handle different manifest formats
         if path.extension().map_or(false, |ext| ext == "css") {
@@ -440,7 +443,9 @@ impl DiscoveryService {
                 match response.text().await {
                     Ok(content) => {
                         // Try to parse as a list of manifests or a single manifest
-                        if let Ok(manifests) = serde_json::from_str::<Vec<ComponentManifest>>(&content) {
+                        if let Ok(manifests) =
+                            serde_json::from_str::<Vec<ComponentManifest>>(&content)
+                        {
                             for mut manifest in manifests {
                                 manifest.source = Some(DiscoverySource::Remote {
                                     url: url.to_string(),
@@ -517,10 +522,7 @@ impl DiscoveryService {
         let mut result = DiscoveryResult::default();
 
         // Parse GitHub URL to extract owner/repo
-        let parts: Vec<&str> = url
-            .trim_end_matches(".git")
-            .split('/')
-            .collect();
+        let parts: Vec<&str> = url.trim_end_matches(".git").split('/').collect();
 
         if parts.len() < 2 {
             result

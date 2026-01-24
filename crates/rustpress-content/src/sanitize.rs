@@ -156,80 +156,198 @@ impl Default for SanitizeConfig {
 
 /// Default allowed URL schemes
 fn default_url_schemes() -> HashSet<String> {
-    [
-        "http", "https", "mailto", "tel", "ftp", "data",
-    ].iter().map(|s| s.to_string()).collect()
+    ["http", "https", "mailto", "tel", "ftp", "data"]
+        .iter()
+        .map(|s| s.to_string())
+        .collect()
 }
 
 /// Default allowed CSS properties
 fn default_css_properties() -> HashSet<String> {
     [
         // Text
-        "color", "font", "font-family", "font-size", "font-style", "font-weight",
-        "text-align", "text-decoration", "text-indent", "text-transform",
-        "line-height", "letter-spacing", "word-spacing",
+        "color",
+        "font",
+        "font-family",
+        "font-size",
+        "font-style",
+        "font-weight",
+        "text-align",
+        "text-decoration",
+        "text-indent",
+        "text-transform",
+        "line-height",
+        "letter-spacing",
+        "word-spacing",
         // Box model
-        "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
-        "padding", "padding-top", "padding-right", "padding-bottom", "padding-left",
-        "border", "border-width", "border-style", "border-color",
-        "border-top", "border-right", "border-bottom", "border-left",
+        "margin",
+        "margin-top",
+        "margin-right",
+        "margin-bottom",
+        "margin-left",
+        "padding",
+        "padding-top",
+        "padding-right",
+        "padding-bottom",
+        "padding-left",
+        "border",
+        "border-width",
+        "border-style",
+        "border-color",
+        "border-top",
+        "border-right",
+        "border-bottom",
+        "border-left",
         "border-radius",
         // Size
-        "width", "height", "max-width", "max-height", "min-width", "min-height",
+        "width",
+        "height",
+        "max-width",
+        "max-height",
+        "min-width",
+        "min-height",
         // Layout
-        "display", "float", "clear", "vertical-align",
+        "display",
+        "float",
+        "clear",
+        "vertical-align",
         // Background
-        "background", "background-color", "background-image", "background-position",
-        "background-repeat", "background-size",
+        "background",
+        "background-color",
+        "background-image",
+        "background-position",
+        "background-repeat",
+        "background-size",
         // Other
-        "list-style", "list-style-type", "opacity", "visibility",
-    ].iter().map(|s| s.to_string()).collect()
+        "list-style",
+        "list-style-type",
+        "opacity",
+        "visibility",
+    ]
+    .iter()
+    .map(|s| s.to_string())
+    .collect()
 }
 
 /// Get basic allowed tags
 fn basic_tags() -> HashSet<&'static str> {
     [
-        "a", "abbr", "acronym", "b", "bdo", "big", "blockquote", "br", "cite",
-        "code", "dfn", "em", "i", "kbd", "mark", "p", "pre", "q", "s", "samp",
-        "small", "span", "strike", "strong", "sub", "sup", "time", "tt", "u",
-        "var", "wbr",
-    ].into_iter().collect()
+        "a",
+        "abbr",
+        "acronym",
+        "b",
+        "bdo",
+        "big",
+        "blockquote",
+        "br",
+        "cite",
+        "code",
+        "dfn",
+        "em",
+        "i",
+        "kbd",
+        "mark",
+        "p",
+        "pre",
+        "q",
+        "s",
+        "samp",
+        "small",
+        "span",
+        "strike",
+        "strong",
+        "sub",
+        "sup",
+        "time",
+        "tt",
+        "u",
+        "var",
+        "wbr",
+    ]
+    .into_iter()
+    .collect()
 }
 
 /// Get standard WordPress allowed tags
 fn standard_tags() -> HashSet<&'static str> {
     let mut tags = basic_tags();
-    tags.extend([
-        // Lists
-        "ul", "ol", "li", "dl", "dt", "dd",
-        // Headings
-        "h1", "h2", "h3", "h4", "h5", "h6",
-        // Structure
-        "div", "article", "section", "header", "footer", "nav", "aside",
-        "figure", "figcaption", "main",
-        // Media
-        "img", "audio", "video", "source", "track", "picture",
-        // Tables
-        "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption", "colgroup", "col",
-        // Forms (limited)
-        "label", "legend", "fieldset",
-        // Other
-        "hr", "address", "details", "summary", "data", "meter", "progress",
-        "ruby", "rt", "rp",
-    ].into_iter());
+    tags.extend(
+        [
+            // Lists
+            "ul",
+            "ol",
+            "li",
+            "dl",
+            "dt",
+            "dd",
+            // Headings
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            // Structure
+            "div",
+            "article",
+            "section",
+            "header",
+            "footer",
+            "nav",
+            "aside",
+            "figure",
+            "figcaption",
+            "main",
+            // Media
+            "img",
+            "audio",
+            "video",
+            "source",
+            "track",
+            "picture",
+            // Tables
+            "table",
+            "thead",
+            "tbody",
+            "tfoot",
+            "tr",
+            "th",
+            "td",
+            "caption",
+            "colgroup",
+            "col",
+            // Forms (limited)
+            "label",
+            "legend",
+            "fieldset",
+            // Other
+            "hr",
+            "address",
+            "details",
+            "summary",
+            "data",
+            "meter",
+            "progress",
+            "ruby",
+            "rt",
+            "rp",
+        ]
+        .into_iter(),
+    );
     tags
 }
 
 /// Get relaxed allowed tags
 fn relaxed_tags() -> HashSet<&'static str> {
     let mut tags = standard_tags();
-    tags.extend([
-        "iframe", "embed", "object", "param",
-        "form", "input", "button", "select", "option", "optgroup", "textarea",
-        "output", "datalist",
-        "canvas", "svg", "math",
-        "style", "template",
-    ].into_iter());
+    tags.extend(
+        [
+            "iframe", "embed", "object", "param", "form", "input", "button", "select", "option",
+            "optgroup", "textarea", "output", "datalist", "canvas", "svg", "math", "style",
+            "template",
+        ]
+        .into_iter(),
+    );
     tags
 }
 
@@ -239,14 +357,18 @@ fn standard_attributes() -> HashMap<&'static str, HashSet<&'static str>> {
 
     // Global attributes
     let global: HashSet<&str> = [
-        "id", "class", "style", "title", "dir", "lang", "hidden",
-        "data-*", "aria-*", "role", "tabindex",
-    ].into_iter().collect();
+        "id", "class", "style", "title", "dir", "lang", "hidden", "data-*", "aria-*", "role",
+        "tabindex",
+    ]
+    .into_iter()
+    .collect();
 
     // Links
     attrs.insert("a", {
         let mut set = global.clone();
-        set.extend(["href", "target", "rel", "name", "download", "hreflang", "type"]);
+        set.extend([
+            "href", "target", "rel", "name", "download", "hreflang", "type",
+        ]);
         set
     });
 
@@ -254,8 +376,17 @@ fn standard_attributes() -> HashMap<&'static str, HashSet<&'static str>> {
     attrs.insert("img", {
         let mut set = global.clone();
         set.extend([
-            "src", "alt", "width", "height", "loading", "decoding",
-            "srcset", "sizes", "crossorigin", "usemap", "ismap",
+            "src",
+            "alt",
+            "width",
+            "height",
+            "loading",
+            "decoding",
+            "srcset",
+            "sizes",
+            "crossorigin",
+            "usemap",
+            "ismap",
         ]);
         set
     });
@@ -264,8 +395,16 @@ fn standard_attributes() -> HashMap<&'static str, HashSet<&'static str>> {
     attrs.insert("video", {
         let mut set = global.clone();
         set.extend([
-            "src", "poster", "width", "height", "controls", "autoplay",
-            "loop", "muted", "preload", "playsinline",
+            "src",
+            "poster",
+            "width",
+            "height",
+            "controls",
+            "autoplay",
+            "loop",
+            "muted",
+            "preload",
+            "playsinline",
         ]);
         set
     });
@@ -288,8 +427,16 @@ fn standard_attributes() -> HashMap<&'static str, HashSet<&'static str>> {
     attrs.insert("iframe", {
         let mut set = global.clone();
         set.extend([
-            "src", "srcdoc", "name", "sandbox", "allow", "allowfullscreen",
-            "width", "height", "loading", "referrerpolicy",
+            "src",
+            "srcdoc",
+            "name",
+            "sandbox",
+            "allow",
+            "allowfullscreen",
+            "width",
+            "height",
+            "loading",
+            "referrerpolicy",
         ]);
         set
     });
@@ -298,7 +445,9 @@ fn standard_attributes() -> HashMap<&'static str, HashSet<&'static str>> {
     for tag in ["table", "th", "td"] {
         attrs.insert(tag, {
             let mut set = global.clone();
-            set.extend(["align", "valign", "width", "height", "colspan", "rowspan", "scope"]);
+            set.extend([
+                "align", "valign", "width", "height", "colspan", "rowspan", "scope",
+            ]);
             set
         });
     }
@@ -520,15 +669,17 @@ impl Sanitizer {
     fn sanitize_styles(&self, html: &str) -> String {
         let style_re = Regex::new(r#"style="([^"]*)""#).unwrap();
 
-        style_re.replace_all(html, |caps: &regex::Captures| {
-            let styles = &caps[1];
-            let sanitized = self.sanitize_css(styles);
-            if sanitized.is_empty() {
-                String::new()
-            } else {
-                format!("style=\"{}\"", sanitized)
-            }
-        }).to_string()
+        style_re
+            .replace_all(html, |caps: &regex::Captures| {
+                let styles = &caps[1];
+                let sanitized = self.sanitize_css(styles);
+                if sanitized.is_empty() {
+                    String::new()
+                } else {
+                    format!("style=\"{}\"", sanitized)
+                }
+            })
+            .to_string()
     }
 
     /// Sanitize CSS properties
@@ -567,19 +718,21 @@ impl Sanitizer {
     fn process_external_links(&self, html: &str) -> String {
         let link_re = Regex::new(r#"<a([^>]*href=["'])(https?://[^"']+)(["'][^>]*)>"#).unwrap();
 
-        link_re.replace_all(html, |caps: &regex::Captures| {
-            let pre = &caps[1];
-            let url = &caps[2];
-            let post = &caps[3];
+        link_re
+            .replace_all(html, |caps: &regex::Captures| {
+                let pre = &caps[1];
+                let url = &caps[2];
+                let post = &caps[3];
 
-            // Check if already has target
-            let full_tag = format!("<a{}{}{}>", pre, url, post);
-            if full_tag.contains("target=") {
-                return full_tag;
-            }
+                // Check if already has target
+                let full_tag = format!("<a{}{}{}>", pre, url, post);
+                if full_tag.contains("target=") {
+                    return full_tag;
+                }
 
-            format!("<a{}{}{} target=\"_blank\">", pre, url, post)
-        }).to_string()
+                format!("<a{}{}{} target=\"_blank\">", pre, url, post)
+            })
+            .to_string()
     }
 
     /// Convert plain URLs to links
@@ -718,21 +871,21 @@ impl KsesSanitizer {
         // Subscriber level
         capability_tags.insert("subscriber".to_string(), {
             let tags: HashSet<String> = ["a", "b", "i", "em", "strong", "br"]
-                .iter().map(|s| s.to_string()).collect();
+                .iter()
+                .map(|s| s.to_string())
+                .collect();
             tags
         });
 
         // Contributor level
         capability_tags.insert("contributor".to_string(), {
-            let tags: HashSet<String> = basic_tags()
-                .iter().map(|s| s.to_string()).collect();
+            let tags: HashSet<String> = basic_tags().iter().map(|s| s.to_string()).collect();
             tags
         });
 
         // Author level
         capability_tags.insert("author".to_string(), {
-            let mut tags: HashSet<String> = standard_tags()
-                .iter().map(|s| s.to_string()).collect();
+            let mut tags: HashSet<String> = standard_tags().iter().map(|s| s.to_string()).collect();
             tags.remove("iframe");
             tags
         });
@@ -752,7 +905,8 @@ impl KsesSanitizer {
 
     /// Sanitize based on user role
     pub fn sanitize(&self, html: &str, role: &str) -> String {
-        let allowed_tags = self.capability_tags
+        let allowed_tags = self
+            .capability_tags
             .get(role)
             .cloned()
             .unwrap_or_else(|| self.capability_tags.get("subscriber").cloned().unwrap());
@@ -775,7 +929,10 @@ impl KsesSanitizer {
 
     /// Add custom tags for a role
     pub fn add_tags_for_role(&mut self, role: &str, tags: Vec<&str>) {
-        let entry = self.capability_tags.entry(role.to_string()).or_insert_with(HashSet::new);
+        let entry = self
+            .capability_tags
+            .entry(role.to_string())
+            .or_insert_with(HashSet::new);
         entry.extend(tags.iter().map(|s| s.to_string()));
     }
 }

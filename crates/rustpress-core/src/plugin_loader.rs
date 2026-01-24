@@ -160,7 +160,8 @@ impl PluginLoader {
     where
         F: Fn() -> Arc<dyn Plugin> + Send + Sync + 'static,
     {
-        self.factories.insert(plugin_id.to_string(), Box::new(factory));
+        self.factories
+            .insert(plugin_id.to_string(), Box::new(factory));
     }
 
     /// Scan the plugins directory for plugin.toml manifests
@@ -178,7 +179,9 @@ impl PluginLoader {
         let entries = match std::fs::read_dir(&self.plugins_dir) {
             Ok(entries) => entries,
             Err(e) => {
-                result.errors.push(format!("Failed to read plugins directory: {}", e));
+                result
+                    .errors
+                    .push(format!("Failed to read plugins directory: {}", e));
                 return result;
             }
         };
@@ -232,14 +235,13 @@ impl PluginLoader {
 
     /// Load a plugin manifest from a file
     fn load_manifest(&self, path: &Path) -> Result<PluginManifest> {
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| crate::error::Error::Internal {
-                message: format!("Failed to read manifest: {}", e),
-                request_id: None,
-            })?;
+        let content = std::fs::read_to_string(path).map_err(|e| crate::error::Error::Internal {
+            message: format!("Failed to read manifest: {}", e),
+            request_id: None,
+        })?;
 
-        let manifest: PluginManifest = toml::from_str(&content)
-            .map_err(|e| crate::error::Error::Internal {
+        let manifest: PluginManifest =
+            toml::from_str(&content).map_err(|e| crate::error::Error::Internal {
                 message: format!("Failed to parse manifest: {}", e),
                 request_id: None,
             })?;

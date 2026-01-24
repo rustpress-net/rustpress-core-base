@@ -2,14 +2,14 @@
 //!
 //! Handles worker registration, heartbeats, and pool management.
 
+use chrono::{DateTime, Duration, Utc};
+use serde::{Deserialize, Serialize};
+use sqlx::{FromRow, PgPool, Row};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::RwLock;
-use sqlx::{PgPool, Row, FromRow};
-use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
-use serde::{Serialize, Deserialize};
 use tokio::sync::broadcast;
+use tokio::sync::RwLock;
+use uuid::Uuid;
 
 use super::{EngineError, EngineEvent};
 
@@ -217,9 +217,7 @@ impl WorkerPool {
         let workers_cache = self.workers.clone();
 
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(
-                tokio::time::Duration::from_secs(30)
-            );
+            let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(30));
 
             loop {
                 interval.tick().await;
@@ -229,12 +227,9 @@ impl WorkerPool {
                 }
 
                 // Find and mark stale workers
-                if let Err(e) = cleanup_stale_workers(
-                    &pool,
-                    &event_tx,
-                    stale_threshold,
-                    &workers_cache,
-                ).await {
+                if let Err(e) =
+                    cleanup_stale_workers(&pool, &event_tx, stale_threshold, &workers_cache).await
+                {
                     tracing::error!("Failed to cleanup stale workers: {}", e);
                 }
             }
@@ -316,11 +311,7 @@ impl WorkerPool {
     ) -> Result<(), EngineError> {
         let now = Utc::now();
 
-        let state = if active_messages == 0 {
-            "idle"
-        } else {
-            "busy"
-        };
+        let state = if active_messages == 0 { "idle" } else { "busy" };
 
         sqlx::query(
             r#"
@@ -391,25 +382,28 @@ impl WorkerPool {
             WHERE w.status IN ('active', 'idle')
             AND w.current_load < w.concurrency_limit
             GROUP BY w.id
-            "#
+            "#,
         )
         .fetch_all(&self.pool)
         .await?;
 
-        let workers: Vec<WorkerHandle> = rows.into_iter().filter_map(|row| {
-            let queues = row.subscribed_queues?;
-            let capacity = row.concurrency_limit.unwrap_or(1) - row.current_load.unwrap_or(0);
+        let workers: Vec<WorkerHandle> = rows
+            .into_iter()
+            .filter_map(|row| {
+                let queues = row.subscribed_queues?;
+                let capacity = row.concurrency_limit.unwrap_or(1) - row.current_load.unwrap_or(0);
 
-            if capacity > 0 && !queues.is_empty() {
-                Some(WorkerHandle {
-                    id: row.id,
-                    subscribed_queues: queues,
-                    available_capacity: capacity as u32,
-                })
-            } else {
-                None
-            }
-        }).collect();
+                if capacity > 0 && !queues.is_empty() {
+                    Some(WorkerHandle {
+                        id: row.id,
+                        subscribed_queues: queues,
+                        available_capacity: capacity as u32,
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         Ok(workers)
     }
@@ -502,8 +496,9 @@ impl WorkerPool {
         .fetch_all(&self.pool)
         .await?;
 
-        let workers: Vec<WorkerInfo> = rows.into_iter().map(|row| {
-            WorkerInfo {
+        let workers: Vec<WorkerInfo> = rows
+            .into_iter()
+            .map(|row| WorkerInfo {
                 id: row.id,
                 name: row.name,
                 group_id: row.group_id,
@@ -515,8 +510,8 @@ impl WorkerPool {
                 last_heartbeat: row.last_heartbeat_at.unwrap_or(row.created_at),
                 registered_at: row.created_at,
                 metadata: row.metadata.unwrap_or(serde_json::json!({})),
-            }
-        }).collect();
+            })
+            .collect();
 
         Ok((workers, total))
     }
@@ -571,7 +566,7 @@ impl WorkerPool {
                 COALESCE(SUM(concurrency_limit), 0) as total_capacity,
                 COALESCE(SUM(current_load), 0) as used_capacity
             FROM vqm_workers
-            "#
+            "#,
         )
         .fetch_one(&self.pool)
         .await?;

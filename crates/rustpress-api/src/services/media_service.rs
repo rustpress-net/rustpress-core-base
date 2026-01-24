@@ -16,10 +16,10 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::handlers::media::{
-    BulkDeleteResponse, BulkDeleteError, BulkMoveRequest, BulkTagRequest,
-    MediaFolder, MediaItem, MediaLibraryResponse, MediaStats, MediaVariant,
-    OptimizationResult, OptimizeOptions, PaginatedMediaResponse, UserMediaPreferences,
-    MediaUsage, MediaAnalytics, DateCount, ReferrerStat,
+    BulkDeleteError, BulkDeleteResponse, BulkMoveRequest, BulkTagRequest, DateCount,
+    MediaAnalytics, MediaFolder, MediaItem, MediaLibraryResponse, MediaStats, MediaUsage,
+    MediaVariant, OptimizationResult, OptimizeOptions, PaginatedMediaResponse, ReferrerStat,
+    UserMediaPreferences,
 };
 
 /// Media types
@@ -527,7 +527,11 @@ impl MediaService {
     }
 
     /// Get folder children recursively
-    fn get_folder_children(&self, parent_id: Uuid) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<MediaFolder>>> + Send + '_>> {
+    fn get_folder_children(
+        &self,
+        parent_id: Uuid,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<MediaFolder>>> + Send + '_>>
+    {
         Box::pin(async move {
             let query = r#"
                 SELECT
@@ -676,7 +680,9 @@ impl MediaService {
         icon: Option<String>,
         sort_order: Option<i32>,
     ) -> Result<MediaFolder> {
-        let existing = self.get_folder(id).await?
+        let existing = self
+            .get_folder(id)
+            .await?
             .ok_or_else(|| Error::not_found("Folder", id.to_string()))?;
 
         if existing.is_system {
@@ -737,7 +743,9 @@ impl MediaService {
 
     /// Delete a folder
     pub async fn delete_folder(&self, id: Uuid, move_contents_to: Option<Uuid>) -> Result<bool> {
-        let folder = self.get_folder(id).await?
+        let folder = self
+            .get_folder(id)
+            .await?
             .ok_or_else(|| Error::not_found("Folder", id.to_string()))?;
 
         if folder.is_system {
@@ -801,7 +809,11 @@ impl MediaService {
     }
 
     /// Delete multiple media items
-    pub async fn bulk_delete(&self, media_ids: Vec<Uuid>, permanent: bool) -> Result<BulkDeleteResponse> {
+    pub async fn bulk_delete(
+        &self,
+        media_ids: Vec<Uuid>,
+        permanent: bool,
+    ) -> Result<BulkDeleteResponse> {
         let mut deleted = Vec::new();
         let mut failed = Vec::new();
 
@@ -853,7 +865,12 @@ impl MediaService {
     }
 
     /// Add/remove tags from multiple media items
-    pub async fn bulk_tag(&self, media_ids: Vec<Uuid>, add_tags: Option<Vec<String>>, remove_tags: Option<Vec<String>>) -> Result<usize> {
+    pub async fn bulk_tag(
+        &self,
+        media_ids: Vec<Uuid>,
+        add_tags: Option<Vec<String>>,
+        remove_tags: Option<Vec<String>>,
+    ) -> Result<usize> {
         if media_ids.is_empty() {
             return Ok(0);
         }
@@ -906,7 +923,11 @@ impl MediaService {
     // =====================
 
     /// Queue media for optimization
-    pub async fn queue_optimization(&self, media_id: Uuid, options: OptimizeOptions) -> Result<Uuid> {
+    pub async fn queue_optimization(
+        &self,
+        media_id: Uuid,
+        options: OptimizeOptions,
+    ) -> Result<Uuid> {
         let query = r#"
             INSERT INTO media_optimization_queue (media_id, options)
             VALUES ($1, $2)
@@ -1014,16 +1035,19 @@ impl MediaService {
             .await
             .map_err(|e| Error::database_with_source("Failed to get variants", e))?;
 
-        Ok(rows.into_iter().map(|r| MediaVariant {
-            id: r.id,
-            variant_type: r.variant_type,
-            filename: r.filename,
-            url: r.url,
-            width: r.width,
-            height: r.height,
-            file_size: r.file_size,
-            mime_type: r.mime_type,
-        }).collect())
+        Ok(rows
+            .into_iter()
+            .map(|r| MediaVariant {
+                id: r.id,
+                variant_type: r.variant_type,
+                filename: r.filename,
+                url: r.url,
+                width: r.width,
+                height: r.height,
+                file_size: r.file_size,
+                mime_type: r.mime_type,
+            })
+            .collect())
     }
 
     // =====================
@@ -1063,7 +1087,8 @@ impl MediaService {
         entity_type: String,
         entity_id: Uuid,
     ) -> Result<()> {
-        let query = "DELETE FROM media_usage WHERE media_id = $1 AND entity_type = $2 AND entity_id = $3";
+        let query =
+            "DELETE FROM media_usage WHERE media_id = $1 AND entity_type = $2 AND entity_id = $3";
 
         sqlx::query(query)
             .bind(media_id)
@@ -1096,15 +1121,18 @@ impl MediaService {
             .await
             .map_err(|e| Error::database_with_source("Failed to get usage", e))?;
 
-        Ok(rows.into_iter().map(|r| MediaUsage {
-            id: r.id,
-            media_id: r.media_id,
-            entity_type: r.entity_type,
-            entity_id: r.entity_id,
-            entity_title: r.entity_title,
-            context: r.context,
-            created_at: r.created_at,
-        }).collect())
+        Ok(rows
+            .into_iter()
+            .map(|r| MediaUsage {
+                id: r.id,
+                media_id: r.media_id,
+                entity_type: r.entity_type,
+                entity_id: r.entity_id,
+                entity_title: r.entity_title,
+                context: r.context,
+                created_at: r.created_at,
+            })
+            .collect())
     }
 
     // =====================
@@ -1131,7 +1159,10 @@ impl MediaService {
     }
 
     /// Get user preferences
-    pub async fn get_user_preferences(&self, user_id: Uuid) -> Result<Option<UserMediaPreferences>> {
+    pub async fn get_user_preferences(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Option<UserMediaPreferences>> {
         let query = r#"
             SELECT default_folder_id, view_mode, sort_by, sort_order, items_per_page,
                    auto_optimize, default_quality, generate_thumbnails, generate_webp,
@@ -1228,7 +1259,11 @@ impl MediaService {
     // =====================
 
     /// Get full library response for modal
-    pub async fn get_library(&self, user_id: Uuid, params: MediaListParams) -> Result<MediaLibraryResponse> {
+    pub async fn get_library(
+        &self,
+        user_id: Uuid,
+        params: MediaListParams,
+    ) -> Result<MediaLibraryResponse> {
         let media = self.list_media(params).await?;
         let folders = self.list_folders().await?;
         let stats = self.get_media_stats().await?;
@@ -1236,7 +1271,11 @@ impl MediaService {
 
         Ok(MediaLibraryResponse {
             media: PaginatedMediaResponse {
-                items: media.items.into_iter().map(|m| self.convert_to_media_item(m)).collect(),
+                items: media
+                    .items
+                    .into_iter()
+                    .map(|m| self.convert_to_media_item(m))
+                    .collect(),
                 total: media.total,
                 page: media.page,
                 per_page: media.per_page,
@@ -1265,8 +1304,17 @@ impl MediaService {
             WHERE deleted_at IS NULL
         "#;
 
-        let (total_items, total_size, images_count, videos_count, audio_count, documents_count, optimized_count, total_savings, favorites_count):
-            (i64, i64, i64, i64, i64, i64, i64, i64, i64) = sqlx::query_as(query)
+        let (
+            total_items,
+            total_size,
+            images_count,
+            videos_count,
+            audio_count,
+            documents_count,
+            optimized_count,
+            total_savings,
+            favorites_count,
+        ): (i64, i64, i64, i64, i64, i64, i64, i64, i64) = sqlx::query_as(query)
             .fetch_one(&self.pool)
             .await
             .map_err(|e| Error::database_with_source("Failed to get media stats", e))?;
@@ -1339,7 +1387,8 @@ impl MediaService {
 
     /// Increment download count
     pub async fn increment_download(&self, media_id: Uuid) -> Result<()> {
-        let query = "UPDATE media SET download_count = COALESCE(download_count, 0) + 1 WHERE id = $1";
+        let query =
+            "UPDATE media SET download_count = COALESCE(download_count, 0) + 1 WHERE id = $1";
         sqlx::query(query)
             .bind(media_id)
             .execute(&self.pool)

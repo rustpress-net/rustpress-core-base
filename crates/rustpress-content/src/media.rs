@@ -11,8 +11,8 @@
 //! - Attachment management
 
 use chrono::{DateTime, Utc};
-use image::{self, DynamicImage, GenericImageView, ImageFormat, ImageError};
 use image::imageops::FilterType;
+use image::{self, DynamicImage, GenericImageView, ImageError, ImageFormat};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -151,11 +151,10 @@ impl MediaItem {
 
     /// Get srcset attribute value for responsive images
     pub fn srcset(&self) -> String {
-        let mut srcset_parts: Vec<String> = self.sizes
+        let mut srcset_parts: Vec<String> = self
+            .sizes
             .iter()
-            .filter_map(|(_, size)| {
-                size.width.map(|w| format!("{} {}w", size.url, w))
-            })
+            .filter_map(|(_, size)| size.width.map(|w| format!("{} {}w", size.url, w)))
             .collect();
 
         // Add original size
@@ -216,10 +215,14 @@ impl MediaType {
 
     pub fn extensions(&self) -> &[&str] {
         match self {
-            Self::Image => &["jpg", "jpeg", "png", "gif", "webp", "svg", "ico", "bmp", "tiff"],
+            Self::Image => &[
+                "jpg", "jpeg", "png", "gif", "webp", "svg", "ico", "bmp", "tiff",
+            ],
             Self::Video => &["mp4", "webm", "ogg", "avi", "mov", "wmv", "flv", "mkv"],
             Self::Audio => &["mp3", "wav", "ogg", "flac", "aac", "wma", "m4a"],
-            Self::Document => &["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "rtf", "odt"],
+            Self::Document => &[
+                "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "rtf", "odt",
+            ],
             Self::Archive => &["zip", "tar", "gz", "rar", "7z"],
             Self::Other => &[],
         }
@@ -557,7 +560,10 @@ impl Default for ImageProcessor {
         let mut sizes = HashMap::new();
         sizes.insert("thumbnail".to_string(), ImageSizeDefinition::thumbnail());
         sizes.insert("medium".to_string(), ImageSizeDefinition::medium());
-        sizes.insert("medium_large".to_string(), ImageSizeDefinition::medium_large());
+        sizes.insert(
+            "medium_large".to_string(),
+            ImageSizeDefinition::medium_large(),
+        );
         sizes.insert("large".to_string(), ImageSizeDefinition::large());
 
         Self {
@@ -594,13 +600,23 @@ impl ImageProcessor {
     }
 
     /// Process an image and generate all sizes
-    pub fn process(&self, image_data: &[u8], original_mime: &str) -> Result<ProcessedImage, MediaError> {
+    pub fn process(
+        &self,
+        image_data: &[u8],
+        original_mime: &str,
+    ) -> Result<ProcessedImage, MediaError> {
         let img = image::load_from_memory(image_data)?;
         let (width, height) = img.dimensions();
 
         // Check if resizing of original is needed
         let img = if width > self.max_dimension || height > self.max_dimension {
-            self.resize_image(&img, self.max_dimension, self.max_dimension, CropMode::None, None)?
+            self.resize_image(
+                &img,
+                self.max_dimension,
+                self.max_dimension,
+                CropMode::None,
+                None,
+            )?
         } else {
             img
         };
@@ -612,7 +628,10 @@ impl ImageProcessor {
         let mut generated_sizes = HashMap::new();
         for (name, definition) in &self.sizes {
             // Skip if original is smaller than target
-            if width <= definition.width && height <= definition.height && definition.crop == CropMode::None {
+            if width <= definition.width
+                && height <= definition.height
+                && definition.crop == CropMode::None
+            {
                 continue;
             }
 
@@ -631,13 +650,16 @@ impl ImageProcessor {
 
             let data = self.encode_image(&resized, format, definition.quality)?;
 
-            generated_sizes.insert(name.clone(), GeneratedSize {
-                data,
-                width: w,
-                height: h,
-                format,
-                quality: definition.quality,
-            });
+            generated_sizes.insert(
+                name.clone(),
+                GeneratedSize {
+                    data,
+                    width: w,
+                    height: h,
+                    format,
+                    quality: definition.quality,
+                },
+            );
         }
 
         // Generate lazy loading placeholder (LQIP)
@@ -655,7 +677,8 @@ impl ImageProcessor {
         };
 
         // Encode original (possibly resized)
-        let original_format = ImageOutputFormat::from_mime(original_mime).unwrap_or(ImageOutputFormat::Jpeg);
+        let original_format =
+            ImageOutputFormat::from_mime(original_mime).unwrap_or(ImageOutputFormat::Jpeg);
         let original_data = self.encode_image(&img, original_format, self.default_quality)?;
 
         Ok(ProcessedImage {
@@ -787,7 +810,11 @@ impl ImageProcessor {
         let (orig_width, orig_height) = img.dimensions();
 
         // Create tiny version
-        let tiny = img.resize(self.placeholder_size, self.placeholder_size, FilterType::Triangle);
+        let tiny = img.resize(
+            self.placeholder_size,
+            self.placeholder_size,
+            FilterType::Triangle,
+        );
         let (w, h) = tiny.dimensions();
 
         // Encode as JPEG with low quality
@@ -889,7 +916,11 @@ impl LazyLoadPlaceholder {
 /// Generate responsive image HTML
 pub fn responsive_image(media: &MediaItem, sizes_attr: &str, class: &str) -> String {
     let srcset = media.srcset();
-    let alt = if media.alt_text.is_empty() { &media.title } else { &media.alt_text };
+    let alt = if media.alt_text.is_empty() {
+        &media.title
+    } else {
+        &media.alt_text
+    };
 
     let mut html = format!(
         r#"<img src="{}" srcset="{}" sizes="{}" alt="{}" class="{}""#,
@@ -897,7 +928,10 @@ pub fn responsive_image(media: &MediaItem, sizes_attr: &str, class: &str) -> Str
     );
 
     if let Some(dims) = &media.dimensions {
-        html.push_str(&format!(r#" width="{}" height="{}""#, dims.width, dims.height));
+        html.push_str(&format!(
+            r#" width="{}" height="{}""#,
+            dims.width, dims.height
+        ));
     }
 
     html.push_str(" loading=\"lazy\">");
@@ -906,15 +940,30 @@ pub fn responsive_image(media: &MediaItem, sizes_attr: &str, class: &str) -> Str
 
 /// Generate picture element with WebP support
 pub fn picture_element(media: &MediaItem, sizes_attr: &str, class: &str) -> String {
-    let alt = if media.alt_text.is_empty() { &media.title } else { &media.alt_text };
+    let alt = if media.alt_text.is_empty() {
+        &media.title
+    } else {
+        &media.alt_text
+    };
 
     let mut html = String::from("<picture>");
 
     // WebP source (if available)
     if let Some(webp_url) = media.custom_meta.get("webp_url") {
-        let webp_srcset = media.sizes.iter()
+        let webp_srcset = media
+            .sizes
+            .iter()
             .filter_map(|(name, size)| {
-                size.width.map(|w| format!("{}.webp {}w", size.url.trim_end_matches(&format!(".{}", media.mime_type.split('/').last().unwrap_or("jpg"))), w))
+                size.width.map(|w| {
+                    format!(
+                        "{}.webp {}w",
+                        size.url.trim_end_matches(&format!(
+                            ".{}",
+                            media.mime_type.split('/').last().unwrap_or("jpg")
+                        )),
+                        w
+                    )
+                })
             })
             .collect::<Vec<_>>()
             .join(", ");
@@ -946,7 +995,7 @@ pub fn picture_element(media: &MediaItem, sizes_attr: &str, class: &str) -> Stri
 
 /// Base64 encode helper
 fn base64_encode(data: &[u8]) -> String {
-    use base64::{Engine, engine::general_purpose::STANDARD};
+    use base64::{engine::general_purpose::STANDARD, Engine};
     STANDARD.encode(data)
 }
 
@@ -973,35 +1022,48 @@ impl MediaLibrary {
         let mut allowed_types = HashMap::new();
 
         // Images
-        allowed_types.insert("image".to_string(), vec![
-            "image/jpeg".to_string(),
-            "image/png".to_string(),
-            "image/gif".to_string(),
-            "image/webp".to_string(),
-            "image/svg+xml".to_string(),
-        ]);
+        allowed_types.insert(
+            "image".to_string(),
+            vec![
+                "image/jpeg".to_string(),
+                "image/png".to_string(),
+                "image/gif".to_string(),
+                "image/webp".to_string(),
+                "image/svg+xml".to_string(),
+            ],
+        );
 
         // Videos
-        allowed_types.insert("video".to_string(), vec![
-            "video/mp4".to_string(),
-            "video/webm".to_string(),
-            "video/ogg".to_string(),
-        ]);
+        allowed_types.insert(
+            "video".to_string(),
+            vec![
+                "video/mp4".to_string(),
+                "video/webm".to_string(),
+                "video/ogg".to_string(),
+            ],
+        );
 
         // Audio
-        allowed_types.insert("audio".to_string(), vec![
-            "audio/mpeg".to_string(),
-            "audio/wav".to_string(),
-            "audio/ogg".to_string(),
-            "audio/webm".to_string(),
-        ]);
+        allowed_types.insert(
+            "audio".to_string(),
+            vec![
+                "audio/mpeg".to_string(),
+                "audio/wav".to_string(),
+                "audio/ogg".to_string(),
+                "audio/webm".to_string(),
+            ],
+        );
 
         // Documents
-        allowed_types.insert("document".to_string(), vec![
-            "application/pdf".to_string(),
-            "application/msword".to_string(),
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document".to_string(),
-        ]);
+        allowed_types.insert(
+            "document".to_string(),
+            vec![
+                "application/pdf".to_string(),
+                "application/msword".to_string(),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    .to_string(),
+            ],
+        );
 
         Self {
             processor: ImageProcessor::new(),
@@ -1014,14 +1076,19 @@ impl MediaLibrary {
 
     /// Check if MIME type is allowed
     pub fn is_allowed(&self, mime_type: &str) -> bool {
-        self.allowed_types.values().any(|types| types.contains(&mime_type.to_string()))
+        self.allowed_types
+            .values()
+            .any(|types| types.contains(&mime_type.to_string()))
     }
 
     /// Validate upload
     pub fn validate(&self, data: &[u8], mime_type: &str) -> Result<(), MediaError> {
         // Check file size
         if data.len() as u64 > self.max_file_size {
-            return Err(MediaError::FileTooLarge(data.len() as u64, self.max_file_size));
+            return Err(MediaError::FileTooLarge(
+                data.len() as u64,
+                self.max_file_size,
+            ));
         }
 
         // Check MIME type
@@ -1062,7 +1129,12 @@ impl MediaLibrary {
             .map(|s| s.to_string_lossy().to_string())
             .unwrap_or_default();
 
-        let unique_id = Uuid::new_v4().to_string().split('-').next().unwrap().to_string();
+        let unique_id = Uuid::new_v4()
+            .to_string()
+            .split('-')
+            .next()
+            .unwrap()
+            .to_string();
 
         if ext.is_empty() {
             format!("{}_{}", stem, unique_id)
@@ -1110,7 +1182,7 @@ mod tests {
         let dims = ImageDimensions::new(1920, 1080);
         assert!(dims.is_landscape());
         assert!(!dims.is_portrait());
-        assert!((dims.aspect_ratio() - 16.0/9.0).abs() < 0.01);
+        assert!((dims.aspect_ratio() - 16.0 / 9.0).abs() < 0.01);
     }
 
     #[test]

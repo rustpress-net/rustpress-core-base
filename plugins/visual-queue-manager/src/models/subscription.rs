@@ -1,8 +1,8 @@
 //! Webhook Subscription Data Models
 
-use serde::{Serialize, Deserialize};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validator::Validate;
 
 /// Subscription status
@@ -44,7 +44,9 @@ pub struct CreateSubscriptionRequest {
     pub metadata: serde_json::Value,
 }
 
-fn default_timeout() -> i32 { 10000 }
+fn default_timeout() -> i32 {
+    10000
+}
 
 /// Subscription retry policy
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]

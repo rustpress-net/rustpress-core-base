@@ -4,8 +4,7 @@
 
 use crate::blocks::{Block, BlockId, BlockSerializer};
 use crate::post::{
-    FeaturedMedia, PostMetadata, PostPublishing, PostRevision, PostSeo, PostStats,
-    PublishStatus,
+    FeaturedMedia, PostMetadata, PostPublishing, PostRevision, PostSeo, PostStats, PublishStatus,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -198,10 +197,7 @@ impl PostDocument {
         None
     }
 
-    fn find_block_recursive_mut<'a>(
-        blocks: &'a mut [Block],
-        id: BlockId,
-    ) -> Option<&'a mut Block> {
+    fn find_block_recursive_mut<'a>(blocks: &'a mut [Block], id: BlockId) -> Option<&'a mut Block> {
         for block in blocks {
             if block.id == id {
                 return Some(block);
@@ -354,7 +350,9 @@ impl PostDocument {
         }
 
         // SEO validation
-        if self.seo.meta_title.is_none() || self.seo.meta_title.as_ref().map_or(true, |t| t.is_empty()) {
+        if self.seo.meta_title.is_none()
+            || self.seo.meta_title.as_ref().map_or(true, |t| t.is_empty())
+        {
             errors.push(ValidationError {
                 field: "seo.meta_title".to_string(),
                 message: "SEO title is recommended".to_string(),
@@ -434,9 +432,9 @@ impl PostContent {
     /// Count total blocks (including nested)
     pub fn count_blocks(&self) -> usize {
         fn count_recursive(blocks: &[Block]) -> usize {
-            blocks.iter().fold(0, |acc, b| {
-                acc + 1 + count_recursive(&b.children)
-            })
+            blocks
+                .iter()
+                .fold(0, |acc, b| acc + 1 + count_recursive(&b.children))
         }
         count_recursive(&self.blocks)
     }
@@ -473,7 +471,6 @@ pub enum PostFormat {
     Audio,
     Chat,
 }
-
 
 /// Validation error
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -568,6 +565,9 @@ mod tests {
     fn test_slugify() {
         assert_eq!(slugify("Hello World"), "hello-world");
         assert_eq!(slugify("  Multiple   Spaces  "), "multiple-spaces");
-        assert_eq!(slugify("Special! Characters@Here"), "special-charactershere");
+        assert_eq!(
+            slugify("Special! Characters@Here"),
+            "special-charactershere"
+        );
     }
 }
