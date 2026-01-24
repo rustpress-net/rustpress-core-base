@@ -411,14 +411,11 @@ impl MockEditor {
 
     pub fn move_block(&mut self, block_id: &str, new_index: usize) -> bool {
         if let Some(pos) = self.blocks.iter().position(|b| b.id == block_id) {
-            if new_index < self.blocks.len() {
+            if new_index <= self.blocks.len() {
                 let block = self.blocks.remove(pos);
-                let insert_pos = if new_index > pos {
-                    new_index - 1
-                } else {
-                    new_index
-                };
-                self.blocks.insert(insert_pos.min(self.blocks.len()), block);
+                // Clamp insert position to valid range after removal
+                let insert_pos = new_index.min(self.blocks.len());
+                self.blocks.insert(insert_pos, block);
                 self.is_dirty = true;
                 self.push_undo("move_block", block_id);
                 return true;
@@ -595,8 +592,13 @@ impl MockEditor {
     }
 
     fn update_counts(&mut self) {
-        let all_content: String = self.blocks.iter().map(|b| &b.content).cloned().collect();
-        self.character_count = all_content.len();
+        let all_content: String = self
+            .blocks
+            .iter()
+            .map(|b| b.content.as_str())
+            .collect::<Vec<_>>()
+            .join(" ");
+        self.character_count = self.blocks.iter().map(|b| b.content.len()).sum();
         self.word_count = all_content.split_whitespace().count();
     }
 
