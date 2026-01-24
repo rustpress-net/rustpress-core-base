@@ -1,0 +1,118 @@
+[package]
+name = "visual-queue-manager"
+version = "1.0.0"
+edition = "2021"
+authors = ["RustPress Enterprise <enterprise@rustpress.net>"]
+description = "Enterprise-grade visual queue management system for RustPress"
+license = "MIT"
+repository = "https://github.com/rustpress-net/rustpress-plugin-visual-queue"
+keywords = ["queue", "events", "enterprise", "rustpress", "plugin"]
+categories = ["web-programming", "asynchronous"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# RustPress Core (use path for development)
+rustpress-core = { path = "../../crates/rustpress-core" }
+rustpress-plugins = { path = "../../crates/rustpress-plugins" }
+
+# Web Framework
+axum = { version = "0.7", features = ["macros", "multipart", "ws"] }
+axum-extra = { version = "0.9", features = ["typed-header", "cookie"] }
+tower = { version = "0.5", features = ["full"] }
+tower-http = { version = "0.5", features = ["full"] }
+hyper = { version = "1.1", features = ["full"] }
+http = "1.0"
+
+# Async runtime
+tokio = { version = "1.35", features = ["full", "tracing"] }
+tokio-stream = "0.1"
+tokio-util = "0.7"
+futures = "0.3"
+async-trait = "0.1"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+rmp-serde = "1.1"  # MessagePack
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio", "tls-native-tls", "postgres", "uuid", "chrono", "json"] }
+
+# Redis
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
+deadpool-redis = "0.14"
+
+# UUID and time
+uuid = { version = "1.6", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+chrono-tz = "0.8"
+cron = "0.12"
+
+# HTTP client for webhooks
+reqwest = { version = "0.11", default-features = false, features = ["json", "native-tls"] }
+
+# WebSocket
+tokio-tungstenite = "0.21"
+
+# Encryption
+aes-gcm = "0.10"
+rand = "0.8"
+base64 = "0.21"
+sha2 = "0.10"
+hmac = "0.12"
+
+# Concurrent data structures
+dashmap = "5.5"
+parking_lot = "0.12"
+crossbeam-channel = "0.5"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Metrics
+prometheus-client = "0.22"
+
+# Validation
+validator = { version = "0.16", features = ["derive"] }
+
+# Rate limiting
+governor = "0.6"
+
+# Retry logic
+backoff = { version = "0.4", features = ["tokio"] }
+
+# Configuration
+config = "0.14"
+
+# Regex for pattern matching
+regex = "1.10"
+
+# Semver for versioning
+semver = { version = "1.0", features = ["serde"] }
+
+[dev-dependencies]
+tokio = { version = "1.35", features = ["test-util", "macros", "rt-multi-thread"] }
+tokio-test = "0.4"
+mockall = "0.12"
+wiremock = "0.5"
+fake = { version = "2.9", features = ["derive"] }
+criterion = "0.5"
+proptest = "1.4"
+
+[features]
+default = ["full"]
+full = ["distributed", "encryption", "tracing-support"]
+distributed = []
+encryption = []
+tracing-support = []
+multi-tenant = []
+
+# Profile settings moved to workspace root
