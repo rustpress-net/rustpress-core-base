@@ -65,9 +65,9 @@ pub struct ToggleFavoriteBlockRequest {
     pub block_id: String,
 }
 
-/// Toggle favorite response
+/// Toggle favorite response for blocks
 #[derive(Debug, Serialize)]
-pub struct ToggleFavoriteResponse {
+pub struct BlockToggleFavoriteResponse {
     pub block_id: String,
     pub is_favorite: bool,
 }

@@ -447,7 +447,7 @@ impl TemplateService {
         pool: &PgPool,
         user_id: Uuid,
         template_id: Uuid,
-    ) -> Result<ToggleFavoriteResponse> {
+    ) -> Result<TemplateToggleFavoriteResponse> {
         // Check if already favorited
         let exists: bool = sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM user_template_favorites WHERE user_id = $1 AND template_id = $2)"
@@ -475,7 +475,7 @@ impl TemplateService {
             .await?;
         }
 
-        Ok(ToggleFavoriteResponse {
+        Ok(TemplateToggleFavoriteResponse {
             template_id,
             is_favorited: !exists,
         })
