@@ -1,0 +1,1611 @@
+# =============================================================================
+# VISUAL QUEUE MANAGER - RustPress Enterprise Plugin
+# =============================================================================
+# A comprehensive visual queue management system with real-time monitoring,
+# event processing, and analytics dashboard for enterprise applications.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# POINT 1: Plugin Manifest Foundation
+# -----------------------------------------------------------------------------
+# Core plugin identification and metadata
+
+id = "visual-queue-manager"
+name = "Visual Queue Manager"
+version = "1.0.0"
+description = "Enterprise-grade visual queue management system with real-time monitoring, event processing, and analytics dashboard"
+author = "RustPress Enterprise"
+author_url = "https://rustpress.net"
+license = "MIT"
+min_rustpress_version = "0.5.0"
+tags = ["queue", "events", "enterprise", "monitoring", "real-time", "visualization", "workers", "jobs", "async"]
+category = "business"
+icon = "assets/icon.png"
+
+# -----------------------------------------------------------------------------
+# POINT 2: Plugin Dependencies Configuration
+# -----------------------------------------------------------------------------
+# Required plugins and conflict declarations
+
+[dependencies]
+plugins = { "rustpress-core" = ">=0.5.0", "rustpress-auth" = ">=1.0.0" }
+conflicts = ["legacy-queue-handler", "simple-queue-plugin"]
+
+# -----------------------------------------------------------------------------
+# POINT 3: Settings Schema - Connection Settings
+# -----------------------------------------------------------------------------
+# Database and Redis connection configuration
+
+[settings.schema.redis_url]
+setting_type = "url"
+label = "Redis Connection URL"
+default = "redis://localhost:6379"
+required = true
+
+[settings.schema.redis_password]
+setting_type = "password"
+label = "Redis Password"
+default = ""
+required = false
+
+[settings.schema.max_connections]
+setting_type = "integer"
+label = "Maximum Connection Pool Size"
+default = 10
+required = false
+
+[settings.schema.connection_timeout]
+setting_type = "integer"
+label = "Connection Timeout (ms)"
+default = 5000
+required = false
+
+[settings.schema.idle_timeout]
+setting_type = "integer"
+label = "Idle Connection Timeout (ms)"
+default = 60000
+required = false
+
+[settings.schema.database_url]
+setting_type = "url"
+label = "Database Connection URL (PostgreSQL)"
+default = "postgresql://localhost:5432/rustpress"
+required = true
+
+# -----------------------------------------------------------------------------
+# POINT 4: Settings Schema - Queue Behavior Settings
+# -----------------------------------------------------------------------------
+# Default queue processing parameters
+
+[settings.schema.default_retry_attempts]
+setting_type = "integer"
+label = "Default Retry Attempts"
+default = 3
+required = true
+
+[settings.schema.retry_delay_ms]
+setting_type = "integer"
+label = "Retry Delay (milliseconds)"
+default = 1000
+required = true
+
+[settings.schema.retry_backoff_multiplier]
+setting_type = "integer"
+label = "Retry Backoff Multiplier"
+default = 2
+required = false
+
+[settings.schema.max_retry_delay_ms]
+setting_type = "integer"
+label = "Maximum Retry Delay (ms)"
+default = 300000
+required = false
+
+[settings.schema.dead_letter_enabled]
+setting_type = "boolean"
+label = "Enable Dead Letter Queue"
+default = true
+required = false
+
+[settings.schema.max_queue_size]
+setting_type = "integer"
+label = "Maximum Queue Size (0 = unlimited)"
+default = 100000
+required = false
+
+[settings.schema.default_visibility_timeout]
+setting_type = "integer"
+label = "Default Visibility Timeout (ms)"
+default = 30000
+required = false
+
+[settings.schema.default_message_ttl]
+setting_type = "integer"
+label = "Default Message TTL (seconds, 0 = no expiry)"
+default = 0
+required = false
+
+[settings.schema.auto_start_workers]
+setting_type = "boolean"
+label = "Auto-start Workers on Plugin Activation"
+default = true
+required = false
+
+[settings.schema.default_worker_concurrency]
+setting_type = "integer"
+label = "Default Worker Concurrency"
+default = 5
+required = false
+
+[settings.schema.worker_poll_interval]
+setting_type = "integer"
+label = "Worker Poll Interval (ms)"
+default = 100
+required = false
+
+[settings.schema.completed_message_retention_days]
+setting_type = "integer"
+label = "Completed Message Retention (days)"
+default = 30
+required = false
+
+[settings.schema.failed_message_retention_days]
+setting_type = "integer"
+label = "Failed Message Retention (days)"
+default = 90
+required = false
+
+# -----------------------------------------------------------------------------
+# POINT 5: Settings Schema - Visualization Settings
+# -----------------------------------------------------------------------------
+# Dashboard and UI preferences
+
+[settings.schema.refresh_interval]
+setting_type = "integer"
+label = "Dashboard Refresh Interval (seconds)"
+default = 5
+required = true
+
+[settings.schema.chart_theme]
+setting_type = "select"
+label = "Chart Color Theme"
+default = "enterprise-blue"
+options = ["enterprise-blue", "dark-mode", "high-contrast", "light-mode", "custom"]
+
+[settings.schema.custom_theme_colors]
+setting_type = "code"
+label = "Custom Theme Colors (JSON)"
+default = "{\"primary\":\"#6366f1\",\"success\":\"#10b981\",\"warning\":\"#f59e0b\",\"danger\":\"#ef4444\",\"info\":\"#3b82f6\"}"
+required = false
+
+[settings.schema.enable_animations]
+setting_type = "boolean"
+label = "Enable Dashboard Animations"
+default = true
+required = false
+
+[settings.schema.default_time_range]
+setting_type = "select"
+label = "Default Metrics Time Range"
+default = "1h"
+options = ["15m", "1h", "6h", "24h", "7d", "30d"]
+
+[settings.schema.max_visible_messages]
+setting_type = "integer"
+label = "Maximum Visible Messages in List"
+default = 100
+required = false
+
+[settings.schema.enable_realtime_updates]
+setting_type = "boolean"
+label = "Enable Real-time WebSocket Updates"
+default = true
+required = false
+
+[settings.schema.chart_data_points]
+setting_type = "integer"
+label = "Maximum Chart Data Points"
+default = 100
+required = false
+
+[settings.schema.show_queue_visualization]
+setting_type = "boolean"
+label = "Show Visual Queue Graph"
+default = true
+required = false
+
+# -----------------------------------------------------------------------------
+# POINT 6: Settings Schema - Security Settings
+# -----------------------------------------------------------------------------
+# Enterprise security configurations
+
+[settings.schema.api_key]
+setting_type = "password"
+label = "External API Key"
+default = ""
+required = false
+
+[settings.schema.encryption_key]
+setting_type = "password"
+label = "Queue Data Encryption Key (AES-256, 32 chars)"
+default = ""
+required = true
+
+[settings.schema.encrypt_payloads]
+setting_type = "boolean"
+label = "Encrypt Message Payloads at Rest"
+default = false
+required = false
+
+[settings.schema.encrypt_sensitive_headers]
+setting_type = "boolean"
+label = "Encrypt Sensitive Headers"
+default = true
+required = false
+
+[settings.schema.audit_logging]
+setting_type = "boolean"
+label = "Enable Audit Logging"
+default = true
+required = false
+
+[settings.schema.audit_log_retention_days]
+setting_type = "integer"
+label = "Audit Log Retention (days)"
+default = 365
+required = false
+
+[settings.schema.ip_whitelist]
+setting_type = "code"
+label = "IP Whitelist (JSON array, empty = allow all)"
+default = "[]"
+required = false
+
+[settings.schema.ip_blacklist]
+setting_type = "code"
+label = "IP Blacklist (JSON array)"
+default = "[]"
+required = false
+
+[settings.schema.require_api_key]
+setting_type = "boolean"
+label = "Require API Key for External Access"
+default = false
+required = false
+
+[settings.schema.allowed_origins]
+setting_type = "code"
+label = "CORS Allowed Origins (JSON array)"
+default = "[\"*\"]"
+required = false
+
+[settings.schema.max_payload_size_kb]
+setting_type = "integer"
+label = "Maximum Message Payload Size (KB)"
+default = 1024
+required = false
+
+[settings.schema.sensitive_fields]
+setting_type = "code"
+label = "Sensitive Field Patterns (JSON array of regex)"
+default = "[\"password\", \"secret\", \"token\", \"api_key\", \"credit_card\"]"
+required = false
+
+# -----------------------------------------------------------------------------
+# POINT 7: Settings Schema - Notification Settings
+# -----------------------------------------------------------------------------
+# Alerting and notification systems
+
+[settings.schema.webhook_url]
+setting_type = "url"
+label = "Default Alert Webhook URL"
+default = ""
+required = false
+
+[settings.schema.webhook_secret]
+setting_type = "password"
+label = "Webhook Signing Secret"
+default = ""
+required = false
+
+[settings.schema.slack_webhook]
+setting_type = "url"
+label = "Slack Notification Webhook"
+default = ""
+required = false
+
+[settings.schema.slack_channel]
+setting_type = "string"
+label = "Slack Channel Override"
+default = ""
+required = false
+
+[settings.schema.discord_webhook]
+setting_type = "url"
+label = "Discord Notification Webhook"
+default = ""
+required = false
+
+[settings.schema.teams_webhook]
+setting_type = "url"
+label = "Microsoft Teams Webhook"
+default = ""
+required = false
+
+[settings.schema.email_alerts]
+setting_type = "boolean"
+label = "Enable Email Alerts"
+default = false
+required = false
+
+[settings.schema.alert_email_recipients]
+setting_type = "code"
+label = "Alert Email Recipients (JSON array)"
+default = "[]"
+required = false
+
+[settings.schema.alert_threshold_warning]
+setting_type = "integer"
+label = "Warning Alert Threshold (queue depth)"
+default = 5000
+required = false
+
+[settings.schema.alert_threshold_critical]
+setting_type = "integer"
+label = "Critical Alert Threshold (queue depth)"
+default = 10000
+required = false
+
+[settings.schema.alert_threshold_error_rate]
+setting_type = "integer"
+label = "Error Rate Alert Threshold (%)"
+default = 10
+required = false
+
+[settings.schema.alert_cooldown_minutes]
+setting_type = "integer"
+label = "Alert Cooldown Period (minutes)"
+default = 15
+required = false
+
+[settings.schema.send_daily_report]
+setting_type = "boolean"
+label = "Send Daily Summary Report"
+default = false
+required = false
+
+[settings.schema.daily_report_time]
+setting_type = "string"
+label = "Daily Report Time (HH:MM UTC)"
+default = "09:00"
+required = false
+
+[settings.schema.pagerduty_integration_key]
+setting_type = "password"
+label = "PagerDuty Integration Key"
+default = ""
+required = false
+
+[settings.schema.opsgenie_api_key]
+setting_type = "password"
+label = "OpsGenie API Key"
+default = ""
+required = false
+
+# -----------------------------------------------------------------------------
+# POINT 8: Lifecycle Hooks Configuration
+# -----------------------------------------------------------------------------
+# Plugin lifecycle management
+
+[hooks]
+activate = "on_activate"
+deactivate = "on_deactivate"
+uninstall = "on_uninstall"
+
+# -----------------------------------------------------------------------------
+# POINT 9: Feature Flags Configuration
+# -----------------------------------------------------------------------------
+# Gradual feature rollout capabilities
+
+[features.advanced_analytics]
+enabled = true
+rollout_percentage = 100
+
+[features.ai_predictions]
+enabled = false
+rollout_percentage = 0
+
+[features.distributed_mode]
+enabled = true
+rollout_percentage = 50
+
+[features.real_time_streaming]
+enabled = true
+rollout_percentage = 100
+
+[features.message_batching]
+enabled = true
+rollout_percentage = 100
+
+[features.priority_queues]
+enabled = true
+rollout_percentage = 100
+
+[features.message_deduplication]
+enabled = true
+rollout_percentage = 75
+
+[features.circuit_breaker]
+enabled = true
+rollout_percentage = 100
+
+[features.distributed_tracing]
+enabled = false
+rollout_percentage = 25
+
+[features.multi_tenancy]
+enabled = false
+rollout_percentage = 0
+
+[features.webhook_subscriptions]
+enabled = true
+rollout_percentage = 100
+
+[features.scheduled_jobs]
+enabled = true
+rollout_percentage = 100
+
+[features.visual_flow_builder]
+enabled = false
+rollout_percentage = 10
+
+[features.auto_scaling]
+enabled = false
+rollout_percentage = 0
+
+# -----------------------------------------------------------------------------
+# POINT 10: WebAssembly and Performance Settings
+# -----------------------------------------------------------------------------
+# WASM execution parameters and network configuration
+
+[wasm]
+memory_limit = 128
+timeout_ms = 30000
+
+[network]
+network_wide = true
+per_site = false
+
+# =============================================================================
+# ADDITIONAL CONFIGURATIONS (Will be populated in subsequent parts)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Action Hooks (Part 6 - Point 82)
+# -----------------------------------------------------------------------------
+
+[[hooks.actions]]
+hook = "rustpress_init"
+callback = "on_init"
+priority = 10
+
+[[hooks.actions]]
+hook = "rustpress_loaded"
+callback = "on_loaded"
+priority = 10
+
+[[hooks.actions]]
+hook = "user_registered"
+callback = "on_user_registered"
+priority = 50
+
+[[hooks.actions]]
+hook = "post_published"
+callback = "on_post_published"
+priority = 50
+
+[[hooks.actions]]
+hook = "order_created"
+callback = "on_order_created"
+priority = 50
+
+[[hooks.actions]]
+hook = "payment_completed"
+callback = "on_payment_completed"
+priority = 50
+
+[[hooks.actions]]
+hook = "cron_daily"
+callback = "on_daily_maintenance"
+priority = 10
+
+[[hooks.actions]]
+hook = "cron_hourly"
+callback = "on_hourly_metrics"
+priority = 10
+
+# -----------------------------------------------------------------------------
+# Filter Hooks (Part 6 - Point 83)
+# -----------------------------------------------------------------------------
+
+[[hooks.filters]]
+hook = "queue_message_before_enqueue"
+callback = "filter_message_before_enqueue"
+priority = 10
+
+[[hooks.filters]]
+hook = "queue_message_after_process"
+callback = "filter_message_after_process"
+priority = 10
+
+[[hooks.filters]]
+hook = "admin_dashboard_widgets"
+callback = "add_dashboard_widgets"
+priority = 20
+
+[[hooks.filters]]
+hook = "rest_api_response"
+callback = "filter_api_response"
+priority = 50
+
+[[hooks.filters]]
+hook = "user_capabilities"
+callback = "add_vqm_capabilities"
+priority = 10
+
+# -----------------------------------------------------------------------------
+# Database Migrations (Part 2 - Point 20)
+# -----------------------------------------------------------------------------
+
+[migrations]
+directory = "migrations"
+auto_run = true
+
+[[migrations.files]]
+version = "001"
+file = "001_core_tables.sql"
+
+[[migrations.files]]
+version = "002"
+file = "002_messages_table.sql"
+
+[[migrations.files]]
+version = "003"
+file = "003_workers_table.sql"
+
+[[migrations.files]]
+version = "004"
+file = "004_event_handlers.sql"
+
+[[migrations.files]]
+version = "005"
+file = "005_metrics_tables.sql"
+
+[[migrations.files]]
+version = "006"
+file = "006_audit_logs.sql"
+
+[[migrations.files]]
+version = "007"
+file = "007_scheduled_jobs.sql"
+
+[[migrations.files]]
+version = "008"
+file = "008_subscriptions.sql"
+
+[[migrations.files]]
+version = "009"
+file = "009_organization.sql"
+
+# -----------------------------------------------------------------------------
+# REST API Configuration (Part 3)
+# -----------------------------------------------------------------------------
+
+[api]
+namespace = "vqm"
+version = "v1"
+
+# Queue Management Endpoints (Point 22)
+[[api.endpoints]]
+path = "/queues"
+method = "GET"
+handler = "list_queues"
+permission = "vqm_view_queues"
+rate_limit = { requests = 100, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/queues"
+method = "POST"
+handler = "create_queue"
+permission = "vqm_manage_queues"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/queues/{id}"
+method = "GET"
+handler = "get_queue"
+permission = "vqm_view_queues"
+rate_limit = { requests = 200, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/queues/{id}"
+method = "PUT"
+handler = "update_queue"
+permission = "vqm_manage_queues"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/queues/{id}"
+method = "DELETE"
+handler = "delete_queue"
+permission = "vqm_manage_queues"
+rate_limit = { requests = 10, window_seconds = 60 }
+
+# Queue Operations Endpoints (Point 23)
+[[api.endpoints]]
+path = "/queues/{id}/pause"
+method = "POST"
+handler = "pause_queue"
+permission = "vqm_manage_queues"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/queues/{id}/resume"
+method = "POST"
+handler = "resume_queue"
+permission = "vqm_manage_queues"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/queues/{id}/purge"
+method = "POST"
+handler = "purge_queue"
+permission = "vqm_admin"
+rate_limit = { requests = 5, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/queues/{id}/retry-failed"
+method = "POST"
+handler = "retry_failed_messages"
+permission = "vqm_manage_messages"
+rate_limit = { requests = 10, window_seconds = 60 }
+
+# Message Management Endpoints (Point 24)
+[[api.endpoints]]
+path = "/queues/{queue_id}/messages"
+method = "GET"
+handler = "list_messages"
+permission = "vqm_view_messages"
+rate_limit = { requests = 100, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/queues/{queue_id}/messages"
+method = "POST"
+handler = "enqueue_message"
+permission = "vqm_enqueue"
+rate_limit = { requests = 1000, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/queues/{queue_id}/messages/batch"
+method = "POST"
+handler = "enqueue_batch"
+permission = "vqm_enqueue"
+rate_limit = { requests = 100, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/messages/{id}"
+method = "GET"
+handler = "get_message"
+permission = "vqm_view_messages"
+rate_limit = { requests = 200, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/messages/{id}"
+method = "DELETE"
+handler = "delete_message"
+permission = "vqm_manage_messages"
+rate_limit = { requests = 50, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/messages/{id}/retry"
+method = "POST"
+handler = "retry_message"
+permission = "vqm_manage_messages"
+rate_limit = { requests = 50, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/messages/{id}/cancel"
+method = "POST"
+handler = "cancel_message"
+permission = "vqm_manage_messages"
+rate_limit = { requests = 50, window_seconds = 60 }
+
+# Worker Management Endpoints (Point 25)
+[[api.endpoints]]
+path = "/workers"
+method = "GET"
+handler = "list_workers"
+permission = "vqm_view_workers"
+rate_limit = { requests = 100, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/workers/{id}"
+method = "GET"
+handler = "get_worker"
+permission = "vqm_view_workers"
+rate_limit = { requests = 200, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/workers/{id}/stop"
+method = "POST"
+handler = "stop_worker"
+permission = "vqm_manage_workers"
+rate_limit = { requests = 20, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/workers/{id}/pause"
+method = "POST"
+handler = "pause_worker"
+permission = "vqm_manage_workers"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/workers/{id}/resume"
+method = "POST"
+handler = "resume_worker"
+permission = "vqm_manage_workers"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/workers/scale"
+method = "POST"
+handler = "scale_workers"
+permission = "vqm_admin"
+rate_limit = { requests = 10, window_seconds = 60 }
+
+# Metrics and Analytics Endpoints (Point 26)
+[[api.endpoints]]
+path = "/metrics/overview"
+method = "GET"
+handler = "get_metrics_overview"
+permission = "vqm_view_metrics"
+rate_limit = { requests = 60, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/metrics/queues/{id}"
+method = "GET"
+handler = "get_queue_metrics"
+permission = "vqm_view_metrics"
+rate_limit = { requests = 120, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/metrics/queues/{id}/history"
+method = "GET"
+handler = "get_queue_metrics_history"
+permission = "vqm_view_metrics"
+rate_limit = { requests = 60, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/metrics/throughput"
+method = "GET"
+handler = "get_throughput_metrics"
+permission = "vqm_view_metrics"
+rate_limit = { requests = 60, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/metrics/latency"
+method = "GET"
+handler = "get_latency_metrics"
+permission = "vqm_view_metrics"
+rate_limit = { requests = 60, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/metrics/export"
+method = "GET"
+handler = "export_metrics"
+permission = "vqm_admin"
+rate_limit = { requests = 10, window_seconds = 60 }
+
+# Event Handler Endpoints (Point 27)
+[[api.endpoints]]
+path = "/handlers"
+method = "GET"
+handler = "list_handlers"
+permission = "vqm_view_handlers"
+rate_limit = { requests = 100, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/handlers"
+method = "POST"
+handler = "create_handler"
+permission = "vqm_manage_handlers"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/handlers/{id}"
+method = "PUT"
+handler = "update_handler"
+permission = "vqm_manage_handlers"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/handlers/{id}"
+method = "DELETE"
+handler = "delete_handler"
+permission = "vqm_manage_handlers"
+rate_limit = { requests = 20, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/handlers/{id}/test"
+method = "POST"
+handler = "test_handler"
+permission = "vqm_manage_handlers"
+rate_limit = { requests = 20, window_seconds = 60 }
+
+# Scheduled Jobs Endpoints (Point 28)
+[[api.endpoints]]
+path = "/scheduled"
+method = "GET"
+handler = "list_scheduled_jobs"
+permission = "vqm_view_scheduled"
+rate_limit = { requests = 100, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/scheduled"
+method = "POST"
+handler = "create_scheduled_job"
+permission = "vqm_manage_scheduled"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/scheduled/{id}"
+method = "GET"
+handler = "get_scheduled_job"
+permission = "vqm_view_scheduled"
+rate_limit = { requests = 100, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/scheduled/{id}"
+method = "PUT"
+handler = "update_scheduled_job"
+permission = "vqm_manage_scheduled"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/scheduled/{id}"
+method = "DELETE"
+handler = "delete_scheduled_job"
+permission = "vqm_manage_scheduled"
+rate_limit = { requests = 20, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/scheduled/{id}/trigger"
+method = "POST"
+handler = "trigger_scheduled_job"
+permission = "vqm_manage_scheduled"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+# Subscription and Webhook Endpoints (Point 29)
+[[api.endpoints]]
+path = "/subscriptions"
+method = "GET"
+handler = "list_subscriptions"
+permission = "vqm_view_subscriptions"
+rate_limit = { requests = 100, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/subscriptions"
+method = "POST"
+handler = "create_subscription"
+permission = "vqm_manage_subscriptions"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/subscriptions/{id}"
+method = "GET"
+handler = "get_subscription"
+permission = "vqm_view_subscriptions"
+rate_limit = { requests = 100, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/subscriptions/{id}"
+method = "PUT"
+handler = "update_subscription"
+permission = "vqm_manage_subscriptions"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/subscriptions/{id}"
+method = "DELETE"
+handler = "delete_subscription"
+permission = "vqm_manage_subscriptions"
+rate_limit = { requests = 20, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/subscriptions/{id}/test"
+method = "POST"
+handler = "test_subscription"
+permission = "vqm_manage_subscriptions"
+rate_limit = { requests = 20, window_seconds = 60 }
+
+# Real-time Streaming Endpoints (Point 30)
+[[api.endpoints]]
+path = "/stream/events"
+method = "GET"
+handler = "stream_events_sse"
+permission = "vqm_view_messages"
+rate_limit = { requests = 10, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/stream/metrics"
+method = "GET"
+handler = "stream_metrics_sse"
+permission = "vqm_view_metrics"
+rate_limit = { requests = 10, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/ws/connect"
+method = "GET"
+handler = "websocket_connect"
+permission = "vqm_view_messages"
+rate_limit = { requests = 20, window_seconds = 60 }
+
+# Audit Log Endpoints (Point 31)
+[[api.endpoints]]
+path = "/audit"
+method = "GET"
+handler = "list_audit_logs"
+permission = "vqm_view_audit"
+rate_limit = { requests = 60, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/audit/export"
+method = "GET"
+handler = "export_audit_logs"
+permission = "vqm_admin"
+rate_limit = { requests = 5, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/audit/search"
+method = "POST"
+handler = "search_audit_logs"
+permission = "vqm_view_audit"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+# Tags and Organization Endpoints (Point 32)
+[[api.endpoints]]
+path = "/tags"
+method = "GET"
+handler = "list_tags"
+permission = "vqm_view_queues"
+rate_limit = { requests = 100, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/tags"
+method = "POST"
+handler = "create_tag"
+permission = "vqm_manage_queues"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/tags/{id}"
+method = "PUT"
+handler = "update_tag"
+permission = "vqm_manage_queues"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/tags/{id}"
+method = "DELETE"
+handler = "delete_tag"
+permission = "vqm_manage_queues"
+rate_limit = { requests = 20, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/groups"
+method = "GET"
+handler = "list_groups"
+permission = "vqm_view_queues"
+rate_limit = { requests = 100, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/groups"
+method = "POST"
+handler = "create_group"
+permission = "vqm_manage_queues"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/groups/{id}"
+method = "PUT"
+handler = "update_group"
+permission = "vqm_manage_queues"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/groups/{id}"
+method = "DELETE"
+handler = "delete_group"
+permission = "vqm_manage_queues"
+rate_limit = { requests = 20, window_seconds = 60 }
+
+# Search and Filter Endpoints (Point 33)
+[[api.endpoints]]
+path = "/search/messages"
+method = "POST"
+handler = "search_messages"
+permission = "vqm_view_messages"
+rate_limit = { requests = 60, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/search/queues"
+method = "POST"
+handler = "search_queues"
+permission = "vqm_view_queues"
+rate_limit = { requests = 60, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/filters/saved"
+method = "GET"
+handler = "list_saved_filters"
+permission = "vqm_view_messages"
+rate_limit = { requests = 100, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/filters/saved"
+method = "POST"
+handler = "save_filter"
+permission = "vqm_view_messages"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/filters/saved/{id}"
+method = "DELETE"
+handler = "delete_saved_filter"
+permission = "vqm_view_messages"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+# System Health Endpoints (Point 34)
+[[api.endpoints]]
+path = "/health"
+method = "GET"
+handler = "health_check"
+permission = "read"
+rate_limit = { requests = 300, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/health/detailed"
+method = "GET"
+handler = "detailed_health_check"
+permission = "vqm_view_metrics"
+rate_limit = { requests = 60, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/system/status"
+method = "GET"
+handler = "system_status"
+permission = "vqm_admin"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/system/config"
+method = "GET"
+handler = "get_system_config"
+permission = "vqm_admin"
+rate_limit = { requests = 30, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/system/config"
+method = "PUT"
+handler = "update_system_config"
+permission = "vqm_admin"
+rate_limit = { requests = 10, window_seconds = 60 }
+
+# Bulk Operations Endpoints (Point 35)
+[[api.endpoints]]
+path = "/bulk/messages/delete"
+method = "POST"
+handler = "bulk_delete_messages"
+permission = "vqm_manage_messages"
+rate_limit = { requests = 10, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/bulk/messages/retry"
+method = "POST"
+handler = "bulk_retry_messages"
+permission = "vqm_manage_messages"
+rate_limit = { requests = 10, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/bulk/messages/move"
+method = "POST"
+handler = "bulk_move_messages"
+permission = "vqm_manage_messages"
+rate_limit = { requests = 10, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/bulk/messages/cancel"
+method = "POST"
+handler = "bulk_cancel_messages"
+permission = "vqm_manage_messages"
+rate_limit = { requests = 10, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/bulk/queues/export"
+method = "POST"
+handler = "bulk_export_queues"
+permission = "vqm_admin"
+rate_limit = { requests = 5, window_seconds = 60 }
+
+[[api.endpoints]]
+path = "/bulk/queues/import"
+method = "POST"
+handler = "bulk_import_queues"
+permission = "vqm_admin"
+rate_limit = { requests = 5, window_seconds = 60 }
+
+# -----------------------------------------------------------------------------
+# Admin Interface Configuration (Part 6 - Point 81)
+# -----------------------------------------------------------------------------
+
+[[admin.menu]]
+id = "vqm-main"
+label = "Queue Manager"
+icon = "queue"
+position = 25
+
+[[admin.pages]]
+id = "vqm-dashboard"
+title = "Dashboard"
+handler = "render_dashboard"
+capability = "vqm_view_queues"
+parent = "vqm-main"
+
+[[admin.pages]]
+id = "vqm-queues"
+title = "Queues"
+handler = "render_queues"
+capability = "vqm_view_queues"
+parent = "vqm-main"
+
+[[admin.pages]]
+id = "vqm-workers"
+title = "Workers"
+handler = "render_workers"
+capability = "vqm_view_workers"
+parent = "vqm-main"
+
+[[admin.pages]]
+id = "vqm-scheduled"
+title = "Scheduled Jobs"
+handler = "render_scheduled"
+capability = "vqm_view_scheduled"
+parent = "vqm-main"
+
+[[admin.pages]]
+id = "vqm-audit"
+title = "Audit Logs"
+handler = "render_audit"
+capability = "vqm_view_audit"
+parent = "vqm-main"
+
+[[admin.pages]]
+id = "vqm-alerts"
+title = "Alerts"
+handler = "render_alerts"
+capability = "vqm_view_metrics"
+parent = "vqm-main"
+
+[[admin.pages]]
+id = "vqm-settings"
+title = "Settings"
+handler = "render_settings"
+capability = "vqm_admin"
+parent = "vqm-main"
+
+# -----------------------------------------------------------------------------
+# Assets Configuration (Part 6 - Point 85)
+# -----------------------------------------------------------------------------
+
+[[assets.css]]
+path = "assets/dist/style.css"
+handle = "vqm-styles"
+location = "header"
+admin_only = true
+
+[[assets.css]]
+path = "assets/dist/charts.css"
+handle = "vqm-charts"
+location = "header"
+admin_only = true
+
+[[assets.js]]
+path = "assets/dist/app.js"
+handle = "vqm-app"
+location = "footer"
+admin_only = true
+dependencies = ["react", "react-dom"]
+
+[[assets.js]]
+path = "assets/dist/vendor.js"
+handle = "vqm-vendor"
+location = "footer"
+admin_only = true
+
+# -----------------------------------------------------------------------------
+# Shortcodes Configuration (Part 6 - Point 86)
+# -----------------------------------------------------------------------------
+
+[[shortcodes]]
+tag = "queue-status"
+handler = "render_queue_status_shortcode"
+supports_content = false
+
+[[shortcodes.attributes]]
+name = "queue"
+attr_type = "string"
+default = ""
+
+[[shortcodes.attributes]]
+name = "show_metrics"
+attr_type = "boolean"
+default = "true"
+
+[[shortcodes.attributes]]
+name = "theme"
+attr_type = "string"
+default = "default"
+
+[[shortcodes]]
+tag = "queue-submit"
+handler = "render_queue_submit_shortcode"
+supports_content = true
+
+[[shortcodes.attributes]]
+name = "queue"
+attr_type = "string"
+default = ""
+
+[[shortcodes.attributes]]
+name = "message_type"
+attr_type = "string"
+default = "form_submission"
+
+[[shortcodes.attributes]]
+name = "success_message"
+attr_type = "string"
+default = "Your request has been submitted!"
+
+# -----------------------------------------------------------------------------
+# Widgets Configuration (Part 6 - Point 87)
+# -----------------------------------------------------------------------------
+
+[[widgets]]
+id = "vqm-queue-summary"
+name = "Queue Summary"
+render = "render_queue_summary_widget"
+
+[[widgets]]
+id = "vqm-recent-failures"
+name = "Recent Queue Failures"
+render = "render_recent_failures_widget"
+
+[[widgets]]
+id = "vqm-throughput-mini"
+name = "Queue Throughput"
+render = "render_throughput_mini_widget"
+
+[[widgets]]
+id = "vqm-worker-status"
+name = "Worker Status"
+render = "render_worker_status_widget"
+
+# -----------------------------------------------------------------------------
+# Blocks Configuration (Part 6 - Point 88)
+# -----------------------------------------------------------------------------
+
+[[blocks]]
+name = "vqm/queue-status"
+title = "Queue Status"
+category = "widgets"
+render = "render_queue_status_block"
+
+[blocks.attributes]
+queue_id = { attr_type = "string", default = "" }
+display_mode = { attr_type = "string", default = "compact" }
+show_chart = { attr_type = "boolean", default = true }
+
+[[blocks]]
+name = "vqm/job-submission"
+title = "Job Submission Form"
+category = "widgets"
+render = "render_job_submission_block"
+
+[blocks.attributes]
+queue_id = { attr_type = "string", default = "" }
+title = { attr_type = "string", default = "Submit Job" }
+success_message = { attr_type = "string", default = "Job submitted successfully!" }
+
+# -----------------------------------------------------------------------------
+# CLI Commands Configuration (Part 6 - Point 89)
+# -----------------------------------------------------------------------------
+
+[[cli]]
+name = "vqm:queue:list"
+handler = "cli_list_queues"
+description = "List all queues"
+
+[[cli.options]]
+name = "format"
+short = "f"
+default = "table"
+description = "Output format (table, json, csv)"
+
+[[cli.options]]
+name = "status"
+short = "s"
+description = "Filter by queue status"
+
+[[cli]]
+name = "vqm:queue:create"
+handler = "cli_create_queue"
+description = "Create a new queue"
+
+[[cli.arguments]]
+name = "name"
+required = true
+
+[[cli.options]]
+name = "type"
+short = "t"
+default = "fifo"
+description = "Queue type (fifo, priority, delay, broadcast)"
+
+[[cli.options]]
+name = "max-retries"
+short = "r"
+default = "3"
+description = "Maximum retry attempts"
+
+[[cli]]
+name = "vqm:queue:delete"
+handler = "cli_delete_queue"
+description = "Delete a queue"
+
+[[cli.arguments]]
+name = "name"
+required = true
+
+[[cli.options]]
+name = "force"
+short = "f"
+description = "Skip confirmation"
+
+[[cli]]
+name = "vqm:worker:start"
+handler = "cli_start_worker"
+description = "Start a queue worker"
+
+[[cli.options]]
+name = "queues"
+short = "q"
+description = "Comma-separated list of queues to process"
+
+[[cli.options]]
+name = "concurrency"
+short = "c"
+default = "1"
+description = "Number of concurrent jobs"
+
+[[cli.options]]
+name = "memory-limit"
+short = "m"
+default = "128"
+description = "Memory limit in MB"
+
+[[cli]]
+name = "vqm:worker:stop"
+handler = "cli_stop_worker"
+description = "Stop a running worker"
+
+[[cli.arguments]]
+name = "worker_id"
+required = true
+
+[[cli.options]]
+name = "graceful"
+short = "g"
+description = "Wait for current job to complete"
+
+[[cli]]
+name = "vqm:worker:list"
+handler = "cli_list_workers"
+description = "List all workers"
+
+[[cli.options]]
+name = "format"
+short = "f"
+default = "table"
+
+[[cli]]
+name = "vqm:message:enqueue"
+handler = "cli_enqueue_message"
+description = "Enqueue a message"
+
+[[cli.arguments]]
+name = "queue"
+required = true
+
+[[cli.arguments]]
+name = "payload"
+required = true
+
+[[cli.options]]
+name = "type"
+short = "t"
+default = "cli.message"
+description = "Message type"
+
+[[cli.options]]
+name = "priority"
+short = "p"
+default = "0"
+description = "Message priority"
+
+[[cli.options]]
+name = "delay"
+short = "d"
+description = "Delay in seconds before processing"
+
+[[cli]]
+name = "vqm:message:peek"
+handler = "cli_peek_messages"
+description = "Peek at messages in a queue"
+
+[[cli.arguments]]
+name = "queue"
+required = true
+
+[[cli.options]]
+name = "count"
+short = "c"
+default = "10"
+description = "Number of messages to show"
+
+[[cli.options]]
+name = "status"
+short = "s"
+description = "Filter by status"
+
+[[cli]]
+name = "vqm:stats"
+handler = "cli_show_stats"
+description = "Show queue statistics"
+
+[[cli.options]]
+name = "queue"
+short = "q"
+description = "Filter by queue name"
+
+[[cli.options]]
+name = "format"
+short = "f"
+default = "table"
+
+[[cli]]
+name = "vqm:purge"
+handler = "cli_purge_queue"
+description = "Purge all messages from a queue"
+
+[[cli.arguments]]
+name = "queue"
+required = true
+
+[[cli.options]]
+name = "force"
+short = "f"
+description = "Skip confirmation"
+
+[[cli.options]]
+name = "status"
+short = "s"
+description = "Only purge messages with this status"
+
+[[cli]]
+name = "vqm:retry"
+handler = "cli_retry_failed"
+description = "Retry failed messages"
+
+[[cli.arguments]]
+name = "queue"
+required = true
+
+[[cli.options]]
+name = "all"
+short = "a"
+description = "Retry all failed messages"
+
+[[cli.options]]
+name = "message-id"
+short = "m"
+description = "Retry specific message by ID"
+
+[[cli]]
+name = "vqm:export"
+handler = "cli_export_data"
+description = "Export queue data"
+
+[[cli.options]]
+name = "queue"
+short = "q"
+description = "Queue to export"
+
+[[cli.options]]
+name = "output"
+short = "o"
+default = "export.json"
+description = "Output file path"
+
+[[cli.options]]
+name = "format"
+short = "f"
+default = "json"
+description = "Export format (json, csv)"
+
+[[cli]]
+name = "vqm:import"
+handler = "cli_import_data"
+description = "Import queue data"
+
+[[cli.arguments]]
+name = "file"
+required = true
+
+[[cli.options]]
+name = "queue"
+short = "q"
+description = "Target queue name"
+
+# -----------------------------------------------------------------------------
+# Cron Jobs Configuration (Part 6 - Point 84)
+# -----------------------------------------------------------------------------
+
+[[cron]]
+name = "vqm_metrics_snapshot"
+handler = "collect_metrics_snapshot"
+schedule = "*/5 * * * *"
+
+[[cron]]
+name = "vqm_cleanup_old_messages"
+handler = "cleanup_old_messages"
+schedule = "0 2 * * *"
+
+[[cron]]
+name = "vqm_aggregate_hourly_stats"
+handler = "aggregate_hourly_stats"
+schedule = "0 * * * *"
+
+[[cron]]
+name = "vqm_check_stale_workers"
+handler = "check_stale_workers"
+schedule = "*/1 * * * *"
+
+[[cron]]
+name = "vqm_process_scheduled_jobs"
+handler = "process_scheduled_jobs"
+schedule = "* * * * *"
+
+[[cron]]
+name = "vqm_send_alert_digests"
+handler = "send_alert_digests"
+schedule = "0 9 * * *"
+
+[[cron]]
+name = "vqm_cleanup_audit_logs"
+handler = "cleanup_audit_logs"
+schedule = "0 3 * * 0"
+
+[[cron]]
+name = "vqm_health_check"
+handler = "run_health_checks"
+schedule = "*/5 * * * *"
