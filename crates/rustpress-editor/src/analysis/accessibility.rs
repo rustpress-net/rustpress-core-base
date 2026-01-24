@@ -52,8 +52,14 @@ impl AccessibilityChecker {
             100
         };
 
-        let error_count = issues.iter().filter(|i| i.severity == Severity::Error).count();
-        let warning_count = issues.iter().filter(|i| i.severity == Severity::Warning).count();
+        let error_count = issues
+            .iter()
+            .filter(|i| i.severity == Severity::Error)
+            .count();
+        let warning_count = issues
+            .iter()
+            .filter(|i| i.severity == Severity::Warning)
+            .count();
 
         AccessibilityReport {
             score,
@@ -98,9 +104,12 @@ impl AccessibilityChecker {
                             id: "img-alt-redundant".to_string(),
                             criterion: "1.1.1".to_string(),
                             severity: Severity::Warning,
-                            message: "Alt text contains redundant phrases like 'image of'".to_string(),
+                            message: "Alt text contains redundant phrases like 'image of'"
+                                .to_string(),
                             element: Some(img.src.clone()),
-                            suggestion: "Remove redundant phrases. Screen readers already announce images.".to_string(),
+                            suggestion:
+                                "Remove redundant phrases. Screen readers already announce images."
+                                    .to_string(),
                         });
                     }
                 }
@@ -130,11 +139,17 @@ impl AccessibilityChecker {
         }
 
         if missing_alt == 0 && empty_alt == 0 {
-            passed.push(format!("All {} images have appropriate alt text", images.len()));
+            passed.push(format!(
+                "All {} images have appropriate alt text",
+                images.len()
+            ));
         }
 
         if decorative > 0 {
-            passed.push(format!("{} decorative images correctly marked with empty alt", decorative));
+            passed.push(format!(
+                "{} decorative images correctly marked with empty alt",
+                decorative
+            ));
         }
     }
 
@@ -148,7 +163,14 @@ impl AccessibilityChecker {
         let mut empty_links = 0;
         let mut new_window_no_warning = 0;
 
-        let generic_phrases = ["click here", "read more", "learn more", "here", "link", "this"];
+        let generic_phrases = [
+            "click here",
+            "read more",
+            "learn more",
+            "here",
+            "link",
+            "this",
+        ];
 
         for link in links {
             if link.text.is_empty() && link.aria_label.is_none() {
@@ -181,7 +203,10 @@ impl AccessibilityChecker {
                 id: "link-generic".to_string(),
                 criterion: "2.4.4".to_string(),
                 severity: Severity::Warning,
-                message: format!("{} link(s) use generic text like 'click here'", generic_text),
+                message: format!(
+                    "{} link(s) use generic text like 'click here'",
+                    generic_text
+                ),
                 element: None,
                 suggestion: "Use descriptive link text that explains the destination.".to_string(),
             });
@@ -192,9 +217,13 @@ impl AccessibilityChecker {
                 id: "link-new-window".to_string(),
                 criterion: "3.2.5".to_string(),
                 severity: Severity::Warning,
-                message: format!("{} link(s) open in new window without warning", new_window_no_warning),
+                message: format!(
+                    "{} link(s) open in new window without warning",
+                    new_window_no_warning
+                ),
                 element: None,
-                suggestion: "Add '(opens in new window)' to link text or use aria-label.".to_string(),
+                suggestion: "Add '(opens in new window)' to link text or use aria-label."
+                    .to_string(),
             });
         }
 
@@ -274,7 +303,10 @@ impl AccessibilityChecker {
         }
 
         if skipped_levels.is_empty() && h1_count <= 1 && empty_headings == 0 {
-            passed.push(format!("Heading structure is correct ({} headings)", headings.len()));
+            passed.push(format!(
+                "Heading structure is correct ({} headings)",
+                headings.len()
+            ));
         }
     }
 
@@ -362,8 +394,14 @@ impl AccessibilityChecker {
             });
         }
 
-        let video_count = media.iter().filter(|m| m.media_type == MediaType::Video).count();
-        let audio_count = media.iter().filter(|m| m.media_type == MediaType::Audio).count();
+        let video_count = media
+            .iter()
+            .filter(|m| m.media_type == MediaType::Video)
+            .count();
+        let audio_count = media
+            .iter()
+            .filter(|m| m.media_type == MediaType::Audio)
+            .count();
 
         if video_count > 0 && videos_no_captions == 0 {
             passed.push(format!("All {} videos have captions", video_count));
@@ -455,9 +493,15 @@ impl AccessibilityChecker {
         if errors == 0 && warnings == 0 {
             "Excellent! No accessibility issues found.".to_string()
         } else if errors == 0 {
-            format!("Good accessibility with {} minor issue(s) to review.", warnings)
+            format!(
+                "Good accessibility with {} minor issue(s) to review.",
+                warnings
+            )
         } else {
-            format!("{} critical issue(s) and {} warning(s) need attention.", errors, warnings)
+            format!(
+                "{} critical issue(s) and {} warning(s) need attention.",
+                errors, warnings
+            )
         }
     }
 }

@@ -82,9 +82,9 @@ impl RateLimiter {
         }
 
         let mut buckets = self.buckets.write().await;
-        let bucket = buckets.entry(key.to_string()).or_insert_with(|| {
-            TokenBucket::new(requests_per_second as f64, burst_size)
-        });
+        let bucket = buckets
+            .entry(key.to_string())
+            .or_insert_with(|| TokenBucket::new(requests_per_second as f64, burst_size));
 
         bucket.check()
     }
@@ -101,9 +101,9 @@ impl RateLimiter {
         }
 
         let mut buckets = self.buckets.write().await;
-        let bucket = buckets.entry(key.to_string()).or_insert_with(|| {
-            TokenBucket::new(requests_per_second as f64, burst_size)
-        });
+        let bucket = buckets
+            .entry(key.to_string())
+            .or_insert_with(|| TokenBucket::new(requests_per_second as f64, burst_size));
 
         bucket.acquire(1)
     }
@@ -308,7 +308,9 @@ impl TokenBucket {
     }
 
     fn available_tokens(&self) -> f64 {
-        let elapsed = Instant::now().duration_since(self.last_refill).as_secs_f64();
+        let elapsed = Instant::now()
+            .duration_since(self.last_refill)
+            .as_secs_f64();
         (self.tokens + elapsed * self.refill_rate).min(self.capacity as f64)
     }
 
@@ -475,10 +477,7 @@ impl RateLimitResult {
         );
 
         if let Some(retry_after) = self.retry_after {
-            headers.insert(
-                "Retry-After".to_string(),
-                retry_after.as_secs().to_string(),
-            );
+            headers.insert("Retry-After".to_string(), retry_after.as_secs().to_string());
         }
 
         headers

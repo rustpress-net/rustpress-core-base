@@ -220,12 +220,12 @@ impl PostStats {
         const STOP_WORDS: &[&str] = &[
             "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with",
             "by", "from", "as", "is", "was", "are", "were", "been", "be", "have", "has", "had",
-            "do", "does", "did", "will", "would", "could", "should", "may", "might", "must",
-            "can", "this", "that", "these", "those", "it", "its", "they", "them", "their",
-            "we", "us", "our", "you", "your", "he", "she", "him", "her", "his", "i", "my",
-            "me", "not", "no", "if", "then", "else", "when", "where", "what", "which", "who",
-            "how", "why", "all", "any", "both", "each", "few", "more", "most", "other", "some",
-            "such", "than", "too", "very", "just", "only", "so", "also", "about", "into",
+            "do", "does", "did", "will", "would", "could", "should", "may", "might", "must", "can",
+            "this", "that", "these", "those", "it", "its", "they", "them", "their", "we", "us",
+            "our", "you", "your", "he", "she", "him", "her", "his", "i", "my", "me", "not", "no",
+            "if", "then", "else", "when", "where", "what", "which", "who", "how", "why", "all",
+            "any", "both", "each", "few", "more", "most", "other", "some", "such", "than", "too",
+            "very", "just", "only", "so", "also", "about", "into",
         ];
 
         let mut frequency: HashMap<String, u32> = HashMap::new();

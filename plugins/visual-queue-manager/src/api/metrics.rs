@@ -6,22 +6,21 @@
 // =============================================================================
 
 use axum::{
-    Router,
-    routing::{get, post, put, delete},
-    extract::{Path, Query, Extension, Json},
+    extract::{Extension, Json, Path, Query},
     http::StatusCode,
+    routing::{delete, get, post, put},
+    Router,
 };
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
-use validator::Validate;
 use std::sync::Arc;
+use uuid::Uuid;
+use validator::Validate;
 
 use super::{
-    ApiResponse, ApiError, AppError, ResponseMeta,
-    PaginationParams, DateRangeParams, AuthUser,
-    validate_request, parse_uuid,
+    parse_uuid, validate_request, ApiError, ApiResponse, AppError, AuthUser, DateRangeParams,
+    PaginationParams, ResponseMeta,
 };
 use crate::VisualQueueManager;
 
@@ -354,7 +353,7 @@ async fn get_dashboard(
             COUNT(*) FILTER (WHERE status = 'paused') as paused
         FROM vqm_queues
         WHERE is_system_queue = false
-        "#
+        "#,
     )
     .fetch_one(pool)
     .await
@@ -385,7 +384,7 @@ async fn get_dashboard(
             COUNT(*) FILTER (WHERE status = 'idle') as idle
         FROM vqm_workers
         WHERE status != 'offline'
-        "#
+        "#,
     )
     .fetch_one(pool)
     .await
@@ -404,7 +403,7 @@ async fn get_dashboard(
             ) as success_rate
         FROM vqm_messages
         WHERE completed_at > CURRENT_TIMESTAMP - INTERVAL '1 hour'
-        "#
+        "#,
     )
     .fetch_one(pool)
     .await
@@ -418,7 +417,7 @@ async fn get_dashboard(
             COUNT(*) FILTER (WHERE resolved_at IS NULL AND severity = 'critical') as critical
         FROM vqm_alert_history
         WHERE triggered_at > CURRENT_TIMESTAMP - INTERVAL '24 hours'
-        "#
+        "#,
     )
     .fetch_one(pool)
     .await
@@ -505,7 +504,7 @@ async fn get_realtime_metrics(
             COUNT(*) FILTER (WHERE current_job_id IS NOT NULL)
         FROM vqm_workers
         WHERE status IN ('active', 'idle')
-        "#
+        "#,
     )
     .fetch_one(pool)
     .await
@@ -531,22 +530,28 @@ async fn get_realtime_metrics(
         enqueue_rate: rates.0,
         dequeue_rate: rates.1,
         error_rate: rates.2,
-        queue_depths: depths.into_iter().map(|d| QueueDepth {
-            queue_id: d.queue_id,
-            queue_name: d.queue_name,
-            pending: d.pending,
-            processing: d.processing,
-        }).collect(),
+        queue_depths: depths
+            .into_iter()
+            .map(|d| QueueDepth {
+                queue_id: d.queue_id,
+                queue_name: d.queue_name,
+                pending: d.pending,
+                processing: d.processing,
+            })
+            .collect(),
         worker_utilization: utilization.0,
         active_connections: utilization.1,
         memory_usage_mb: 0, // Would come from system metrics
         redis_memory_mb: 0,
-        recent_errors: errors.into_iter().map(|e| RecentError {
-            message_id: e.message_id,
-            queue_name: e.queue_name,
-            error: e.error.unwrap_or_default(),
-            occurred_at: e.occurred_at,
-        }).collect(),
+        recent_errors: errors
+            .into_iter()
+            .map(|e| RecentError {
+                message_id: e.message_id,
+                queue_name: e.queue_name,
+                error: e.error.unwrap_or_default(),
+                occurred_at: e.occurred_at,
+            })
+            .collect(),
     };
 
     Ok(Json(ApiResponse::success(metrics)))
@@ -565,7 +570,9 @@ async fn get_historical_metrics(
     let pool = plugin.db_pool();
 
     let end_time = params.date_range.end_date.unwrap_or_else(Utc::now);
-    let start_time = params.date_range.start_date
+    let start_time = params
+        .date_range
+        .start_date
         .unwrap_or_else(|| end_time - Duration::hours(24));
 
     let granularity = params.granularity.as_deref().unwrap_or("hour");
@@ -604,16 +611,19 @@ async fn get_historical_metrics(
         period_start: start_time,
         period_end: end_time,
         granularity: granularity.to_string(),
-        data_points: data_points.into_iter().map(|p| MetricDataPoint {
-            timestamp: p.timestamp,
-            messages_enqueued: p.messages_enqueued,
-            messages_completed: p.messages_completed,
-            messages_failed: p.messages_failed,
-            avg_wait_time_ms: p.avg_wait_time_ms,
-            avg_processing_time_ms: p.avg_processing_time_ms,
-            active_workers: p.active_workers,
-            throughput: p.throughput,
-        }).collect(),
+        data_points: data_points
+            .into_iter()
+            .map(|p| MetricDataPoint {
+                timestamp: p.timestamp,
+                messages_enqueued: p.messages_enqueued,
+                messages_completed: p.messages_completed,
+                messages_failed: p.messages_failed,
+                avg_wait_time_ms: p.avg_wait_time_ms,
+                avg_processing_time_ms: p.avg_processing_time_ms,
+                active_workers: p.active_workers,
+                throughput: p.throughput,
+            })
+            .collect(),
     };
 
     Ok(Json(ApiResponse::success(metrics)))
@@ -634,14 +644,16 @@ async fn get_queue_metrics(
     let pool = plugin.db_pool();
 
     let end_time = params.end_date.unwrap_or_else(Utc::now);
-    let start_time = params.start_date.unwrap_or_else(|| end_time - Duration::hours(1));
+    let start_time = params
+        .start_date
+        .unwrap_or_else(|| end_time - Duration::hours(1));
 
     // Get queue info
     let queue_info: (String, i64, i64, i64, i64, i64) = sqlx::query_as(
         r#"
         SELECT name, message_count, pending_count, processing_count, completed_count, failed_count
         FROM vqm_queues WHERE id = $1
-        "#
+        "#,
     )
     .bind(queue_id)
     .fetch_optional(pool)
@@ -660,7 +672,7 @@ async fn get_queue_metrics(
             COUNT(*) FILTER (WHERE status = 'failed')
         FROM vqm_messages
         WHERE queue_id = $1 AND completed_at BETWEEN $2 AND $3
-        "#
+        "#,
     )
     .bind(queue_id)
     .bind(start_time)
@@ -705,7 +717,9 @@ async fn get_worker_metrics(
     let pool = plugin.db_pool();
 
     let end_time = params.end_date.unwrap_or_else(Utc::now);
-    let start_time = params.start_date.unwrap_or_else(|| end_time - Duration::hours(1));
+    let start_time = params
+        .start_date
+        .unwrap_or_else(|| end_time - Duration::hours(1));
 
     // Get worker info
     let worker: (String, i64, i64, f64, i64, f64, DateTime<Utc>) = sqlx::query_as(
@@ -713,7 +727,7 @@ async fn get_worker_metrics(
         SELECT name, jobs_completed, jobs_failed, current_load,
                memory_usage_mb, cpu_usage_percent, registered_at
         FROM vqm_workers WHERE id = $1
-        "#
+        "#,
     )
     .bind(worker_id)
     .fetch_optional(pool)
@@ -729,7 +743,7 @@ async fn get_worker_metrics(
             COALESCE(AVG(processing_time_ms), 0)
         FROM vqm_worker_job_history
         WHERE worker_id = $1 AND started_at BETWEEN $2 AND $3
-        "#
+        "#,
     )
     .bind(worker_id)
     .bind(start_time)
@@ -770,7 +784,9 @@ async fn get_throughput_metrics(
     let pool = plugin.db_pool();
 
     let end_time = params.end_date.unwrap_or_else(Utc::now);
-    let start_time = params.start_date.unwrap_or_else(|| end_time - Duration::hours(1));
+    let start_time = params
+        .start_date
+        .unwrap_or_else(|| end_time - Duration::hours(1));
     let period_seconds = (end_time - start_time).num_seconds() as f64;
 
     // Overall throughput
@@ -785,7 +801,7 @@ async fn get_throughput_metrics(
         SELECT
             (SELECT COUNT(*) FROM vqm_messages WHERE completed_at BETWEEN $1 AND $2),
             COALESCE((SELECT hour FROM hourly ORDER BY count DESC LIMIT 1), $2)
-        "#
+        "#,
     )
     .bind(start_time)
     .bind(end_time)
@@ -803,7 +819,7 @@ async fn get_throughput_metrics(
         GROUP BY q.id, q.name
         ORDER BY processed DESC
         LIMIT 10
-        "#
+        "#,
     )
     .bind(start_time)
     .bind(end_time)
@@ -819,12 +835,15 @@ async fn get_throughput_metrics(
         messages_per_hour: overall.0 as f64 / (period_seconds / 3600.0),
         peak_throughput: 0.0, // Would need more detailed tracking
         peak_time: overall.1,
-        by_queue: by_queue.into_iter().map(|(id, name, processed)| QueueThroughput {
-            queue_id: id,
-            queue_name: name,
-            processed,
-            rate_per_minute: processed as f64 / (period_seconds / 60.0),
-        }).collect(),
+        by_queue: by_queue
+            .into_iter()
+            .map(|(id, name, processed)| QueueThroughput {
+                queue_id: id,
+                queue_name: name,
+                processed,
+                rate_per_minute: processed as f64 / (period_seconds / 60.0),
+            })
+            .collect(),
     };
 
     Ok(Json(ApiResponse::success(metrics)))
@@ -843,7 +862,9 @@ async fn get_latency_metrics(
     let pool = plugin.db_pool();
 
     let end_time = params.end_date.unwrap_or_else(Utc::now);
-    let start_time = params.start_date.unwrap_or_else(|| end_time - Duration::hours(1));
+    let start_time = params
+        .start_date
+        .unwrap_or_else(|| end_time - Duration::hours(1));
 
     // Overall latency
     let latency: (f64, f64, f64, f64, f64, f64, f64, f64) = sqlx::query_as(
@@ -859,7 +880,7 @@ async fn get_latency_metrics(
             COALESCE(PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY processing_time_ms), 0)
         FROM vqm_messages
         WHERE completed_at BETWEEN $1 AND $2
-        "#
+        "#,
     )
     .bind(start_time)
     .bind(end_time)
@@ -879,7 +900,7 @@ async fn get_latency_metrics(
         GROUP BY q.id, q.name
         ORDER BY AVG(m.processing_time_ms) DESC NULLS LAST
         LIMIT 10
-        "#
+        "#,
     )
     .bind(start_time)
     .bind(end_time)
@@ -897,12 +918,15 @@ async fn get_latency_metrics(
         p50_processing_time_ms: latency.5,
         p95_processing_time_ms: latency.6,
         p99_processing_time_ms: latency.7,
-        by_queue: by_queue.into_iter().map(|(id, name, wait, proc)| QueueLatency {
-            queue_id: id,
-            queue_name: name,
-            avg_wait_ms: wait,
-            avg_processing_ms: proc,
-        }).collect(),
+        by_queue: by_queue
+            .into_iter()
+            .map(|(id, name, wait, proc)| QueueLatency {
+                queue_id: id,
+                queue_name: name,
+                avg_wait_ms: wait,
+                avg_processing_ms: proc,
+            })
+            .collect(),
     };
 
     Ok(Json(ApiResponse::success(metrics)))
@@ -921,7 +945,9 @@ async fn get_error_metrics(
     let pool = plugin.db_pool();
 
     let end_time = params.end_date.unwrap_or_else(Utc::now);
-    let start_time = params.start_date.unwrap_or_else(|| end_time - Duration::hours(1));
+    let start_time = params
+        .start_date
+        .unwrap_or_else(|| end_time - Duration::hours(1));
 
     // Total errors and rate
     let totals: (i64, i64) = sqlx::query_as(
@@ -931,7 +957,7 @@ async fn get_error_metrics(
             COUNT(*) FILTER (WHERE status IN ('completed', 'failed'))
         FROM vqm_messages
         WHERE completed_at BETWEEN $1 AND $2
-        "#
+        "#,
     )
     .bind(start_time)
     .bind(end_time)
@@ -956,7 +982,7 @@ async fn get_error_metrics(
         WHERE m.status = 'failed' AND m.completed_at BETWEEN $1 AND $2
         ORDER BY m.completed_at DESC
         LIMIT 20
-        "#
+        "#,
     )
     .bind(start_time)
     .bind(end_time)
@@ -968,17 +994,20 @@ async fn get_error_metrics(
         period: format!("{} to {}", start_time, end_time),
         total_errors: totals.0,
         error_rate,
-        by_type: vec![], // Would need error code tracking
+        by_type: vec![],  // Would need error code tracking
         by_queue: vec![], // Would need more queries
-        recent_errors: recent.into_iter().map(|e| ErrorDetail {
-            message_id: e.message_id,
-            queue_name: e.queue_name,
-            message_type: e.message_type,
-            error_code: e.error_code,
-            error_message: e.error_message.unwrap_or_default(),
-            occurred_at: e.occurred_at,
-            attempts: e.attempts,
-        }).collect(),
+        recent_errors: recent
+            .into_iter()
+            .map(|e| ErrorDetail {
+                message_id: e.message_id,
+                queue_name: e.queue_name,
+                message_type: e.message_type,
+                error_code: e.error_code,
+                error_message: e.error_message.unwrap_or_default(),
+                occurred_at: e.occurred_at,
+                attempts: e.attempts,
+            })
+            .collect(),
     };
 
     Ok(Json(ApiResponse::success(metrics)))
@@ -997,10 +1026,7 @@ async fn get_system_health(
 
     // Check database
     let db_start = std::time::Instant::now();
-    let db_ok = sqlx::query("SELECT 1")
-        .execute(pool)
-        .await
-        .is_ok();
+    let db_ok = sqlx::query("SELECT 1").execute(pool).await.is_ok();
     let db_latency = db_start.elapsed().as_millis() as i64;
 
     // Check for stale workers
@@ -1013,20 +1039,22 @@ async fn get_system_health(
 
     // Check queue health
     let unhealthy_queues: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM vqm_queues WHERE status = 'error' OR dead_letter_count > 1000"
+        "SELECT COUNT(*) FROM vqm_queues WHERE status = 'error' OR dead_letter_count > 1000",
     )
     .fetch_one(pool)
     .await
     .unwrap_or((0,));
 
-    let mut components = vec![
-        ComponentHealth {
-            name: "database".to_string(),
-            status: if db_ok { "healthy".to_string() } else { "unhealthy".to_string() },
-            latency_ms: Some(db_latency),
-            message: None,
+    let mut components = vec![ComponentHealth {
+        name: "database".to_string(),
+        status: if db_ok {
+            "healthy".to_string()
+        } else {
+            "unhealthy".to_string()
         },
-    ];
+        latency_ms: Some(db_latency),
+        message: None,
+    }];
 
     let mut checks = vec![
         HealthCheck {
@@ -1077,7 +1105,7 @@ async fn prometheus_metrics(
         r#"
         SELECT name, pending_count, processing_count, completed_count, failed_count
         FROM vqm_queues WHERE is_system_queue = false
-        "#
+        "#,
     )
     .fetch_all(pool)
     .await
@@ -1086,25 +1114,37 @@ async fn prometheus_metrics(
     output.push_str("# HELP vqm_queue_pending_messages Number of pending messages in queue\n");
     output.push_str("# TYPE vqm_queue_pending_messages gauge\n");
     for (name, pending, _, _, _) in &queues {
-        output.push_str(&format!("vqm_queue_pending_messages{{queue=\"{}\"}} {}\n", name, pending));
+        output.push_str(&format!(
+            "vqm_queue_pending_messages{{queue=\"{}\"}} {}\n",
+            name, pending
+        ));
     }
 
     output.push_str("# HELP vqm_queue_processing_messages Number of messages being processed\n");
     output.push_str("# TYPE vqm_queue_processing_messages gauge\n");
     for (name, _, processing, _, _) in &queues {
-        output.push_str(&format!("vqm_queue_processing_messages{{queue=\"{}\"}} {}\n", name, processing));
+        output.push_str(&format!(
+            "vqm_queue_processing_messages{{queue=\"{}\"}} {}\n",
+            name, processing
+        ));
     }
 
     output.push_str("# HELP vqm_queue_completed_total Total completed messages\n");
     output.push_str("# TYPE vqm_queue_completed_total counter\n");
     for (name, _, _, completed, _) in &queues {
-        output.push_str(&format!("vqm_queue_completed_total{{queue=\"{}\"}} {}\n", name, completed));
+        output.push_str(&format!(
+            "vqm_queue_completed_total{{queue=\"{}\"}} {}\n",
+            name, completed
+        ));
     }
 
     output.push_str("# HELP vqm_queue_failed_total Total failed messages\n");
     output.push_str("# TYPE vqm_queue_failed_total counter\n");
     for (name, _, _, _, failed) in &queues {
-        output.push_str(&format!("vqm_queue_failed_total{{queue=\"{}\"}} {}\n", name, failed));
+        output.push_str(&format!(
+            "vqm_queue_failed_total{{queue=\"{}\"}} {}\n",
+            name, failed
+        ));
     }
 
     // Worker metrics
@@ -1115,7 +1155,7 @@ async fn prometheus_metrics(
             COUNT(*) FILTER (WHERE status = 'idle'),
             COUNT(*) FILTER (WHERE status = 'offline')
         FROM vqm_workers
-        "#
+        "#,
     )
     .fetch_one(pool)
     .await
@@ -1153,7 +1193,7 @@ async fn list_alerts(
         FROM vqm_alert_rules
         ORDER BY name ASC
         LIMIT $1 OFFSET $2
-        "#
+        "#,
     )
     .bind(params.per_page)
     .bind(offset)
@@ -1186,7 +1226,7 @@ async fn create_alert_rule(
             id, name, description, metric, condition, threshold,
             duration_seconds, severity, notification_channels, queue_id
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        "#
+        "#,
     )
     .bind(rule_id)
     .bind(&req.name)
@@ -1246,7 +1286,7 @@ async fn update_alert_rule(
             threshold = $5, duration_seconds = $6, severity = $7,
             notification_channels = $8, updated_at = CURRENT_TIMESTAMP
         WHERE id = $9
-        "#
+        "#,
     )
     .bind(&req.name)
     .bind(&req.description)
@@ -1332,7 +1372,7 @@ async fn get_alert_history(
         JOIN vqm_alert_rules r ON h.rule_id = r.id
         ORDER BY h.triggered_at DESC
         LIMIT $1 OFFSET $2
-        "#
+        "#,
     )
     .bind(params.per_page)
     .bind(offset)
@@ -1361,7 +1401,7 @@ async fn get_active_alerts(
         JOIN vqm_alert_rules r ON h.rule_id = r.id
         WHERE h.resolved_at IS NULL
         ORDER BY h.severity DESC, h.triggered_at DESC
-        "#
+        "#,
     )
     .fetch_all(pool)
     .await?;
@@ -1385,7 +1425,7 @@ async fn record_custom_metric(
         r#"
         INSERT INTO vqm_custom_metrics (name, value, tags, recorded_at)
         VALUES ($1, $2, $3, $4)
-        "#
+        "#,
     )
     .bind(&req.name)
     .bind(req.value)
@@ -1410,7 +1450,10 @@ async fn export_metrics(
     let pool = plugin.db_pool();
 
     let end_time = params.date_range.end_date.unwrap_or_else(Utc::now);
-    let start_time = params.date_range.start_date.unwrap_or_else(|| end_time - Duration::hours(24));
+    let start_time = params
+        .date_range
+        .start_date
+        .unwrap_or_else(|| end_time - Duration::hours(24));
 
     // Export all metrics for the period
     let data = serde_json::json!({
@@ -1553,7 +1596,7 @@ async fn get_alert_rule_by_id(pool: &PgPool, rule_id: Uuid) -> Result<AlertRule,
                duration_seconds, severity, is_enabled, notification_channels,
                created_at, updated_at
         FROM vqm_alert_rules WHERE id = $1
-        "#
+        "#,
     )
     .bind(rule_id)
     .fetch_optional(pool)

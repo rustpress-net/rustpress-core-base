@@ -25,12 +25,9 @@ pub struct RustBuilderPlugin {
 impl RustBuilderPlugin {
     /// Create a new RustBuilder plugin instance
     pub fn new() -> Self {
-        let mut info = PluginInfo::new(
-            PLUGIN_ID,
-            PLUGIN_NAME,
-            Version::new(0, 1, 0),
-        );
-        info.description = "Visual page builder for creating content with drag-and-drop blocks".to_string();
+        let mut info = PluginInfo::new(PLUGIN_ID, PLUGIN_NAME, Version::new(0, 1, 0));
+        info.description =
+            "Visual page builder for creating content with drag-and-drop blocks".to_string();
         info.author = "RustPress Team".to_string();
         info.author_url = None;
         info.homepage = None;

@@ -80,7 +80,8 @@ impl FeaturedImage {
 
     /// Get srcset attribute value
     pub fn srcset(&self) -> String {
-        let mut parts: Vec<String> = self.sizes
+        let mut parts: Vec<String> = self
+            .sizes
             .values()
             .map(|size| format!("{} {}w", size.url, size.width))
             .collect();
@@ -100,7 +101,11 @@ impl FeaturedImage {
 
     /// Generate responsive image HTML
     pub fn to_html(&self, class: &str, sizes: &str) -> String {
-        let alt = if self.alt.is_empty() { &self.title } else { &self.alt };
+        let alt = if self.alt.is_empty() {
+            &self.title
+        } else {
+            &self.alt
+        };
 
         format!(
             r#"<img src="{}" srcset="{}" sizes="{}" alt="{}" width="{}" height="{}" class="{}" loading="lazy">"#,
@@ -116,11 +121,19 @@ impl FeaturedImage {
 
     /// Generate picture element with WebP support
     pub fn to_picture(&self, class: &str, sizes: &str) -> String {
-        let alt = if self.alt.is_empty() { &self.title } else { &self.alt };
+        let alt = if self.alt.is_empty() {
+            &self.title
+        } else {
+            &self.alt
+        };
 
-        let webp_srcset = self.sizes.values()
+        let webp_srcset = self
+            .sizes
+            .values()
             .filter_map(|size| {
-                size.webp_url.as_ref().map(|webp| format!("{} {}w", webp, size.width))
+                size.webp_url
+                    .as_ref()
+                    .map(|webp| format!("{} {}w", webp, size.width))
             })
             .collect::<Vec<_>>()
             .join(", ");
@@ -130,13 +143,15 @@ impl FeaturedImage {
         if !webp_srcset.is_empty() {
             html.push_str(&format!(
                 r#"<source type="image/webp" srcset="{}" sizes="{}">"#,
-                webp_srcset, self.sizes_attr(sizes)
+                webp_srcset,
+                self.sizes_attr(sizes)
             ));
         }
 
         html.push_str(&format!(
             r#"<source srcset="{}" sizes="{}">"#,
-            self.srcset(), self.sizes_attr(sizes)
+            self.srcset(),
+            self.sizes_attr(sizes)
         ));
 
         html.push_str(&format!(
@@ -227,7 +242,13 @@ impl FocalPoint {
     }
 
     /// Calculate crop position for target dimensions
-    pub fn calculate_crop(&self, source_w: u32, source_h: u32, target_w: u32, target_h: u32) -> CropPosition {
+    pub fn calculate_crop(
+        &self,
+        source_w: u32,
+        source_h: u32,
+        target_w: u32,
+        target_h: u32,
+    ) -> CropPosition {
         let source_ratio = source_w as f64 / source_h as f64;
         let target_ratio = target_w as f64 / target_h as f64;
 
@@ -260,7 +281,11 @@ impl FocalPoint {
 
     /// Get CSS background-position value
     pub fn to_css(&self) -> String {
-        format!("{}% {}%", (self.x * 100.0).round(), (self.y * 100.0).round())
+        format!(
+            "{}% {}%",
+            (self.x * 100.0).round(),
+            (self.y * 100.0).round()
+        )
     }
 
     /// Get CSS object-position value
@@ -430,7 +455,11 @@ impl FeaturedImageManager {
     }
 
     /// Get featured image or fallback
-    pub fn get_or_fallback<'a>(&'a self, image: Option<&'a FeaturedImage>, post_type: &str) -> Option<&'a FeaturedImage> {
+    pub fn get_or_fallback<'a>(
+        &'a self,
+        image: Option<&'a FeaturedImage>,
+        post_type: &str,
+    ) -> Option<&'a FeaturedImage> {
         image
             .or_else(|| self.fallbacks.get(post_type))
             .or(self.default_image.as_ref())
@@ -456,9 +485,7 @@ impl FeaturedImageManager {
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="{}">
 <meta property="og:url" content="{}">"#,
-            og_url,
-            image.alt,
-            page_url
+            og_url, image.alt, page_url
         )
     }
 
@@ -470,8 +497,7 @@ impl FeaturedImageManager {
             r#"<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="{}">
 <meta name="twitter:image:alt" content="{}">"#,
-            twitter_url,
-            image.alt
+            twitter_url, image.alt
         )
     }
 
@@ -531,14 +557,17 @@ mod tests {
         let mut image = FeaturedImage::new(1, "http://example.com/image.jpg");
         image.width = 1200;
         image.height = 800;
-        image.sizes.insert("medium".to_string(), ImageSize {
-            name: "medium".to_string(),
-            url: "http://example.com/image-300x200.jpg".to_string(),
-            width: 300,
-            height: 200,
-            crop: false,
-            webp_url: None,
-        });
+        image.sizes.insert(
+            "medium".to_string(),
+            ImageSize {
+                name: "medium".to_string(),
+                url: "http://example.com/image-300x200.jpg".to_string(),
+                width: 300,
+                height: 200,
+                crop: false,
+                webp_url: None,
+            },
+        );
 
         let srcset = image.srcset();
         assert!(srcset.contains("300w"));

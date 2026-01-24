@@ -6,22 +6,21 @@
 // =============================================================================
 
 use axum::{
-    Router,
-    routing::{get, post, put, delete},
-    extract::{Path, Query, Extension, Json},
+    extract::{Extension, Json, Path, Query},
     http::StatusCode,
+    routing::{delete, get, post, put},
+    Router,
 };
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use validator::Validate;
 use std::sync::Arc;
+use uuid::Uuid;
+use validator::Validate;
 
 use super::{
-    ApiResponse, ApiError, AppError, ResponseMeta,
-    PaginationParams, AuthUser,
-    validate_request, parse_uuid,
+    parse_uuid, validate_request, ApiError, ApiResponse, AppError, AuthUser, PaginationParams,
+    ResponseMeta,
 };
 use crate::VisualQueueManager;
 
@@ -255,17 +254,23 @@ async fn create_job(
     match req.schedule_type.as_str() {
         "cron" => {
             if req.cron_expression.is_none() {
-                return Err(AppError::validation("cron_expression required for cron schedule type"));
+                return Err(AppError::validation(
+                    "cron_expression required for cron schedule type",
+                ));
             }
         }
         "interval" => {
             if req.interval_seconds.is_none() {
-                return Err(AppError::validation("interval_seconds required for interval schedule type"));
+                return Err(AppError::validation(
+                    "interval_seconds required for interval schedule type",
+                ));
             }
         }
         "once" => {
             if req.run_at.is_none() {
-                return Err(AppError::validation("run_at required for once schedule type"));
+                return Err(AppError::validation(
+                    "run_at required for once schedule type",
+                ));
             }
         }
         _ => return Err(AppError::validation("Invalid schedule_type")),
@@ -315,15 +320,17 @@ async fn create_job(
     .execute(pool)
     .await?;
 
-    plugin.log_audit(
-        "scheduled_job.created",
-        "scheduled_job",
-        "create",
-        Some(job_id),
-        Some(&req.name),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "scheduled_job.created",
+            "scheduled_job",
+            "create",
+            Some(job_id),
+            Some(&req.name),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     let job = get_job_by_id(pool, job_id).await?;
 
@@ -381,7 +388,7 @@ async fn update_job(
             max_concurrent = $16, jitter_seconds = $17, next_run_at = $18,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $19
-        "#
+        "#,
     )
     .bind(&req.name)
     .bind(&req.description)
@@ -405,15 +412,17 @@ async fn update_job(
     .execute(pool)
     .await?;
 
-    plugin.log_audit(
-        "scheduled_job.updated",
-        "scheduled_job",
-        "update",
-        Some(job_id),
-        Some(&req.name),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "scheduled_job.updated",
+            "scheduled_job",
+            "update",
+            Some(job_id),
+            Some(&req.name),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     let job = get_job_by_id(pool, job_id).await?;
 
@@ -444,15 +453,17 @@ async fn delete_job(
         .execute(pool)
         .await?;
 
-    plugin.log_audit(
-        "scheduled_job.deleted",
-        "scheduled_job",
-        "delete",
-        Some(job_id),
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "scheduled_job.deleted",
+            "scheduled_job",
+            "delete",
+            Some(job_id),
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -513,7 +524,7 @@ async fn run_job_now(
         r#"
         INSERT INTO vqm_messages (id, queue_id, message_type, payload, priority, status)
         VALUES ($1, $2, $3, $4, $5, 'pending')
-        "#
+        "#,
     )
     .bind(message_id)
     .bind(job.queue_id)
@@ -531,7 +542,7 @@ async fn run_job_now(
         ) VALUES ($1, $2, 'running', 'manual')
         RETURNING id, job_id, message_id, status, attempt, started_at,
                   completed_at, duration_ms, error_message, triggered_by
-        "#
+        "#,
     )
     .bind(job_id)
     .bind(message_id)
@@ -544,21 +555,23 @@ async fn run_job_now(
         UPDATE vqm_scheduled_jobs
         SET last_run_at = CURRENT_TIMESTAMP, run_count = run_count + 1
         WHERE id = $1
-        "#
+        "#,
     )
     .bind(job_id)
     .execute(pool)
     .await?;
 
-    plugin.log_audit(
-        "scheduled_job.manual_run",
-        "scheduled_job",
-        "run",
-        Some(job_id),
-        Some(&job.name),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "scheduled_job.manual_run",
+            "scheduled_job",
+            "run",
+            Some(job_id),
+            Some(&job.name),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(Json(ApiResponse::success(execution)))
 }
@@ -586,7 +599,7 @@ async fn get_job_executions(
         WHERE job_id = $1
         ORDER BY started_at DESC
         LIMIT $2 OFFSET $3
-        "#
+        "#,
     )
     .bind(job_id)
     .bind(params.per_page)
@@ -594,12 +607,11 @@ async fn get_job_executions(
     .fetch_all(pool)
     .await?;
 
-    let total: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM vqm_scheduled_executions WHERE job_id = $1"
-    )
-    .bind(job_id)
-    .fetch_one(pool)
-    .await?;
+    let total: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM vqm_scheduled_executions WHERE job_id = $1")
+            .bind(job_id)
+            .fetch_one(pool)
+            .await?;
 
     let meta = ResponseMeta::new(total.0, params.page, params.per_page);
 
@@ -617,7 +629,8 @@ async fn cancel_execution(
     }
 
     let job_id = parse_uuid(&id)?;
-    let exec_id: i64 = exec_id.parse()
+    let exec_id: i64 = exec_id
+        .parse()
         .map_err(|_| AppError::validation("Invalid execution ID"))?;
 
     let pool = plugin.db_pool();
@@ -629,7 +642,7 @@ async fn cancel_execution(
         WHERE id = $1 AND job_id = $2 AND status = 'running'
         RETURNING id, job_id, message_id, status, attempt, started_at,
                   completed_at, duration_ms, error_message, triggered_by
-        "#
+        "#,
     )
     .bind(exec_id)
     .bind(job_id)
@@ -671,7 +684,7 @@ async fn get_job_dependencies(
         JOIN vqm_scheduled_jobs j ON d.depends_on_job_id = j.id
         WHERE d.job_id = $1
         ORDER BY j.name ASC
-        "#
+        "#,
     )
     .bind(job_id)
     .fetch_all(pool)
@@ -709,7 +722,7 @@ async fn add_job_dependency(
             JOIN deps ON d.job_id = deps.depends_on_job_id
         )
         SELECT depends_on_job_id FROM deps WHERE depends_on_job_id = $2
-        "#
+        "#,
     )
     .bind(req.depends_on_job_id)
     .bind(job_id)
@@ -717,7 +730,9 @@ async fn add_job_dependency(
     .await?;
 
     if circular.is_some() {
-        return Err(AppError::validation("Adding this dependency would create a circular reference"));
+        return Err(AppError::validation(
+            "Adding this dependency would create a circular reference",
+        ));
     }
 
     let dep_id = Uuid::new_v4();
@@ -727,7 +742,7 @@ async fn add_job_dependency(
         r#"
         INSERT INTO vqm_job_dependencies (id, job_id, depends_on_job_id, dependency_type)
         VALUES ($1, $2, $3, $4)
-        "#
+        "#,
     )
     .bind(dep_id)
     .bind(job_id)
@@ -743,7 +758,7 @@ async fn add_job_dependency(
         FROM vqm_job_dependencies d
         JOIN vqm_scheduled_jobs j ON d.depends_on_job_id = j.id
         WHERE d.id = $1
-        "#
+        "#,
     )
     .bind(dep_id)
     .fetch_one(pool)
@@ -801,7 +816,7 @@ async fn list_due_jobs(
         WHERE j.is_enabled = true AND j.next_run_at <= CURRENT_TIMESTAMP
         ORDER BY j.next_run_at ASC
         LIMIT 100
-        "#
+        "#,
     )
     .fetch_all(pool)
     .await?;
@@ -828,15 +843,17 @@ async fn pause_all_jobs(
     .execute(pool)
     .await?;
 
-    plugin.log_audit(
-        "scheduled_jobs.paused_all",
-        "scheduled_job",
-        "pause_all",
-        None,
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "scheduled_jobs.paused_all",
+            "scheduled_job",
+            "pause_all",
+            None,
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(Json(ApiResponse::success(BatchResult {
         affected: result.rows_affected() as i32,
@@ -860,15 +877,17 @@ async fn resume_all_jobs(
     .execute(pool)
     .await?;
 
-    plugin.log_audit(
-        "scheduled_jobs.resumed_all",
-        "scheduled_job",
-        "resume_all",
-        None,
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "scheduled_jobs.resumed_all",
+            "scheduled_job",
+            "resume_all",
+            None,
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(Json(ApiResponse::success(BatchResult {
         affected: result.rows_affected() as i32,
@@ -995,7 +1014,7 @@ async fn get_job_by_id(pool: &PgPool, job_id: Uuid) -> Result<JobResponse, AppEr
         FROM vqm_scheduled_jobs j
         JOIN vqm_queues q ON j.queue_id = q.id
         WHERE j.id = $1
-        "#
+        "#,
     )
     .bind(job_id)
     .fetch_optional(pool)

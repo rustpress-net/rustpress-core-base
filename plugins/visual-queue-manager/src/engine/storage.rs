@@ -2,15 +2,15 @@
 //!
 //! Provides abstraction over storage operations for messages and queues.
 
-use std::sync::Arc;
 use async_trait::async_trait;
-use sqlx::{PgPool, Row, FromRow};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use sqlx::{FromRow, PgPool, Row};
+use std::sync::Arc;
+use uuid::Uuid;
 
-use super::EngineError;
 use super::message::{Message, MessageStatus};
+use super::EngineError;
 
 /// Row struct for message queries
 #[derive(Debug, FromRow)]
@@ -467,11 +467,9 @@ impl StorageBackend for PostgresStorage {
         .fetch_one(&self.pool)
         .await?;
 
-        let queue_count: i64 = sqlx::query_scalar::<_, i64>(
-            r#"SELECT COUNT(*) FROM vqm_queues"#,
-        )
-        .fetch_one(&self.pool)
-        .await?;
+        let queue_count: i64 = sqlx::query_scalar::<_, i64>(r#"SELECT COUNT(*) FROM vqm_queues"#)
+            .fetch_one(&self.pool)
+            .await?;
 
         // Estimate storage size
         let size_estimate: i64 = sqlx::query_scalar::<_, i64>(
@@ -517,7 +515,10 @@ impl InMemoryStorage {
 #[async_trait]
 impl StorageBackend for InMemoryStorage {
     async fn store_message(&self, message: &Message) -> Result<(), EngineError> {
-        self.messages.write().unwrap().insert(message.id, message.clone());
+        self.messages
+            .write()
+            .unwrap()
+            .insert(message.id, message.clone());
         Ok(())
     }
 
@@ -546,11 +547,14 @@ impl StorageBackend for InMemoryStorage {
         offset: i64,
         limit: i64,
     ) -> Result<(Vec<Message>, i64), EngineError> {
-        let messages: Vec<Message> = self.messages.read().unwrap()
+        let messages: Vec<Message> = self
+            .messages
+            .read()
+            .unwrap()
             .values()
             .filter(|m| {
-                filter.queue_id.map_or(true, |q| m.queue_id == q) &&
-                filter.status.map_or(true, |s| m.status == s)
+                filter.queue_id.map_or(true, |q| m.queue_id == q)
+                    && filter.status.map_or(true, |s| m.status == s)
             })
             .skip(offset as usize)
             .take(limit as usize)
@@ -581,11 +585,14 @@ impl StorageBackend for InMemoryStorage {
     }
 
     async fn count_messages(&self, filter: MessageFilter) -> Result<u64, EngineError> {
-        let count = self.messages.read().unwrap()
+        let count = self
+            .messages
+            .read()
+            .unwrap()
             .values()
             .filter(|m| {
-                filter.queue_id.map_or(true, |q| m.queue_id == q) &&
-                filter.status.map_or(true, |s| m.status == s)
+                filter.queue_id.map_or(true, |q| m.queue_id == q)
+                    && filter.status.map_or(true, |s| m.status == s)
             })
             .count();
         Ok(count as u64)
@@ -605,11 +612,26 @@ impl StorageBackend for InMemoryStorage {
             total_messages: storage.len() as u64,
             total_queues: 0,
             total_size_bytes: 0,
-            pending_messages: storage.values().filter(|m| m.status == MessageStatus::Pending).count() as u64,
-            processing_messages: storage.values().filter(|m| m.status == MessageStatus::Processing).count() as u64,
-            completed_messages: storage.values().filter(|m| m.status == MessageStatus::Completed).count() as u64,
-            failed_messages: storage.values().filter(|m| m.status == MessageStatus::Failed).count() as u64,
-            dlq_messages: storage.values().filter(|m| m.status == MessageStatus::DeadLetter).count() as u64,
+            pending_messages: storage
+                .values()
+                .filter(|m| m.status == MessageStatus::Pending)
+                .count() as u64,
+            processing_messages: storage
+                .values()
+                .filter(|m| m.status == MessageStatus::Processing)
+                .count() as u64,
+            completed_messages: storage
+                .values()
+                .filter(|m| m.status == MessageStatus::Completed)
+                .count() as u64,
+            failed_messages: storage
+                .values()
+                .filter(|m| m.status == MessageStatus::Failed)
+                .count() as u64,
+            dlq_messages: storage
+                .values()
+                .filter(|m| m.status == MessageStatus::DeadLetter)
+                .count() as u64,
             oldest_message: storage.values().map(|m| m.created_at).min(),
             newest_message: storage.values().map(|m| m.created_at).max(),
         })

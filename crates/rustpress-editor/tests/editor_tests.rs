@@ -67,14 +67,23 @@ mod test_utils {
     impl BlockType {
         pub fn category(&self) -> BlockCategory {
             match self {
-                BlockType::Paragraph | BlockType::Heading | BlockType::List |
-                BlockType::Quote | BlockType::Code => BlockCategory::Text,
+                BlockType::Paragraph
+                | BlockType::Heading
+                | BlockType::List
+                | BlockType::Quote
+                | BlockType::Code => BlockCategory::Text,
 
-                BlockType::Image | BlockType::Gallery | BlockType::Video |
-                BlockType::Audio | BlockType::File => BlockCategory::Media,
+                BlockType::Image
+                | BlockType::Gallery
+                | BlockType::Video
+                | BlockType::Audio
+                | BlockType::File => BlockCategory::Media,
 
-                BlockType::Columns | BlockType::Group | BlockType::Spacer |
-                BlockType::Separator | BlockType::Button => BlockCategory::Design,
+                BlockType::Columns
+                | BlockType::Group
+                | BlockType::Spacer
+                | BlockType::Separator
+                | BlockType::Button => BlockCategory::Design,
 
                 BlockType::Table | BlockType::Html | BlockType::Shortcode => BlockCategory::Widgets,
 
@@ -123,16 +132,16 @@ mod test_utils {
     #[derive(Debug, Clone, Default)]
     pub struct BlockAttributes {
         pub content: Option<String>,
-        pub level: Option<u8>,  // For headings (1-6)
+        pub level: Option<u8>, // For headings (1-6)
         pub url: Option<String>,
         pub alt: Option<String>,
         pub caption: Option<String>,
         pub align: TextAlign,
         pub width: Option<u32>,
         pub height: Option<u32>,
-        pub language: Option<String>,  // For code blocks
-        pub columns: Option<u8>,  // For column blocks
-        pub ordered: Option<bool>,  // For lists
+        pub language: Option<String>, // For code blocks
+        pub columns: Option<u8>,      // For column blocks
+        pub ordered: Option<bool>,    // For lists
         pub custom: HashMap<String, serde_json::Value>,
     }
 
@@ -204,21 +213,25 @@ mod test_utils {
                 BlockType::Heading => {
                     if let Some(level) = self.attributes.level {
                         if level < 1 || level > 6 {
-                            self.validation_errors.push("Heading level must be 1-6".to_string());
+                            self.validation_errors
+                                .push("Heading level must be 1-6".to_string());
                         }
                     } else {
-                        self.validation_errors.push("Heading requires level".to_string());
+                        self.validation_errors
+                            .push("Heading requires level".to_string());
                     }
                 }
                 BlockType::Image => {
                     if self.attributes.url.is_none() {
-                        self.validation_errors.push("Image requires URL".to_string());
+                        self.validation_errors
+                            .push("Image requires URL".to_string());
                     }
                 }
                 BlockType::Columns => {
                     if let Some(cols) = self.attributes.columns {
                         if cols < 1 || cols > 12 {
-                            self.validation_errors.push("Columns must be 1-12".to_string());
+                            self.validation_errors
+                                .push("Columns must be 1-12".to_string());
                         }
                     }
                 }
@@ -232,7 +245,10 @@ mod test_utils {
         pub fn to_html(&self) -> String {
             match &self.block_type {
                 BlockType::Paragraph => {
-                    format!("<p>{}</p>", self.attributes.content.as_deref().unwrap_or(""))
+                    format!(
+                        "<p>{}</p>",
+                        self.attributes.content.as_deref().unwrap_or("")
+                    )
                 }
                 BlockType::Heading => {
                     let level = self.attributes.level.unwrap_or(2);
@@ -264,7 +280,11 @@ mod test_utils {
                     )
                 }
                 BlockType::List => {
-                    let tag = if self.attributes.ordered.unwrap_or(false) { "ol" } else { "ul" };
+                    let tag = if self.attributes.ordered.unwrap_or(false) {
+                        "ol"
+                    } else {
+                        "ul"
+                    };
                     format!(
                         "<{}>{}</{}>",
                         tag,
@@ -272,7 +292,10 @@ mod test_utils {
                         tag
                     )
                 }
-                _ => format!("<!-- {} block -->", format!("{:?}", self.block_type).to_lowercase())
+                _ => format!(
+                    "<!-- {} block -->",
+                    format!("{:?}", self.block_type).to_lowercase()
+                ),
             }
         }
     }
@@ -351,7 +374,11 @@ mod test_utils {
         }
 
         pub fn to_html(&self) -> String {
-            self.blocks.iter().map(|b| b.to_html()).collect::<Vec<_>>().join("\n")
+            self.blocks
+                .iter()
+                .map(|b| b.to_html())
+                .collect::<Vec<_>>()
+                .join("\n")
         }
 
         pub fn update_stats(&mut self) {
@@ -360,17 +387,24 @@ mod test_utils {
 
             self.stats.word_count = count_words(&text);
             self.stats.character_count = text.chars().count();
-            self.stats.paragraph_count = self.blocks.iter()
+            self.stats.paragraph_count = self
+                .blocks
+                .iter()
                 .filter(|b| b.block_type == BlockType::Paragraph)
                 .count();
-            self.stats.heading_count = self.blocks.iter()
+            self.stats.heading_count = self
+                .blocks
+                .iter()
                 .filter(|b| b.block_type == BlockType::Heading)
                 .count();
-            self.stats.image_count = self.blocks.iter()
+            self.stats.image_count = self
+                .blocks
+                .iter()
                 .filter(|b| b.block_type == BlockType::Image)
                 .count();
             self.stats.link_count = count_links(&html);
-            self.stats.reading_time_minutes = (self.stats.word_count as f64 / 200.0).ceil() as usize;
+            self.stats.reading_time_minutes =
+                (self.stats.word_count as f64 / 200.0).ceil() as usize;
         }
 
         pub fn lock(&mut self, user_id: Uuid, duration: Duration) -> bool {
@@ -441,7 +475,8 @@ mod test_utils {
             if let Some(ref meta_desc) = self.meta_description {
                 analysis.has_meta_description = true;
                 analysis.meta_description_length = meta_desc.len();
-                analysis.meta_description_optimal = meta_desc.len() >= 120 && meta_desc.len() <= 160;
+                analysis.meta_description_optimal =
+                    meta_desc.len() >= 120 && meta_desc.len() <= 160;
             }
 
             // Focus keyword check
@@ -464,14 +499,30 @@ mod test_utils {
 
             // Calculate score
             let mut score = 0;
-            if analysis.has_meta_title { score += 15; }
-            if analysis.meta_title_optimal { score += 10; }
-            if analysis.has_meta_description { score += 15; }
-            if analysis.meta_description_optimal { score += 10; }
-            if analysis.has_focus_keyword { score += 10; }
-            if analysis.keyword_in_title { score += 15; }
-            if analysis.keyword_in_content { score += 15; }
-            if analysis.keyword_density >= 1.0 && analysis.keyword_density <= 3.0 { score += 10; }
+            if analysis.has_meta_title {
+                score += 15;
+            }
+            if analysis.meta_title_optimal {
+                score += 10;
+            }
+            if analysis.has_meta_description {
+                score += 15;
+            }
+            if analysis.meta_description_optimal {
+                score += 10;
+            }
+            if analysis.has_focus_keyword {
+                score += 10;
+            }
+            if analysis.keyword_in_title {
+                score += 15;
+            }
+            if analysis.keyword_in_content {
+                score += 15;
+            }
+            if analysis.keyword_density >= 1.0 && analysis.keyword_density <= 3.0 {
+                score += 10;
+            }
 
             analysis.score = score;
             analysis
@@ -536,22 +587,18 @@ mod test_utils {
             };
 
             let avg_word_length = if words > 0 {
-                text.split_whitespace()
-                    .map(|w| w.len())
-                    .sum::<usize>() as f64 / words as f64
+                text.split_whitespace().map(|w| w.len()).sum::<usize>() as f64 / words as f64
             } else {
                 0.0
             };
 
             // Flesch Reading Ease = 206.835 - 1.015 × (words/sentences) - 84.6 × (syllables/words)
-            let flesch_reading_ease = 206.835
-                - (1.015 * avg_sentence_length)
-                - (84.6 * avg_syllables_per_word);
+            let flesch_reading_ease =
+                206.835 - (1.015 * avg_sentence_length) - (84.6 * avg_syllables_per_word);
 
             // Flesch-Kincaid Grade = 0.39 × (words/sentences) + 11.8 × (syllables/words) - 15.59
-            let flesch_kincaid_grade = (0.39 * avg_sentence_length)
-                + (11.8 * avg_syllables_per_word)
-                - 15.59;
+            let flesch_kincaid_grade =
+                (0.39 * avg_sentence_length) + (11.8 * avg_syllables_per_word) - 15.59;
 
             let readability_score = match flesch_reading_ease {
                 x if x >= 90.0 => "Very Easy".to_string(),
@@ -664,7 +711,10 @@ mod block_system_tests {
     fn test_005_create_image_block() {
         let block = Block::image("https://example.com/image.jpg", "Alt text");
         assert_eq!(block.block_type, BlockType::Image);
-        assert_eq!(block.attributes.url, Some("https://example.com/image.jpg".to_string()));
+        assert_eq!(
+            block.attributes.url,
+            Some("https://example.com/image.jpg".to_string())
+        );
         assert_eq!(block.attributes.alt, Some("Alt text".to_string()));
     }
 
@@ -734,7 +784,10 @@ mod block_system_tests {
     #[test]
     fn test_016_block_to_html_code() {
         let block = Block::code("code", "js");
-        assert_eq!(block.to_html(), r#"<pre><code class="language-js">code</code></pre>"#);
+        assert_eq!(
+            block.to_html(),
+            r#"<pre><code class="language-js">code</code></pre>"#
+        );
     }
 
     #[test]
@@ -929,7 +982,10 @@ mod block_attributes_tests {
     #[test]
     fn test_059_custom_attributes() {
         let mut block = Block::new(BlockType::Paragraph);
-        block.attributes.custom.insert("key".to_string(), serde_json::json!("value"));
+        block
+            .attributes
+            .custom
+            .insert("key".to_string(), serde_json::json!("value"));
         assert!(block.attributes.custom.contains_key("key"));
     }
 
@@ -987,10 +1043,10 @@ mod block_attributes_tests {
     fn test_067_to_080_attribute_variations() {
         for i in 67..=80 {
             let mut block = Block::new(BlockType::Paragraph);
-            block.attributes.custom.insert(
-                format!("attr_{}", i),
-                serde_json::json!(i),
-            );
+            block
+                .attributes
+                .custom
+                .insert(format!("attr_{}", i), serde_json::json!(i));
             assert!(block.attributes.custom.len() >= 1);
         }
     }
@@ -1224,7 +1280,9 @@ mod document_structure_tests {
     #[test]
     fn test_122_custom_fields() {
         let mut doc = Document::new("Test");
-        doc.meta.custom_fields.insert("key".to_string(), serde_json::json!("value"));
+        doc.meta
+            .custom_fields
+            .insert("key".to_string(), serde_json::json!("value"));
         assert!(doc.meta.custom_fields.contains_key("key"));
     }
 
@@ -1280,7 +1338,10 @@ mod content_analysis_tests {
     #[test]
     fn test_144_strip_html() {
         assert_eq!(strip_html("<p>Hello</p>"), "Hello");
-        assert_eq!(strip_html("<p>Hello <strong>World</strong></p>"), "Hello World");
+        assert_eq!(
+            strip_html("<p>Hello <strong>World</strong></p>"),
+            "Hello World"
+        );
     }
 
     #[test]
@@ -1483,7 +1544,10 @@ mod seo_analysis_tests {
             seo.meta_title = Some(format!("Title {}", i));
             seo.focus_keyword = Some(format!("keyword{}", i));
 
-            let analysis = seo.analyze(&format!("Content with keyword{}", i), &format!("Title {}", i));
+            let analysis = seo.analyze(
+                &format!("Content with keyword{}", i),
+                &format!("Title {}", i),
+            );
             assert!(analysis.has_focus_keyword);
         }
     }

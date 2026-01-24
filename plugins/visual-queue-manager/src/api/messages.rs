@@ -6,22 +6,21 @@
 // =============================================================================
 
 use axum::{
-    Router,
-    routing::{get, post, put, patch, delete},
-    extract::{Path, Query, Extension, Json},
+    extract::{Extension, Json, Path, Query},
     http::StatusCode,
+    routing::{delete, get, patch, post, put},
+    Router,
 };
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
-use validator::Validate;
 use std::sync::Arc;
+use uuid::Uuid;
+use validator::Validate;
 
 use super::{
-    ApiResponse, ApiError, AppError, ResponseMeta,
-    PaginationParams, SortParams, DateRangeParams, AuthUser,
-    validate_request, parse_uuid,
+    parse_uuid, validate_request, ApiError, ApiResponse, AppError, AuthUser, DateRangeParams,
+    PaginationParams, ResponseMeta, SortParams,
 };
 use crate::VisualQueueManager;
 
@@ -348,7 +347,11 @@ async fn list_messages(
         Some("attempts") => "m.attempts",
         _ => "m.created_at",
     };
-    let sort_order = if params.sort.sort_order == "asc" { "ASC" } else { "DESC" };
+    let sort_order = if params.sort.sort_order == "asc" {
+        "ASC"
+    } else {
+        "DESC"
+    };
 
     let query = format!(
         r#"
@@ -359,21 +362,13 @@ async fn list_messages(
         ORDER BY {} {}
         LIMIT {} OFFSET {}
         "#,
-        where_clause, sort_column, sort_order,
-        params.pagination.per_page, offset
+        where_clause, sort_column, sort_order, params.pagination.per_page, offset
     );
 
-    let messages: Vec<MessageSummary> = sqlx::query_as(&query)
-        .fetch_all(pool)
-        .await?;
+    let messages: Vec<MessageSummary> = sqlx::query_as(&query).fetch_all(pool).await?;
 
-    let count_query = format!(
-        "SELECT COUNT(*) FROM vqm_messages m WHERE {}",
-        where_clause
-    );
-    let total: (i64,) = sqlx::query_as(&count_query)
-        .fetch_one(pool)
-        .await?;
+    let count_query = format!("SELECT COUNT(*) FROM vqm_messages m WHERE {}", where_clause);
+    let total: (i64,) = sqlx::query_as(&count_query).fetch_one(pool).await?;
 
     let meta = ResponseMeta::new(total.0, params.pagination.page, params.pagination.per_page);
 
@@ -395,13 +390,12 @@ async fn enqueue_message(
     let pool = plugin.db_pool();
 
     // Verify queue exists and is active
-    let queue: (String, serde_json::Value) = sqlx::query_as(
-        "SELECT status, config FROM vqm_queues WHERE id = $1"
-    )
-    .bind(req.queue_id)
-    .fetch_optional(pool)
-    .await?
-    .ok_or_else(|| AppError::not_found("Queue"))?;
+    let queue: (String, serde_json::Value) =
+        sqlx::query_as("SELECT status, config FROM vqm_queues WHERE id = $1")
+            .bind(req.queue_id)
+            .fetch_optional(pool)
+            .await?
+            .ok_or_else(|| AppError::not_found("Queue"))?;
 
     if queue.0 != "active" {
         return Err(AppError::conflict("Queue is not active"));
@@ -414,7 +408,7 @@ async fn enqueue_message(
             SELECT id FROM vqm_messages
             WHERE queue_id = $1 AND deduplication_key = $2
             AND created_at > CURRENT_TIMESTAMP - INTERVAL '1 hour'
-            "#
+            "#,
         )
         .bind(req.queue_id)
         .bind(dedup_key)
@@ -422,12 +416,15 @@ async fn enqueue_message(
         .await?;
 
         if let Some((existing_id,)) = existing {
-            return Ok((StatusCode::OK, Json(ApiResponse::success(EnqueueResult {
-                id: existing_id,
-                queue_id: req.queue_id,
-                status: "deduplicated".to_string(),
-                position: None,
-            }))));
+            return Ok((
+                StatusCode::OK,
+                Json(ApiResponse::success(EnqueueResult {
+                    id: existing_id,
+                    queue_id: req.queue_id,
+                    status: "deduplicated".to_string(),
+                    position: None,
+                })),
+            ));
         }
     }
 
@@ -441,7 +438,9 @@ async fn enqueue_message(
     };
 
     // Calculate expiration
-    let expires_at = req.ttl_seconds.map(|ttl| Utc::now() + Duration::seconds(ttl as i64));
+    let expires_at = req
+        .ttl_seconds
+        .map(|ttl| Utc::now() + Duration::seconds(ttl as i64));
 
     // Determine initial status
     let status = if scheduled_at.map(|s| s > Utc::now()).unwrap_or(false) {
@@ -451,9 +450,12 @@ async fn enqueue_message(
     };
 
     // Get max attempts from queue config
-    let max_attempts = queue.1.get("max_retries")
+    let max_attempts = queue
+        .1
+        .get("max_retries")
         .and_then(|v| v.as_i64())
-        .unwrap_or(3) as i32 + 1;
+        .unwrap_or(3) as i32
+        + 1;
 
     let message_id = Uuid::new_v4();
     let metadata = req.metadata.unwrap_or(serde_json::json!({}));
@@ -469,7 +471,7 @@ async fn enqueue_message(
         ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
         )
-        "#
+        "#,
     )
     .bind(message_id)
     .bind(req.queue_id)
@@ -500,22 +502,27 @@ async fn enqueue_message(
     .unwrap_or((0,));
 
     // Log audit
-    plugin.log_audit(
-        "message.enqueued",
-        "message",
-        "enqueue",
-        Some(message_id),
-        Some(&req.message_type),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "message.enqueued",
+            "message",
+            "enqueue",
+            Some(message_id),
+            Some(&req.message_type),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
-    Ok((StatusCode::CREATED, Json(ApiResponse::success(EnqueueResult {
-        id: message_id,
-        queue_id: req.queue_id,
-        status: status.to_string(),
-        position: Some(position.0 + 1),
-    }))))
+    Ok((
+        StatusCode::CREATED,
+        Json(ApiResponse::success(EnqueueResult {
+            id: message_id,
+            queue_id: req.queue_id,
+            status: status.to_string(),
+            position: Some(position.0 + 1),
+        })),
+    ))
 }
 
 /// Batch enqueue messages
@@ -533,12 +540,10 @@ async fn batch_enqueue(
     let pool = plugin.db_pool();
 
     // Verify queue exists
-    let queue: Option<(String,)> = sqlx::query_as(
-        "SELECT status FROM vqm_queues WHERE id = $1"
-    )
-    .bind(req.queue_id)
-    .fetch_optional(pool)
-    .await?;
+    let queue: Option<(String,)> = sqlx::query_as("SELECT status FROM vqm_queues WHERE id = $1")
+        .bind(req.queue_id)
+        .fetch_optional(pool)
+        .await?;
 
     if queue.is_none() {
         return Err(AppError::not_found("Queue"));
@@ -551,7 +556,9 @@ async fn batch_enqueue(
     for (index, item) in req.messages.iter().enumerate() {
         let message_id = Uuid::new_v4();
 
-        let scheduled_at = item.delay_ms.map(|ms| Utc::now() + Duration::milliseconds(ms));
+        let scheduled_at = item
+            .delay_ms
+            .map(|ms| Utc::now() + Duration::milliseconds(ms));
         let status = if scheduled_at.map(|s| s > Utc::now()).unwrap_or(false) {
             "scheduled"
         } else {
@@ -564,7 +571,7 @@ async fn batch_enqueue(
                 id, queue_id, message_type, payload, status, priority,
                 scheduled_at, metadata, created_by
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            "#
+            "#,
         )
         .bind(message_id)
         .bind(req.queue_id)
@@ -634,16 +641,16 @@ async fn update_message(
     let pool = plugin.db_pool();
 
     // Check if message can be updated
-    let status: (String,) = sqlx::query_as(
-        "SELECT status FROM vqm_messages WHERE id = $1"
-    )
-    .bind(message_id)
-    .fetch_optional(pool)
-    .await?
-    .ok_or_else(|| AppError::not_found("Message"))?;
+    let status: (String,) = sqlx::query_as("SELECT status FROM vqm_messages WHERE id = $1")
+        .bind(message_id)
+        .fetch_optional(pool)
+        .await?
+        .ok_or_else(|| AppError::not_found("Message"))?;
 
     if !["pending", "scheduled"].contains(&status.0.as_str()) {
-        return Err(AppError::conflict("Can only update pending or scheduled messages"));
+        return Err(AppError::conflict(
+            "Can only update pending or scheduled messages",
+        ));
     }
 
     // Build update
@@ -656,7 +663,11 @@ async fn update_message(
     }
 
     if let Some(scheduled_at) = req.scheduled_at {
-        let new_status = if scheduled_at > Utc::now() { "scheduled" } else { "pending" };
+        let new_status = if scheduled_at > Utc::now() {
+            "scheduled"
+        } else {
+            "pending"
+        };
         sqlx::query("UPDATE vqm_messages SET scheduled_at = $1, status = $2 WHERE id = $3")
             .bind(scheduled_at)
             .bind(new_status)
@@ -692,26 +703,29 @@ async fn delete_message(
     let pool = plugin.db_pool();
 
     // Only delete if not processing
-    let result = sqlx::query(
-        "DELETE FROM vqm_messages WHERE id = $1 AND status NOT IN ('processing')"
-    )
-    .bind(message_id)
-    .execute(pool)
-    .await?;
+    let result =
+        sqlx::query("DELETE FROM vqm_messages WHERE id = $1 AND status NOT IN ('processing')")
+            .bind(message_id)
+            .execute(pool)
+            .await?;
 
     if result.rows_affected() == 0 {
-        return Err(AppError::conflict("Cannot delete message that is currently processing"));
+        return Err(AppError::conflict(
+            "Cannot delete message that is currently processing",
+        ));
     }
 
-    plugin.log_audit(
-        "message.deleted",
-        "message",
-        "delete",
-        Some(message_id),
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "message.deleted",
+            "message",
+            "delete",
+            Some(message_id),
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -730,16 +744,17 @@ async fn retry_message(
     let pool = plugin.db_pool();
 
     // Only retry failed or dead messages
-    let status: (String, i32, i32) = sqlx::query_as(
-        "SELECT status, attempts, max_attempts FROM vqm_messages WHERE id = $1"
-    )
-    .bind(message_id)
-    .fetch_optional(pool)
-    .await?
-    .ok_or_else(|| AppError::not_found("Message"))?;
+    let status: (String, i32, i32) =
+        sqlx::query_as("SELECT status, attempts, max_attempts FROM vqm_messages WHERE id = $1")
+            .bind(message_id)
+            .fetch_optional(pool)
+            .await?
+            .ok_or_else(|| AppError::not_found("Message"))?;
 
     if !["failed", "dead", "cancelled"].contains(&status.0.as_str()) {
-        return Err(AppError::conflict("Can only retry failed, dead, or cancelled messages"));
+        return Err(AppError::conflict(
+            "Can only retry failed, dead, or cancelled messages",
+        ));
     }
 
     // Reset for retry
@@ -755,21 +770,23 @@ async fn retry_message(
             locked_until = NULL,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $1
-        "#
+        "#,
     )
     .bind(message_id)
     .execute(pool)
     .await?;
 
-    plugin.log_audit(
-        "message.retried",
-        "message",
-        "retry",
-        Some(message_id),
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "message.retried",
+            "message",
+            "retry",
+            Some(message_id),
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     let message = get_message_by_id(pool, message_id).await?;
 
@@ -803,21 +820,23 @@ async fn cancel_message(
         UPDATE vqm_messages
         SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
         WHERE id = $1 AND status IN ('pending', 'scheduled')
-        "#
+        "#,
     )
     .bind(message_id)
     .execute(pool)
     .await?;
 
-    plugin.log_audit(
-        "message.cancelled",
-        "message",
-        "cancel",
-        Some(message_id),
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "message.cancelled",
+            "message",
+            "cancel",
+            Some(message_id),
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     let message = get_message_by_id(pool, message_id).await?;
 
@@ -839,21 +858,19 @@ async fn move_message(
     let pool = plugin.db_pool();
 
     // Verify target queue exists
-    let queue_exists: Option<(Uuid,)> = sqlx::query_as(
-        "SELECT id FROM vqm_queues WHERE id = $1 AND status = 'active'"
-    )
-    .bind(req.target_queue_id)
-    .fetch_optional(pool)
-    .await?;
+    let queue_exists: Option<(Uuid,)> =
+        sqlx::query_as("SELECT id FROM vqm_queues WHERE id = $1 AND status = 'active'")
+            .bind(req.target_queue_id)
+            .fetch_optional(pool)
+            .await?;
 
     if queue_exists.is_none() {
         return Err(AppError::not_found("Target queue"));
     }
 
     // Move message
-    let mut query = String::from(
-        "UPDATE vqm_messages SET queue_id = $1, updated_at = CURRENT_TIMESTAMP"
-    );
+    let mut query =
+        String::from("UPDATE vqm_messages SET queue_id = $1, updated_at = CURRENT_TIMESTAMP");
 
     if req.reset_attempts.unwrap_or(false) {
         query.push_str(", attempts = 0, last_error = NULL");
@@ -868,18 +885,22 @@ async fn move_message(
         .await?;
 
     if result.rows_affected() == 0 {
-        return Err(AppError::conflict("Cannot move message that is currently processing"));
+        return Err(AppError::conflict(
+            "Cannot move message that is currently processing",
+        ));
     }
 
-    plugin.log_audit(
-        "message.moved",
-        "message",
-        "move",
-        Some(message_id),
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "message.moved",
+            "message",
+            "move",
+            Some(message_id),
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     let message = get_message_by_id(pool, message_id).await?;
 
@@ -906,7 +927,7 @@ async fn get_message_history(
         WHERE message_id = $1
         ORDER BY created_at DESC
         LIMIT 100
-        "#
+        "#,
     )
     .bind(message_id)
     .fetch_all(pool)
@@ -926,7 +947,7 @@ async fn acknowledge_message(
 
     // Verify worker owns the lock
     let lock_info: Option<(Uuid,)> = sqlx::query_as(
-        "SELECT locked_by FROM vqm_messages WHERE id = $1 AND status = 'processing'"
+        "SELECT locked_by FROM vqm_messages WHERE id = $1 AND status = 'processing'",
     )
     .bind(message_id)
     .fetch_optional(pool)
@@ -963,7 +984,9 @@ async fn acknowledge_message(
 
             Ok(Json(ApiResponse::success(())))
         }
-        _ => Err(AppError::conflict("Worker does not own the lock on this message")),
+        _ => Err(AppError::conflict(
+            "Worker does not own the lock on this message",
+        )),
     }
 }
 
@@ -986,7 +1009,10 @@ async fn negative_acknowledge(
 
     match msg_info {
         Some((locked_by, attempts, max_attempts)) if locked_by == req.worker_id => {
-            let error_msg = req.error_message.clone().unwrap_or_else(|| "Unknown error".to_string());
+            let error_msg = req
+                .error_message
+                .clone()
+                .unwrap_or_else(|| "Unknown error".to_string());
 
             // Determine new status
             let new_status = if req.requeue.unwrap_or(true) && attempts < max_attempts {
@@ -999,7 +1025,8 @@ async fn negative_acknowledge(
 
             // Calculate retry delay
             let scheduled_at = if new_status == "pending" {
-                req.delay_ms.map(|ms| Utc::now() + Duration::milliseconds(ms))
+                req.delay_ms
+                    .map(|ms| Utc::now() + Duration::milliseconds(ms))
             } else {
                 None
             };
@@ -1015,7 +1042,7 @@ async fn negative_acknowledge(
                     locked_until = NULL,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = $4
-                "#
+                "#,
             )
             .bind(new_status)
             .bind(&error_msg)
@@ -1034,7 +1061,9 @@ async fn negative_acknowledge(
 
             Ok(Json(ApiResponse::success(())))
         }
-        _ => Err(AppError::conflict("Worker does not own the lock on this message")),
+        _ => Err(AppError::conflict(
+            "Worker does not own the lock on this message",
+        )),
     }
 }
 
@@ -1074,7 +1103,7 @@ async fn claim_messages(
         WHERE m.id = c.id
         RETURNING m.id, m.message_type, m.payload, m.priority, m.attempts,
                   m.correlation_id, m.metadata, m.headers
-        "#
+        "#,
     )
     .bind(req.queue_id)
     .bind(count)
@@ -1092,17 +1121,20 @@ async fn claim_messages(
             .await?;
     }
 
-    let messages: Vec<ClaimedMessage> = claimed.into_iter().map(|r| ClaimedMessage {
-        id: r.id,
-        message_type: r.message_type,
-        payload: r.payload,
-        priority: r.priority,
-        attempts: r.attempts,
-        correlation_id: r.correlation_id,
-        metadata: r.metadata,
-        headers: r.headers,
-        lock_until,
-    }).collect();
+    let messages: Vec<ClaimedMessage> = claimed
+        .into_iter()
+        .map(|r| ClaimedMessage {
+            id: r.id,
+            message_type: r.message_type,
+            payload: r.payload,
+            priority: r.priority,
+            attempts: r.attempts,
+            correlation_id: r.correlation_id,
+            metadata: r.metadata,
+            headers: r.headers,
+            lock_until,
+        })
+        .collect();
 
     Ok(Json(ApiResponse::success(messages)))
 }
@@ -1128,7 +1160,7 @@ async fn release_message(
             locked_until = NULL,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $1 AND status = 'processing'
-        "#
+        "#,
     )
     .bind(message_id)
     .execute(pool)
@@ -1166,7 +1198,7 @@ async fn search_messages(
         )
         ORDER BY m.created_at DESC
         LIMIT $2 OFFSET $3
-        "#
+        "#,
     )
     .bind(&search_pattern)
     .bind(params.pagination.per_page)
@@ -1197,7 +1229,7 @@ async fn bulk_retry(
             SET status = 'pending', attempts = 0, last_error = NULL,
                 started_at = NULL, completed_at = NULL, updated_at = CURRENT_TIMESTAMP
             WHERE id = $1 AND status IN ('failed', 'dead', 'cancelled')
-            "#
+            "#,
         )
         .bind(message_id)
         .execute(pool)
@@ -1226,12 +1258,11 @@ async fn bulk_delete(
 
     let pool = plugin.db_pool();
 
-    let result = sqlx::query(
-        "DELETE FROM vqm_messages WHERE id = ANY($1) AND status NOT IN ('processing')"
-    )
-    .bind(&req.message_ids)
-    .execute(pool)
-    .await?;
+    let result =
+        sqlx::query("DELETE FROM vqm_messages WHERE id = ANY($1) AND status NOT IN ('processing')")
+            .bind(&req.message_ids)
+            .execute(pool)
+            .await?;
 
     Ok(Json(ApiResponse::success(BulkResult {
         total: req.message_ids.len() as i32,
@@ -1249,7 +1280,8 @@ async fn bulk_move(
         return Err(AppError::forbidden());
     }
 
-    let target_queue_id = req.target_queue_id
+    let target_queue_id = req
+        .target_queue_id
         .ok_or_else(|| AppError::validation("target_queue_id is required"))?;
 
     let pool = plugin.db_pool();
@@ -1305,7 +1337,7 @@ async fn get_message_by_id(pool: &PgPool, message_id: Uuid) -> Result<MessageRes
         FROM vqm_messages m
         JOIN vqm_queues q ON m.queue_id = q.id
         WHERE m.id = $1
-        "#
+        "#,
     )
     .bind(message_id)
     .fetch_optional(pool)

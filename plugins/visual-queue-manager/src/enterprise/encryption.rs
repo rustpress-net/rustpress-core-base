@@ -145,7 +145,10 @@ impl EncryptionService {
     }
 
     /// Decrypt data
-    pub async fn decrypt(&self, encrypted: &EncryptedData) -> Result<Vec<u8>, super::EnterpriseError> {
+    pub async fn decrypt(
+        &self,
+        encrypted: &EncryptedData,
+    ) -> Result<Vec<u8>, super::EnterpriseError> {
         if encrypted.algorithm == KeyAlgorithm::None {
             return Ok(encrypted.ciphertext.clone());
         }
@@ -354,15 +357,9 @@ pub enum KeyProvider {
         mount_path: String,
     },
     /// AWS KMS
-    Aws {
-        region: String,
-        key_id: String,
-    },
+    Aws { region: String, key_id: String },
     /// Azure Key Vault
-    Azure {
-        vault_url: String,
-        key_name: String,
-    },
+    Azure { vault_url: String, key_name: String },
     /// Google Cloud KMS
     Gcp {
         project_id: String,
@@ -420,8 +417,7 @@ impl EncryptedData {
 
     /// Deserialize from bytes
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, super::EnterpriseError> {
-        serde_json::from_slice(bytes)
-            .map_err(|e| super::EnterpriseError::Encryption(e.to_string()))
+        serde_json::from_slice(bytes).map_err(|e| super::EnterpriseError::Encryption(e.to_string()))
     }
 }
 
@@ -479,11 +475,9 @@ impl FieldEncryptor {
 
             for enc_field in encrypted_fields {
                 if let Some(serde_json::Value::String(encoded)) = obj.get(&enc_field) {
-                    let bytes = base64::Engine::decode(
-                        &base64::engine::general_purpose::STANDARD,
-                        encoded,
-                    )
-                    .map_err(|e| super::EnterpriseError::Encryption(e.to_string()))?;
+                    let bytes =
+                        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, encoded)
+                            .map_err(|e| super::EnterpriseError::Encryption(e.to_string()))?;
                     let encrypted = EncryptedData::from_bytes(&bytes)?;
                     let decrypted = self.service.decrypt(&encrypted).await?;
                     let value: serde_json::Value = serde_json::from_slice(&decrypted)

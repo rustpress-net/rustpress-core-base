@@ -2,14 +2,14 @@
 //!
 //! Collects and aggregates metrics for monitoring and alerting.
 
-use std::sync::Arc;
+use chrono::{DateTime, Duration, Utc};
+use serde::{Deserialize, Serialize};
+use sqlx::{FromRow, PgPool, Row};
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::RwLock;
-use sqlx::{PgPool, Row, FromRow};
 use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
-use serde::{Serialize, Deserialize};
 
 /// Row type for message statistics query
 #[derive(Debug, FromRow)]
@@ -267,9 +267,7 @@ impl MetricsCollector {
         let interval = self.interval_secs;
 
         tokio::spawn(async move {
-            let mut ticker = tokio::time::interval(
-                tokio::time::Duration::from_secs(interval)
-            );
+            let mut ticker = tokio::time::interval(tokio::time::Duration::from_secs(interval));
 
             loop {
                 ticker.tick().await;
@@ -320,7 +318,7 @@ impl MetricsCollector {
                 AVG(EXTRACT(EPOCH FROM (completed_at - processing_started_at)) * 1000)
                     FILTER (WHERE completed_at IS NOT NULL) as avg_time
             FROM vqm_messages
-            "#
+            "#,
         )
         .fetch_one(&self.pool)
         .await?;
@@ -329,7 +327,7 @@ impl MetricsCollector {
             r#"
             SELECT COUNT(*) FILTER (WHERE status IN ('active', 'idle', 'busy')) as active
             FROM vqm_workers
-            "#
+            "#,
         )
         .fetch_one(&self.pool)
         .await?;
@@ -339,7 +337,7 @@ impl MetricsCollector {
             r#"
             SELECT COUNT(*) FROM vqm_messages
             WHERE completed_at > NOW() - INTERVAL '1 minute'
-            "#
+            "#,
         )
         .fetch_one(&self.pool)
         .await?;
@@ -393,7 +391,7 @@ impl MetricsCollector {
             FROM vqm_queues q
             LEFT JOIN vqm_messages m ON q.id = m.queue_id
             GROUP BY q.id, q.name
-            "#
+            "#,
         )
         .fetch_all(&self.pool)
         .await?;
@@ -405,7 +403,7 @@ impl MetricsCollector {
                 r#"
                 SELECT COUNT(*) FROM vqm_messages
                 WHERE queue_id = $1 AND created_at > NOW() - INTERVAL '5 minutes'
-                "#
+                "#,
             )
             .bind(row.id)
             .fetch_one(&self.pool)
@@ -420,7 +418,7 @@ impl MetricsCollector {
                 WHERE queue_id = $1
                 AND created_at > NOW() - INTERVAL '10 minutes'
                 AND created_at <= NOW() - INTERVAL '5 minutes'
-                "#
+                "#,
             )
             .bind(row.id)
             .fetch_one(&self.pool)
@@ -440,7 +438,7 @@ impl MetricsCollector {
                 SELECT MIN(created_at)
                 FROM vqm_messages
                 WHERE queue_id = $1 AND status = 'pending'
-                "#
+                "#,
             )
             .bind(row.id)
             .fetch_one(&self.pool)
@@ -489,7 +487,7 @@ impl MetricsCollector {
             AND recorded_at BETWEEN $2 AND $3
             GROUP BY bucket
             ORDER BY bucket
-            "#
+            "#,
         )
         .bind(metric_name)
         .bind(start_time)
@@ -498,22 +496,25 @@ impl MetricsCollector {
         .fetch_all(&self.pool)
         .await?;
 
-        let data_points: Vec<MetricDataPoint> = rows.into_iter().map(|row| {
-            let value = match aggregation {
-                AggregationType::Avg => row.avg.unwrap_or(0.0),
-                AggregationType::Sum => row.sum.unwrap_or(0.0),
-                AggregationType::Min => row.min.unwrap_or(0.0),
-                AggregationType::Max => row.max.unwrap_or(0.0),
-                AggregationType::Count => row.count as f64,
-                AggregationType::Rate => row.sum.unwrap_or(0.0) / interval_secs as f64,
-            };
+        let data_points: Vec<MetricDataPoint> = rows
+            .into_iter()
+            .map(|row| {
+                let value = match aggregation {
+                    AggregationType::Avg => row.avg.unwrap_or(0.0),
+                    AggregationType::Sum => row.sum.unwrap_or(0.0),
+                    AggregationType::Min => row.min.unwrap_or(0.0),
+                    AggregationType::Max => row.max.unwrap_or(0.0),
+                    AggregationType::Count => row.count as f64,
+                    AggregationType::Rate => row.sum.unwrap_or(0.0) / interval_secs as f64,
+                };
 
-            MetricDataPoint {
-                timestamp: row.bucket,
-                value,
-                labels: HashMap::new(),
-            }
-        }).collect();
+                MetricDataPoint {
+                    timestamp: row.bucket,
+                    value,
+                    labels: HashMap::new(),
+                }
+            })
+            .collect();
 
         Ok(TimeSeriesData {
             metric_name: metric_name.to_string(),
@@ -612,19 +613,17 @@ impl MetricsCollector {
     /// Get a snapshot of metrics for dashboard
     pub async fn get_snapshot(&self) -> MetricsSnapshot {
         // Get queue count
-        let total_queues: i64 = sqlx::query_scalar::<_, i64>(
-            "SELECT COUNT(*) FROM vqm_queues"
-        )
-        .fetch_one(&self.pool)
-        .await
-        .unwrap_or(0);
+        let total_queues: i64 = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM vqm_queues")
+            .fetch_one(&self.pool)
+            .await
+            .unwrap_or(0);
 
         // Get messages per second (last minute)
         let recent_count: i64 = sqlx::query_scalar::<_, i64>(
             r#"
             SELECT COUNT(*) FROM vqm_messages
             WHERE completed_at > NOW() - INTERVAL '1 minute'
-            "#
+            "#,
         )
         .fetch_one(&self.pool)
         .await
@@ -637,18 +636,16 @@ impl MetricsCollector {
             r#"
             SELECT COUNT(*) FROM vqm_workers
             WHERE status IN ('active', 'busy')
-            "#
+            "#,
         )
         .fetch_one(&self.pool)
         .await
         .unwrap_or(0);
 
-        let total_workers: i64 = sqlx::query_scalar::<_, i64>(
-            "SELECT COUNT(*) FROM vqm_workers"
-        )
-        .fetch_one(&self.pool)
-        .await
-        .unwrap_or(0);
+        let total_workers: i64 = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM vqm_workers")
+            .fetch_one(&self.pool)
+            .await
+            .unwrap_or(0);
 
         // Calculate error rate
         let message_stats: Option<(i64, i64)> = sqlx::query_as::<_, (i64, i64)>(
@@ -657,7 +654,7 @@ impl MetricsCollector {
                 COUNT(*) FILTER (WHERE status = 'completed'),
                 COUNT(*) FILTER (WHERE status = 'failed')
             FROM vqm_messages
-            "#
+            "#,
         )
         .fetch_optional(&self.pool)
         .await
@@ -708,7 +705,7 @@ impl MetricsCollector {
             WHERE created_at > NOW() - ($1 || ' hours')::interval
             GROUP BY bucket
             ORDER BY bucket
-            "#
+            "#,
         )
         .bind(hours)
         .fetch_all(&self.pool)
@@ -734,7 +731,7 @@ async fn collect_and_store_metrics(pool: &PgPool) -> Result<(), EngineError> {
         r#"
         SELECT COUNT(*) FROM vqm_messages
         WHERE completed_at > NOW() - INTERVAL '1 minute'
-        "#
+        "#,
     )
     .fetch_one(pool)
     .await?;
@@ -743,7 +740,7 @@ async fn collect_and_store_metrics(pool: &PgPool) -> Result<(), EngineError> {
         r#"
         INSERT INTO vqm_metrics_history (metric_name, value, labels, recorded_at)
         VALUES ('messages_per_minute', $1, '{}', $2)
-        "#
+        "#,
     )
     .bind(throughput as f64)
     .bind(now)
@@ -752,7 +749,7 @@ async fn collect_and_store_metrics(pool: &PgPool) -> Result<(), EngineError> {
 
     // Collect queue depth
     let queue_depth: i64 = sqlx::query_scalar::<_, i64>(
-        r#"SELECT COUNT(*) FROM vqm_messages WHERE status = 'pending'"#
+        r#"SELECT COUNT(*) FROM vqm_messages WHERE status = 'pending'"#,
     )
     .fetch_one(pool)
     .await?;
@@ -761,7 +758,7 @@ async fn collect_and_store_metrics(pool: &PgPool) -> Result<(), EngineError> {
         r#"
         INSERT INTO vqm_metrics_history (metric_name, value, labels, recorded_at)
         VALUES ('queue_depth', $1, '{}', $2)
-        "#
+        "#,
     )
     .bind(queue_depth as f64)
     .bind(now)
@@ -773,7 +770,7 @@ async fn collect_and_store_metrics(pool: &PgPool) -> Result<(), EngineError> {
         r#"
         SELECT COUNT(*) FROM vqm_workers
         WHERE status IN ('active', 'idle', 'busy')
-        "#
+        "#,
     )
     .fetch_one(pool)
     .await?;
@@ -782,7 +779,7 @@ async fn collect_and_store_metrics(pool: &PgPool) -> Result<(), EngineError> {
         r#"
         INSERT INTO vqm_metrics_history (metric_name, value, labels, recorded_at)
         VALUES ('active_workers', $1, '{}', $2)
-        "#
+        "#,
     )
     .bind(workers as f64)
     .bind(now)

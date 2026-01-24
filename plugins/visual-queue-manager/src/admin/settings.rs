@@ -22,7 +22,8 @@ impl SettingsManager {
     }
 
     fn create_validators() -> HashMap<String, Box<dyn SettingValidator + Send + Sync>> {
-        let mut validators: HashMap<String, Box<dyn SettingValidator + Send + Sync>> = HashMap::new();
+        let mut validators: HashMap<String, Box<dyn SettingValidator + Send + Sync>> =
+            HashMap::new();
 
         validators.insert(
             "general.max_queues".to_string(),
@@ -81,8 +82,8 @@ impl SettingsManager {
 
     fn validate_section<T: Serialize>(&self, prefix: &str, value: &T) -> Result<(), SettingsError> {
         // Serialize to check fields
-        let json = serde_json::to_value(value)
-            .map_err(|e| SettingsError::Validation(e.to_string()))?;
+        let json =
+            serde_json::to_value(value).map_err(|e| SettingsError::Validation(e.to_string()))?;
 
         if let Some(obj) = json.as_object() {
             for (key, val) in obj {
@@ -107,8 +108,8 @@ impl SettingsManager {
     }
 
     pub async fn import(&self, json: &str) -> Result<(), SettingsError> {
-        let new_settings: PluginSettings = serde_json::from_str(json)
-            .map_err(|e| SettingsError::Parse(e.to_string()))?;
+        let new_settings: PluginSettings =
+            serde_json::from_str(json).map_err(|e| SettingsError::Parse(e.to_string()))?;
 
         let mut settings = self.settings.write().await;
         *settings = new_settings;

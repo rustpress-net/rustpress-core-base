@@ -382,10 +382,18 @@ pub struct TemplateLibrarySettings {
     pub show_pro_templates: bool,
 }
 
-fn default_view_mode() -> ViewMode { ViewMode::Grid }
-fn default_thumbnail_size() -> ThumbnailSize { ThumbnailSize::Medium }
-fn default_true() -> bool { true }
-fn default_max_templates() -> i32 { 50 }
+fn default_view_mode() -> ViewMode {
+    ViewMode::Grid
+}
+fn default_thumbnail_size() -> ThumbnailSize {
+    ThumbnailSize::Medium
+}
+fn default_true() -> bool {
+    true
+}
+fn default_max_templates() -> i32 {
+    50
+}
 
 /// View mode options
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

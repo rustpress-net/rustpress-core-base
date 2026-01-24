@@ -1,8 +1,8 @@
 //! Alert Data Models
 
-use serde::{Serialize, Deserialize};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validator::Validate;
 
 /// Alert severity
@@ -85,16 +85,28 @@ pub struct CreateAlertRuleRequest {
     pub labels: serde_json::Value,
 }
 
-fn default_enabled() -> bool { true }
+fn default_enabled() -> bool {
+    true
+}
 
 /// Notification channel
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum NotificationChannel {
-    Email { addresses: Vec<String> },
-    Slack { webhook_url: String, channel: Option<String> },
-    Webhook { url: String, headers: Option<serde_json::Value> },
-    PagerDuty { routing_key: String },
+    Email {
+        addresses: Vec<String>,
+    },
+    Slack {
+        webhook_url: String,
+        channel: Option<String>,
+    },
+    Webhook {
+        url: String,
+        headers: Option<serde_json::Value>,
+    },
+    PagerDuty {
+        routing_key: String,
+    },
 }
 
 /// Update alert rule request

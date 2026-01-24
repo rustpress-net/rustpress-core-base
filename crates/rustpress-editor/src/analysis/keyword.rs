@@ -38,9 +38,8 @@ impl KeywordAnalyzer {
         let top_phrases = self.get_top_phrases(&bigrams, &trigrams, 10);
 
         // Analyze focus keyword if provided
-        let focus_analysis = focus_keyword.map(|kw| {
-            self.analyze_focus_keyword(kw, text, &words, word_count)
-        });
+        let focus_analysis =
+            focus_keyword.map(|kw| self.analyze_focus_keyword(kw, text, &words, word_count));
 
         // Generate suggestions
         let suggestions = self.generate_suggestions(&top_keywords, focus_analysis.as_ref());
@@ -83,9 +82,7 @@ impl KeywordAnalyzer {
         }
 
         for window in words.windows(n) {
-            let phrase: Vec<String> = window.iter()
-                .map(|w| w.to_lowercase())
-                .collect();
+            let phrase: Vec<String> = window.iter().map(|w| w.to_lowercase()).collect();
 
             // Skip if any word is a stop word at start/end
             if self.stop_words.contains(&phrase[0]) || self.stop_words.contains(&phrase[n - 1]) {
@@ -99,7 +96,11 @@ impl KeywordAnalyzer {
         ngrams
     }
 
-    fn get_top_keywords(&self, frequencies: &HashMap<String, u32>, limit: usize) -> Vec<KeywordEntry> {
+    fn get_top_keywords(
+        &self,
+        frequencies: &HashMap<String, u32>,
+        limit: usize,
+    ) -> Vec<KeywordEntry> {
         let mut sorted: Vec<_> = frequencies.iter().collect();
         sorted.sort_by(|a, b| b.1.cmp(a.1));
 
@@ -136,7 +137,7 @@ impl KeywordAnalyzer {
                         keyword: phrase.clone(),
                         count,
                         keyword_type: KeywordType::Trigram,
-                    })
+                    }),
             )
             .collect();
 
@@ -174,7 +175,10 @@ impl KeywordAnalyzer {
 
         // Check if in first paragraph
         let first_para_end = text.find("\n\n").unwrap_or(text.len().min(500));
-        let in_first_paragraph = positions.first().map(|&p| p < first_para_end).unwrap_or(false);
+        let in_first_paragraph = positions
+            .first()
+            .map(|&p| p < first_para_end)
+            .unwrap_or(false);
 
         // Check distribution (divided into quarters)
         let text_len = text.len();
@@ -214,7 +218,12 @@ impl KeywordAnalyzer {
             in_first_paragraph,
             distribution,
             prominence_score,
-            suggestions: self.focus_keyword_suggestions(&keyword_lower, occurrences, density, in_first_paragraph),
+            suggestions: self.focus_keyword_suggestions(
+                &keyword_lower,
+                occurrences,
+                density,
+                in_first_paragraph,
+            ),
         }
     }
 
@@ -228,7 +237,10 @@ impl KeywordAnalyzer {
         let mut suggestions = Vec::new();
 
         if occurrences == 0 {
-            suggestions.push(format!("Add the focus keyword \"{}\" to your content.", keyword));
+            suggestions.push(format!(
+                "Add the focus keyword \"{}\" to your content.",
+                keyword
+            ));
         }
 
         if !in_first_paragraph && occurrences > 0 {
@@ -244,7 +256,11 @@ impl KeywordAnalyzer {
         suggestions
     }
 
-    fn calculate_density_map(&self, frequencies: &HashMap<String, u32>, word_count: usize) -> HashMap<String, f32> {
+    fn calculate_density_map(
+        &self,
+        frequencies: &HashMap<String, u32>,
+        word_count: usize,
+    ) -> HashMap<String, f32> {
         frequencies
             .iter()
             .map(|(word, count)| {
@@ -280,7 +296,9 @@ impl KeywordAnalyzer {
 
         // General keyword suggestions
         if top_keywords.len() < 5 {
-            suggestions.push("Content may lack clear topic focus. Consider using related keywords.".to_string());
+            suggestions.push(
+                "Content may lack clear topic focus. Consider using related keywords.".to_string(),
+            );
         }
 
         suggestions
@@ -382,16 +400,18 @@ impl DensityStatus {
 /// Default English stop words
 fn default_stop_words() -> Vec<String> {
     vec![
-        "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with",
-        "by", "from", "as", "is", "was", "are", "were", "been", "be", "have", "has", "had",
-        "do", "does", "did", "will", "would", "could", "should", "may", "might", "must",
-        "can", "this", "that", "these", "those", "it", "its", "they", "them", "their",
-        "we", "us", "our", "you", "your", "he", "she", "him", "her", "his", "i", "my",
-        "me", "not", "no", "if", "then", "else", "when", "where", "what", "which", "who",
-        "how", "why", "all", "any", "both", "each", "few", "more", "most", "other", "some",
-        "such", "than", "too", "very", "just", "only", "so", "also", "about", "into",
-        "through", "during", "before", "after", "above", "below", "between", "under",
-        "again", "further", "once", "here", "there", "own", "same", "being", "having",
-        "doing", "while", "until", "because", "although", "though", "since", "unless",
-    ].into_iter().map(String::from).collect()
+        "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
+        "from", "as", "is", "was", "are", "were", "been", "be", "have", "has", "had", "do", "does",
+        "did", "will", "would", "could", "should", "may", "might", "must", "can", "this", "that",
+        "these", "those", "it", "its", "they", "them", "their", "we", "us", "our", "you", "your",
+        "he", "she", "him", "her", "his", "i", "my", "me", "not", "no", "if", "then", "else",
+        "when", "where", "what", "which", "who", "how", "why", "all", "any", "both", "each", "few",
+        "more", "most", "other", "some", "such", "than", "too", "very", "just", "only", "so",
+        "also", "about", "into", "through", "during", "before", "after", "above", "below",
+        "between", "under", "again", "further", "once", "here", "there", "own", "same", "being",
+        "having", "doing", "while", "until", "because", "although", "though", "since", "unless",
+    ]
+    .into_iter()
+    .map(String::from)
+    .collect()
 }

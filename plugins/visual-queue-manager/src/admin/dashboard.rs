@@ -92,7 +92,11 @@ impl DashboardProvider {
             position: WidgetPosition { row: 0, col: 1 },
             data: WidgetData::Chart(ChartWidgetData {
                 chart_type: ChartType::Doughnut,
-                labels: vec!["Healthy".to_string(), "Warning".to_string(), "Critical".to_string()],
+                labels: vec![
+                    "Healthy".to_string(),
+                    "Warning".to_string(),
+                    "Critical".to_string(),
+                ],
                 datasets: vec![ChartDataset {
                     label: "Queues".to_string(),
                     data: vec![healthy as f64, warning as f64, critical as f64],
@@ -181,17 +185,15 @@ impl DashboardProvider {
             size: WidgetSize::Small,
             position: WidgetPosition { row: 2, col: 0 },
             data: WidgetData::List(ListWidgetData {
-                items: vec![
-                    ListItem {
-                        title: "High queue depth".to_string(),
-                        subtitle: Some("orders-queue".to_string()),
-                        badge: Some(Badge {
-                            text: "Warning".to_string(),
-                            variant: BadgeVariant::Warning,
-                        }),
-                        icon: Some("alert-triangle".to_string()),
-                    },
-                ],
+                items: vec![ListItem {
+                    title: "High queue depth".to_string(),
+                    subtitle: Some("orders-queue".to_string()),
+                    badge: Some(Badge {
+                        text: "Warning".to_string(),
+                        variant: BadgeVariant::Warning,
+                    }),
+                    icon: Some("alert-triangle".to_string()),
+                }],
             }),
             refresh_interval: Some(10000),
         }

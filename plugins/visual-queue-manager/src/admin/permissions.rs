@@ -93,76 +93,88 @@ impl PermissionManager {
         let mut roles = self.roles.write().await;
 
         // Administrator - full access
-        roles.insert("vqm_admin".to_string(), Role {
-            id: "vqm_admin".to_string(),
-            name: "Queue Manager Administrator".to_string(),
-            description: "Full access to all Queue Manager features".to_string(),
-            capabilities: vec![Capability::FullAccess],
-            is_system: true,
-        });
+        roles.insert(
+            "vqm_admin".to_string(),
+            Role {
+                id: "vqm_admin".to_string(),
+                name: "Queue Manager Administrator".to_string(),
+                description: "Full access to all Queue Manager features".to_string(),
+                capabilities: vec![Capability::FullAccess],
+                is_system: true,
+            },
+        );
 
         // Operator - can manage queues and messages
-        roles.insert("vqm_operator".to_string(), Role {
-            id: "vqm_operator".to_string(),
-            name: "Queue Manager Operator".to_string(),
-            description: "Can manage queues, messages, and workers".to_string(),
-            capabilities: vec![
-                Capability::ViewQueues,
-                Capability::CreateQueue,
-                Capability::UpdateQueue,
-                Capability::PauseQueue,
-                Capability::ViewMessages,
-                Capability::EnqueueMessage,
-                Capability::RetryMessage,
-                Capability::ManageDLQ,
-                Capability::ViewWorkers,
-                Capability::ManageWorkers,
-                Capability::ViewHandlers,
-                Capability::ViewSubscriptions,
-                Capability::ViewJobs,
-                Capability::TriggerJob,
-                Capability::ViewAlerts,
-                Capability::AcknowledgeAlert,
-                Capability::ViewMetrics,
-            ],
-            is_system: true,
-        });
+        roles.insert(
+            "vqm_operator".to_string(),
+            Role {
+                id: "vqm_operator".to_string(),
+                name: "Queue Manager Operator".to_string(),
+                description: "Can manage queues, messages, and workers".to_string(),
+                capabilities: vec![
+                    Capability::ViewQueues,
+                    Capability::CreateQueue,
+                    Capability::UpdateQueue,
+                    Capability::PauseQueue,
+                    Capability::ViewMessages,
+                    Capability::EnqueueMessage,
+                    Capability::RetryMessage,
+                    Capability::ManageDLQ,
+                    Capability::ViewWorkers,
+                    Capability::ManageWorkers,
+                    Capability::ViewHandlers,
+                    Capability::ViewSubscriptions,
+                    Capability::ViewJobs,
+                    Capability::TriggerJob,
+                    Capability::ViewAlerts,
+                    Capability::AcknowledgeAlert,
+                    Capability::ViewMetrics,
+                ],
+                is_system: true,
+            },
+        );
 
         // Developer - can enqueue and view
-        roles.insert("vqm_developer".to_string(), Role {
-            id: "vqm_developer".to_string(),
-            name: "Queue Manager Developer".to_string(),
-            description: "Can enqueue messages and view queue status".to_string(),
-            capabilities: vec![
-                Capability::ViewQueues,
-                Capability::ViewMessages,
-                Capability::EnqueueMessage,
-                Capability::ViewWorkers,
-                Capability::ViewHandlers,
-                Capability::ViewSubscriptions,
-                Capability::ViewJobs,
-                Capability::ViewMetrics,
-            ],
-            is_system: true,
-        });
+        roles.insert(
+            "vqm_developer".to_string(),
+            Role {
+                id: "vqm_developer".to_string(),
+                name: "Queue Manager Developer".to_string(),
+                description: "Can enqueue messages and view queue status".to_string(),
+                capabilities: vec![
+                    Capability::ViewQueues,
+                    Capability::ViewMessages,
+                    Capability::EnqueueMessage,
+                    Capability::ViewWorkers,
+                    Capability::ViewHandlers,
+                    Capability::ViewSubscriptions,
+                    Capability::ViewJobs,
+                    Capability::ViewMetrics,
+                ],
+                is_system: true,
+            },
+        );
 
         // Viewer - read-only access
-        roles.insert("vqm_viewer".to_string(), Role {
-            id: "vqm_viewer".to_string(),
-            name: "Queue Manager Viewer".to_string(),
-            description: "Read-only access to Queue Manager".to_string(),
-            capabilities: vec![
-                Capability::ViewQueues,
-                Capability::ViewMessages,
-                Capability::ViewWorkers,
-                Capability::ViewHandlers,
-                Capability::ViewSubscriptions,
-                Capability::ViewJobs,
-                Capability::ViewAlerts,
-                Capability::ViewMetrics,
-            ],
-            is_system: true,
-        });
+        roles.insert(
+            "vqm_viewer".to_string(),
+            Role {
+                id: "vqm_viewer".to_string(),
+                name: "Queue Manager Viewer".to_string(),
+                description: "Read-only access to Queue Manager".to_string(),
+                capabilities: vec![
+                    Capability::ViewQueues,
+                    Capability::ViewMessages,
+                    Capability::ViewWorkers,
+                    Capability::ViewHandlers,
+                    Capability::ViewSubscriptions,
+                    Capability::ViewJobs,
+                    Capability::ViewAlerts,
+                    Capability::ViewMetrics,
+                ],
+                is_system: true,
+            },
+        );
     }
 
     /// Check if a user has a specific capability

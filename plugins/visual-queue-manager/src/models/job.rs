@@ -1,8 +1,8 @@
 //! Scheduled Job Data Models
 
-use serde::{Serialize, Deserialize};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validator::Validate;
 
 /// Job status
@@ -62,11 +62,21 @@ pub struct CreateScheduledJobRequest {
     pub metadata: serde_json::Value,
 }
 
-fn default_timezone() -> String { "UTC".to_string() }
-fn default_timeout() -> i32 { 300 }
-fn default_max_concurrent() -> i32 { 1 }
-fn default_retry_on_failure() -> bool { true }
-fn default_max_retries() -> i32 { 3 }
+fn default_timezone() -> String {
+    "UTC".to_string()
+}
+fn default_timeout() -> i32 {
+    300
+}
+fn default_max_concurrent() -> i32 {
+    1
+}
+fn default_retry_on_failure() -> bool {
+    true
+}
+fn default_max_retries() -> i32 {
+    3
+}
 
 /// Update scheduled job request
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]

@@ -35,7 +35,10 @@ impl BlockSerializer {
             String::new()
         };
 
-        let id_attr = block.meta.anchor.as_ref()
+        let id_attr = block
+            .meta
+            .anchor
+            .as_ref()
             .map(|a| format!(r#" id="{}""#, a))
             .unwrap_or_default();
 
@@ -48,7 +51,10 @@ impl BlockSerializer {
 
         match &block.block_type {
             BlockType::Paragraph => {
-                format!("<p{}{}{}>{}</p>\n", id_attr, class_attr, style_str, inner_html)
+                format!(
+                    "<p{}{}{}>{}</p>\n",
+                    id_attr, class_attr, style_str, inner_html
+                )
             }
             BlockType::Heading => {
                 let level = block.attributes.level.unwrap_or(2);
@@ -60,13 +66,22 @@ impl BlockSerializer {
             BlockType::List => {
                 let is_ordered = matches!(block.attributes.list_type, Some(ListType::Ordered));
                 let tag = if is_ordered { "ol" } else { "ul" };
-                format!("<{tag}{}{}{}>\n{}</{tag}>\n", id_attr, class_attr, style_str, children_html)
+                format!(
+                    "<{tag}{}{}{}>\n{}</{tag}>\n",
+                    id_attr, class_attr, style_str, children_html
+                )
             }
             BlockType::ListItem => {
-                format!("<li{}{}{}>{}{}</li>\n", id_attr, class_attr, style_str, inner_html, children_html)
+                format!(
+                    "<li{}{}{}>{}{}</li>\n",
+                    id_attr, class_attr, style_str, inner_html, children_html
+                )
             }
             BlockType::Quote => {
-                let cite = block.attributes.citation.as_ref()
+                let cite = block
+                    .attributes
+                    .citation
+                    .as_ref()
                     .map(|c| format!("<cite>{}</cite>", c))
                     .unwrap_or_default();
                 format!(
@@ -75,29 +90,47 @@ impl BlockSerializer {
                 )
             }
             BlockType::Code => {
-                let lang_class = block.attributes.language.as_ref()
+                let lang_class = block
+                    .attributes
+                    .language
+                    .as_ref()
                     .map(|l| format!(r#" class="language-{}""#, l))
                     .unwrap_or_default();
                 format!(
                     "<pre{}{}{}><code{}>{}</code></pre>\n",
-                    id_attr, class_attr, style_str, lang_class,
+                    id_attr,
+                    class_attr,
+                    style_str,
+                    lang_class,
                     html_escape(&inner_html)
                 )
             }
             BlockType::Preformatted => {
-                format!("<pre{}{}{}>{}</pre>\n", id_attr, class_attr, style_str, inner_html)
+                format!(
+                    "<pre{}{}{}>{}</pre>\n",
+                    id_attr, class_attr, style_str, inner_html
+                )
             }
             BlockType::Image => {
                 let src = block.attributes.url.as_deref().unwrap_or("");
                 let alt = block.attributes.alt.as_deref().unwrap_or("");
-                let width = block.attributes.width.as_ref()
+                let width = block
+                    .attributes
+                    .width
+                    .as_ref()
                     .map(|w| format!(r#" width="{}""#, w))
                     .unwrap_or_default();
-                let height = block.attributes.height.as_ref()
+                let height = block
+                    .attributes
+                    .height
+                    .as_ref()
                     .map(|h| format!(r#" height="{}""#, h))
                     .unwrap_or_default();
 
-                let caption = block.attributes.caption.as_ref()
+                let caption = block
+                    .attributes
+                    .caption
+                    .as_ref()
                     .map(|c| format!("<figcaption>{}</figcaption>", c))
                     .unwrap_or_default();
 
@@ -108,23 +141,52 @@ impl BlockSerializer {
             }
             BlockType::Video => {
                 let src = block.attributes.url.as_deref().unwrap_or("");
-                let poster = block.attributes.poster.as_ref()
+                let poster = block
+                    .attributes
+                    .poster
+                    .as_ref()
                     .map(|p| format!(r#" poster="{}""#, p))
                     .unwrap_or_default();
-                let controls = if block.attributes.controls.unwrap_or(true) { " controls" } else { "" };
-                let autoplay = if block.attributes.autoplay.unwrap_or(false) { " autoplay" } else { "" };
-                let muted = if block.attributes.muted.unwrap_or(false) { " muted" } else { "" };
-                let loop_attr = if block.attributes.loop_video.unwrap_or(false) { " loop" } else { "" };
+                let controls = if block.attributes.controls.unwrap_or(true) {
+                    " controls"
+                } else {
+                    ""
+                };
+                let autoplay = if block.attributes.autoplay.unwrap_or(false) {
+                    " autoplay"
+                } else {
+                    ""
+                };
+                let muted = if block.attributes.muted.unwrap_or(false) {
+                    " muted"
+                } else {
+                    ""
+                };
+                let loop_attr = if block.attributes.loop_video.unwrap_or(false) {
+                    " loop"
+                } else {
+                    ""
+                };
 
                 format!(
                     r#"<video src="{}"{}{}{}{}{}{}{}{}></video>"#,
-                    src, poster, controls, autoplay, muted, loop_attr,
-                    id_attr, class_attr, style_str
+                    src,
+                    poster,
+                    controls,
+                    autoplay,
+                    muted,
+                    loop_attr,
+                    id_attr,
+                    class_attr,
+                    style_str
                 ) + "\n"
             }
             BlockType::Audio => {
                 let src = block.attributes.url.as_deref().unwrap_or("");
-                format!(r#"<audio src="{}" controls{}{}{}></audio>"#, src, id_attr, class_attr, style_str) + "\n"
+                format!(
+                    r#"<audio src="{}" controls{}{}{}></audio>"#,
+                    src, id_attr, class_attr, style_str
+                ) + "\n"
             }
             BlockType::Embed => {
                 let url = block.attributes.url.as_deref().unwrap_or("");
@@ -134,7 +196,10 @@ impl BlockSerializer {
                 ) + "\n"
             }
             BlockType::Cover => {
-                let bg_url = block.attributes.url.as_deref()
+                let bg_url = block
+                    .attributes
+                    .url
+                    .as_deref()
                     .map(|u| format!("background-image: url({});", u))
                     .unwrap_or_default();
                 format!(
@@ -143,10 +208,16 @@ impl BlockSerializer {
                 ) + "\n"
             }
             BlockType::Group => {
-                format!("<div{}{}{}>{}</div>\n", id_attr, class_attr, style_str, children_html)
+                format!(
+                    "<div{}{}{}>{}</div>\n",
+                    id_attr, class_attr, style_str, children_html
+                )
             }
             BlockType::Section => {
-                format!("<section{}{}{}>{}</section>\n", id_attr, class_attr, style_str, children_html)
+                format!(
+                    "<section{}{}{}>{}</section>\n",
+                    id_attr, class_attr, style_str, children_html
+                )
             }
             BlockType::Columns => {
                 let cols = block.children.len();
@@ -156,7 +227,10 @@ impl BlockSerializer {
                 ) + "\n"
             }
             BlockType::Column => {
-                let width = block.attributes.width.as_ref()
+                let width = block
+                    .attributes
+                    .width
+                    .as_ref()
                     .map(|w| format!("width: {};", w))
                     .unwrap_or_default();
                 format!(
@@ -173,7 +247,10 @@ impl BlockSerializer {
             }
             BlockType::Button => {
                 let url = block.attributes.href.as_deref().unwrap_or("#");
-                let text = block.attributes.button_text.as_deref()
+                let text = block
+                    .attributes
+                    .button_text
+                    .as_deref()
                     .or(block.attributes.content.as_deref())
                     .unwrap_or("Button");
                 format!(
@@ -189,8 +266,11 @@ impl BlockSerializer {
             }
             BlockType::Table => {
                 if let Some(table_data) = &block.attributes.table_data {
-                    let header_row = if table_data.has_header_row && !table_data.headers.is_empty() {
-                        let headers = table_data.headers.iter()
+                    let header_row = if table_data.has_header_row && !table_data.headers.is_empty()
+                    {
+                        let headers = table_data
+                            .headers
+                            .iter()
                             .map(|h| format!("<th>{}</th>", h))
                             .collect::<Vec<_>>()
                             .join("");
@@ -199,9 +279,12 @@ impl BlockSerializer {
                         String::new()
                     };
 
-                    let body_rows = table_data.rows.iter()
+                    let body_rows = table_data
+                        .rows
+                        .iter()
                         .map(|row| {
-                            let cells = row.iter()
+                            let cells = row
+                                .iter()
                                 .map(|c| format!("<td>{}</td>", c))
                                 .collect::<Vec<_>>()
                                 .join("");
@@ -210,16 +293,25 @@ impl BlockSerializer {
                         .collect::<Vec<_>>()
                         .join("");
 
-                    format!("<table{}{}{}>{}<tbody>{}</tbody></table>\n", id_attr, class_attr, style_str, header_row, body_rows)
+                    format!(
+                        "<table{}{}{}>{}<tbody>{}</tbody></table>\n",
+                        id_attr, class_attr, style_str, header_row, body_rows
+                    )
                 } else {
-                    format!("<table{}{}{}>{}</table>\n", id_attr, class_attr, style_str, children_html)
+                    format!(
+                        "<table{}{}{}>{}</table>\n",
+                        id_attr, class_attr, style_str, children_html
+                    )
                 }
             }
             BlockType::Html | BlockType::CustomHtml => {
                 block.attributes.content.clone().unwrap_or_default()
             }
             BlockType::PullQuote => {
-                let cite = block.attributes.citation.as_ref()
+                let cite = block
+                    .attributes
+                    .citation
+                    .as_ref()
                     .map(|c| format!("<cite>{}</cite>", c))
                     .unwrap_or_default();
                 format!(
@@ -228,18 +320,32 @@ impl BlockSerializer {
                 ) + "\n"
             }
             BlockType::Accordion => {
-                format!("<div class=\"accordion\"{}{}{}>{}</div>\n", id_attr, class_attr, style_str, children_html)
+                format!(
+                    "<div class=\"accordion\"{}{}{}>{}</div>\n",
+                    id_attr, class_attr, style_str, children_html
+                )
             }
             BlockType::AccordionItem => {
-                let title = block.attributes.content.as_deref().unwrap_or("Accordion Item");
-                let open = if block.attributes.default_open.unwrap_or(false) { " open" } else { "" };
+                let title = block
+                    .attributes
+                    .content
+                    .as_deref()
+                    .unwrap_or("Accordion Item");
+                let open = if block.attributes.default_open.unwrap_or(false) {
+                    " open"
+                } else {
+                    ""
+                };
                 format!(
                     r#"<details{}{}{}{}><summary>{}</summary><div class="accordion-content">{}</div></details>"#,
                     open, id_attr, class_attr, style_str, title, children_html
                 ) + "\n"
             }
             BlockType::Tabs => {
-                format!("<div class=\"tabs\"{}{}{}>{}</div>\n", id_attr, class_attr, style_str, children_html)
+                format!(
+                    "<div class=\"tabs\"{}{}{}>{}</div>\n",
+                    id_attr, class_attr, style_str, children_html
+                )
             }
             BlockType::Tab => {
                 let title = block.attributes.content.as_deref().unwrap_or("Tab");
@@ -249,7 +355,10 @@ impl BlockSerializer {
                 ) + "\n"
             }
             BlockType::Alert => {
-                let alert_type = block.attributes.alert_type.as_ref()
+                let alert_type = block
+                    .attributes
+                    .alert_type
+                    .as_ref()
                     .map(|t| format!("{:?}", t).to_lowercase())
                     .unwrap_or_else(|| "info".to_string());
                 format!(
@@ -259,7 +368,10 @@ impl BlockSerializer {
             }
             _ => {
                 // Default rendering
-                format!("<div{}{}{}>{}{}</div>\n", id_attr, class_attr, style_str, inner_html, children_html)
+                format!(
+                    "<div{}{}{}>{}{}</div>\n",
+                    id_attr, class_attr, style_str, inner_html, children_html
+                )
             }
         }
     }
@@ -287,8 +399,14 @@ impl BlockSerializer {
         if let Some(padding) = &styles.padding {
             match padding {
                 Spacing::All(value) => css.push(format!("padding: {}", value)),
-                Spacing::Individual { top, right, bottom, left } => {
-                    css.push(format!("padding: {} {} {} {}",
+                Spacing::Individual {
+                    top,
+                    right,
+                    bottom,
+                    left,
+                } => {
+                    css.push(format!(
+                        "padding: {} {} {} {}",
                         top.as_deref().unwrap_or("0"),
                         right.as_deref().unwrap_or("0"),
                         bottom.as_deref().unwrap_or("0"),
@@ -300,8 +418,14 @@ impl BlockSerializer {
         if let Some(margin) = &styles.margin {
             match margin {
                 Spacing::All(value) => css.push(format!("margin: {}", value)),
-                Spacing::Individual { top, right, bottom, left } => {
-                    css.push(format!("margin: {} {} {} {}",
+                Spacing::Individual {
+                    top,
+                    right,
+                    bottom,
+                    left,
+                } => {
+                    css.push(format!(
+                        "margin: {} {} {} {}",
                         top.as_deref().unwrap_or("0"),
                         right.as_deref().unwrap_or("0"),
                         bottom.as_deref().unwrap_or("0"),
@@ -377,7 +501,10 @@ impl BlockSerializer {
             }
             BlockType::List => {
                 let is_ordered = matches!(block.attributes.list_type, Some(ListType::Ordered));
-                block.children.iter().enumerate()
+                block
+                    .children
+                    .iter()
+                    .enumerate()
                     .map(|(i, child)| {
                         let child_content = child.attributes.content.as_deref().unwrap_or("");
                         if is_ordered {
@@ -391,7 +518,8 @@ impl BlockSerializer {
             }
             BlockType::ListItem => content.to_string(),
             BlockType::Quote => {
-                let quote = content.lines()
+                let quote = content
+                    .lines()
                     .map(|line| format!("> {}", line))
                     .collect::<Vec<_>>()
                     .join("\n");
@@ -414,7 +542,9 @@ impl BlockSerializer {
             BlockType::Html | BlockType::CustomHtml => content.to_string(),
             _ => {
                 // For unsupported blocks, try to extract text content
-                let children_md: String = block.children.iter()
+                let children_md: String = block
+                    .children
+                    .iter()
                     .map(|c| self.block_to_markdown(c))
                     .collect::<Vec<_>>()
                     .join("\n\n");

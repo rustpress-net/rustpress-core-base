@@ -206,9 +206,15 @@ impl KeyboardShortcut {
 
     pub fn to_string(&self) -> String {
         let mut parts = Vec::new();
-        if self.ctrl { parts.push("Ctrl"); }
-        if self.shift { parts.push("Shift"); }
-        if self.alt { parts.push("Alt"); }
+        if self.ctrl {
+            parts.push("Ctrl");
+        }
+        if self.shift {
+            parts.push("Shift");
+        }
+        if self.alt {
+            parts.push("Alt");
+        }
         parts.push(&self.key);
         parts.join("+")
     }
@@ -407,7 +413,11 @@ impl MockEditor {
         if let Some(pos) = self.blocks.iter().position(|b| b.id == block_id) {
             if new_index < self.blocks.len() {
                 let block = self.blocks.remove(pos);
-                let insert_pos = if new_index > pos { new_index - 1 } else { new_index };
+                let insert_pos = if new_index > pos {
+                    new_index - 1
+                } else {
+                    new_index
+                };
                 self.blocks.insert(insert_pos.min(self.blocks.len()), block);
                 self.is_dirty = true;
                 self.push_undo("move_block", block_id);
@@ -484,9 +494,19 @@ impl MockEditor {
         }
     }
 
-    pub fn execute_shortcut(&self, key: &str, ctrl: bool, shift: bool, alt: bool) -> Option<String> {
+    pub fn execute_shortcut(
+        &self,
+        key: &str,
+        ctrl: bool,
+        shift: bool,
+        alt: bool,
+    ) -> Option<String> {
         for shortcut in &self.shortcuts {
-            if shortcut.key == key && shortcut.ctrl == ctrl && shortcut.shift == shift && shortcut.alt == alt {
+            if shortcut.key == key
+                && shortcut.ctrl == ctrl
+                && shortcut.shift == shift
+                && shortcut.alt == alt
+            {
                 return Some(shortcut.action.clone());
             }
         }
@@ -559,7 +579,12 @@ impl MockEditor {
         self.collaborators.retain(|u| u.id != user_id);
     }
 
-    pub fn update_collaborator_cursor(&mut self, user_id: &str, block_id: &str, offset: usize) -> bool {
+    pub fn update_collaborator_cursor(
+        &mut self,
+        user_id: &str,
+        block_id: &str,
+        offset: usize,
+    ) -> bool {
         if let Some(user) = self.collaborators.iter_mut().find(|u| u.id == user_id) {
             user.cursor_block = Some(block_id.to_string());
             user.cursor_offset = Some(offset);
@@ -577,7 +602,10 @@ impl MockEditor {
 
     pub fn validate_all_blocks(&mut self) -> Vec<String> {
         // First, collect validation results
-        let validations: Vec<(usize, bool)> = self.blocks.iter().enumerate()
+        let validations: Vec<(usize, bool)> = self
+            .blocks
+            .iter()
+            .enumerate()
             .map(|(i, block)| (i, Self::validate_block_static(block)))
             .collect();
 
@@ -610,7 +638,8 @@ fn rand_id() -> u64 {
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()
-        .as_nanos() as u64 % 1_000_000_000
+        .as_nanos() as u64
+        % 1_000_000_000
 }
 
 fn current_timestamp() -> u64 {
@@ -1017,7 +1046,11 @@ fn test_050_toolbar_button_count() {
 #[test]
 fn test_051_buttons_unique_ids() {
     let editor = MockEditor::new();
-    let mut ids: Vec<&str> = editor.toolbar_buttons.iter().map(|b| b.id.as_str()).collect();
+    let mut ids: Vec<&str> = editor
+        .toolbar_buttons
+        .iter()
+        .map(|b| b.id.as_str())
+        .collect();
     let original_len = ids.len();
     ids.sort();
     ids.dedup();
@@ -1050,8 +1083,14 @@ fn test_054_multiple_buttons_active() {
     editor.set_button_state("bold", ButtonState::Active);
     editor.set_button_state("italic", ButtonState::Active);
 
-    assert_eq!(editor.get_button("bold").unwrap().state, ButtonState::Active);
-    assert_eq!(editor.get_button("italic").unwrap().state, ButtonState::Active);
+    assert_eq!(
+        editor.get_button("bold").unwrap().state,
+        ButtonState::Active
+    );
+    assert_eq!(
+        editor.get_button("italic").unwrap().state,
+        ButtonState::Active
+    );
 }
 
 /// Test 55: Strikethrough button exists
@@ -1086,7 +1125,11 @@ fn test_057_button_state_enabled() {
 #[test]
 fn test_058_toolbar_logical_order() {
     let editor = MockEditor::new();
-    let ids: Vec<&str> = editor.toolbar_buttons.iter().map(|b| b.id.as_str()).collect();
+    let ids: Vec<&str> = editor
+        .toolbar_buttons
+        .iter()
+        .map(|b| b.id.as_str())
+        .collect();
 
     // Bold should come before alignment
     let bold_pos = ids.iter().position(|&id| id == "bold");
@@ -1325,7 +1368,10 @@ fn test_080_block_attributes() {
         .with_attribute("alt", "Description");
 
     assert_eq!(block.attributes.get("src"), Some(&"image.jpg".to_string()));
-    assert_eq!(block.attributes.get("alt"), Some(&"Description".to_string()));
+    assert_eq!(
+        block.attributes.get("alt"),
+        Some(&"Description".to_string())
+    );
 }
 
 /// Test 81: Can add list block
@@ -1838,7 +1884,9 @@ fn test_136_quote_attribution() {
     let mut editor = MockEditor::new();
     let id = editor.add_block(Block::new(BlockType::Quote));
     editor.update_block_content(&id, "The only thing we have to fear is fear itself.");
-    editor.blocks[0].attributes.insert("citation".to_string(), "FDR".to_string());
+    editor.blocks[0]
+        .attributes
+        .insert("citation".to_string(), "FDR".to_string());
     assert!(editor.blocks[0].attributes.contains_key("citation"));
 }
 
@@ -2068,8 +2116,14 @@ fn test_164_multiple_shortcuts_same_key() {
     let editor = MockEditor::new();
 
     // Z with Ctrl is undo, Z with Ctrl+Shift is redo
-    let undo = editor.shortcuts.iter().find(|s| s.key == "Z" && s.ctrl && !s.shift);
-    let redo = editor.shortcuts.iter().find(|s| s.key == "Z" && s.ctrl && s.shift);
+    let undo = editor
+        .shortcuts
+        .iter()
+        .find(|s| s.key == "Z" && s.ctrl && !s.shift);
+    let redo = editor
+        .shortcuts
+        .iter()
+        .find(|s| s.key == "Z" && s.ctrl && s.shift);
 
     assert!(undo.is_some());
     assert!(redo.is_some());
@@ -2234,7 +2288,10 @@ fn test_179_move_preserves_attributes() {
     let id2 = editor.add_block(Block::new(BlockType::Image).with_attribute("src", "test.jpg"));
 
     editor.move_block(&id2, 0);
-    assert_eq!(editor.blocks[0].attributes.get("src"), Some(&"test.jpg".to_string()));
+    assert_eq!(
+        editor.blocks[0].attributes.get("src"),
+        Some(&"test.jpg".to_string())
+    );
 }
 
 /// Test 180: Move preserves alignment
@@ -2242,7 +2299,8 @@ fn test_179_move_preserves_attributes() {
 fn test_180_move_preserves_alignment() {
     let mut editor = MockEditor::new();
     editor.add_block(Block::new(BlockType::Paragraph));
-    let id2 = editor.add_block(Block::new(BlockType::Paragraph).with_alignment(BlockAlignment::Center));
+    let id2 =
+        editor.add_block(Block::new(BlockType::Paragraph).with_alignment(BlockAlignment::Center));
 
     editor.move_block(&id2, 0);
     assert_eq!(editor.blocks[0].alignment, BlockAlignment::Center);
@@ -2423,7 +2481,9 @@ fn test_194_move_code_block() {
 fn test_195_move_embed_block() {
     let mut editor = MockEditor::new();
     editor.add_block(Block::new(BlockType::Paragraph));
-    let id = editor.add_block(Block::new(BlockType::Embed).with_attribute("url", "https://youtube.com/watch?v=123"));
+    let id = editor.add_block(
+        Block::new(BlockType::Embed).with_attribute("url", "https://youtube.com/watch?v=123"),
+    );
 
     editor.move_block(&id, 0);
     assert!(editor.blocks[0].attributes.contains_key("url"));
@@ -3250,7 +3310,10 @@ fn test_265_update_collaborator_cursor() {
     let result = editor.update_collaborator_cursor("user_1", "block_1", 10);
 
     assert!(result);
-    assert_eq!(editor.collaborators[0].cursor_block, Some("block_1".to_string()));
+    assert_eq!(
+        editor.collaborators[0].cursor_block,
+        Some("block_1".to_string())
+    );
     assert_eq!(editor.collaborators[0].cursor_offset, Some(10));
 }
 
@@ -3374,7 +3437,10 @@ fn test_272_collaborator_cursor_multiple_updates() {
     editor.update_collaborator_cursor("user_1", "block_2", 5);
     editor.update_collaborator_cursor("user_1", "block_3", 10);
 
-    assert_eq!(editor.collaborators[0].cursor_block, Some("block_3".to_string()));
+    assert_eq!(
+        editor.collaborators[0].cursor_block,
+        Some("block_3".to_string())
+    );
     assert_eq!(editor.collaborators[0].cursor_offset, Some(10));
 }
 
@@ -3395,7 +3461,11 @@ fn test_273_collaborator_different_colors() {
         editor.add_collaborator(user);
     }
 
-    let user_colors: Vec<&str> = editor.collaborators.iter().map(|u| u.color.as_str()).collect();
+    let user_colors: Vec<&str> = editor
+        .collaborators
+        .iter()
+        .map(|u| u.color.as_str())
+        .collect();
     assert_eq!(user_colors, colors);
 }
 
@@ -3538,7 +3608,11 @@ fn test_280_collaborators_independent_of_blocks() {
 fn test_281_buttons_have_labels() {
     let editor = MockEditor::new();
     for button in &editor.toolbar_buttons {
-        assert!(!button.label.is_empty(), "Button {} has no label", button.id);
+        assert!(
+            !button.label.is_empty(),
+            "Button {} has no label",
+            button.id
+        );
     }
 }
 
@@ -3547,7 +3621,11 @@ fn test_281_buttons_have_labels() {
 fn test_282_buttons_have_tooltips() {
     let editor = MockEditor::new();
     for button in &editor.toolbar_buttons {
-        assert!(!button.tooltip.is_empty(), "Button {} has no tooltip", button.id);
+        assert!(
+            !button.tooltip.is_empty(),
+            "Button {} has no tooltip",
+            button.id
+        );
     }
 }
 

@@ -41,7 +41,8 @@ impl PasswordProtection {
         Self {
             post_id,
             password_hash: password_hash.to_string(),
-            message: "This content is password protected. Please enter the password to view.".to_string(),
+            message: "This content is password protected. Please enter the password to view."
+                .to_string(),
             expires_at: None,
             created_at: Utc::now(),
         }
@@ -471,7 +472,9 @@ impl AccessManager {
 
                     // Check membership plans
                     if !rule.membership_plans.is_empty() {
-                        let has_plan = rule.membership_plans.iter()
+                        let has_plan = rule
+                            .membership_plans
+                            .iter()
                             .any(|plan| user_plans.contains(plan));
 
                         if !has_plan {
@@ -497,7 +500,8 @@ impl AccessManager {
 
     /// Set password protection
     pub fn set_password(&mut self, protection: PasswordProtection) {
-        self.password_protection.insert(protection.post_id, protection);
+        self.password_protection
+            .insert(protection.post_id, protection);
     }
 
     /// Remove password protection
@@ -506,9 +510,15 @@ impl AccessManager {
     }
 
     /// Create preview token
-    pub fn create_preview_token(&mut self, post_id: i64, created_by: i64, hours: i64) -> PreviewToken {
+    pub fn create_preview_token(
+        &mut self,
+        post_id: i64,
+        created_by: i64,
+        hours: i64,
+    ) -> PreviewToken {
         let token = PreviewToken::new(post_id, created_by, hours);
-        self.preview_tokens.insert(token.token.clone(), token.clone());
+        self.preview_tokens
+            .insert(token.token.clone(), token.clone());
         token
     }
 

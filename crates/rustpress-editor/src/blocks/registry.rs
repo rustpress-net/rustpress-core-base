@@ -53,7 +53,9 @@ impl BlockRegistry {
             .filter(|b| {
                 b.name.to_lowercase().contains(&query_lower)
                     || b.description.to_lowercase().contains(&query_lower)
-                    || b.keywords.iter().any(|k| k.to_lowercase().contains(&query_lower))
+                    || b.keywords
+                        .iter()
+                        .any(|k| k.to_lowercase().contains(&query_lower))
             })
             .collect()
     }
@@ -99,7 +101,11 @@ impl BlockRegistry {
             description: "Introduce new sections and organize content.".to_string(),
             category: BlockCategory::Text,
             icon: "heading".to_string(),
-            keywords: vec!["title".to_string(), "subtitle".to_string(), "heading".to_string()],
+            keywords: vec![
+                "title".to_string(),
+                "subtitle".to_string(),
+                "heading".to_string(),
+            ],
             supports: BlockSupports {
                 align: true,
                 anchor: true,
@@ -119,7 +125,11 @@ impl BlockRegistry {
             description: "Create bulleted or numbered lists.".to_string(),
             category: BlockCategory::Text,
             icon: "list".to_string(),
-            keywords: vec!["bullet".to_string(), "numbered".to_string(), "ordered".to_string()],
+            keywords: vec![
+                "bullet".to_string(),
+                "numbered".to_string(),
+                "ordered".to_string(),
+            ],
             supports: BlockSupports {
                 anchor: true,
                 color: true,
@@ -157,7 +167,11 @@ impl BlockRegistry {
             description: "Display code snippets with syntax highlighting.".to_string(),
             category: BlockCategory::Text,
             icon: "code".to_string(),
-            keywords: vec!["source".to_string(), "snippet".to_string(), "programming".to_string()],
+            keywords: vec![
+                "source".to_string(),
+                "snippet".to_string(),
+                "programming".to_string(),
+            ],
             supports: BlockSupports {
                 anchor: true,
                 typography: true,
@@ -175,7 +189,11 @@ impl BlockRegistry {
             description: "Insert an image to make a visual statement.".to_string(),
             category: BlockCategory::Media,
             icon: "image".to_string(),
-            keywords: vec!["photo".to_string(), "picture".to_string(), "img".to_string()],
+            keywords: vec![
+                "photo".to_string(),
+                "picture".to_string(),
+                "img".to_string(),
+            ],
             supports: BlockSupports {
                 align: true,
                 anchor: true,
@@ -227,7 +245,11 @@ impl BlockRegistry {
             description: "Embed a simple audio player.".to_string(),
             category: BlockCategory::Media,
             icon: "audio".to_string(),
-            keywords: vec!["music".to_string(), "sound".to_string(), "podcast".to_string()],
+            keywords: vec![
+                "music".to_string(),
+                "sound".to_string(),
+                "podcast".to_string(),
+            ],
             supports: BlockSupports {
                 align: true,
                 anchor: true,
@@ -244,7 +266,11 @@ impl BlockRegistry {
             description: "Add an image or video with a text overlay.".to_string(),
             category: BlockCategory::Media,
             icon: "cover".to_string(),
-            keywords: vec!["banner".to_string(), "header".to_string(), "hero".to_string()],
+            keywords: vec![
+                "banner".to_string(),
+                "header".to_string(),
+                "hero".to_string(),
+            ],
             supports: BlockSupports {
                 align: true,
                 anchor: true,
@@ -264,7 +290,11 @@ impl BlockRegistry {
             description: "Embed videos, images, tweets, audio, and other content.".to_string(),
             category: BlockCategory::Media,
             icon: "embed".to_string(),
-            keywords: vec!["youtube".to_string(), "twitter".to_string(), "instagram".to_string()],
+            keywords: vec![
+                "youtube".to_string(),
+                "twitter".to_string(),
+                "instagram".to_string(),
+            ],
             supports: BlockSupports {
                 align: true,
                 ..Default::default()
@@ -281,7 +311,11 @@ impl BlockRegistry {
             description: "Gather blocks in a layout container.".to_string(),
             category: BlockCategory::Layout,
             icon: "group".to_string(),
-            keywords: vec!["container".to_string(), "wrapper".to_string(), "section".to_string()],
+            keywords: vec![
+                "container".to_string(),
+                "wrapper".to_string(),
+                "section".to_string(),
+            ],
             supports: BlockSupports {
                 align: true,
                 anchor: true,
@@ -350,7 +384,11 @@ impl BlockRegistry {
             description: "Create a break between ideas or sections.".to_string(),
             category: BlockCategory::Layout,
             icon: "separator".to_string(),
-            keywords: vec!["horizontal".to_string(), "line".to_string(), "divider".to_string()],
+            keywords: vec![
+                "horizontal".to_string(),
+                "line".to_string(),
+                "divider".to_string(),
+            ],
             supports: BlockSupports {
                 align: true,
                 color: true,

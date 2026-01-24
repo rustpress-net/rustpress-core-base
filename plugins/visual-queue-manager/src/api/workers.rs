@@ -6,22 +6,21 @@
 // =============================================================================
 
 use axum::{
-    Router,
-    routing::{get, post, put, patch, delete},
-    extract::{Path, Query, Extension, Json},
+    extract::{Extension, Json, Path, Query},
     http::StatusCode,
+    routing::{delete, get, patch, post, put},
+    Router,
 };
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
-use validator::Validate;
 use std::sync::Arc;
+use uuid::Uuid;
+use validator::Validate;
 
 use super::{
-    ApiResponse, ApiError, AppError, ResponseMeta,
-    PaginationParams, SortParams, AuthUser,
-    validate_request, parse_uuid,
+    parse_uuid, validate_request, ApiError, ApiResponse, AppError, AuthUser, PaginationParams,
+    ResponseMeta, SortParams,
 };
 use crate::VisualQueueManager;
 
@@ -296,7 +295,11 @@ async fn list_workers(
         Some("jobs_completed") => "jobs_completed",
         _ => "last_heartbeat",
     };
-    let sort_order = if params.sort.sort_order == "asc" { "ASC" } else { "DESC" };
+    let sort_order = if params.sort.sort_order == "asc" {
+        "ASC"
+    } else {
+        "DESC"
+    };
 
     let query = format!(
         r#"
@@ -307,18 +310,13 @@ async fn list_workers(
         ORDER BY {} {}
         LIMIT {} OFFSET {}
         "#,
-        where_clause, sort_column, sort_order,
-        params.pagination.per_page, offset
+        where_clause, sort_column, sort_order, params.pagination.per_page, offset
     );
 
-    let workers: Vec<WorkerSummary> = sqlx::query_as(&query)
-        .fetch_all(pool)
-        .await?;
+    let workers: Vec<WorkerSummary> = sqlx::query_as(&query).fetch_all(pool).await?;
 
     let count_query = format!("SELECT COUNT(*) FROM vqm_workers WHERE {}", where_clause);
-    let total: (i64,) = sqlx::query_as(&count_query)
-        .fetch_one(pool)
-        .await?;
+    let total: (i64,) = sqlx::query_as(&count_query).fetch_one(pool).await?;
 
     let meta = ResponseMeta::new(total.0, params.pagination.page, params.pagination.per_page);
 
@@ -344,7 +342,7 @@ async fn register_worker(
             id, name, hostname, queue_ids, group_id,
             max_concurrent_jobs, capabilities, metadata
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        "#
+        "#,
     )
     .bind(worker_id)
     .bind(&req.name)
@@ -360,7 +358,7 @@ async fn register_worker(
     // Update group worker count if in a group
     if let Some(group_id) = req.group_id {
         sqlx::query(
-            "UPDATE vqm_worker_groups SET current_workers = current_workers + 1 WHERE id = $1"
+            "UPDATE vqm_worker_groups SET current_workers = current_workers + 1 WHERE id = $1",
         )
         .bind(group_id)
         .execute(pool)
@@ -412,7 +410,10 @@ async fn update_worker(
 
     if let Some(ref queue_ids) = req.queue_ids {
         let queue_ids_str: Vec<String> = queue_ids.iter().map(|id| format!("'{}'", id)).collect();
-        updates.push(format!("queue_ids = ARRAY[{}]::uuid[]", queue_ids_str.join(",")));
+        updates.push(format!(
+            "queue_ids = ARRAY[{}]::uuid[]",
+            queue_ids_str.join(",")
+        ));
     }
 
     if let Some(max_jobs) = req.max_concurrent_jobs {
@@ -421,7 +422,10 @@ async fn update_worker(
 
     if let Some(ref capabilities) = req.capabilities {
         let caps_str: Vec<String> = capabilities.iter().map(|c| format!("'{}'", c)).collect();
-        updates.push(format!("capabilities = ARRAY[{}]::text[]", caps_str.join(",")));
+        updates.push(format!(
+            "capabilities = ARRAY[{}]::text[]",
+            caps_str.join(",")
+        ));
     }
 
     if updates.is_empty() {
@@ -434,10 +438,7 @@ async fn update_worker(
         updates.join(", ")
     );
 
-    sqlx::query(&query)
-        .bind(worker_id)
-        .execute(pool)
-        .await?;
+    sqlx::query(&query).bind(worker_id).execute(pool).await?;
 
     let worker = get_worker_by_id(pool, worker_id).await?;
 
@@ -458,16 +459,15 @@ async fn deregister_worker(
     let pool = plugin.db_pool();
 
     // Get group_id before deletion
-    let group_id: Option<(Option<Uuid>,)> = sqlx::query_as(
-        "SELECT group_id FROM vqm_workers WHERE id = $1"
-    )
-    .bind(worker_id)
-    .fetch_optional(pool)
-    .await?;
+    let group_id: Option<(Option<Uuid>,)> =
+        sqlx::query_as("SELECT group_id FROM vqm_workers WHERE id = $1")
+            .bind(worker_id)
+            .fetch_optional(pool)
+            .await?;
 
     // Mark worker as offline
     sqlx::query(
-        "UPDATE vqm_workers SET status = 'offline', updated_at = CURRENT_TIMESTAMP WHERE id = $1"
+        "UPDATE vqm_workers SET status = 'offline', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
     )
     .bind(worker_id)
     .execute(pool)
@@ -483,15 +483,17 @@ async fn deregister_worker(
         .await?;
     }
 
-    plugin.log_audit(
-        "worker.deregistered",
-        "worker",
-        "deregister",
-        Some(worker_id),
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "worker.deregistered",
+            "worker",
+            "deregister",
+            Some(worker_id),
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -514,7 +516,7 @@ async fn worker_heartbeat(
             cpu_usage_percent = COALESCE($3, cpu_usage_percent),
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $4
-        "#
+        "#,
     )
     .bind(req.current_load)
     .bind(req.memory_usage_mb)
@@ -535,7 +537,7 @@ async fn worker_heartbeat(
         WHERE worker_id = $1 AND executed = false
         ORDER BY created_at ASC
         LIMIT 10
-        "#
+        "#,
     )
     .bind(worker_id)
     .fetch_all(pool)
@@ -576,7 +578,7 @@ async fn get_worker_status(
         SELECT status, current_job_id, last_heartbeat,
                current_load, memory_usage_mb, cpu_usage_percent
         FROM vqm_workers WHERE id = $1
-        "#
+        "#,
     )
     .bind(worker_id)
     .fetch_optional(pool)
@@ -620,22 +622,22 @@ async fn set_worker_status(
         return Err(AppError::validation("Invalid status value"));
     }
 
-    sqlx::query(
-        "UPDATE vqm_workers SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2"
-    )
-    .bind(&req.status)
-    .execute(pool)
-    .await?;
+    sqlx::query("UPDATE vqm_workers SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2")
+        .bind(&req.status)
+        .execute(pool)
+        .await?;
 
-    plugin.log_audit(
-        "worker.status_changed",
-        "worker",
-        "set_status",
-        Some(worker_id),
-        Some(&req.status),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "worker.status_changed",
+            "worker",
+            "set_status",
+            Some(worker_id),
+            Some(&req.status),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     let worker = get_worker_by_id(pool, worker_id).await?;
 
@@ -675,7 +677,7 @@ async fn get_worker_stats(
             COALESCE(MAX(processing_time_ms), 0)
         FROM vqm_worker_job_history
         WHERE worker_id = $1 AND processing_time_ms IS NOT NULL
-        "#
+        "#,
     )
     .bind(worker_id)
     .fetch_one(pool)
@@ -690,7 +692,7 @@ async fn get_worker_stats(
             COUNT(*) FILTER (WHERE started_at > CURRENT_TIMESTAMP - INTERVAL '24 hours')
         FROM vqm_worker_job_history
         WHERE worker_id = $1
-        "#
+        "#,
     )
     .bind(worker_id)
     .fetch_one(pool)
@@ -752,7 +754,7 @@ async fn get_worker_history(
         WHERE worker_id = $1
         ORDER BY started_at DESC
         LIMIT $2 OFFSET $3
-        "#
+        "#,
     )
     .bind(worker_id)
     .bind(params.per_page)
@@ -760,12 +762,11 @@ async fn get_worker_history(
     .fetch_all(pool)
     .await?;
 
-    let total: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM vqm_worker_job_history WHERE worker_id = $1"
-    )
-    .bind(worker_id)
-    .fetch_one(pool)
-    .await?;
+    let total: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM vqm_worker_job_history WHERE worker_id = $1")
+            .bind(worker_id)
+            .fetch_one(pool)
+            .await?;
 
     let meta = ResponseMeta::new(total.0, params.page, params.per_page);
 
@@ -794,7 +795,7 @@ async fn list_worker_groups(
         FROM vqm_worker_groups
         ORDER BY name ASC
         LIMIT $1 OFFSET $2
-        "#
+        "#,
     )
     .bind(params.per_page)
     .bind(offset)
@@ -834,7 +835,7 @@ async fn create_worker_group(
             target_workers, auto_scale, scale_up_threshold, scale_down_threshold,
             metadata
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-        "#
+        "#,
     )
     .bind(group_id)
     .bind(&req.name)
@@ -896,7 +897,7 @@ async fn update_worker_group(
             scale_up_threshold = $8, scale_down_threshold = $9,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $10
-        "#
+        "#,
     )
     .bind(&req.name)
     .bind(&req.description)
@@ -931,14 +932,16 @@ async fn delete_worker_group(
 
     // Check if group has workers
     let worker_count: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM vqm_workers WHERE group_id = $1 AND status != 'offline'"
+        "SELECT COUNT(*) FROM vqm_workers WHERE group_id = $1 AND status != 'offline'",
     )
     .bind(group_id)
     .fetch_one(pool)
     .await?;
 
     if worker_count.0 > 0 {
-        return Err(AppError::conflict("Cannot delete group with active workers"));
+        return Err(AppError::conflict(
+            "Cannot delete group with active workers",
+        ));
     }
 
     sqlx::query("DELETE FROM vqm_worker_groups WHERE id = $1")
@@ -969,7 +972,7 @@ async fn list_group_workers(
         FROM vqm_workers
         WHERE group_id = $1
         ORDER BY name ASC
-        "#
+        "#,
     )
     .bind(group_id)
     .fetch_all(pool)
@@ -993,13 +996,12 @@ async fn scale_worker_group(
     let pool = plugin.db_pool();
 
     // Get group constraints
-    let constraints: (i32, i32) = sqlx::query_as(
-        "SELECT min_workers, max_workers FROM vqm_worker_groups WHERE id = $1"
-    )
-    .bind(group_id)
-    .fetch_optional(pool)
-    .await?
-    .ok_or_else(|| AppError::not_found("Worker group"))?;
+    let constraints: (i32, i32) =
+        sqlx::query_as("SELECT min_workers, max_workers FROM vqm_worker_groups WHERE id = $1")
+            .bind(group_id)
+            .fetch_optional(pool)
+            .await?
+            .ok_or_else(|| AppError::not_found("Worker group"))?;
 
     // Validate target count
     let target = req.target_count.max(constraints.0).min(constraints.1);
@@ -1012,15 +1014,17 @@ async fn scale_worker_group(
     .execute(pool)
     .await?;
 
-    plugin.log_audit(
-        "worker_group.scaled",
-        "worker_group",
-        "scale",
-        Some(group_id),
-        Some(&target.to_string()),
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "worker_group.scaled",
+            "worker_group",
+            "scale",
+            Some(group_id),
+            Some(&target.to_string()),
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     let group = get_worker_group_by_id(pool, group_id).await?;
 
@@ -1095,7 +1099,7 @@ async fn cleanup_stale_workers(
         SET status = 'offline', updated_at = CURRENT_TIMESTAMP
         WHERE status != 'offline'
           AND last_heartbeat < CURRENT_TIMESTAMP - INTERVAL '5 minutes'
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
@@ -1110,21 +1114,23 @@ async fn cleanup_stale_workers(
         WHERE locked_by IN (
             SELECT id FROM vqm_workers WHERE status = 'offline'
         )
-        "#
+        "#,
     )
     .execute(pool)
     .await?
     .rows_affected() as i32;
 
-    plugin.log_audit(
-        "workers.cleanup",
-        "worker",
-        "cleanup",
-        None,
-        None,
-        Some(auth.id),
-        Some(&auth.username),
-    ).await;
+    plugin
+        .log_audit(
+            "workers.cleanup",
+            "worker",
+            "cleanup",
+            None,
+            None,
+            Some(auth.id),
+            Some(&auth.username),
+        )
+        .await;
 
     Ok(Json(ApiResponse::success(CleanupResult {
         workers_marked_offline: marked_offline,
@@ -1234,7 +1240,7 @@ async fn get_worker_by_id(pool: &PgPool, worker_id: Uuid) -> Result<WorkerRespon
                registered_at, last_job_at, metadata
         FROM vqm_workers
         WHERE id = $1
-        "#
+        "#,
     )
     .bind(worker_id)
     .fetch_optional(pool)
@@ -1283,7 +1289,10 @@ impl From<WorkerGroupRow> for WorkerGroupResponse {
     }
 }
 
-async fn get_worker_group_by_id(pool: &PgPool, group_id: Uuid) -> Result<WorkerGroupResponse, AppError> {
+async fn get_worker_group_by_id(
+    pool: &PgPool,
+    group_id: Uuid,
+) -> Result<WorkerGroupResponse, AppError> {
     let row: WorkerGroupRow = sqlx::query_as(
         r#"
         SELECT id, name, description, queue_ids, min_workers, max_workers,
@@ -1292,7 +1301,7 @@ async fn get_worker_group_by_id(pool: &PgPool, group_id: Uuid) -> Result<WorkerG
                created_at, updated_at, metadata
         FROM vqm_worker_groups
         WHERE id = $1
-        "#
+        "#,
     )
     .bind(group_id)
     .fetch_optional(pool)

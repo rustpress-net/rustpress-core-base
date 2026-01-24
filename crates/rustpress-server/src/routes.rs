@@ -28,6 +28,10 @@ pub fn create_router(state: AppState) -> Router {
         .nest("/api/v1", api_v1_routes())
         // Cloudflare plugin routes (separate state)
         .nest_service("/api/v1/cloudflare", build_cloudflare_router(&state))
+        // RustBuilder page builder plugin routes
+        .nest_service("/api/v1/rustbuilder", build_rustbuilder_router(&state))
+        // RustBuilder visual editor UI
+        .nest("/pagebuilder", pagebuilder_routes())
         // Admin UI routes (serve static files, handle by frontend)
         // Handle /admin/ with trailing slash - redirect to /admin
         .route(
@@ -44,8 +48,9 @@ pub fn create_router(state: AppState) -> Router {
 
 /// Admin routes - serve static files from admin-ui directory
 fn admin_routes() -> Router<AppState> {
-    // Path to admin UI directory (release packages have built files at ./admin-ui)
-    let admin_dist = std::env::var("ADMIN_UI_PATH").unwrap_or_else(|_| "./admin-ui".to_string());
+    // Path to admin UI directory (built files are in ./admin-ui/dist)
+    let admin_dist =
+        std::env::var("ADMIN_UI_PATH").unwrap_or_else(|_| "./admin-ui/dist".to_string());
 
     let index_path = format!("{}/index.html", admin_dist);
 
@@ -109,6 +114,110 @@ fn admin_routes() -> Router<AppState> {
                         .into_response(),
                     Err(_) => (StatusCode::NOT_FOUND, "Admin UI not found").into_response(),
                 }
+            }
+        }
+    })
+}
+
+/// RustBuilder page builder routes - serve the visual editor UI
+fn pagebuilder_routes() -> Router<AppState> {
+    // Path to RustBuilder frontend directory
+    let pb_dist = std::env::var("RUSTBUILDER_UI_PATH")
+        .unwrap_or_else(|_| "./plugins/rustbuilder/frontend/dist".to_string());
+
+    Router::new().fallback(move |req: axum::extract::Request| {
+        let pb_dist = pb_dist.clone();
+        async move {
+            use axum::body::Body;
+            use axum::http::{header, StatusCode};
+            use axum::response::IntoResponse;
+
+            let path = req.uri().path();
+
+            // Check if this looks like a static asset request
+            let is_asset = path.ends_with(".js")
+                || path.ends_with(".css")
+                || path.ends_with(".map");
+
+            if is_asset {
+                // Try to serve the static file
+                let file_path = format!("{}{}", pb_dist, path);
+                match tokio::fs::read(&file_path).await {
+                    Ok(contents) => {
+                        let content_type = if path.ends_with(".js") {
+                            "application/javascript"
+                        } else if path.ends_with(".css") {
+                            "text/css"
+                        } else {
+                            "application/octet-stream"
+                        };
+                        (
+                            StatusCode::OK,
+                            [(header::CONTENT_TYPE, content_type)],
+                            Body::from(contents),
+                        )
+                            .into_response()
+                    }
+                    Err(_) => (StatusCode::NOT_FOUND, "Not found").into_response(),
+                }
+            } else {
+                // Serve a minimal HTML page that loads the RustBuilder editor
+                let html = r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RustBuilder - Visual Page Builder</title>
+    <link rel="stylesheet" href="/pagebuilder/style.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body, #root { width: 100%; height: 100%; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .rb-loading { display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; }
+        .rb-loading h1 { color: #3b82f6; margin-bottom: 16px; }
+        .rb-loading p { color: #6b7280; }
+    </style>
+    <!-- Define process.env for libraries that expect Node.js globals -->
+    <script>window.process = { env: { NODE_ENV: 'production' } };</script>
+    <!-- React and ReactDOM from CDN (required for UMD bundle) -->
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+    <div id="root">
+        <div class="rb-loading">
+            <h1>RustBuilder</h1>
+            <p>Loading visual page builder...</p>
+        </div>
+    </div>
+    <script src="/pagebuilder/rustbuilder.umd.js"></script>
+    <script>
+        // Extract page ID from URL if present
+        const pathParts = window.location.pathname.split('/');
+        const pageId = pathParts[pathParts.length - 1] || 'new';
+
+        // Initialize RustBuilder
+        const config = {
+            apiBaseUrl: '/api/v1/rustbuilder',
+            pageId: pageId,
+            debug: true,
+        };
+
+        if (window.RustBuilder && window.RustBuilder.init) {
+            window.RustBuilder.init(document.getElementById('root'), config);
+        } else {
+            console.error('RustBuilder failed to load');
+            document.getElementById('root').innerHTML = '<div style="padding: 40px; text-align: center;"><h1>RustBuilder</h1><p style="color: red;">Failed to load page builder. Check console for errors.</p></div>';
+        }
+    </script>
+</body>
+</html>"#;
+                (
+                    StatusCode::OK,
+                    [(header::CONTENT_TYPE, "text/html")],
+                    Body::from(html),
+                )
+                    .into_response()
             }
         }
     })
@@ -2543,7 +2652,22 @@ async fn list_plugins_handler(
     user: AuthUser,
     State(state): State<AppState>,
 ) -> HttpResult<impl axum::response::IntoResponse> {
-    Ok(json(serde_json::json!({ "plugins": [] })))
+    let plugins = state.plugins.read().await;
+    let plugin_list: Vec<serde_json::Value> = plugins
+        .list()
+        .iter()
+        .map(|info| {
+            serde_json::json!({
+                "id": info.id,
+                "name": info.name,
+                "version": info.version,
+                "description": info.description,
+                "author": info.author,
+                "active": true
+            })
+        })
+        .collect();
+    Ok(json(serde_json::json!({ "plugins": plugin_list })))
 }
 
 async fn install_plugin_handler(
@@ -2559,7 +2683,22 @@ async fn get_plugin_handler(
     PathId(id): PathId,
     State(state): State<AppState>,
 ) -> HttpResult<impl axum::response::IntoResponse> {
-    Ok(json(serde_json::json!({ "id": id })))
+    let plugins = state.plugins.read().await;
+    if let Some(info) = plugins.list().iter().find(|p| p.id == id.to_string()) {
+        Ok(json(serde_json::json!({
+            "id": info.id,
+            "name": info.name,
+            "version": info.version,
+            "description": info.description,
+            "author": info.author,
+            "active": true
+        })))
+    } else {
+        Err(crate::error::HttpError::not_found(format!(
+            "Plugin '{}' not found",
+            id
+        )))
+    }
 }
 
 async fn uninstall_plugin_handler(
@@ -6453,6 +6592,16 @@ pub fn build_cloudflare_router(state: &AppState) -> Router {
 
     // Create the cloudflare router with its own state
     rustcloudflare::api::create_router(services)
+}
+
+/// RustBuilder page builder plugin routes builder
+/// This returns a router with RustBuilder's own state for the visual page builder
+pub fn build_rustbuilder_router(state: &AppState) -> Router {
+    // Get the database pool from AppState
+    let db_pool = state.database.inner().clone();
+
+    // Create the rustbuilder router with its own state
+    rustbuilder::api::create_router(db_pool)
 }
 
 // ============================================

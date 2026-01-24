@@ -10,11 +10,11 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::handlers::blocks::{
-    BlockAnalyticsResponse, BlockCategory, BlockDefinition, BlockLibraryResponse,
-    BlockSupports, BlockToggleFavoriteResponse, BlockUsageEntry, CreateCustomBlockRequest, CustomBlockListQuery,
-    CustomBlockListResponse, CustomBlockResponse,
-    TrackBlockUsageRequest, UpdateBlockSettingsRequest, UpdateCustomBlockRequest,
-    UpdateRecentBlocksRequest, UserBlockPreferencesResponse,
+    BlockAnalyticsResponse, BlockCategory, BlockDefinition, BlockLibraryResponse, BlockSupports,
+    BlockToggleFavoriteResponse, BlockUsageEntry, CreateCustomBlockRequest, CustomBlockListQuery,
+    CustomBlockListResponse, CustomBlockResponse, TrackBlockUsageRequest,
+    UpdateBlockSettingsRequest, UpdateCustomBlockRequest, UpdateRecentBlocksRequest,
+    UserBlockPreferencesResponse,
 };
 
 /// Database row for user block preferences
@@ -76,10 +76,10 @@ pub struct BlockUsageRow {
 
 impl From<UserBlockPreferencesRow> for UserBlockPreferencesResponse {
     fn from(row: UserBlockPreferencesRow) -> Self {
-        let recent_blocks: Vec<String> = serde_json::from_value(row.recent_blocks)
-            .unwrap_or_default();
-        let favorite_blocks: Vec<String> = serde_json::from_value(row.favorite_blocks)
-            .unwrap_or_default();
+        let recent_blocks: Vec<String> =
+            serde_json::from_value(row.recent_blocks).unwrap_or_default();
+        let favorite_blocks: Vec<String> =
+            serde_json::from_value(row.favorite_blocks).unwrap_or_default();
 
         Self {
             user_id: row.user_id,
@@ -524,25 +524,26 @@ impl BlockService {
 
     /// Get block categories from database
     pub async fn get_categories(&self) -> Result<Vec<BlockCategory>> {
-        let rows: Vec<BlockCategoryRow> = sqlx::query_as(
-            "SELECT * FROM block_categories ORDER BY sort_order ASC"
-        )
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| Error::database_with_source("Failed to fetch block categories", e))?;
+        let rows: Vec<BlockCategoryRow> =
+            sqlx::query_as("SELECT * FROM block_categories ORDER BY sort_order ASC")
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| Error::database_with_source("Failed to fetch block categories", e))?;
 
         Ok(rows.into_iter().map(BlockCategory::from).collect())
     }
 
     /// Get user's block preferences
-    pub async fn get_user_preferences(&self, user_id: Uuid) -> Result<UserBlockPreferencesResponse> {
-        let row: Option<UserBlockPreferencesRow> = sqlx::query_as(
-            "SELECT * FROM user_block_preferences WHERE user_id = $1"
-        )
-        .bind(user_id)
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| Error::database_with_source("Failed to fetch user preferences", e))?;
+    pub async fn get_user_preferences(
+        &self,
+        user_id: Uuid,
+    ) -> Result<UserBlockPreferencesResponse> {
+        let row: Option<UserBlockPreferencesRow> =
+            sqlx::query_as("SELECT * FROM user_block_preferences WHERE user_id = $1")
+                .bind(user_id)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| Error::database_with_source("Failed to fetch user preferences", e))?;
 
         match row {
             Some(r) => Ok(UserBlockPreferencesResponse::from(r)),
@@ -593,7 +594,7 @@ impl BlockService {
             SET recent_blocks = $2, updated_at = NOW()
             WHERE user_id = $1
             RETURNING *
-            "#
+            "#,
         )
         .bind(user_id)
         .bind(serde_json::to_value(&recent).unwrap_or_default())
@@ -626,7 +627,7 @@ impl BlockService {
             UPDATE user_block_preferences
             SET favorite_blocks = $2, updated_at = NOW()
             WHERE user_id = $1
-            "#
+            "#,
         )
         .bind(user_id)
         .bind(serde_json::to_value(&favorites).unwrap_or_default())
@@ -652,7 +653,7 @@ impl BlockService {
             SET block_settings = $2, updated_at = NOW()
             WHERE user_id = $1
             RETURNING *
-            "#
+            "#,
         )
         .bind(user_id)
         .bind(&request.settings)
@@ -694,10 +695,7 @@ impl BlockService {
         let where_clause = conditions.join(" AND ");
 
         // Count query
-        let count_query = format!(
-            "SELECT COUNT(*) FROM custom_blocks WHERE {}",
-            where_clause
-        );
+        let count_query = format!("SELECT COUNT(*) FROM custom_blocks WHERE {}", where_clause);
         let total: (i64,) = sqlx::query_as(&count_query)
             .bind(user_id)
             .fetch_one(&self.pool)
@@ -715,7 +713,8 @@ impl BlockService {
             .await
             .map_err(|e| Error::database_with_source("Failed to list custom blocks", e))?;
 
-        let items: Vec<CustomBlockResponse> = rows.into_iter().map(CustomBlockResponse::from).collect();
+        let items: Vec<CustomBlockResponse> =
+            rows.into_iter().map(CustomBlockResponse::from).collect();
         let total_pages = ((total.0 as f64) / (per_page as f64)).ceil() as u64;
 
         Ok(CustomBlockListResponse {
@@ -728,9 +727,13 @@ impl BlockService {
     }
 
     /// Get a custom block by ID
-    pub async fn get_custom_block(&self, id: Uuid, user_id: Uuid) -> Result<Option<CustomBlockResponse>> {
+    pub async fn get_custom_block(
+        &self,
+        id: Uuid,
+        user_id: Uuid,
+    ) -> Result<Option<CustomBlockResponse>> {
         let row: Option<CustomBlockRow> = sqlx::query_as(
-            "SELECT * FROM custom_blocks WHERE id = $1 AND (user_id = $2 OR is_global = TRUE)"
+            "SELECT * FROM custom_blocks WHERE id = $1 AND (user_id = $2 OR is_global = TRUE)",
         )
         .bind(id)
         .bind(user_id)
@@ -778,11 +781,15 @@ impl BlockService {
         request: UpdateCustomBlockRequest,
     ) -> Result<CustomBlockResponse> {
         // Verify ownership
-        let existing = self.get_custom_block(id, user_id).await?
+        let existing = self
+            .get_custom_block(id, user_id)
+            .await?
             .ok_or_else(|| Error::not_found("Custom block", id.to_string()))?;
 
         if existing.user_id != user_id {
-            return Err(Error::forbidden("You can only update your own custom blocks"));
+            return Err(Error::forbidden(
+                "You can only update your own custom blocks",
+            ));
         }
 
         let row: CustomBlockRow = sqlx::query_as(
@@ -800,7 +807,7 @@ impl BlockService {
                 updated_at = NOW()
             WHERE id = $1 AND user_id = $2
             RETURNING *
-            "#
+            "#,
         )
         .bind(id)
         .bind(user_id)
@@ -821,11 +828,15 @@ impl BlockService {
 
     /// Delete a custom block
     pub async fn delete_custom_block(&self, id: Uuid, user_id: Uuid) -> Result<bool> {
-        let existing = self.get_custom_block(id, user_id).await?
+        let existing = self
+            .get_custom_block(id, user_id)
+            .await?
             .ok_or_else(|| Error::not_found("Custom block", id.to_string()))?;
 
         if existing.user_id != user_id {
-            return Err(Error::forbidden("You can only delete your own custom blocks"));
+            return Err(Error::forbidden(
+                "You can only delete your own custom blocks",
+            ));
         }
 
         sqlx::query("DELETE FROM custom_blocks WHERE id = $1 AND user_id = $2")
@@ -864,7 +875,7 @@ impl BlockService {
         if request.block_type == "custom" {
             if let Ok(block_uuid) = Uuid::parse_str(&request.block_id) {
                 let _ = sqlx::query(
-                    "UPDATE custom_blocks SET usage_count = usage_count + 1 WHERE id = $1"
+                    "UPDATE custom_blocks SET usage_count = usage_count + 1 WHERE id = $1",
                 )
                 .bind(block_uuid)
                 .execute(&self.pool)
@@ -879,7 +890,7 @@ impl BlockService {
     pub async fn get_analytics(&self, user_id: Uuid) -> Result<BlockAnalyticsResponse> {
         // Total insertions
         let total: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM block_usage_analytics WHERE user_id = $1 AND action = 'insert'"
+            "SELECT COUNT(*) FROM block_usage_analytics WHERE user_id = $1 AND action = 'insert'",
         )
         .bind(user_id)
         .fetch_one(&self.pool)
@@ -888,7 +899,7 @@ impl BlockService {
 
         // Unique blocks used
         let unique: (i64,) = sqlx::query_as(
-            "SELECT COUNT(DISTINCT block_id) FROM block_usage_analytics WHERE user_id = $1"
+            "SELECT COUNT(DISTINCT block_id) FROM block_usage_analytics WHERE user_id = $1",
         )
         .bind(user_id)
         .fetch_one(&self.pool)
@@ -904,7 +915,7 @@ impl BlockService {
             GROUP BY block_id, block_type
             ORDER BY count DESC
             LIMIT 10
-            "#
+            "#,
         )
         .bind(user_id)
         .fetch_all(&self.pool)
@@ -920,7 +931,7 @@ impl BlockService {
             GROUP BY block_id, block_type
             ORDER BY last_used DESC
             LIMIT 10
-            "#
+            "#,
         )
         .bind(user_id)
         .fetch_all(&self.pool)
@@ -957,7 +968,9 @@ impl BlockService {
         let categories = self.get_categories().await?;
         let prefs = self.get_user_preferences(user_id).await?;
 
-        let custom_list = self.list_custom_blocks(user_id, CustomBlockListQuery::default()).await?;
+        let custom_list = self
+            .list_custom_blocks(user_id, CustomBlockListQuery::default())
+            .await?;
 
         Ok(BlockLibraryResponse {
             blocks,

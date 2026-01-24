@@ -208,7 +208,11 @@ impl ContentAnalyzer {
 
         // Add more text indicator if truncated
         if truncated.len() < text.len() {
-            format!("{}{}", truncated.trim_end_matches(&['.', ',', ' ', '\n'][..]), &config.more_text)
+            format!(
+                "{}{}",
+                truncated.trim_end_matches(&['.', ',', ' ', '\n'][..]),
+                &config.more_text
+            )
         } else {
             truncated
         }
@@ -220,7 +224,11 @@ impl ContentAnalyzer {
     }
 
     /// Calculate reading time with custom config
-    pub fn calculate_reading_time_with_config(&self, content: &str, config: &ReadingTimeConfig) -> ReadingTime {
+    pub fn calculate_reading_time_with_config(
+        &self,
+        content: &str,
+        config: &ReadingTimeConfig,
+    ) -> ReadingTime {
         // Count images
         let image_count = self.count_images(content);
 
@@ -299,14 +307,14 @@ impl ContentAnalyzer {
         // Try to find paragraph tags
         let p_re = Regex::new(r"<p[^>]*>(.*?)</p>").unwrap();
         if let Some(caps) = p_re.captures(content) {
-            return caps.get(1).map(|m| m.as_str().to_string()).unwrap_or_default();
+            return caps
+                .get(1)
+                .map(|m| m.as_str().to_string())
+                .unwrap_or_default();
         }
 
         // Fall back to first block of text
-        content.split("\n\n")
-            .next()
-            .unwrap_or(content)
-            .to_string()
+        content.split("\n\n").next().unwrap_or(content).to_string()
     }
 
     /// Normalize whitespace
@@ -367,18 +375,22 @@ impl ContentAnalyzer {
         let mut code_content = String::new();
 
         // Extract pre blocks
-        let content = pre_re.replace_all(content, |caps: &regex::Captures| {
-            code_content.push_str(caps.get(1).map(|m| m.as_str()).unwrap_or(""));
-            code_content.push(' ');
-            "" // Remove from regular content
-        }).to_string();
+        let content = pre_re
+            .replace_all(content, |caps: &regex::Captures| {
+                code_content.push_str(caps.get(1).map(|m| m.as_str()).unwrap_or(""));
+                code_content.push(' ');
+                "" // Remove from regular content
+            })
+            .to_string();
 
         // Extract code blocks
-        let regular = code_re.replace_all(&content, |caps: &regex::Captures| {
-            code_content.push_str(caps.get(1).map(|m| m.as_str()).unwrap_or(""));
-            code_content.push(' ');
-            "" // Remove from regular content
-        }).to_string();
+        let regular = code_re
+            .replace_all(&content, |caps: &regex::Captures| {
+                code_content.push_str(caps.get(1).map(|m| m.as_str()).unwrap_or(""));
+                code_content.push(' ');
+                "" // Remove from regular content
+            })
+            .to_string();
 
         (regular, code_content)
     }
@@ -411,7 +423,10 @@ impl ContentAnalyzer {
             p_count
         } else {
             // Count by double newlines
-            content.split("\n\n").filter(|s| !s.trim().is_empty()).count()
+            content
+                .split("\n\n")
+                .filter(|s| !s.trim().is_empty())
+                .count()
         }
     }
 

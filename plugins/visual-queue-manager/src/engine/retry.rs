@@ -2,18 +2,16 @@
 //!
 //! Provides configurable retry strategies with backoff algorithms.
 
-use std::time::Duration;
-use serde::{Serialize, Deserialize};
 use rand::Rng;
+use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 /// Retry strategy
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RetryStrategy {
     /// Fixed delay between retries
-    Fixed {
-        delay_ms: u64,
-    },
+    Fixed { delay_ms: u64 },
     /// Linear increase in delay
     Linear {
         initial_delay_ms: u64,
@@ -39,9 +37,7 @@ pub enum RetryStrategy {
         max_delay_ms: u64,
     },
     /// Custom delays for each retry
-    Custom {
-        delays_ms: Vec<u64>,
-    },
+    Custom { delays_ms: Vec<u64> },
 }
 
 impl Default for RetryStrategy {
@@ -444,10 +440,7 @@ mod tests {
 
     #[test]
     fn test_fixed_delay() {
-        let policy = RetryPolicy::new(
-            3,
-            RetryStrategy::Fixed { delay_ms: 1000 },
-        );
+        let policy = RetryPolicy::new(3, RetryStrategy::Fixed { delay_ms: 1000 });
 
         assert_eq!(policy.calculate_delay(0), 1000);
         assert_eq!(policy.calculate_delay(1), 1000);

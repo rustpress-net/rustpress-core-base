@@ -31,12 +31,15 @@ mod router;
 mod status;
 mod system;
 
-pub use checker::{HealthChecker, HealthCheckerBuilder};
+pub use checker::{ExternalService, HealthCheck, HealthChecker, HealthCheckerBuilder};
 pub use handlers::*;
-pub use probes::{ProbeConfig, ProbeResult, ProbeType};
+pub use probes::{ProbeConfig, ProbeResult, ProbeType, ProbeYamlGenerator};
 pub use router::HealthRouter;
-pub use status::{ComponentHealth, ComponentStatus, HealthReport, HealthStatus, ServiceHealth};
-pub use system::SystemHealth;
+pub use status::{
+    ComponentHealth, ComponentStatus, HealthReport, HealthStatus, KubernetesProbeResponse,
+    ServiceHealth, SystemMetrics,
+};
+pub use system::{DetailedSystemInfo, SystemHealth};
 
 use std::sync::Arc;
 use tokio::sync::RwLock;

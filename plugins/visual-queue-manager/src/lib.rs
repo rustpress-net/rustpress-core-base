@@ -74,8 +74,8 @@ pub use admin::{
 pub use enterprise::{
     AuditEvent, ComplianceConfig, ComplianceManager, DataClassification, EncryptedData,
     EncryptionConfig, EncryptionService, EnterpriseConfig, EnterpriseError, EnterpriseManager,
-    KeyAlgorithm, RateLimitConfig, RateLimitKey, RateLimitResult, RateLimiter, Tenant,
-    TenancyConfig, TenancyManager, TenantContext, TenantTier,
+    KeyAlgorithm, RateLimitConfig, RateLimitKey, RateLimitResult, RateLimiter, TenancyConfig,
+    TenancyManager, Tenant, TenantContext, TenantTier,
 };
 
 // =============================================================================
@@ -273,7 +273,9 @@ impl VisualQueueManager {
             description: "Enterprise-grade visual queue management system".to_string(),
             author: "RustPress Enterprise".to_string(),
             author_url: Some("https://rustpress.net".to_string()),
-            homepage: Some("https://github.com/rustpress-net/rustpress-plugin-visual-queue".to_string()),
+            homepage: Some(
+                "https://github.com/rustpress-net/rustpress-plugin-visual-queue".to_string(),
+            ),
             license: "MIT".to_string(),
             dependencies: vec![],
             min_rustpress_version: Some(Version::new(0, 4, 0)),
@@ -300,13 +302,17 @@ impl VisualQueueManager {
         let pool = PgPool::connect(database_url)
             .await
             .map_err(|e| anyhow::anyhow!("Failed to connect to database: {}", e))?;
-        self.pool.set(pool).map_err(|_| anyhow::anyhow!("Pool already initialized"))?;
+        self.pool
+            .set(pool)
+            .map_err(|_| anyhow::anyhow!("Pool already initialized"))?;
         Ok(())
     }
 
     /// Get the database pool
     pub fn db_pool(&self) -> &PgPool {
-        self.pool.get().expect("Database pool not initialized - ensure init_pool() is called first")
+        self.pool
+            .get()
+            .expect("Database pool not initialized - ensure init_pool() is called first")
     }
 
     /// Log an audit event

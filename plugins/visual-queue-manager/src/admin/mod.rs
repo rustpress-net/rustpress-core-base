@@ -3,15 +3,15 @@
 //! This module provides integration with RustPress admin panel,
 //! settings management, and administrative hooks.
 
-mod settings;
-mod hooks;
 mod dashboard;
+mod hooks;
 mod permissions;
+mod settings;
 
-pub use settings::*;
-pub use hooks::*;
 pub use dashboard::*;
+pub use hooks::*;
 pub use permissions::*;
+pub use settings::*;
 
 use crate::engine::QueueEngine;
 use std::sync::Arc;

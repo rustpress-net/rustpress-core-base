@@ -8,14 +8,14 @@
 //! - Real-time validation
 //! - Multiple serialization formats (HTML, Markdown, JSON)
 
-pub mod types;
 pub mod registry;
-pub mod validation;
-pub mod transform;
 pub mod serialization;
+pub mod transform;
+pub mod types;
+pub mod validation;
 
-pub use types::*;
-pub use registry::{BlockRegistry, BlockDefinition, BlockSupports};
-pub use validation::{BlockValidator, ValidationResult, ValidationError, ValidationConfig};
-pub use transform::BlockTransformer;
+pub use registry::{BlockDefinition, BlockRegistry, BlockSupports};
 pub use serialization::BlockSerializer;
+pub use transform::BlockTransformer;
+pub use types::*;
+pub use validation::{BlockValidator, ValidationConfig, ValidationError, ValidationResult};

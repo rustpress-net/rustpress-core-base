@@ -9,35 +9,35 @@
 //! - Circuit breaker pattern
 //! - Retry logic
 
-pub mod queue;
-pub mod message;
-pub mod worker;
-pub mod dispatcher;
-pub mod scheduler;
 pub mod circuit_breaker;
-pub mod retry;
-pub mod metrics;
-pub mod storage;
+pub mod dispatcher;
 pub mod dlq;
+pub mod message;
+pub mod metrics;
+pub mod queue;
+pub mod retry;
+pub mod scheduler;
+pub mod storage;
+pub mod worker;
 
-use std::sync::Arc;
-use std::collections::HashMap;
-use tokio::sync::{RwLock, mpsc, broadcast};
-use sqlx::PgPool;
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::{broadcast, mpsc, RwLock};
+use uuid::Uuid;
 
-pub use queue::{QueueManager, QueueConfig, QueueState};
-pub use message::{MessageProcessor, ProcessingResult, MessageBatch};
-pub use worker::{WorkerPool, WorkerConfig, WorkerState, WorkerHandle};
-pub use dispatcher::{EventDispatcher, DispatchConfig, DispatchResult};
-pub use scheduler::{JobScheduler, ScheduledJob, JobConfig};
-pub use circuit_breaker::{CircuitBreaker, CircuitState, CircuitConfig};
-pub use retry::{RetryPolicy, RetryStrategy, BackoffCalculator};
-pub use metrics::{EngineMetrics, MetricsCollector};
-pub use storage::{StorageBackend, PostgresStorage};
+pub use circuit_breaker::{CircuitBreaker, CircuitConfig, CircuitState};
+pub use dispatcher::{DispatchConfig, DispatchResult, EventDispatcher};
 pub use dlq::{DeadLetterQueue, DlqPolicy};
+pub use message::{MessageBatch, MessageProcessor, ProcessingResult};
+pub use metrics::{EngineMetrics, MetricsCollector};
+pub use queue::{QueueConfig, QueueManager, QueueState};
+pub use retry::{BackoffCalculator, RetryPolicy, RetryStrategy};
+pub use scheduler::{JobConfig, JobScheduler, ScheduledJob};
+pub use storage::{PostgresStorage, StorageBackend};
+pub use worker::{WorkerConfig, WorkerHandle, WorkerPool, WorkerState};
 
 /// Core engine configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -138,23 +138,13 @@ pub enum EngineEvent {
         active_messages: u32,
     },
     /// Worker disconnected
-    WorkerDisconnected {
-        worker_id: Uuid,
-        reason: String,
-    },
+    WorkerDisconnected { worker_id: Uuid, reason: String },
     /// Queue created
-    QueueCreated {
-        queue_id: Uuid,
-        name: String,
-    },
+    QueueCreated { queue_id: Uuid, name: String },
     /// Queue paused
-    QueuePaused {
-        queue_id: Uuid,
-    },
+    QueuePaused { queue_id: Uuid },
     /// Queue resumed
-    QueueResumed {
-        queue_id: Uuid,
-    },
+    QueueResumed { queue_id: Uuid },
     /// Circuit breaker state changed
     CircuitBreakerStateChanged {
         handler_id: Uuid,
@@ -162,15 +152,9 @@ pub enum EngineEvent {
         new_state: CircuitState,
     },
     /// Scheduled job executed
-    ScheduledJobExecuted {
-        job_id: Uuid,
-        success: bool,
-    },
+    ScheduledJobExecuted { job_id: Uuid, success: bool },
     /// Alert triggered
-    AlertTriggered {
-        alert_id: Uuid,
-        message: String,
-    },
+    AlertTriggered { alert_id: Uuid, message: String },
 }
 
 /// The main queue engine that orchestrates all components
@@ -247,10 +231,7 @@ impl QueueEngine {
             config.circuit_breaker_reset_secs,
         ));
 
-        let job_scheduler = Arc::new(JobScheduler::new(
-            pool.clone(),
-            event_tx.clone(),
-        ));
+        let job_scheduler = Arc::new(JobScheduler::new(pool.clone(), event_tx.clone()));
 
         let metrics = Arc::new(MetricsCollector::new(
             pool.clone(),
@@ -334,9 +315,7 @@ impl QueueEngine {
         let config = self.config.clone();
 
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(
-                tokio::time::Duration::from_millis(100)
-            );
+            let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(100));
 
             loop {
                 interval.tick().await;
@@ -359,7 +338,10 @@ impl QueueEngine {
                 }
 
                 // Process messages for each available worker
-                for worker in available_workers.iter().take(config.max_concurrent_processing) {
+                for worker in available_workers
+                    .iter()
+                    .take(config.max_concurrent_processing)
+                {
                     let processor = processor.clone();
                     let dispatcher = dispatcher.clone();
                     let dlq = dlq.clone();
@@ -368,12 +350,10 @@ impl QueueEngine {
 
                     tokio::spawn(async move {
                         if let Err(e) = process_worker_messages(
-                            processor,
-                            dispatcher,
-                            dlq,
-                            worker_id,
-                            queue_ids,
-                        ).await {
+                            processor, dispatcher, dlq, worker_id, queue_ids,
+                        )
+                        .await
+                        {
                             tracing::error!(
                                 "Error processing messages for worker {}: {}",
                                 worker_id,
@@ -396,9 +376,8 @@ impl QueueEngine {
         let cleanup_interval = self.config.cleanup_interval_hours;
 
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(
-                tokio::time::Duration::from_secs(cleanup_interval * 3600)
-            );
+            let mut interval =
+                tokio::time::interval(tokio::time::Duration::from_secs(cleanup_interval * 3600));
 
             loop {
                 interval.tick().await;
@@ -503,11 +482,9 @@ async fn process_worker_messages(
                 dlq.move_message(message.id, &reason).await?;
             }
             Err(e) => {
-                processor.negative_acknowledge(
-                    message.id,
-                    worker_id,
-                    &e.to_string(),
-                ).await?;
+                processor
+                    .negative_acknowledge(message.id, worker_id, &e.to_string())
+                    .await?;
             }
         }
     }

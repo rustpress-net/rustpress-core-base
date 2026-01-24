@@ -1,8 +1,8 @@
 //! Audit Data Models
 
-use serde::{Serialize, Deserialize};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /// Audit action type
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -245,7 +245,12 @@ impl AuditContext {
         }
     }
 
-    pub fn with_request_info(mut self, ip: Option<String>, user_agent: Option<String>, request_id: Option<String>) -> Self {
+    pub fn with_request_info(
+        mut self,
+        ip: Option<String>,
+        user_agent: Option<String>,
+        request_id: Option<String>,
+    ) -> Self {
         self.ip_address = ip;
         self.user_agent = user_agent;
         self.request_id = request_id;

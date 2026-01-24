@@ -530,12 +530,12 @@ pub enum ReadabilityIssueType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ReadabilityRating {
-    VeryEasy,     // 90-100
-    Easy,         // 80-89
-    FairlyEasy,   // 70-79
-    Standard,     // 60-69
+    VeryEasy,        // 90-100
+    Easy,            // 80-89
+    FairlyEasy,      // 70-79
+    Standard,        // 60-69
     FairlyDifficult, // 50-59
-    Difficult,    // 30-49
+    Difficult,       // 30-49
     VeryDifficult,   // 0-29
 }
 
@@ -554,13 +554,17 @@ impl ReadabilityRating {
 
     pub fn description(&self) -> &'static str {
         match self {
-            Self::VeryEasy => "Very easy to read. Easily understood by an average 11-year-old student.",
+            Self::VeryEasy => {
+                "Very easy to read. Easily understood by an average 11-year-old student."
+            }
             Self::Easy => "Easy to read. Conversational English for consumers.",
             Self::FairlyEasy => "Fairly easy to read.",
             Self::Standard => "Plain English. Easily understood by 13- to 15-year-old students.",
             Self::FairlyDifficult => "Fairly difficult to read.",
             Self::Difficult => "Difficult to read. Best understood by college graduates.",
-            Self::VeryDifficult => "Very difficult to read. Best understood by university graduates.",
+            Self::VeryDifficult => {
+                "Very difficult to read. Best understood by university graduates."
+            }
         }
     }
 }

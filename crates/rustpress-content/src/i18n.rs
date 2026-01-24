@@ -212,9 +212,7 @@ impl TranslationManager {
 
     /// Get all active languages
     pub fn get_active_languages(&self) -> Vec<&Language> {
-        let mut langs: Vec<&Language> = self.languages.values()
-            .filter(|l| l.active)
-            .collect();
+        let mut langs: Vec<&Language> = self.languages.values().filter(|l| l.active).collect();
         langs.sort_by_key(|l| l.order);
         langs
     }
@@ -241,16 +239,19 @@ impl TranslationManager {
             })
             .collect();
 
-        self.translations.insert(translation_id.clone(), translation_links);
+        self.translations
+            .insert(translation_id.clone(), translation_links);
         translation_id
     }
 
     /// Get all translations for a post
     pub fn get_translations(&self, post_id: i64) -> Vec<&TranslationLink> {
-        self.translations.values()
+        self.translations
+            .values()
             .flat_map(|links| links.iter())
             .filter(|link| {
-                self.translations.values()
+                self.translations
+                    .values()
                     .flat_map(|l| l.iter())
                     .any(|l| l.post_id == post_id && l.translation_id == link.translation_id)
             })
@@ -258,7 +259,11 @@ impl TranslationManager {
     }
 
     /// Get translation for specific language
-    pub fn get_translation_for_language(&self, post_id: i64, language: &str) -> Option<&TranslationLink> {
+    pub fn get_translation_for_language(
+        &self,
+        post_id: i64,
+        language: &str,
+    ) -> Option<&TranslationLink> {
         // Find the translation group containing this post
         for links in self.translations.values() {
             if links.iter().any(|l| l.post_id == post_id) {
@@ -322,7 +327,12 @@ impl TranslationManager {
             ));
 
             // Add x-default for default language
-            if self.languages.get(lang).map(|l| l.is_default).unwrap_or(false) {
+            if self
+                .languages
+                .get(lang)
+                .map(|l| l.is_default)
+                .unwrap_or(false)
+            {
                 tags.push(format!(
                     r#"<link rel="alternate" hreflang="x-default" href="{}">"#,
                     url
@@ -334,15 +344,18 @@ impl TranslationManager {
     }
 
     /// Generate language switcher data
-    pub fn get_language_switcher_data(&self, current_post_id: i64, get_url: impl Fn(i64) -> String) -> Vec<LanguageSwitcherItem> {
+    pub fn get_language_switcher_data(
+        &self,
+        current_post_id: i64,
+        get_url: impl Fn(i64) -> String,
+    ) -> Vec<LanguageSwitcherItem> {
         let translations = self.get_translations(current_post_id);
         let current_lang = self.get_post_language(current_post_id);
 
         self.get_active_languages()
             .into_iter()
             .map(|lang| {
-                let translation = translations.iter()
-                    .find(|t| t.language == lang.code);
+                let translation = translations.iter().find(|t| t.language == lang.code);
 
                 LanguageSwitcherItem {
                     code: lang.code.clone(),

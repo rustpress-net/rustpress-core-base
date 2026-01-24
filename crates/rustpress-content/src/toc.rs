@@ -248,12 +248,13 @@ impl TocGenerator {
         }
 
         let list_tag = if self.config.ordered { "ol" } else { "ul" };
-        let collapsed_class = if self.config.collapsed { " collapsed" } else { "" };
+        let collapsed_class = if self.config.collapsed {
+            " collapsed"
+        } else {
+            ""
+        };
 
-        let mut html = format!(
-            "<nav class=\"{}{}\"",
-            self.config.class, collapsed_class
-        );
+        let mut html = format!("<nav class=\"{}{}\"", self.config.class, collapsed_class);
 
         if self.config.smooth_scroll {
             html.push_str(" data-smooth-scroll=\"true\"");
@@ -265,7 +266,10 @@ impl TocGenerator {
         html.push('>');
 
         if !self.config.title.is_empty() {
-            html.push_str(&format!("<div class=\"toc-title\">{}</div>", self.config.title));
+            html.push_str(&format!(
+                "<div class=\"toc-title\">{}</div>",
+                self.config.title
+            ));
         }
 
         if self.config.collapsible {
@@ -325,12 +329,15 @@ impl AnchorManager {
             let id = &caps[2];
             let text = &caps[3];
 
-            self.anchors.insert(id.to_string(), Anchor {
-                id: id.to_string(),
-                text: text.to_string(),
-                element_type: element.to_string(),
-                position: pos,
-            });
+            self.anchors.insert(
+                id.to_string(),
+                Anchor {
+                    id: id.to_string(),
+                    text: text.to_string(),
+                    element_type: element.to_string(),
+                    position: pos,
+                },
+            );
         }
     }
 
@@ -448,9 +455,19 @@ impl NumberFormat {
 /// Convert number to Roman numerals
 fn to_roman(n: usize, lowercase: bool) -> String {
     let numerals = [
-        (1000, "M"), (900, "CM"), (500, "D"), (400, "CD"),
-        (100, "C"), (90, "XC"), (50, "L"), (40, "XL"),
-        (10, "X"), (9, "IX"), (5, "V"), (4, "IV"), (1, "I"),
+        (1000, "M"),
+        (900, "CM"),
+        (500, "D"),
+        (400, "CD"),
+        (100, "C"),
+        (90, "XC"),
+        (50, "L"),
+        (40, "XL"),
+        (10, "X"),
+        (9, "IX"),
+        (5, "V"),
+        (4, "IV"),
+        (1, "I"),
     ];
 
     let mut result = String::new();
@@ -518,13 +535,16 @@ impl FootnoteProcessor {
             let id = caps[1].to_string();
             let note_content = caps[2].trim().to_string();
 
-            footnotes.insert(id.clone(), Footnote {
-                id: id.clone(),
-                number: id.parse().unwrap_or(0),
-                content: note_content,
-                reference_text: String::new(),
-                position: 0,
-            });
+            footnotes.insert(
+                id.clone(),
+                Footnote {
+                    id: id.clone(),
+                    number: id.parse().unwrap_or(0),
+                    content: note_content,
+                    reference_text: String::new(),
+                    position: 0,
+                },
+            );
         }
 
         // Remove definitions from content

@@ -10,12 +10,11 @@ use uuid::Uuid;
 
 use crate::handlers::animations::{
     AnimationAnalyticsResponse, AnimationCategoryInfo, AnimationDefinition,
-    AnimationLibraryResponse, AnimationOutput, AnimationPreset, AnimationSettings,
-    AnimationStep, AnimationUsageEntry, CategoryUsage, CreateCustomAnimationRequest,
-    CreatePresetRequest, CustomAnimationListQuery, CustomAnimationListResponse,
-    CustomAnimationResponse, GenerateOutputRequest, PresetListResponse,
-    ToggleFavoriteAnimationResponse, TrackAnimationUsageRequest,
-    UpdateCustomAnimationRequest, UpdateDefaultSettingsRequest,
+    AnimationLibraryResponse, AnimationOutput, AnimationPreset, AnimationSettings, AnimationStep,
+    AnimationUsageEntry, CategoryUsage, CreateCustomAnimationRequest, CreatePresetRequest,
+    CustomAnimationListQuery, CustomAnimationListResponse, CustomAnimationResponse,
+    GenerateOutputRequest, PresetListResponse, ToggleFavoriteAnimationResponse,
+    TrackAnimationUsageRequest, UpdateCustomAnimationRequest, UpdateDefaultSettingsRequest,
     UpdatePresetRequest, UpdateRecentAnimationsRequest, UserAnimationPreferencesResponse,
 };
 
@@ -93,8 +92,7 @@ impl From<AnimationRow> for AnimationDefinition {
 
 impl From<UserAnimationRow> for CustomAnimationResponse {
     fn from(row: UserAnimationRow) -> Self {
-        let settings: AnimationSettings = serde_json::from_value(row.settings)
-            .unwrap_or_default();
+        let settings: AnimationSettings = serde_json::from_value(row.settings).unwrap_or_default();
 
         Self {
             id: row.id,
@@ -114,12 +112,12 @@ impl From<UserAnimationRow> for CustomAnimationResponse {
 
 impl From<UserAnimationPreferencesRow> for UserAnimationPreferencesResponse {
     fn from(row: UserAnimationPreferencesRow) -> Self {
-        let favorite_animations: Vec<String> = serde_json::from_value(row.favorite_animations)
-            .unwrap_or_default();
-        let recent_animations: Vec<String> = serde_json::from_value(row.recent_animations)
-            .unwrap_or_default();
-        let default_settings: AnimationSettings = serde_json::from_value(row.default_settings)
-            .unwrap_or_default();
+        let favorite_animations: Vec<String> =
+            serde_json::from_value(row.favorite_animations).unwrap_or_default();
+        let recent_animations: Vec<String> =
+            serde_json::from_value(row.recent_animations).unwrap_or_default();
+        let default_settings: AnimationSettings =
+            serde_json::from_value(row.default_settings).unwrap_or_default();
 
         Self {
             user_id: row.user_id,
@@ -133,8 +131,7 @@ impl From<UserAnimationPreferencesRow> for UserAnimationPreferencesResponse {
 
 impl From<AnimationPresetRow> for AnimationPreset {
     fn from(row: AnimationPresetRow) -> Self {
-        let steps: Vec<AnimationStep> = serde_json::from_value(row.steps)
-            .unwrap_or_default();
+        let steps: Vec<AnimationStep> = serde_json::from_value(row.steps).unwrap_or_default();
 
         Self {
             id: row.id,
@@ -161,11 +158,14 @@ impl AnimationService {
     }
 
     /// Get all system animations
-    pub async fn list_animations(&self, category: Option<&str>) -> Result<Vec<AnimationDefinition>> {
+    pub async fn list_animations(
+        &self,
+        category: Option<&str>,
+    ) -> Result<Vec<AnimationDefinition>> {
         let query = match category {
             Some(cat) => {
                 sqlx::query_as::<_, AnimationRow>(
-                    "SELECT * FROM animations WHERE category = $1 ORDER BY sort_order ASC"
+                    "SELECT * FROM animations WHERE category = $1 ORDER BY sort_order ASC",
                 )
                 .bind(cat)
                 .fetch_all(&self.pool)
@@ -173,26 +173,25 @@ impl AnimationService {
             }
             None => {
                 sqlx::query_as::<_, AnimationRow>(
-                    "SELECT * FROM animations ORDER BY category, sort_order ASC"
+                    "SELECT * FROM animations ORDER BY category, sort_order ASC",
                 )
                 .fetch_all(&self.pool)
                 .await
             }
         };
 
-        let rows = query.map_err(|e| Error::database_with_source("Failed to fetch animations", e))?;
+        let rows =
+            query.map_err(|e| Error::database_with_source("Failed to fetch animations", e))?;
         Ok(rows.into_iter().map(AnimationDefinition::from).collect())
     }
 
     /// Get animation by ID
     pub async fn get_animation(&self, id: &str) -> Result<Option<AnimationDefinition>> {
-        let row: Option<AnimationRow> = sqlx::query_as(
-            "SELECT * FROM animations WHERE id = $1"
-        )
-        .bind(id)
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| Error::database_with_source("Failed to fetch animation", e))?;
+        let row: Option<AnimationRow> = sqlx::query_as("SELECT * FROM animations WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| Error::database_with_source("Failed to fetch animation", e))?;
 
         Ok(row.map(AnimationDefinition::from))
     }
@@ -206,36 +205,49 @@ impl AnimationService {
         .await
         .map_err(|e| Error::database_with_source("Failed to fetch categories", e))?;
 
-        Ok(rows.into_iter().map(|(cat, count)| {
-            let (name, description, icon) = match cat.as_str() {
-                "entrance" => ("Entrance", "Animations for elements appearing", "ArrowDownCircle"),
-                "exit" => ("Exit", "Animations for elements disappearing", "ArrowUpCircle"),
-                "emphasis" => ("Emphasis", "Attention-grabbing animations", "Sparkles"),
-                "scroll" => ("Scroll", "Scroll-triggered animations", "MousePointer"),
-                "rotation" => ("Rotation", "Rotating animations", "RotateCw"),
-                "scale" => ("Scale", "Scaling animations", "Maximize2"),
-                "motion" => ("Motion Path", "Continuous motion animations", "Move"),
-                _ => ("Custom", "User-created animations", "Box"),
-            };
-            AnimationCategoryInfo {
-                id: cat,
-                name: name.to_string(),
-                description: description.to_string(),
-                icon: icon.to_string(),
-                count: count as i32,
-            }
-        }).collect())
+        Ok(rows
+            .into_iter()
+            .map(|(cat, count)| {
+                let (name, description, icon) = match cat.as_str() {
+                    "entrance" => (
+                        "Entrance",
+                        "Animations for elements appearing",
+                        "ArrowDownCircle",
+                    ),
+                    "exit" => (
+                        "Exit",
+                        "Animations for elements disappearing",
+                        "ArrowUpCircle",
+                    ),
+                    "emphasis" => ("Emphasis", "Attention-grabbing animations", "Sparkles"),
+                    "scroll" => ("Scroll", "Scroll-triggered animations", "MousePointer"),
+                    "rotation" => ("Rotation", "Rotating animations", "RotateCw"),
+                    "scale" => ("Scale", "Scaling animations", "Maximize2"),
+                    "motion" => ("Motion Path", "Continuous motion animations", "Move"),
+                    _ => ("Custom", "User-created animations", "Box"),
+                };
+                AnimationCategoryInfo {
+                    id: cat,
+                    name: name.to_string(),
+                    description: description.to_string(),
+                    icon: icon.to_string(),
+                    count: count as i32,
+                }
+            })
+            .collect())
     }
 
     /// Get user's animation preferences
-    pub async fn get_user_preferences(&self, user_id: Uuid) -> Result<UserAnimationPreferencesResponse> {
-        let row: Option<UserAnimationPreferencesRow> = sqlx::query_as(
-            "SELECT * FROM user_animation_preferences WHERE user_id = $1"
-        )
-        .bind(user_id)
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| Error::database_with_source("Failed to fetch user preferences", e))?;
+    pub async fn get_user_preferences(
+        &self,
+        user_id: Uuid,
+    ) -> Result<UserAnimationPreferencesResponse> {
+        let row: Option<UserAnimationPreferencesRow> =
+            sqlx::query_as("SELECT * FROM user_animation_preferences WHERE user_id = $1")
+                .bind(user_id)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| Error::database_with_source("Failed to fetch user preferences", e))?;
 
         match row {
             Some(r) => Ok(UserAnimationPreferencesResponse::from(r)),
@@ -249,8 +261,8 @@ impl AnimationService {
 
     /// Create default user preferences
     async fn create_user_preferences(&self, user_id: Uuid) -> Result<UserAnimationPreferencesRow> {
-        let default_settings = serde_json::to_value(AnimationSettings::default())
-            .unwrap_or(serde_json::json!({}));
+        let default_settings =
+            serde_json::to_value(AnimationSettings::default()).unwrap_or(serde_json::json!({}));
 
         let row: UserAnimationPreferencesRow = sqlx::query_as(
             r#"
@@ -289,7 +301,7 @@ impl AnimationService {
             SET recent_animations = $2, updated_at = NOW()
             WHERE user_id = $1
             RETURNING *
-            "#
+            "#,
         )
         .bind(user_id)
         .bind(serde_json::to_value(&recent).unwrap_or_default())
@@ -322,7 +334,7 @@ impl AnimationService {
             UPDATE user_animation_preferences
             SET favorite_animations = $2, updated_at = NOW()
             WHERE user_id = $1
-            "#
+            "#,
         )
         .bind(user_id)
         .bind(serde_json::to_value(&favorites).unwrap_or_default())
@@ -348,7 +360,7 @@ impl AnimationService {
             SET default_settings = $2, updated_at = NOW()
             WHERE user_id = $1
             RETURNING *
-            "#
+            "#,
         )
         .bind(user_id)
         .bind(serde_json::to_value(&request.settings).unwrap_or_default())
@@ -408,7 +420,10 @@ impl AnimationService {
             .await
             .map_err(|e| Error::database_with_source("Failed to list custom animations", e))?;
 
-        let items: Vec<CustomAnimationResponse> = rows.into_iter().map(CustomAnimationResponse::from).collect();
+        let items: Vec<CustomAnimationResponse> = rows
+            .into_iter()
+            .map(CustomAnimationResponse::from)
+            .collect();
         let total_pages = ((total.0 as f64) / (per_page as f64)).ceil() as u64;
 
         Ok(CustomAnimationListResponse {
@@ -458,13 +473,12 @@ impl AnimationService {
         request: UpdateCustomAnimationRequest,
     ) -> Result<CustomAnimationResponse> {
         // Verify ownership
-        let existing: Option<UserAnimationRow> = sqlx::query_as(
-            "SELECT * FROM user_animations WHERE id = $1"
-        )
-        .bind(id)
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| Error::database_with_source("Failed to fetch animation", e))?;
+        let existing: Option<UserAnimationRow> =
+            sqlx::query_as("SELECT * FROM user_animations WHERE id = $1")
+                .bind(id)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| Error::database_with_source("Failed to fetch animation", e))?;
 
         let existing = existing.ok_or_else(|| Error::not_found("Animation", id.to_string()))?;
 
@@ -486,7 +500,7 @@ impl AnimationService {
                 updated_at = NOW()
             WHERE id = $1 AND user_id = $2
             RETURNING *
-            "#
+            "#,
         )
         .bind(id)
         .bind(user_id)
@@ -495,7 +509,13 @@ impl AnimationService {
         .bind(request.duration)
         .bind(&request.css_keyframes)
         .bind(&request.css_class)
-        .bind(request.settings.as_ref().map(|s| serde_json::to_value(s).ok()).flatten())
+        .bind(
+            request
+                .settings
+                .as_ref()
+                .map(|s| serde_json::to_value(s).ok())
+                .flatten(),
+        )
         .bind(request.is_public)
         .fetch_one(&self.pool)
         .await
@@ -506,14 +526,12 @@ impl AnimationService {
 
     /// Delete custom animation
     pub async fn delete_custom_animation(&self, id: Uuid, user_id: Uuid) -> Result<bool> {
-        let result = sqlx::query(
-            "DELETE FROM user_animations WHERE id = $1 AND user_id = $2"
-        )
-        .bind(id)
-        .bind(user_id)
-        .execute(&self.pool)
-        .await
-        .map_err(|e| Error::database_with_source("Failed to delete animation", e))?;
+        let result = sqlx::query("DELETE FROM user_animations WHERE id = $1 AND user_id = $2")
+            .bind(id)
+            .bind(user_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| Error::database_with_source("Failed to delete animation", e))?;
 
         if result.rows_affected() == 0 {
             return Err(Error::not_found("Animation", id.to_string()));
@@ -523,13 +541,18 @@ impl AnimationService {
     }
 
     /// List animation presets
-    pub async fn list_presets(&self, user_id: Uuid, page: u32, per_page: u32) -> Result<PresetListResponse> {
+    pub async fn list_presets(
+        &self,
+        user_id: Uuid,
+        page: u32,
+        per_page: u32,
+    ) -> Result<PresetListResponse> {
         let page = page.max(1);
         let per_page = per_page.min(100).max(1);
         let offset = (page - 1) * per_page;
 
         let total: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM animation_presets WHERE is_system = TRUE OR user_id = $1"
+            "SELECT COUNT(*) FROM animation_presets WHERE is_system = TRUE OR user_id = $1",
         )
         .bind(user_id)
         .fetch_one(&self.pool)
@@ -542,7 +565,7 @@ impl AnimationService {
             WHERE is_system = TRUE OR user_id = $1
             ORDER BY is_system DESC, created_at DESC
             LIMIT $2 OFFSET $3
-            "#
+            "#,
         )
         .bind(user_id)
         .bind(per_page as i64)
@@ -574,7 +597,7 @@ impl AnimationService {
             INSERT INTO animation_presets (name, description, steps, user_id, is_system)
             VALUES ($1, $2, $3, $4, FALSE)
             RETURNING *
-            "#
+            "#,
         )
         .bind(&request.name)
         .bind(&request.description)
@@ -590,7 +613,7 @@ impl AnimationService {
     /// Delete animation preset
     pub async fn delete_preset(&self, id: Uuid, user_id: Uuid) -> Result<bool> {
         let result = sqlx::query(
-            "DELETE FROM animation_presets WHERE id = $1 AND user_id = $2 AND is_system = FALSE"
+            "DELETE FROM animation_presets WHERE id = $1 AND user_id = $2 AND is_system = FALSE",
         )
         .bind(id)
         .bind(user_id)
@@ -643,7 +666,7 @@ impl AnimationService {
 
         // Unique animations
         let unique: (i64,) = sqlx::query_as(
-            "SELECT COUNT(DISTINCT animation_id) FROM animation_usage_analytics WHERE user_id = $1"
+            "SELECT COUNT(DISTINCT animation_id) FROM animation_usage_analytics WHERE user_id = $1",
         )
         .bind(user_id)
         .fetch_one(&self.pool)
@@ -659,7 +682,7 @@ impl AnimationService {
             GROUP BY animation_id, animation_type
             ORDER BY count DESC
             LIMIT 10
-            "#
+            "#,
         )
         .bind(user_id)
         .fetch_all(&self.pool)
@@ -675,7 +698,7 @@ impl AnimationService {
             GROUP BY animation_id, animation_type
             ORDER BY last_used DESC
             LIMIT 10
-            "#
+            "#,
         )
         .bind(user_id)
         .fetch_all(&self.pool)
@@ -691,7 +714,7 @@ impl AnimationService {
             WHERE au.user_id = $1
             GROUP BY a.category
             ORDER BY count DESC
-            "#
+            "#,
         )
         .bind(user_id)
         .fetch_all(&self.pool)
@@ -701,22 +724,31 @@ impl AnimationService {
         Ok(AnimationAnalyticsResponse {
             total_applications: total.0,
             unique_animations_used: unique.0,
-            most_used_animations: most_used.into_iter().map(|(id, t, c, l)| AnimationUsageEntry {
-                animation_id: id,
-                animation_type: t,
-                usage_count: c,
-                last_used: l,
-            }).collect(),
-            recent_activity: recent.into_iter().map(|(id, t, c, l)| AnimationUsageEntry {
-                animation_id: id,
-                animation_type: t,
-                usage_count: c,
-                last_used: l,
-            }).collect(),
-            category_breakdown: category_breakdown.into_iter().map(|(cat, count)| CategoryUsage {
-                category: cat,
-                count,
-            }).collect(),
+            most_used_animations: most_used
+                .into_iter()
+                .map(|(id, t, c, l)| AnimationUsageEntry {
+                    animation_id: id,
+                    animation_type: t,
+                    usage_count: c,
+                    last_used: l,
+                })
+                .collect(),
+            recent_activity: recent
+                .into_iter()
+                .map(|(id, t, c, l)| AnimationUsageEntry {
+                    animation_id: id,
+                    animation_type: t,
+                    usage_count: c,
+                    last_used: l,
+                })
+                .collect(),
+            category_breakdown: category_breakdown
+                .into_iter()
+                .map(|(cat, count)| CategoryUsage {
+                    category: cat,
+                    count,
+                })
+                .collect(),
         })
     }
 
@@ -732,7 +764,11 @@ impl AnimationService {
             settings.duration,
             settings.easing,
             settings.delay,
-            if settings.repeat == -1 { "infinite".to_string() } else { settings.repeat.to_string() },
+            if settings.repeat == -1 {
+                "infinite".to_string()
+            } else {
+                settings.repeat.to_string()
+            },
             settings.direction,
             settings.fill_mode
         );
@@ -767,10 +803,7 @@ document.querySelectorAll('[data-animation="{}"]').forEach(el => {{
     observer.observe(el);
 }});
 "#,
-                request.animation_id,
-                request.animation_id,
-                css_class,
-                settings.scroll_offset
+                request.animation_id, request.animation_id, css_class, settings.scroll_offset
             ))
         } else {
             None
@@ -790,7 +823,9 @@ document.querySelectorAll('[data-animation="{}"]').forEach(el => {{
         let animations = self.list_animations(None).await?;
         let categories = self.get_categories().await?;
         let prefs = self.get_user_preferences(user_id).await?;
-        let custom_list = self.list_custom_animations(user_id, CustomAnimationListQuery::default()).await?;
+        let custom_list = self
+            .list_custom_animations(user_id, CustomAnimationListQuery::default())
+            .await?;
         let preset_list = self.list_presets(user_id, 1, 50).await?;
 
         Ok(AnimationLibraryResponse {

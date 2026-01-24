@@ -2,8 +2,8 @@
 //!
 //! Provides fault tolerance by preventing cascade failures.
 
+use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
-use serde::{Serialize, Deserialize};
 
 /// Circuit breaker state
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -324,7 +324,8 @@ impl SlidingWindowCircuitBreaker {
         match self.state {
             CircuitState::Closed => true,
             CircuitState::Open => {
-                self.last_state_change.elapsed() >= Duration::from_secs(self.config.wait_duration_secs)
+                self.last_state_change.elapsed()
+                    >= Duration::from_secs(self.config.wait_duration_secs)
             }
             CircuitState::HalfOpen => {
                 // Only permit limited calls in half-open state
@@ -342,7 +343,9 @@ impl SlidingWindowCircuitBreaker {
         match self.state {
             CircuitState::HalfOpen => {
                 // Check if we have enough successes to close
-                let recent_successes: usize = self.successes.iter()
+                let recent_successes: usize = self
+                    .successes
+                    .iter()
                     .filter(|&&t| t > self.last_state_change)
                     .count();
                 if recent_successes >= self.config.permitted_calls_in_half_open as usize {
@@ -383,7 +386,9 @@ impl SlidingWindowCircuitBreaker {
     /// Get current state
     pub fn state(&self) -> CircuitState {
         if self.state == CircuitState::Open {
-            if self.last_state_change.elapsed() >= Duration::from_secs(self.config.wait_duration_secs) {
+            if self.last_state_change.elapsed()
+                >= Duration::from_secs(self.config.wait_duration_secs)
+            {
                 return CircuitState::HalfOpen;
             }
         }

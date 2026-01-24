@@ -3,10 +3,7 @@
 //! Request and response types for the editor REST API.
 
 use crate::blocks::{Block, BlockId, BlockType};
-use crate::post::{
-    Author, FeaturedMedia, PostDocument, PostStats,
-    PublishStatus,
-};
+use crate::post::{Author, FeaturedMedia, PostDocument, PostStats, PublishStatus};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

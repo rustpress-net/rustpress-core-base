@@ -200,13 +200,13 @@ impl PublishStatus {
 
     pub fn color(&self) -> &'static str {
         match self {
-            Self::Draft => "#6b7280",       // gray
-            Self::AutoDraft => "#9ca3af",   // lighter gray
-            Self::Pending => "#f59e0b",     // amber
-            Self::Private => "#8b5cf6",     // purple
-            Self::Published => "#10b981",   // green
-            Self::Scheduled => "#3b82f6",   // blue
-            Self::Trash => "#ef4444",       // red
+            Self::Draft => "#6b7280",     // gray
+            Self::AutoDraft => "#9ca3af", // lighter gray
+            Self::Pending => "#f59e0b",   // amber
+            Self::Private => "#8b5cf6",   // purple
+            Self::Published => "#10b981", // green
+            Self::Scheduled => "#3b82f6", // blue
+            Self::Trash => "#ef4444",     // red
         }
     }
 }

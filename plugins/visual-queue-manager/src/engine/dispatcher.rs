@@ -2,19 +2,19 @@
 //!
 //! Handles routing messages to handlers and managing event delivery.
 
-use std::sync::Arc;
-use std::collections::HashMap;
-use tokio::sync::RwLock;
-use sqlx::{PgPool, Row, FromRow};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
-use tokio::sync::broadcast;
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
+use sqlx::{FromRow, PgPool, Row};
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::broadcast;
+use tokio::sync::RwLock;
+use uuid::Uuid;
 
-use super::{EngineError, EngineEvent};
+use super::circuit_breaker::{CircuitBreaker, CircuitConfig, CircuitState};
 use super::message::Message;
-use super::circuit_breaker::{CircuitBreaker, CircuitState, CircuitConfig};
+use super::{EngineError, EngineEvent};
 
 /// Dispatch configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -220,10 +220,7 @@ impl EventDispatcher {
             if self.enable_circuit_breaker {
                 if let Some(cb) = self.circuit_breakers.read().await.get(&handler.id) {
                     if !cb.can_execute() {
-                        tracing::warn!(
-                            "Circuit breaker open for handler {}, skipping",
-                            handler.id
-                        );
+                        tracing::warn!("Circuit breaker open for handler {}, skipping", handler.id);
                         continue;
                     }
                 }
@@ -259,20 +256,25 @@ impl EventDispatcher {
 
         // All handlers failed
         if should_retry && message.attempt_count < message.max_attempts {
-            Ok(DispatchResult::Retry { delay_ms: retry_delay })
+            Ok(DispatchResult::Retry {
+                delay_ms: retry_delay,
+            })
         } else if message.attempt_count >= message.max_attempts {
             Ok(DispatchResult::MoveToDlq {
                 reason: last_error.unwrap_or_else(|| "Max retries exceeded".to_string()),
             })
         } else {
             Err(EngineError::DispatchError(
-                last_error.unwrap_or_else(|| "Unknown dispatch error".to_string())
+                last_error.unwrap_or_else(|| "Unknown dispatch error".to_string()),
             ))
         }
     }
 
     /// Find handlers that match a message
-    async fn find_handlers_for_message(&self, message: &Message) -> Result<Vec<Handler>, EngineError> {
+    async fn find_handlers_for_message(
+        &self,
+        message: &Message,
+    ) -> Result<Vec<Handler>, EngineError> {
         // First, try to use cached routing rules
         let rules = self.routing_rules.read().await;
 
@@ -337,11 +339,13 @@ impl EventDispatcher {
 
         // Sort by routing rule priority
         handlers.sort_by(|a, b| {
-            let a_priority = rules.iter()
+            let a_priority = rules
+                .iter()
                 .find(|r| r.handler_id == a.id)
                 .map(|r| r.priority)
                 .unwrap_or(0);
-            let b_priority = rules.iter()
+            let b_priority = rules
+                .iter()
                 .find(|r| r.handler_id == b.id)
                 .map(|r| r.priority)
                 .unwrap_or(0);
@@ -358,15 +362,9 @@ impl EventDispatcher {
         message: &Message,
     ) -> Result<(), EngineError> {
         match handler.handler_type {
-            HandlerType::Http | HandlerType::Webhook => {
-                self.dispatch_http(handler, message).await
-            }
-            HandlerType::InternalFunction => {
-                self.dispatch_internal(handler, message).await
-            }
-            HandlerType::RustpressHook => {
-                self.dispatch_rustpress_hook(handler, message).await
-            }
+            HandlerType::Http | HandlerType::Webhook => self.dispatch_http(handler, message).await,
+            HandlerType::InternalFunction => self.dispatch_internal(handler, message).await,
+            HandlerType::RustpressHook => self.dispatch_rustpress_hook(handler, message).await,
         }
     }
 
@@ -412,23 +410,29 @@ impl EventDispatcher {
             .timeout(std::time::Duration::from_millis(handler.timeout_ms))
             .json(&payload);
 
-        let response = request.send().await.map_err(|e| {
-            EngineError::DispatchError(format!("HTTP request failed: {}", e))
-        })?;
+        let response = request
+            .send()
+            .await
+            .map_err(|e| EngineError::DispatchError(format!("HTTP request failed: {}", e)))?;
 
         if response.status().is_success() {
             Ok(())
         } else {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            Err(EngineError::DispatchError(
-                format!("HTTP {} - {}", status, body)
-            ))
+            Err(EngineError::DispatchError(format!(
+                "HTTP {} - {}",
+                status, body
+            )))
         }
     }
 
     /// Dispatch to internal function
-    async fn dispatch_internal(&self, handler: &Handler, message: &Message) -> Result<(), EngineError> {
+    async fn dispatch_internal(
+        &self,
+        handler: &Handler,
+        message: &Message,
+    ) -> Result<(), EngineError> {
         // Internal functions are handled through RustPress plugin system
         // This is a placeholder for actual implementation
         tracing::info!(
@@ -440,7 +444,11 @@ impl EventDispatcher {
     }
 
     /// Dispatch through RustPress hook system
-    async fn dispatch_rustpress_hook(&self, handler: &Handler, message: &Message) -> Result<(), EngineError> {
+    async fn dispatch_rustpress_hook(
+        &self,
+        handler: &Handler,
+        message: &Message,
+    ) -> Result<(), EngineError> {
         // RustPress hooks are handled through the plugin system
         // This is a placeholder for actual implementation
         tracing::info!(
@@ -463,14 +471,15 @@ impl EventDispatcher {
             SELECT id, name, handler_type, endpoint, method, headers,
                    timeout_ms, retry_config, enabled, created_at, updated_at
             FROM vqm_event_handlers WHERE id = $1
-            "#
+            "#,
         )
         .bind(id)
         .fetch_optional(&self.pool)
         .await?
         .ok_or(EngineError::HandlerNotFound(id))?;
 
-        let retry_config: RetryConfig = row.retry_config
+        let retry_config: RetryConfig = row
+            .retry_config
             .and_then(|v| serde_json::from_value(v).ok())
             .unwrap_or_default();
 
@@ -479,14 +488,15 @@ impl EventDispatcher {
             r#"
             SELECT id, handler_id, queue_id, message_type, condition, priority, enabled
             FROM vqm_handler_routes WHERE handler_id = $1 AND enabled = true
-            "#
+            "#,
         )
         .bind(id)
         .fetch_all(&self.pool)
         .await?;
 
-        let routing_rules: Vec<RoutingRule> = rules.into_iter().map(|r| {
-            RoutingRule {
+        let routing_rules: Vec<RoutingRule> = rules
+            .into_iter()
+            .map(|r| RoutingRule {
                 id: r.id,
                 handler_id: r.handler_id,
                 queue_id: r.queue_id,
@@ -494,8 +504,8 @@ impl EventDispatcher {
                 condition: r.condition,
                 priority: r.priority.unwrap_or(0),
                 enabled: r.enabled.unwrap_or(true),
-            }
-        }).collect();
+            })
+            .collect();
 
         let handler = Handler {
             id: row.id,
@@ -525,13 +535,14 @@ impl EventDispatcher {
             SELECT id, handler_id, queue_id, message_type, condition, priority, enabled
             FROM vqm_handler_routes WHERE enabled = true
             ORDER BY priority DESC
-            "#
+            "#,
         )
         .fetch_all(&self.pool)
         .await?;
 
-        let routing_rules: Vec<RoutingRule> = rules.into_iter().map(|r| {
-            RoutingRule {
+        let routing_rules: Vec<RoutingRule> = rules
+            .into_iter()
+            .map(|r| RoutingRule {
                 id: r.id,
                 handler_id: r.handler_id,
                 queue_id: r.queue_id,
@@ -539,8 +550,8 @@ impl EventDispatcher {
                 condition: r.condition,
                 priority: r.priority.unwrap_or(0),
                 enabled: r.enabled.unwrap_or(true),
-            }
-        }).collect();
+            })
+            .collect();
 
         *self.routing_rules.write().await = routing_rules;
 
@@ -601,7 +612,11 @@ impl EventDispatcher {
 
     /// Get circuit breaker state for a handler
     pub async fn get_circuit_breaker_state(&self, handler_id: Uuid) -> Option<CircuitState> {
-        self.circuit_breakers.read().await.get(&handler_id).map(|cb| cb.state())
+        self.circuit_breakers
+            .read()
+            .await
+            .get(&handler_id)
+            .map(|cb| cb.state())
     }
 
     /// Invalidate handler cache

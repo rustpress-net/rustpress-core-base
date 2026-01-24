@@ -30,7 +30,12 @@ impl ReadabilityAnalyzer {
         let automated_readability = self.automated_readability_index(&stats);
 
         // Average grade level
-        let avg_grade = (flesch_kincaid_grade + gunning_fog + smog_index + coleman_liau + automated_readability) / 5.0;
+        let avg_grade = (flesch_kincaid_grade
+            + gunning_fog
+            + smog_index
+            + coleman_liau
+            + automated_readability)
+            / 5.0;
 
         let issues = self.find_issues(&stats);
         let suggestions = self.generate_suggestions(&stats, &issues);
@@ -206,8 +211,7 @@ impl ReadabilityAnalyzer {
                 severity: IssueSeverity::Warning,
                 description: format!(
                     "{} paragraph(s) exceed {} words",
-                    stats.long_paragraph_count,
-                    self.config.max_paragraph_length
+                    stats.long_paragraph_count, self.config.max_paragraph_length
                 ),
                 examples: Vec::new(),
             });
@@ -221,8 +225,7 @@ impl ReadabilityAnalyzer {
                 severity: IssueSeverity::Info,
                 description: format!(
                     "{:.1}% of words have 3+ syllables (aim for <{:.0}%)",
-                    stats.complex_word_percentage,
-                    self.config.max_complex_word_percentage
+                    stats.complex_word_percentage, self.config.max_complex_word_percentage
                 ),
                 examples: Vec::new(),
             });
@@ -236,8 +239,7 @@ impl ReadabilityAnalyzer {
                 severity: IssueSeverity::Info,
                 description: format!(
                     "Average sentence length is {:.1} words (aim for ~{} words)",
-                    stats.avg_words_per_sentence,
-                    self.config.target_sentence_length
+                    stats.avg_words_per_sentence, self.config.target_sentence_length
                 ),
                 examples: Vec::new(),
             });
@@ -252,19 +254,25 @@ impl ReadabilityAnalyzer {
         for issue in issues {
             match issue.issue_type {
                 IssueType::LongSentences => {
-                    suggestions.push("Break long sentences into shorter ones for better readability.".to_string());
+                    suggestions.push(
+                        "Break long sentences into shorter ones for better readability."
+                            .to_string(),
+                    );
                 }
                 IssueType::LongParagraphs => {
-                    suggestions.push("Split long paragraphs to make content easier to scan.".to_string());
+                    suggestions
+                        .push("Split long paragraphs to make content easier to scan.".to_string());
                 }
                 IssueType::ComplexWords => {
                     suggestions.push("Consider using simpler words where possible.".to_string());
                 }
                 IssueType::HighAverageSentenceLength => {
-                    suggestions.push("Vary sentence length and include more short sentences.".to_string());
+                    suggestions
+                        .push("Vary sentence length and include more short sentences.".to_string());
                 }
                 IssueType::PassiveVoice => {
-                    suggestions.push("Use active voice more often for clearer writing.".to_string());
+                    suggestions
+                        .push("Use active voice more often for clearer writing.".to_string());
                 }
             }
         }
@@ -368,11 +376,11 @@ impl ReadabilityResult {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ReadingLevel {
-    Elementary,      // Grade 1-5
-    MiddleSchool,    // Grade 6-8
-    HighSchool,      // Grade 9-12
-    College,         // Grade 13-16
-    Graduate,        // Grade 17+
+    Elementary,   // Grade 1-5
+    MiddleSchool, // Grade 6-8
+    HighSchool,   // Grade 9-12
+    College,      // Grade 13-16
+    Graduate,     // Grade 17+
 }
 
 impl ReadingLevel {
@@ -398,7 +406,9 @@ impl ReadingLevel {
 
     pub fn description(&self) -> &'static str {
         match self {
-            Self::Elementary => "Very easy to read. Easily understood by an average 11-year-old student.",
+            Self::Elementary => {
+                "Very easy to read. Easily understood by an average 11-year-old student."
+            }
             Self::MiddleSchool => "Fairly easy to read. Conversational English for consumers.",
             Self::HighSchool => "Standard difficulty. Suitable for most readers.",
             Self::College => "Fairly difficult to read. Best understood by college graduates.",

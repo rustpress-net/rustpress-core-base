@@ -51,63 +51,24 @@ impl BlockTransformer {
                 BlockType::Preformatted,
                 BlockType::PullQuote,
             ],
-            BlockType::Heading => vec![
-                BlockType::Paragraph,
-                BlockType::Quote,
-            ],
-            BlockType::List => vec![
-                BlockType::Paragraph,
-                BlockType::Quote,
-            ],
+            BlockType::Heading => vec![BlockType::Paragraph, BlockType::Quote],
+            BlockType::List => vec![BlockType::Paragraph, BlockType::Quote],
             BlockType::Quote => vec![
                 BlockType::Paragraph,
                 BlockType::Heading,
                 BlockType::PullQuote,
             ],
-            BlockType::Code => vec![
-                BlockType::Paragraph,
-                BlockType::Preformatted,
-            ],
-            BlockType::Preformatted => vec![
-                BlockType::Paragraph,
-                BlockType::Code,
-            ],
-            BlockType::PullQuote => vec![
-                BlockType::Quote,
-                BlockType::Paragraph,
-            ],
-            BlockType::Image => vec![
-                BlockType::Cover,
-                BlockType::MediaText,
-                BlockType::Gallery,
-            ],
-            BlockType::Video => vec![
-                BlockType::Cover,
-                BlockType::Embed,
-            ],
-            BlockType::Cover => vec![
-                BlockType::Image,
-                BlockType::Video,
-                BlockType::Group,
-            ],
-            BlockType::MediaText => vec![
-                BlockType::Image,
-                BlockType::Group,
-            ],
-            BlockType::Group => vec![
-                BlockType::Columns,
-                BlockType::Cover,
-                BlockType::Section,
-            ],
-            BlockType::Columns => vec![
-                BlockType::Group,
-            ],
-            BlockType::Spacer => vec![
-                BlockType::Separator,
-            ],
-            BlockType::Separator => vec![
-                BlockType::Spacer,
-            ],
+            BlockType::Code => vec![BlockType::Paragraph, BlockType::Preformatted],
+            BlockType::Preformatted => vec![BlockType::Paragraph, BlockType::Code],
+            BlockType::PullQuote => vec![BlockType::Quote, BlockType::Paragraph],
+            BlockType::Image => vec![BlockType::Cover, BlockType::MediaText, BlockType::Gallery],
+            BlockType::Video => vec![BlockType::Cover, BlockType::Embed],
+            BlockType::Cover => vec![BlockType::Image, BlockType::Video, BlockType::Group],
+            BlockType::MediaText => vec![BlockType::Image, BlockType::Group],
+            BlockType::Group => vec![BlockType::Columns, BlockType::Cover, BlockType::Section],
+            BlockType::Columns => vec![BlockType::Group],
+            BlockType::Spacer => vec![BlockType::Separator],
+            BlockType::Separator => vec![BlockType::Spacer],
             _ => vec![],
         }
     }
@@ -162,7 +123,8 @@ impl BlockTransformer {
             // List to Paragraph
             (BlockType::List, BlockType::Paragraph) => {
                 // Combine all list item content
-                let content: String = source.children
+                let content: String = source
+                    .children
                     .iter()
                     .filter_map(|child| child.attributes.content.clone())
                     .collect::<Vec<_>>()
@@ -277,7 +239,11 @@ impl BlockTransformer {
 /// Transform multiple paragraphs into a single list
 pub fn paragraphs_to_list(paragraphs: &[Block], ordered: bool) -> Block {
     let mut list = Block::new(BlockType::List);
-    list.attributes.list_type = Some(if ordered { ListType::Ordered } else { ListType::Unordered });
+    list.attributes.list_type = Some(if ordered {
+        ListType::Ordered
+    } else {
+        ListType::Unordered
+    });
 
     // Create child ListItem blocks
     list.children = paragraphs
@@ -333,10 +299,7 @@ pub fn merge_blocks(blocks: &[Block]) -> Option<Block> {
             let mut merged = Block::new(BlockType::List);
             merged.attributes.list_type = first.attributes.list_type;
             // Combine all children
-            merged.children = blocks
-                .iter()
-                .flat_map(|b| b.children.clone())
-                .collect();
+            merged.children = blocks.iter().flat_map(|b| b.children.clone()).collect();
             Some(merged)
         }
         _ => None,

@@ -337,7 +337,11 @@ impl BulkExecutor {
     }
 
     /// Create an add categories operation
-    pub fn add_categories(item_ids: Vec<i64>, category_ids: Vec<i64>, user_id: i64) -> BulkOperation {
+    pub fn add_categories(
+        item_ids: Vec<i64>,
+        category_ids: Vec<i64>,
+        user_id: i64,
+    ) -> BulkOperation {
         BulkOperation {
             operation: BulkOperationType::AddCategories,
             item_ids,
@@ -492,21 +496,51 @@ impl QuickEditData {
     pub fn updated_fields(&self) -> Vec<&str> {
         let mut fields = Vec::new();
 
-        if self.title.is_some() { fields.push("title"); }
-        if self.slug.is_some() { fields.push("slug"); }
-        if self.date.is_some() { fields.push("date"); }
-        if self.author_id.is_some() { fields.push("author"); }
-        if self.status.is_some() { fields.push("status"); }
-        if self.password.is_some() { fields.push("password"); }
-        if self.categories.is_some() { fields.push("categories"); }
-        if self.tags.is_some() { fields.push("tags"); }
-        if self.comment_status.is_some() { fields.push("comment_status"); }
-        if self.ping_status.is_some() { fields.push("ping_status"); }
-        if self.sticky.is_some() { fields.push("sticky"); }
-        if self.format.is_some() { fields.push("format"); }
-        if self.template.is_some() { fields.push("template"); }
-        if self.menu_order.is_some() { fields.push("menu_order"); }
-        if self.parent_id.is_some() { fields.push("parent"); }
+        if self.title.is_some() {
+            fields.push("title");
+        }
+        if self.slug.is_some() {
+            fields.push("slug");
+        }
+        if self.date.is_some() {
+            fields.push("date");
+        }
+        if self.author_id.is_some() {
+            fields.push("author");
+        }
+        if self.status.is_some() {
+            fields.push("status");
+        }
+        if self.password.is_some() {
+            fields.push("password");
+        }
+        if self.categories.is_some() {
+            fields.push("categories");
+        }
+        if self.tags.is_some() {
+            fields.push("tags");
+        }
+        if self.comment_status.is_some() {
+            fields.push("comment_status");
+        }
+        if self.ping_status.is_some() {
+            fields.push("ping_status");
+        }
+        if self.sticky.is_some() {
+            fields.push("sticky");
+        }
+        if self.format.is_some() {
+            fields.push("format");
+        }
+        if self.template.is_some() {
+            fields.push("template");
+        }
+        if self.menu_order.is_some() {
+            fields.push("menu_order");
+        }
+        if self.parent_id.is_some() {
+            fields.push("parent");
+        }
 
         fields
     }
@@ -570,9 +604,7 @@ mod tests {
         let executor = BulkExecutor::new();
         let operation = BulkExecutor::change_status(vec![1, 2, 3], "draft", 1);
 
-        let result = executor.execute(&operation, |_id, _params| {
-            Ok(())
-        });
+        let result = executor.execute(&operation, |_id, _params| Ok(()));
 
         assert_eq!(result.succeeded.len(), 3);
         assert!(result.is_complete_success());
