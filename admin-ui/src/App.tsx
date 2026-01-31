@@ -736,12 +736,12 @@ function App() {
         <Route path="pages" element={<PagesList />} />
         <Route path="pages/new" element={
           <Suspense fallback={<PageLoader />}>
-            <PostEditor />
+            <PageBuilder />
           </Suspense>
         } />
         <Route path="pages/:id/edit" element={
           <Suspense fallback={<PageLoader />}>
-            <PostEditor />
+            <PageBuilder />
           </Suspense>
         } />
 
