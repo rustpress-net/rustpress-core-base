@@ -4,7 +4,7 @@
  * Enhanced with Command Palette, Breadcrumbs, Quick Actions, and more
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -38,7 +38,15 @@ import {
   UserCog,
   Layers,
   ExternalLink,
+  Activity,
+  Download,
+  Play,
+  Star,
+  Key,
+  Bell,
+  Workflow,
 } from 'lucide-react';
+import { DashboardSwitcher } from '../components/DashboardSwitcher';
 import {
   ThemeProvider,
   ToastProvider,
@@ -78,8 +86,8 @@ function RustPressLogo() {
   );
 }
 
-// Navigation structure with icon names for tracking
-const navigation = [
+// CMS Navigation structure
+const cmsNavigation = [
   {
     id: 'main',
     title: 'Main',
@@ -94,7 +102,7 @@ const navigation = [
     id: 'content',
     title: 'Content',
     items: [
-      { icon: Tag, iconName: 'Tag', label: 'Categories', href: '/categories' },
+      { icon: Layers, iconName: 'Layers', label: 'Categories', href: '/categories' },
       { icon: Tag, iconName: 'Tag', label: 'Tags', href: '/tags' },
       { icon: MessageSquare, iconName: 'MessageSquare', label: 'Comments', href: '/comments', badge: '5' },
     ],
@@ -117,6 +125,7 @@ const navigation = [
       { icon: Code2, iconName: 'Code2', label: 'IDE', href: '/ide' },
       { icon: Code, iconName: 'Code', label: 'Functions', href: '/functions' },
       { icon: Database, iconName: 'Database', label: 'Database', href: '/database' },
+      { icon: Workflow, iconName: 'Workflow', label: 'Workflows', href: '/workflows' },
       { icon: AppWindow, iconName: 'AppWindow', label: 'Apps', href: '/apps' },
     ],
   },
@@ -150,6 +159,72 @@ const navigation = [
       { icon: Settings, iconName: 'Settings', label: 'Settings', href: '/settings' },
       { icon: Layers, iconName: 'Layers', label: 'Site Mode', href: '/settings/site-mode' },
       { icon: Zap, iconName: 'Zap', label: 'Cache', href: '/cache' },
+    ],
+  },
+];
+
+// App Dashboard Navigation structure
+const appNavigation = [
+  {
+    id: 'main',
+    title: 'Overview',
+    items: [
+      { icon: LayoutDashboard, iconName: 'LayoutDashboard', label: 'App Dashboard', href: '/dashboard/apps' },
+      { icon: Activity, iconName: 'Activity', label: 'Activity Feed', href: '/apps/activity' },
+      { icon: TrendingUp, iconName: 'TrendingUp', label: 'Usage Stats', href: '/apps/usage' },
+    ],
+  },
+  {
+    id: 'apps',
+    title: 'Applications',
+    items: [
+      { icon: AppWindow, iconName: 'AppWindow', label: 'My Apps', href: '/apps' },
+      { icon: Star, iconName: 'Star', label: 'Favorites', href: '/apps/favorites' },
+      { icon: Clock, iconName: 'Clock', label: 'Recent', href: '/apps/recent' },
+      { icon: Play, iconName: 'Play', label: 'Quick Launch', href: '/app-selector' },
+    ],
+  },
+  {
+    id: 'store',
+    title: 'App Store',
+    items: [
+      { icon: Store, iconName: 'Store', label: 'Browse Store', href: '/apps/store' },
+      { icon: Download, iconName: 'Download', label: 'Updates', href: '/apps/updates' },
+      { icon: Package, iconName: 'Package', label: 'Installed', href: '/apps?tab=installed' },
+    ],
+  },
+  {
+    id: 'management',
+    title: 'Management',
+    items: [
+      { icon: Settings, iconName: 'Settings', label: 'App Settings', href: '/apps/settings' },
+      { icon: Users, iconName: 'Users', label: 'User Access', href: '/apps/access' },
+      { icon: Key, iconName: 'Key', label: 'Licenses', href: '/apps/licenses' },
+    ],
+  },
+  {
+    id: 'development',
+    title: 'Development',
+    items: [
+      { icon: Code2, iconName: 'Code2', label: 'IDE', href: '/ide' },
+      { icon: Code, iconName: 'Code', label: 'Functions', href: '/functions' },
+      { icon: Database, iconName: 'Database', label: 'Database', href: '/database' },
+      { icon: Workflow, iconName: 'Workflow', label: 'Workflows', href: '/workflows' },
+    ],
+  },
+  {
+    id: 'notifications',
+    title: 'Notifications',
+    items: [
+      { icon: Bell, iconName: 'Bell', label: 'App Alerts', href: '/apps/alerts' },
+    ],
+  },
+  {
+    id: 'system',
+    title: 'System',
+    items: [
+      { icon: Settings, iconName: 'Settings', label: 'Settings', href: '/settings' },
+      { icon: Layers, iconName: 'Layers', label: 'Site Mode', href: '/settings/site-mode' },
     ],
   },
 ];
@@ -199,9 +274,24 @@ export function EnterpriseLayout() {
     openShortcutsPanel,
     sidebarSearchQuery,
   } = useNavigationStore();
-  const { siteModeSettings } = useAppStore();
+  const { siteModeSettings, dashboardMode, setDashboardMode } = useAppStore();
   const { unreadCounts } = useChatStore();
   const [isChatOpen, setIsChatOpen] = useState(false);
+
+  // Use dashboard mode from store
+  const isAppDashboard = dashboardMode === 'apps';
+
+  // Update dashboard mode based on URL when navigating to specific dashboards
+  useEffect(() => {
+    if (location.pathname === '/dashboard/apps' || location.pathname === '/app-selector') {
+      setDashboardMode('apps');
+    } else if (location.pathname === '/dashboard') {
+      setDashboardMode('cms');
+    }
+  }, [location.pathname, setDashboardMode]);
+
+  // Select navigation based on dashboard mode
+  const navigation = isAppDashboard ? appNavigation : cmsNavigation;
 
   // Calculate total unread count
   const totalUnreadCount = Array.from(unreadCounts.values()).reduce((sum, count) => sum + count, 0);
@@ -211,7 +301,8 @@ export function EnterpriseLayout() {
     // Find the current page label from navigation
     let pageLabel = 'Page';
     let pageIcon = '';
-    for (const group of navigation) {
+    const allNavigation = [...cmsNavigation, ...appNavigation];
+    for (const group of allNavigation) {
       const item = group.items.find((i) => location.pathname.startsWith(i.href));
       if (item) {
         pageLabel = item.label;
@@ -226,6 +317,8 @@ export function EnterpriseLayout() {
       icon: pageIcon,
     });
   }, [location.pathname, addRecentPage]);
+
+  // Note: Keyboard shortcut for dashboard switching (Ctrl+D) is handled by DashboardSwitcher component
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -281,7 +374,7 @@ export function EnterpriseLayout() {
                 {/* Header with logo */}
                 <SidebarHeader
                   logo={<RustPressLogo />}
-                  title="RustPress"
+                  title={isAppDashboard ? 'RustPress Apps' : 'RustPress CMS'}
                 />
 
                 {/* Search filter */}
@@ -347,9 +440,10 @@ export function EnterpriseLayout() {
                 onLogout={handleLogout}
                 onProfileClick={() => navigate('/profile')}
                 onSettingsClick={() => navigate('/settings')}
+                leftContent={<DashboardSwitcher />}
                 customContent={
-                  <div className="flex items-center gap-2">
-                    {/* View Website/App Button */}
+                  <div className="flex items-center gap-3">
+                    {/* View Website/App Button - Icon only */}
                     <button
                       onClick={() => {
                         if (siteModeSettings.mode === 'app') {
@@ -359,10 +453,10 @@ export function EnterpriseLayout() {
                           window.open('/', '_blank');
                         }
                       }}
-                      className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-lg transition-colors"
+                      className="p-2 text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-lg transition-colors"
+                      title={siteModeSettings.mode === 'app' ? 'View App' : 'View Website'}
                     >
                       <ExternalLink className="w-4 h-4" />
-                      {siteModeSettings.mode === 'app' ? 'View App' : 'View Website'}
                     </button>
                     {/* Chat Button */}
                     <button
@@ -370,7 +464,7 @@ export function EnterpriseLayout() {
                       className="relative flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-lg transition-colors"
                     >
                       <MessageSquare className="w-4 h-4" />
-                      Chat
+                      <span className="hidden md:inline">Chat</span>
                       {totalUnreadCount > 0 && (
                         <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-primary-500 rounded-full text-[10px] text-white flex items-center justify-center font-medium">
                           {totalUnreadCount > 99 ? '99+' : totalUnreadCount}

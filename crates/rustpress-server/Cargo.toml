@@ -19,6 +19,7 @@ rustpress-themes = { path = "../rustpress-themes" }
 rustcloudflare = { path = "../../plugins/rustcloudflare" }
 visual-queue-manager = { path = "../../plugins/visual-queue-manager" }
 rustbuilder = { path = "../../plugins/rustbuilder" }
+pageforge = { path = "../../plugins/pageforge" }
 
 # Templating
 tera = "1.19"

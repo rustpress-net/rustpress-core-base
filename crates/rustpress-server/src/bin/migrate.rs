@@ -17,18 +17,19 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
-/// Split SQL into statements, handling $$ quoted function bodies
+/// Split SQL into statements, handling $$ quoted function bodies and single quotes
 fn split_sql_statements(sql: &str) -> Vec<String> {
     let mut statements = Vec::new();
     let mut current = String::new();
     let mut in_dollar_quote = false;
+    let mut in_single_quote = false;
     let mut chars = sql.chars().peekable();
 
     while let Some(c) = chars.next() {
         current.push(c);
 
         // Handle $$ quoted strings (PostgreSQL function bodies)
-        if c == '$' {
+        if c == '$' && !in_single_quote {
             if let Some(&next) = chars.peek() {
                 if next == '$' {
                     current.push(chars.next().unwrap());
@@ -38,8 +39,24 @@ fn split_sql_statements(sql: &str) -> Vec<String> {
             }
         }
 
-        // Only split on semicolon when not inside $$ quotes
-        if c == ';' && !in_dollar_quote {
+        // Handle single-quoted strings (track start/end, handle escaped quotes)
+        if c == '\'' && !in_dollar_quote {
+            // Check if this is an escaped quote ''
+            if in_single_quote {
+                if let Some(&next) = chars.peek() {
+                    if next == '\'' {
+                        // Escaped quote, consume it and stay in quote
+                        current.push(chars.next().unwrap());
+                        continue;
+                    }
+                }
+            }
+            in_single_quote = !in_single_quote;
+            continue;
+        }
+
+        // Only split on semicolon when not inside any quotes
+        if c == ';' && !in_dollar_quote && !in_single_quote {
             let stmt = current.trim().to_string();
             if !stmt.is_empty() && !is_only_comments(&stmt) {
                 statements.push(stmt);

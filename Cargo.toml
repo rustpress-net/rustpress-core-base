@@ -25,6 +25,7 @@ members = [
     "plugins/rustcloudflare",
     "plugins/rustbuilder",
     "plugins/visual-queue-manager",
+    "plugins/pageforge",
 ]
 
 [workspace.package]

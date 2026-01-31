@@ -12,8 +12,18 @@ import type {
   SiteMode,
   SiteModeSettings
 } from '../types/app';
+import type {
+  AuthProvider,
+  AuthProviderId,
+  AuthProviderSettings
+} from '../types/auth';
+
+type DashboardMode = 'cms' | 'apps';
 
 interface AppState {
+  // Dashboard mode
+  dashboardMode: DashboardMode;
+
   // Installed apps
   installedApps: InstalledApp[];
   activeApp: InstalledApp | null;
@@ -21,6 +31,10 @@ interface AppState {
 
   // Site Mode Settings
   siteModeSettings: SiteModeSettings;
+
+  // Auth Provider Settings
+  authProviderSettings: AuthProviderSettings;
+  configuredProviders: AuthProvider[];
 
   // User app access
   userAppAccess: Record<string, UserAppAccess>;
@@ -51,10 +65,23 @@ interface AppState {
   closeLaunchedApp: () => void;
   setActiveApp: (app: InstalledApp | null) => void;
 
+  // Actions - Dashboard Mode
+  setDashboardMode: (mode: DashboardMode) => void;
+  toggleDashboardMode: () => void;
+
   // Actions - Site Mode
   setSiteMode: (mode: SiteMode) => void;
   updateSiteModeSettings: (settings: Partial<SiteModeSettings>) => void;
   getSiteModeSettings: () => SiteModeSettings;
+
+  // Actions - Auth Providers
+  updateAuthProviderSettings: (settings: Partial<AuthProviderSettings>) => void;
+  addAuthProvider: (provider: AuthProvider) => void;
+  updateAuthProvider: (providerId: AuthProviderId, config: Partial<AuthProvider>) => void;
+  removeAuthProvider: (providerId: AuthProviderId) => void;
+  toggleAuthProvider: (providerId: AuthProviderId, enabled: boolean) => void;
+  getAuthProviderSettings: () => AuthProviderSettings;
+  getConfiguredProviders: () => AuthProvider[];
 
   // Actions - User Access
   setUserAccess: (userId: string, access: UserAppAccess) => void;
@@ -303,13 +330,45 @@ const defaultSiteModeSettings: SiteModeSettings = {
   backendAuthRequired: true,
 };
 
+// Default auth provider settings
+const defaultAuthProviderSettings: AuthProviderSettings = {
+  enabledProviders: [],
+  defaultProvider: null,
+  allowMultipleProviders: true,
+  autoCreateUsers: false,
+  sessionTimeout: 1440, // 24 hours in minutes
+  rememberMeDuration: 43200, // 30 days in minutes
+  requireMfa: false,
+  allowedMfaMethods: ['totp', 'email'],
+  passwordPolicy: {
+    minLength: 8,
+    requireUppercase: true,
+    requireLowercase: true,
+    requireNumbers: true,
+    requireSpecialChars: false,
+    maxAge: 0, // 0 = never expires
+    preventReuse: 5,
+  },
+  loginSettings: {
+    maxAttempts: 5,
+    lockoutDuration: 15, // minutes
+    showProviderLogos: true,
+    showProviderNames: true,
+    customLoginMessage: '',
+    allowRememberMe: true,
+  },
+};
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
+      dashboardMode: 'cms',
       installedApps: defaultApps,
       activeApp: null,
       launchedAppId: null,
       siteModeSettings: defaultSiteModeSettings,
+      authProviderSettings: defaultAuthProviderSettings,
+      configuredProviders: [],
       userAppAccess: defaultUserAccess,
       defaultAppId: null,
       availableApps: demoStoreApps,
@@ -398,6 +457,17 @@ export const useAppStore = create<AppState>()(
         set({ activeApp: app });
       },
 
+      // Dashboard Mode
+      setDashboardMode: (mode) => {
+        set({ dashboardMode: mode });
+      },
+
+      toggleDashboardMode: () => {
+        set((state) => ({
+          dashboardMode: state.dashboardMode === 'cms' ? 'apps' : 'cms',
+        }));
+      },
+
       // Site Mode
       setSiteMode: (mode) => {
         set((state) => ({
@@ -419,6 +489,74 @@ export const useAppStore = create<AppState>()(
 
       getSiteModeSettings: () => {
         return get().siteModeSettings;
+      },
+
+      // Auth Providers
+      updateAuthProviderSettings: (settings) => {
+        set((state) => ({
+          authProviderSettings: {
+            ...state.authProviderSettings,
+            ...settings,
+          },
+        }));
+      },
+
+      addAuthProvider: (provider) => {
+        set((state) => ({
+          configuredProviders: [...state.configuredProviders, provider],
+          authProviderSettings: {
+            ...state.authProviderSettings,
+            enabledProviders: provider.enabled
+              ? [...state.authProviderSettings.enabledProviders, provider.id]
+              : state.authProviderSettings.enabledProviders,
+          },
+        }));
+      },
+
+      updateAuthProvider: (providerId, config) => {
+        set((state) => ({
+          configuredProviders: state.configuredProviders.map((p) =>
+            p.id === providerId ? { ...p, ...config } : p
+          ),
+        }));
+      },
+
+      removeAuthProvider: (providerId) => {
+        set((state) => ({
+          configuredProviders: state.configuredProviders.filter((p) => p.id !== providerId),
+          authProviderSettings: {
+            ...state.authProviderSettings,
+            enabledProviders: state.authProviderSettings.enabledProviders.filter(
+              (id) => id !== providerId
+            ),
+            defaultProvider:
+              state.authProviderSettings.defaultProvider === providerId
+                ? null
+                : state.authProviderSettings.defaultProvider,
+          },
+        }));
+      },
+
+      toggleAuthProvider: (providerId, enabled) => {
+        set((state) => ({
+          configuredProviders: state.configuredProviders.map((p) =>
+            p.id === providerId ? { ...p, enabled } : p
+          ),
+          authProviderSettings: {
+            ...state.authProviderSettings,
+            enabledProviders: enabled
+              ? [...state.authProviderSettings.enabledProviders, providerId]
+              : state.authProviderSettings.enabledProviders.filter((id) => id !== providerId),
+          },
+        }));
+      },
+
+      getAuthProviderSettings: () => {
+        return get().authProviderSettings;
+      },
+
+      getConfiguredProviders: () => {
+        return get().configuredProviders;
       },
 
       // User Access

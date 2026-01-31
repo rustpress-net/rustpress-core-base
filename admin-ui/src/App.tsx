@@ -11,6 +11,7 @@ import { Skeleton, SkeletonStats, SkeletonTable } from './design-system';
 // Lazy load all pages for code splitting
 // Enterprise Pages
 const EnterpriseDashboard = lazy(() => import('./pages/enterprise/Dashboard'));
+const ApplicationDashboard = lazy(() => import('./pages/enterprise/ApplicationDashboard'));
 
 // Existing Pages
 const Menus = lazy(() => import('./pages/Menus'));
@@ -49,6 +50,7 @@ const PageTemplateSelector = lazy(() => import('./components/themes/PageTemplate
 const ThemeEditorFull = lazy(() => import('./pages/ThemeEditor'));
 const IDEOverview = lazy(() => import('./pages/IDEOverview'));
 const Plugins = lazy(() => import('./pages/Plugins'));
+const PageBuilder = lazy(() => import('./pages/PageBuilder'));
 const DetachedTabWindow = lazy(() => import('./components/ide/DetachedTabWindow'));
 
 // Appearance Pages
@@ -63,6 +65,18 @@ const AppStorePage = lazy(() => import('./pages/apps/AppStore'));
 const AppSettings = lazy(() => import('./pages/apps/AppSettings'));
 const UserAppAccess = lazy(() => import('./pages/apps/UserAppAccess'));
 const AppSelectionPage = lazy(() => import('./pages/apps/AppSelectionPage'));
+const ActivityFeed = lazy(() => import('./pages/apps/ActivityFeed'));
+const UsageStats = lazy(() => import('./pages/apps/UsageStats'));
+const Favorites = lazy(() => import('./pages/apps/Favorites'));
+const Recent = lazy(() => import('./pages/apps/Recent'));
+const Updates = lazy(() => import('./pages/apps/Updates'));
+const Licenses = lazy(() => import('./pages/apps/Licenses'));
+const Workflows = lazy(() => import('./pages/apps/Workflows'));
+const AppAlerts = lazy(() => import('./pages/apps/AppAlerts'));
+
+// Workflow Builder Pages
+const WorkflowsPage = lazy(() => import('./pages/workflows/WorkflowsPage'));
+const WorkflowEditor = lazy(() => import('./pages/workflows/WorkflowEditor'));
 
 // Settings Pages
 const SiteModeSettings = lazy(() => import('./pages/settings/SiteModeSettings'));
@@ -75,6 +89,7 @@ const DiscussionSettings = lazy(() => import('./pages/settings/DiscussionSetting
 const PermalinksSettings = lazy(() => import('./pages/settings/PermalinksSettings'));
 const PrivacySettings = lazy(() => import('./pages/settings/PrivacySettings'));
 const SubscriptionSettings = lazy(() => import('./pages/settings/SubscriptionSettings'));
+const AuthProvidersSettings = lazy(() => import('./pages/settings/AuthProvidersSettings'));
 
 // App Components (for Site Mode)
 const TaskManagerApp = lazy(() => import('./apps/TaskManagerApp'));
@@ -174,7 +189,7 @@ const PagesList = () => (
       title="Pages"
       description="Manage your static pages"
       actions={
-        <Link to="/pages/new">
+        <Link to="/pagebuilder">
           <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />}>
             New Page
           </Button>
@@ -199,8 +214,8 @@ const PagesList = () => (
             key: 'actions',
             header: 'Actions',
             render: (_, row) => (
-              <Link to={`/pages/${row.id}/edit`}>
-                <Button variant="ghost" size="sm">Edit</Button>
+              <Link to={`/pagebuilder/${row.id}`}>
+                <Button variant="ghost" size="sm">Edit with PageForge</Button>
               </Link>
             )
           }
@@ -412,6 +427,7 @@ const settingsMenuItems = [
   { name: 'Storage', path: '/settings/storage', icon: '💾' },
   { name: 'Preloader', path: '/settings/preloader', icon: '⏳' },
   { name: 'Subscription', path: '/settings/subscription', icon: '💳' },
+  { name: 'Auth Providers', path: '/settings/auth-providers', icon: '🔐' },
 ];
 
 // Settings Page
@@ -697,6 +713,11 @@ function App() {
             <EnterpriseDashboard />
           </Suspense>
         } />
+        <Route path="dashboard/apps" element={
+          <Suspense fallback={<PageLoader />}>
+            <ApplicationDashboard />
+          </Suspense>
+        } />
 
         {/* Posts */}
         <Route path="posts" element={<PostsList />} />
@@ -809,6 +830,10 @@ function App() {
         {/* Plugins */}
         <Route path="plugins" element={<Plugins />} />
 
+        {/* Page Builder */}
+        <Route path="pagebuilder" element={<PageBuilder />} />
+        <Route path="pagebuilder/:postId" element={<PageBuilder />} />
+
         {/* Apps */}
         <Route path="apps" element={
           <Suspense fallback={<PageLoader />}>
@@ -828,6 +853,58 @@ function App() {
         <Route path="apps/access" element={
           <Suspense fallback={<PageLoader />}>
             <UserAppAccess />
+          </Suspense>
+        } />
+        <Route path="apps/activity" element={
+          <Suspense fallback={<PageLoader />}>
+            <ActivityFeed />
+          </Suspense>
+        } />
+        <Route path="apps/usage" element={
+          <Suspense fallback={<PageLoader />}>
+            <UsageStats />
+          </Suspense>
+        } />
+        <Route path="apps/favorites" element={
+          <Suspense fallback={<PageLoader />}>
+            <Favorites />
+          </Suspense>
+        } />
+        <Route path="apps/recent" element={
+          <Suspense fallback={<PageLoader />}>
+            <Recent />
+          </Suspense>
+        } />
+        <Route path="apps/updates" element={
+          <Suspense fallback={<PageLoader />}>
+            <Updates />
+          </Suspense>
+        } />
+        <Route path="apps/licenses" element={
+          <Suspense fallback={<PageLoader />}>
+            <Licenses />
+          </Suspense>
+        } />
+        <Route path="apps/workflows" element={
+          <Suspense fallback={<PageLoader />}>
+            <Workflows />
+          </Suspense>
+        } />
+        <Route path="apps/alerts" element={
+          <Suspense fallback={<PageLoader />}>
+            <AppAlerts />
+          </Suspense>
+        } />
+
+        {/* Workflows */}
+        <Route path="workflows" element={
+          <Suspense fallback={<PageLoader />}>
+            <WorkflowsPage />
+          </Suspense>
+        } />
+        <Route path="workflows/:id" element={
+          <Suspense fallback={<PageLoader />}>
+            <WorkflowEditor />
           </Suspense>
         } />
 
@@ -902,6 +979,11 @@ function App() {
         <Route path="settings/subscription" element={
           <Suspense fallback={<PageLoader />}>
             <SubscriptionSettings />
+          </Suspense>
+        } />
+        <Route path="settings/auth-providers" element={
+          <Suspense fallback={<PageLoader />}>
+            <AuthProvidersSettings />
           </Suspense>
         } />
         <Route path="cache" element={

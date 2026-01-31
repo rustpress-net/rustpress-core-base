@@ -4,11 +4,12 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText, Plus, Edit, Trash2, Eye, Calendar, Tag, User,
   Search, Filter, MoreVertical, Clock, CheckCircle, XCircle,
-  Archive, Star, Copy, ExternalLink, ChevronDown, Folder
+  Archive, Star, Copy, ExternalLink, ChevronDown, Folder, Layers
 } from 'lucide-react';
 
 export interface ContentItem {
@@ -106,6 +107,7 @@ export const ContentManager: React.FC<ContentManagerProps> = ({
   onPreviewContent,
   onDeleteContent
 }) => {
+  const navigate = useNavigate();
   const [content, setContent] = useState<ContentItem[]>(mockContent);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'post' | 'page'>('all');
@@ -220,11 +222,11 @@ export const ContentManager: React.FC<ContentManagerProps> = ({
               New Post
             </button>
             <button
-              onClick={() => onCreateContent?.('page')}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors"
+              onClick={() => navigate('/pagebuilder')}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
             >
-              <Plus className="w-4 h-4" />
-              New Page
+              <Layers className="w-4 h-4" />
+              New Page (PageForge)
             </button>
           </div>
         </div>
