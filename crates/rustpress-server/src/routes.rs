@@ -30,6 +30,8 @@ pub fn create_router(state: AppState) -> Router {
         .nest_service("/api/v1/cloudflare", build_cloudflare_router(&state))
         // RustBuilder page builder plugin routes
         .nest_service("/api/v1/rustbuilder", build_rustbuilder_router(&state))
+        // PageForge visual page builder plugin routes
+        .nest_service("/api/v1/pageforge", build_pageforge_router(&state))
         // RustBuilder visual editor UI
         .nest("/pagebuilder", pagebuilder_routes())
         // Admin UI routes (serve static files, handle by frontend)
@@ -161,53 +163,570 @@ fn pagebuilder_routes() -> Router<AppState> {
                     Err(_) => (StatusCode::NOT_FOUND, "Not found").into_response(),
                 }
             } else {
-                // Serve a minimal HTML page that loads the RustBuilder editor
+                // Serve a fullscreen PageForge visual page builder
                 let html = r#"<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RustBuilder - Visual Page Builder</title>
-    <link rel="stylesheet" href="/pagebuilder/style.css">
+    <title>PageForge - Visual Page Builder</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body, #root { width: 100%; height: 100%; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .rb-loading { display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; }
-        .rb-loading h1 { color: #3b82f6; margin-bottom: 16px; }
-        .rb-loading p { color: #6b7280; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f0f; color: #fff; }
+
+        .pf-container { display: flex; height: 100vh; }
+
+        /* Left Sidebar - Widgets */
+        .pf-sidebar { width: 280px; background: #1a1a1a; border-right: 1px solid #333; display: flex; flex-direction: column; }
+        .pf-sidebar-header { padding: 16px; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 12px; }
+        .pf-sidebar-header h1 { font-size: 18px; background: linear-gradient(135deg, #a855f7, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .pf-sidebar-content { flex: 1; overflow-y: auto; padding: 16px; }
+        .pf-widget-group { margin-bottom: 24px; }
+        .pf-widget-group h3 { font-size: 11px; text-transform: uppercase; color: #888; margin-bottom: 12px; letter-spacing: 0.5px; }
+        .pf-widgets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .pf-widget { background: #252525; border: 1px solid #333; border-radius: 8px; padding: 12px; cursor: grab; transition: all 0.2s; text-align: center; }
+        .pf-widget:hover { background: #303030; border-color: #a855f7; transform: translateY(-2px); }
+        .pf-widget i { font-size: 24px; color: #a855f7; margin-bottom: 8px; display: block; }
+        .pf-widget span { font-size: 12px; color: #ccc; }
+        .pf-widget.dragging { opacity: 0.5; }
+
+        /* Main Canvas */
+        .pf-main { flex: 1; display: flex; flex-direction: column; }
+        .pf-toolbar { height: 56px; background: #1a1a1a; border-bottom: 1px solid #333; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+        .pf-toolbar-left, .pf-toolbar-right { display: flex; align-items: center; gap: 8px; }
+        .pf-btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .pf-btn-ghost { background: transparent; color: #888; }
+        .pf-btn-ghost:hover { background: #252525; color: #fff; }
+        .pf-btn-primary { background: linear-gradient(135deg, #a855f7, #6366f1); color: #fff; }
+        .pf-btn-primary:hover { opacity: 0.9; }
+        .pf-device-btns { display: flex; background: #252525; border-radius: 6px; padding: 4px; }
+        .pf-device-btn { padding: 6px 10px; border: none; background: transparent; color: #888; cursor: pointer; border-radius: 4px; }
+        .pf-device-btn.active { background: #a855f7; color: #fff; }
+
+        .pf-canvas-wrapper { flex: 1; background: #0a0a0a; padding: 24px; overflow: auto; display: flex; justify-content: center; }
+        .pf-canvas { background: #fff; width: 100%; max-width: 1200px; min-height: 100%; border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.5); transition: max-width 0.3s; }
+        .pf-canvas.tablet { max-width: 768px; }
+        .pf-canvas.mobile { max-width: 375px; }
+        .pf-canvas-content { min-height: 400px; padding: 20px; color: #333; }
+
+        /* Drop zone */
+        .pf-drop-zone { min-height: 100px; border: 2px dashed #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999; transition: all 0.2s; margin: 10px; }
+        .pf-drop-zone.drag-over { border-color: #a855f7; background: rgba(168, 85, 247, 0.1); }
+        .pf-drop-zone p { font-size: 14px; }
+
+        /* Placed elements */
+        .pf-element { position: relative; padding: 16px; margin: 8px; border: 1px solid transparent; border-radius: 4px; transition: all 0.2s; }
+        .pf-element:hover { border-color: #a855f7; }
+        .pf-element.selected { border-color: #a855f7; box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.3); }
+        .pf-element-controls { position: absolute; top: -32px; right: 0; display: none; gap: 4px; background: #1a1a1a; padding: 4px; border-radius: 4px; }
+        .pf-element:hover .pf-element-controls, .pf-element.selected .pf-element-controls { display: flex; }
+        .pf-element-btn { width: 24px; height: 24px; border: none; background: #333; color: #fff; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .pf-element-btn:hover { background: #a855f7; }
+
+        /* Right Sidebar - Properties */
+        .pf-properties { width: 300px; background: #1a1a1a; border-left: 1px solid #333; display: none; flex-direction: column; }
+        .pf-properties.open { display: flex; }
+        .pf-properties-header { padding: 16px; border-bottom: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
+        .pf-properties-header h2 { font-size: 14px; }
+        .pf-properties-content { flex: 1; overflow-y: auto; padding: 16px; }
+        .pf-prop-group { margin-bottom: 20px; }
+        .pf-prop-group label { display: block; font-size: 12px; color: #888; margin-bottom: 8px; }
+        .pf-prop-group input, .pf-prop-group textarea, .pf-prop-group select { width: 100%; padding: 10px; background: #252525; border: 1px solid #333; border-radius: 6px; color: #fff; font-size: 13px; }
+        .pf-prop-group input:focus, .pf-prop-group textarea:focus { border-color: #a855f7; outline: none; }
+        .pf-prop-group textarea { min-height: 100px; resize: vertical; }
+
+        /* Page title input */
+        .pf-page-title { background: transparent; border: none; font-size: 16px; color: #fff; width: 200px; }
+        .pf-page-title:focus { outline: none; border-bottom: 1px solid #a855f7; }
     </style>
-    <!-- Define process.env for libraries that expect Node.js globals -->
-    <script>window.process = { env: { NODE_ENV: 'production' } };</script>
-    <!-- React and ReactDOM from CDN (required for UMD bundle) -->
-    <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
 </head>
 <body>
-    <div id="root">
-        <div class="rb-loading">
-            <h1>RustBuilder</h1>
-            <p>Loading visual page builder...</p>
+    <div class="pf-container">
+        <!-- Left Sidebar -->
+        <div class="pf-sidebar">
+            <div class="pf-sidebar-header">
+                <i class="ri-magic-line" style="font-size: 24px; color: #a855f7;"></i>
+                <h1>PageForge</h1>
+            </div>
+            <div class="pf-sidebar-content">
+                <div class="pf-widget-group">
+                    <h3>Basic</h3>
+                    <div class="pf-widgets">
+                        <div class="pf-widget" draggable="true" data-type="heading">
+                            <i class="ri-heading"></i>
+                            <span>Heading</span>
+                        </div>
+                        <div class="pf-widget" draggable="true" data-type="text">
+                            <i class="ri-text"></i>
+                            <span>Text</span>
+                        </div>
+                        <div class="pf-widget" draggable="true" data-type="image">
+                            <i class="ri-image-line"></i>
+                            <span>Image</span>
+                        </div>
+                        <div class="pf-widget" draggable="true" data-type="button">
+                            <i class="ri-cursor-line"></i>
+                            <span>Button</span>
+                        </div>
+                        <div class="pf-widget" draggable="true" data-type="divider">
+                            <i class="ri-separator"></i>
+                            <span>Divider</span>
+                        </div>
+                        <div class="pf-widget" draggable="true" data-type="spacer">
+                            <i class="ri-space"></i>
+                            <span>Spacer</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="pf-widget-group">
+                    <h3>Layout</h3>
+                    <div class="pf-widgets">
+                        <div class="pf-widget" draggable="true" data-type="section">
+                            <i class="ri-layout-row-line"></i>
+                            <span>Section</span>
+                        </div>
+                        <div class="pf-widget" draggable="true" data-type="columns">
+                            <i class="ri-layout-column-line"></i>
+                            <span>Columns</span>
+                        </div>
+                        <div class="pf-widget" draggable="true" data-type="container">
+                            <i class="ri-layout-masonry-line"></i>
+                            <span>Container</span>
+                        </div>
+                        <div class="pf-widget" draggable="true" data-type="grid">
+                            <i class="ri-layout-grid-line"></i>
+                            <span>Grid</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="pf-widget-group">
+                    <h3>Media</h3>
+                    <div class="pf-widgets">
+                        <div class="pf-widget" draggable="true" data-type="video">
+                            <i class="ri-video-line"></i>
+                            <span>Video</span>
+                        </div>
+                        <div class="pf-widget" draggable="true" data-type="gallery">
+                            <i class="ri-gallery-line"></i>
+                            <span>Gallery</span>
+                        </div>
+                        <div class="pf-widget" draggable="true" data-type="icon">
+                            <i class="ri-star-line"></i>
+                            <span>Icon</span>
+                        </div>
+                        <div class="pf-widget" draggable="true" data-type="map">
+                            <i class="ri-map-pin-line"></i>
+                            <span>Map</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="pf-widget-group">
+                    <h3>Content</h3>
+                    <div class="pf-widgets">
+                        <div class="pf-widget" draggable="true" data-type="accordion">
+                            <i class="ri-arrow-down-s-line"></i>
+                            <span>Accordion</span>
+                        </div>
+                        <div class="pf-widget" draggable="true" data-type="tabs">
+                            <i class="ri-folder-line"></i>
+                            <span>Tabs</span>
+                        </div>
+                        <div class="pf-widget" draggable="true" data-type="testimonial">
+                            <i class="ri-chat-quote-line"></i>
+                            <span>Testimonial</span>
+                        </div>
+                        <div class="pf-widget" draggable="true" data-type="card">
+                            <i class="ri-bank-card-line"></i>
+                            <span>Card</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Area -->
+        <div class="pf-main">
+            <div class="pf-toolbar">
+                <div class="pf-toolbar-left">
+                    <button class="pf-btn pf-btn-ghost" onclick="window.location.href='/admin'">
+                        <i class="ri-arrow-left-line"></i> Back
+                    </button>
+                    <input type="text" class="pf-page-title" id="pageTitle" value="Untitled Page" placeholder="Page title...">
+                </div>
+                <div class="pf-toolbar-center">
+                    <div class="pf-device-btns">
+                        <button class="pf-device-btn active" data-device="desktop" title="Desktop"><i class="ri-computer-line"></i></button>
+                        <button class="pf-device-btn" data-device="tablet" title="Tablet"><i class="ri-tablet-line"></i></button>
+                        <button class="pf-device-btn" data-device="mobile" title="Mobile"><i class="ri-smartphone-line"></i></button>
+                    </div>
+                </div>
+                <div class="pf-toolbar-right">
+                    <button class="pf-btn pf-btn-ghost" id="previewBtn"><i class="ri-eye-line"></i> Preview</button>
+                    <button class="pf-btn pf-btn-ghost" id="undoBtn"><i class="ri-arrow-go-back-line"></i></button>
+                    <button class="pf-btn pf-btn-ghost" id="redoBtn"><i class="ri-arrow-go-forward-line"></i></button>
+                    <button class="pf-btn pf-btn-primary" id="saveBtn"><i class="ri-save-line"></i> Publish</button>
+                </div>
+            </div>
+            <div class="pf-canvas-wrapper">
+                <div class="pf-canvas" id="canvas">
+                    <div class="pf-canvas-content" id="canvasContent">
+                        <div class="pf-drop-zone" id="dropZone">
+                            <p><i class="ri-drag-drop-line"></i> Drag widgets here to start building</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar - Properties -->
+        <div class="pf-properties" id="propertiesPanel">
+            <div class="pf-properties-header">
+                <h2 id="propTitle">Element Properties</h2>
+                <button class="pf-btn pf-btn-ghost" onclick="closeProperties()"><i class="ri-close-line"></i></button>
+            </div>
+            <div class="pf-properties-content" id="propContent">
+                <!-- Dynamic content based on selected element -->
+            </div>
         </div>
     </div>
-    <script src="/pagebuilder/rustbuilder.umd.js"></script>
+
     <script>
-        // Extract page ID from URL if present
-        const pathParts = window.location.pathname.split('/');
-        const pageId = pathParts[pathParts.length - 1] || 'new';
+        // PageForge Editor JavaScript
+        const API_BASE = '/api/v1/pageforge';
+        let elements = [];
+        let selectedElement = null;
+        let history = [];
+        let historyIndex = -1;
 
-        // Initialize RustBuilder
-        const config = {
-            apiBaseUrl: '/api/v1/rustbuilder',
-            pageId: pageId,
-            debug: true,
-        };
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initDragDrop();
+            initDeviceSwitcher();
+            initButtons();
 
-        if (window.RustBuilder && window.RustBuilder.init) {
-            window.RustBuilder.init(document.getElementById('root'), config);
-        } else {
-            console.error('RustBuilder failed to load');
-            document.getElementById('root').innerHTML = '<div style="padding: 40px; text-align: center;"><h1>RustBuilder</h1><p style="color: red;">Failed to load page builder. Check console for errors.</p></div>';
+            // Extract page ID from URL
+            const pathParts = window.location.pathname.split('/');
+            const pageId = pathParts[pathParts.length - 1];
+            if (pageId && pageId !== 'pagebuilder' && pageId !== 'new') {
+                loadPage(pageId);
+            }
+        });
+
+        function initDragDrop() {
+            const widgets = document.querySelectorAll('.pf-widget');
+            const dropZone = document.getElementById('dropZone');
+            const canvasContent = document.getElementById('canvasContent');
+
+            widgets.forEach(widget => {
+                widget.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('widget-type', widget.dataset.type);
+                    widget.classList.add('dragging');
+                });
+                widget.addEventListener('dragend', () => {
+                    widget.classList.remove('dragging');
+                });
+            });
+
+            canvasContent.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+
+            canvasContent.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+
+            canvasContent.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                const type = e.dataTransfer.getData('widget-type');
+                if (type) {
+                    addElement(type);
+                }
+            });
+        }
+
+        function addElement(type) {
+            const id = 'el-' + Date.now();
+            const element = { id, type, content: getDefaultContent(type), styles: {} };
+            elements.push(element);
+            renderElements();
+            saveToHistory();
+        }
+
+        function getDefaultContent(type) {
+            const defaults = {
+                heading: { text: 'Click to edit heading', level: 'h2' },
+                text: { text: 'Click to edit this text. Add your content here.' },
+                image: { src: 'https://via.placeholder.com/800x400', alt: 'Image' },
+                button: { text: 'Click Me', link: '#', style: 'primary' },
+                divider: { style: 'solid', color: '#e5e5e5' },
+                spacer: { height: 40 },
+                section: { background: '#f9fafb', padding: 40 },
+                columns: { count: 2, gap: 20 },
+                container: { maxWidth: 1200, centered: true },
+                grid: { columns: 3, gap: 16 },
+                video: { url: '', type: 'youtube' },
+                gallery: { images: [] },
+                icon: { name: 'star', size: 48, color: '#a855f7' },
+                map: { address: '', zoom: 14 },
+                accordion: { items: [{ title: 'Item 1', content: 'Content 1' }] },
+                tabs: { items: [{ title: 'Tab 1', content: 'Content 1' }] },
+                testimonial: { text: 'Great product!', author: 'John Doe', role: 'CEO' },
+                card: { title: 'Card Title', description: 'Card description', image: '' }
+            };
+            return defaults[type] || {};
+        }
+
+        function renderElements() {
+            const canvasContent = document.getElementById('canvasContent');
+            if (elements.length === 0) {
+                canvasContent.innerHTML = '<div class="pf-drop-zone" id="dropZone"><p><i class="ri-drag-drop-line"></i> Drag widgets here to start building</p></div>';
+                initDragDrop();
+                return;
+            }
+
+            canvasContent.innerHTML = elements.map(el => renderElement(el)).join('') +
+                '<div class="pf-drop-zone" id="dropZone" style="min-height: 50px;"><p>+ Add more elements</p></div>';
+
+            // Reinitialize drag/drop for new drop zone
+            initDragDrop();
+
+            // Add click handlers
+            document.querySelectorAll('.pf-element').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectElement(el.dataset.id);
+                });
+            });
+        }
+
+        function renderElement(el) {
+            const selected = selectedElement === el.id ? 'selected' : '';
+            let content = '';
+
+            switch (el.type) {
+                case 'heading':
+                    content = '<' + el.content.level + ' contenteditable="true">' + el.content.text + '</' + el.content.level + '>';
+                    break;
+                case 'text':
+                    content = '<p contenteditable="true">' + el.content.text + '</p>';
+                    break;
+                case 'image':
+                    content = '<img src="' + el.content.src + '" alt="' + el.content.alt + '" style="max-width: 100%; height: auto;">';
+                    break;
+                case 'button':
+                    content = '<button style="padding: 12px 24px; background: linear-gradient(135deg, #a855f7, #6366f1); color: white; border: none; border-radius: 6px; cursor: pointer;">' + el.content.text + '</button>';
+                    break;
+                case 'divider':
+                    content = '<hr style="border: none; border-top: 1px ' + el.content.style + ' ' + el.content.color + ';">';
+                    break;
+                case 'spacer':
+                    content = '<div style="height: ' + el.content.height + 'px;"></div>';
+                    break;
+                case 'section':
+                    content = '<div style="background: ' + el.content.background + '; padding: ' + el.content.padding + 'px; border-radius: 8px;"><p contenteditable="true">Section content</p></div>';
+                    break;
+                case 'columns':
+                    content = '<div style="display: grid; grid-template-columns: repeat(' + el.content.count + ', 1fr); gap: ' + el.content.gap + 'px;"><div style="padding: 20px; background: #f5f5f5; border-radius: 4px;">Column 1</div><div style="padding: 20px; background: #f5f5f5; border-radius: 4px;">Column 2</div></div>';
+                    break;
+                default:
+                    content = '<div style="padding: 20px; background: #f5f5f5; border-radius: 4px; text-align: center;"><i class="ri-' + getIconForType(el.type) + '" style="font-size: 32px; color: #a855f7;"></i><p>' + el.type + ' widget</p></div>';
+            }
+
+            return '<div class="pf-element ' + selected + '" data-id="' + el.id + '">' +
+                '<div class="pf-element-controls">' +
+                '<button class="pf-element-btn" onclick="moveElement(\'' + el.id + '\', -1)" title="Move up"><i class="ri-arrow-up-line"></i></button>' +
+                '<button class="pf-element-btn" onclick="moveElement(\'' + el.id + '\', 1)" title="Move down"><i class="ri-arrow-down-line"></i></button>' +
+                '<button class="pf-element-btn" onclick="duplicateElement(\'' + el.id + '\')" title="Duplicate"><i class="ri-file-copy-line"></i></button>' +
+                '<button class="pf-element-btn" onclick="deleteElement(\'' + el.id + '\')" title="Delete"><i class="ri-delete-bin-line"></i></button>' +
+                '</div>' + content + '</div>';
+        }
+
+        function getIconForType(type) {
+            const icons = { video: 'video-line', gallery: 'gallery-line', icon: 'star-line', map: 'map-pin-line', accordion: 'arrow-down-s-line', tabs: 'folder-line', testimonial: 'chat-quote-line', card: 'bank-card-line', container: 'layout-masonry-line', grid: 'layout-grid-line' };
+            return icons[type] || 'puzzle-line';
+        }
+
+        function selectElement(id) {
+            selectedElement = id;
+            document.querySelectorAll('.pf-element').forEach(el => el.classList.remove('selected'));
+            document.querySelector('[data-id="' + id + '"]')?.classList.add('selected');
+            showProperties(id);
+        }
+
+        function showProperties(id) {
+            const el = elements.find(e => e.id === id);
+            if (!el) return;
+
+            document.getElementById('propertiesPanel').classList.add('open');
+            document.getElementById('propTitle').textContent = el.type.charAt(0).toUpperCase() + el.type.slice(1) + ' Properties';
+
+            let propsHtml = '';
+            if (el.type === 'heading') {
+                propsHtml = '<div class="pf-prop-group"><label>Text</label><input type="text" value="' + el.content.text + '" onchange="updateProp(\'' + id + '\', \'text\', this.value)"></div>' +
+                    '<div class="pf-prop-group"><label>Level</label><select onchange="updateProp(\'' + id + '\', \'level\', this.value)"><option value="h1"' + (el.content.level === 'h1' ? ' selected' : '') + '>H1</option><option value="h2"' + (el.content.level === 'h2' ? ' selected' : '') + '>H2</option><option value="h3"' + (el.content.level === 'h3' ? ' selected' : '') + '>H3</option></select></div>';
+            } else if (el.type === 'text') {
+                propsHtml = '<div class="pf-prop-group"><label>Content</label><textarea onchange="updateProp(\'' + id + '\', \'text\', this.value)">' + el.content.text + '</textarea></div>';
+            } else if (el.type === 'image') {
+                propsHtml = '<div class="pf-prop-group"><label>Image URL</label><input type="text" value="' + el.content.src + '" onchange="updateProp(\'' + id + '\', \'src\', this.value)"></div>' +
+                    '<div class="pf-prop-group"><label>Alt Text</label><input type="text" value="' + el.content.alt + '" onchange="updateProp(\'' + id + '\', \'alt\', this.value)"></div>';
+            } else if (el.type === 'button') {
+                propsHtml = '<div class="pf-prop-group"><label>Button Text</label><input type="text" value="' + el.content.text + '" onchange="updateProp(\'' + id + '\', \'text\', this.value)"></div>' +
+                    '<div class="pf-prop-group"><label>Link URL</label><input type="text" value="' + el.content.link + '" onchange="updateProp(\'' + id + '\', \'link\', this.value)"></div>';
+            } else if (el.type === 'spacer') {
+                propsHtml = '<div class="pf-prop-group"><label>Height (px)</label><input type="number" value="' + el.content.height + '" onchange="updateProp(\'' + id + '\', \'height\', parseInt(this.value))"></div>';
+            } else {
+                propsHtml = '<p style="color: #888;">Select an element to edit its properties.</p>';
+            }
+
+            document.getElementById('propContent').innerHTML = propsHtml;
+        }
+
+        function closeProperties() {
+            document.getElementById('propertiesPanel').classList.remove('open');
+            selectedElement = null;
+            document.querySelectorAll('.pf-element').forEach(el => el.classList.remove('selected'));
+        }
+
+        function updateProp(id, prop, value) {
+            const el = elements.find(e => e.id === id);
+            if (el) {
+                el.content[prop] = value;
+                renderElements();
+                selectElement(id);
+                saveToHistory();
+            }
+        }
+
+        function moveElement(id, direction) {
+            const index = elements.findIndex(e => e.id === id);
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < elements.length) {
+                [elements[index], elements[newIndex]] = [elements[newIndex], elements[index]];
+                renderElements();
+                saveToHistory();
+            }
+        }
+
+        function duplicateElement(id) {
+            const el = elements.find(e => e.id === id);
+            if (el) {
+                const newEl = { ...el, id: 'el-' + Date.now(), content: { ...el.content } };
+                const index = elements.findIndex(e => e.id === id);
+                elements.splice(index + 1, 0, newEl);
+                renderElements();
+                saveToHistory();
+            }
+        }
+
+        function deleteElement(id) {
+            elements = elements.filter(e => e.id !== id);
+            renderElements();
+            closeProperties();
+            saveToHistory();
+        }
+
+        function initDeviceSwitcher() {
+            document.querySelectorAll('.pf-device-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.pf-device-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const canvas = document.getElementById('canvas');
+                    canvas.className = 'pf-canvas ' + (btn.dataset.device !== 'desktop' ? btn.dataset.device : '');
+                });
+            });
+        }
+
+        function initButtons() {
+            document.getElementById('saveBtn').addEventListener('click', savePage);
+            document.getElementById('previewBtn').addEventListener('click', previewPage);
+            document.getElementById('undoBtn').addEventListener('click', undo);
+            document.getElementById('redoBtn').addEventListener('click', redo);
+        }
+
+        function saveToHistory() {
+            history = history.slice(0, historyIndex + 1);
+            history.push(JSON.stringify(elements));
+            historyIndex++;
+        }
+
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                elements = JSON.parse(history[historyIndex]);
+                renderElements();
+            }
+        }
+
+        function redo() {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                elements = JSON.parse(history[historyIndex]);
+                renderElements();
+            }
+        }
+
+        async function savePage() {
+            const title = document.getElementById('pageTitle').value;
+            const content = JSON.stringify(elements);
+
+            try {
+                const response = await fetch(API_BASE + '/pages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, content, status: 'published' })
+                });
+
+                if (response.ok) {
+                    alert('Page saved successfully!');
+                } else {
+                    alert('Failed to save page. Please try again.');
+                }
+            } catch (err) {
+                console.error('Save error:', err);
+                alert('Page saved locally. (API not available)');
+            }
+        }
+
+        function previewPage() {
+            const previewWindow = window.open('', '_blank');
+            const html = generatePreviewHtml();
+            previewWindow.document.write(html);
+        }
+
+        function generatePreviewHtml() {
+            const title = document.getElementById('pageTitle').value;
+            let body = elements.map(el => {
+                switch (el.type) {
+                    case 'heading': return '<' + el.content.level + '>' + el.content.text + '</' + el.content.level + '>';
+                    case 'text': return '<p>' + el.content.text + '</p>';
+                    case 'image': return '<img src="' + el.content.src + '" alt="' + el.content.alt + '" style="max-width: 100%;">';
+                    case 'button': return '<a href="' + el.content.link + '" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #a855f7, #6366f1); color: white; text-decoration: none; border-radius: 6px;">' + el.content.text + '</a>';
+                    case 'divider': return '<hr>';
+                    case 'spacer': return '<div style="height: ' + el.content.height + 'px;"></div>';
+                    default: return '';
+                }
+            }).join('');
+
+            return '<!DOCTYPE html><html><head><title>' + title + '</title><style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:1200px;margin:0 auto;padding:40px;}</style></head><body>' + body + '</body></html>';
+        }
+
+        async function loadPage(id) {
+            try {
+                const response = await fetch(API_BASE + '/pages/' + id);
+                if (response.ok) {
+                    const page = await response.json();
+                    document.getElementById('pageTitle').value = page.title || 'Untitled Page';
+                    elements = JSON.parse(page.content || '[]');
+                    renderElements();
+                    saveToHistory();
+                }
+            } catch (err) {
+                console.error('Load error:', err);
+            }
         }
     </script>
 </body>
@@ -6602,6 +7121,20 @@ pub fn build_rustbuilder_router(state: &AppState) -> Router {
 
     // Create the rustbuilder router with its own state
     rustbuilder::api::create_router(db_pool)
+}
+
+/// PageForge visual page builder plugin routes builder
+/// This returns a router with PageForge's own state for the visual page builder
+pub fn build_pageforge_router(state: &AppState) -> Router {
+    // Get the database pool from AppState
+    let db_pool = state.database.inner().clone();
+
+    // Create the pageforge router with its own state
+    // Base URL for asset URLs - can be configured via environment
+    let base_url = std::env::var("PAGEFORGE_BASE_URL")
+        .unwrap_or_else(|_| "http://localhost:5180".to_string());
+
+    pageforge::create_api_router(db_pool, base_url)
 }
 
 // ============================================

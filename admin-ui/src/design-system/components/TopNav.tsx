@@ -53,6 +53,7 @@ export interface TopNavProps {
   onProfileClick?: () => void;
   onSettingsClick?: () => void;
   customContent?: React.ReactNode;
+  leftContent?: React.ReactNode;
 }
 
 export function TopNav({
@@ -69,6 +70,7 @@ export function TopNav({
   onProfileClick,
   onSettingsClick,
   customContent,
+  leftContent,
 }: TopNavProps) {
   const { mode, setMode, isDark, toggleTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,6 +98,9 @@ export function TopNav({
       {/* Left section */}
       <div className="flex items-center gap-4">
         {showMobileMenuTrigger && <SidebarMobileTrigger />}
+
+        {/* Left content (e.g., dashboard switcher) */}
+        {leftContent}
 
         {/* Search */}
         {showSearch && (
