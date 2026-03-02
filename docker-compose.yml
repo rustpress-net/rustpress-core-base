@@ -31,6 +31,40 @@ services:
       timeout: 5s
       retries: 5
 
+  rustpress:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rustpress-server
+    ports:
+      - "3080:8080"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8080"
+      DATABASE_URL: "postgres://rustpress:rustpress@postgres:5432/rustpress"
+      REDIS_URL: "redis://redis:6379"
+      JWT_SECRET: "ZKW5bFPnnYzYR1XdhRYhbXmX7pBU94DaetzueI8TYZkdGLHo9pjggE8dte5FyWtR"
+      RUST_LOG: "info"
+      UPLOAD_DIR: "/app/uploads"
+      THEMES_DIR: "/app/themes"
+    volumes:
+      - rustpress_uploads:/app/uploads
+      - ./config:/app/config
+      - ./migrations:/app/migrations
+      - ./themes:/app/themes
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+
 volumes:
   postgres_data:
   redis_data:
+  rustpress_uploads:

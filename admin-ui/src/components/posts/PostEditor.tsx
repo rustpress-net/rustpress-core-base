@@ -1,5 +1,8 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePostStore } from '../../store/postStore';
+import PostMetadataSidebar from './PostMetadataSidebar';
 import {
   Code,
   Eye,
@@ -216,6 +219,7 @@ type SidebarPanel =
   | 'series'
   | 'location'
   | 'language'
+  | 'postSettings'
   // Configuration panel types
   | 'carouselConfig'
   | 'galleryConfig'
@@ -339,25 +343,30 @@ const toolToModalConfig: Record<string, { type: PopupModalType; initialTab: stri
   'aiSummarize': { type: 'ai-tools', initialTab: 'summarize' },
 };
 
-interface PostEditorProps {
-  initialContent?: string;
-  initialTitle?: string;
-  initialFeaturedImage?: FeaturedImageData;
-  initialMetadata?: Partial<PostMetadataData>;
-  postId?: string;
-  onSave?: (data: {
-    content: string;
-    title: string;
-    featuredImage?: FeaturedImageData;
-    metadata?: PostMetadataData;
-  }) => void;
-  onPublish?: (data: {
-    content: string;
-    title: string;
-    featuredImage?: FeaturedImageData;
-    metadata?: PostMetadataData;
-  }) => void;
-}
+// PostEditorProps removed — component is now self-managing via usePostStore + useParams
+
+// Static Tailwind color class lookup to avoid dynamic class purging
+const toolColorClasses: Record<string, { bg: string; text: string; darkBg: string; darkText: string; iconText: string; dot: string }> = {
+  blue:    { bg: 'bg-blue-100',    text: 'text-blue-700',    darkBg: 'dark:bg-blue-900/30',    darkText: 'dark:text-blue-400',    iconText: 'text-blue-600',    dot: 'bg-blue-500' },
+  purple:  { bg: 'bg-purple-100',  text: 'text-purple-700',  darkBg: 'dark:bg-purple-900/30',  darkText: 'dark:text-purple-400',  iconText: 'text-purple-600',  dot: 'bg-purple-500' },
+  green:   { bg: 'bg-green-100',   text: 'text-green-700',   darkBg: 'dark:bg-green-900/30',   darkText: 'dark:text-green-400',   iconText: 'text-green-600',   dot: 'bg-green-500' },
+  pink:    { bg: 'bg-pink-100',    text: 'text-pink-700',    darkBg: 'dark:bg-pink-900/30',    darkText: 'dark:text-pink-400',    iconText: 'text-pink-600',    dot: 'bg-pink-500' },
+  indigo:  { bg: 'bg-indigo-100',  text: 'text-indigo-700',  darkBg: 'dark:bg-indigo-900/30',  darkText: 'dark:text-indigo-400',  iconText: 'text-indigo-600',  dot: 'bg-indigo-500' },
+  cyan:    { bg: 'bg-cyan-100',    text: 'text-cyan-700',    darkBg: 'dark:bg-cyan-900/30',    darkText: 'dark:text-cyan-400',    iconText: 'text-cyan-600',    dot: 'bg-cyan-500' },
+  teal:    { bg: 'bg-teal-100',    text: 'text-teal-700',    darkBg: 'dark:bg-teal-900/30',    darkText: 'dark:text-teal-400',    iconText: 'text-teal-600',    dot: 'bg-teal-500' },
+  emerald: { bg: 'bg-emerald-100', text: 'text-emerald-700', darkBg: 'dark:bg-emerald-900/30', darkText: 'dark:text-emerald-400', iconText: 'text-emerald-600', dot: 'bg-emerald-500' },
+  violet:  { bg: 'bg-violet-100',  text: 'text-violet-700',  darkBg: 'dark:bg-violet-900/30',  darkText: 'dark:text-violet-400',  iconText: 'text-violet-600',  dot: 'bg-violet-500' },
+  orange:  { bg: 'bg-orange-100',  text: 'text-orange-700',  darkBg: 'dark:bg-orange-900/30',  darkText: 'dark:text-orange-400',  iconText: 'text-orange-600',  dot: 'bg-orange-500' },
+  amber:   { bg: 'bg-amber-100',   text: 'text-amber-700',   darkBg: 'dark:bg-amber-900/30',   darkText: 'dark:text-amber-400',   iconText: 'text-amber-600',   dot: 'bg-amber-500' },
+  lime:    { bg: 'bg-lime-100',    text: 'text-lime-700',    darkBg: 'dark:bg-lime-900/30',    darkText: 'dark:text-lime-400',    iconText: 'text-lime-600',    dot: 'bg-lime-500' },
+  sky:     { bg: 'bg-sky-100',     text: 'text-sky-700',     darkBg: 'dark:bg-sky-900/30',     darkText: 'dark:text-sky-400',     iconText: 'text-sky-600',     dot: 'bg-sky-500' },
+  rose:    { bg: 'bg-rose-100',    text: 'text-rose-700',    darkBg: 'dark:bg-rose-900/30',    darkText: 'dark:text-rose-400',    iconText: 'text-rose-600',    dot: 'bg-rose-500' },
+  fuchsia: { bg: 'bg-fuchsia-100', text: 'text-fuchsia-700', darkBg: 'dark:bg-fuchsia-900/30', darkText: 'dark:text-fuchsia-400', iconText: 'text-fuchsia-600', dot: 'bg-fuchsia-500' },
+  red:     { bg: 'bg-red-100',     text: 'text-red-700',     darkBg: 'dark:bg-red-900/30',     darkText: 'dark:text-red-400',     iconText: 'text-red-600',     dot: 'bg-red-500' },
+  gray:    { bg: 'bg-gray-100',    text: 'text-gray-700',    darkBg: 'dark:bg-gray-900/30',    darkText: 'dark:text-gray-400',    iconText: 'text-gray-600',    dot: 'bg-gray-500' },
+  zinc:    { bg: 'bg-zinc-100',    text: 'text-zinc-700',    darkBg: 'dark:bg-zinc-900/30',    darkText: 'dark:text-zinc-400',    iconText: 'text-zinc-600',    dot: 'bg-zinc-500' },
+  slate:   { bg: 'bg-slate-100',   text: 'text-slate-700',   darkBg: 'dark:bg-slate-900/30',   darkText: 'dark:text-slate-400',   iconText: 'text-slate-600',   dot: 'bg-slate-500' },
+};
 
 const toolbarGroups = [
   {
@@ -522,18 +531,34 @@ const defaultShortcuts = [
 // Storage key for persisting user preferences
 const SHORTCUTS_STORAGE_KEY = 'rustpress_editor_shortcuts';
 
-export const PostEditor: React.FC<PostEditorProps> = ({
-  initialContent = '',
-  initialTitle = '',
-  initialFeaturedImage,
-  initialMetadata,
-  postId,
-  onSave,
-  onPublish
-}) => {
+export const PostEditor: React.FC = () => {
+  const { id: routeId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const store = usePostStore();
+
+  // Initialize post from route param
+  useEffect(() => {
+    if (routeId) {
+      store.loadPost(routeId);
+    } else {
+      store.initNewPost();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeId]);
+
   const [activeTab, setActiveTab] = useState<EditorTab>('visual');
-  const [htmlContent, setHtmlContent] = useState(initialContent);
-  const [postTitle, setPostTitle] = useState(initialTitle || 'Untitled Post');
+
+  // Derive from store (these are the source of truth now)
+  const htmlContent = store.currentPost.content;
+  const setHtmlContent = useCallback((val: string) => store.updateField('content', val), [store]);
+  const postTitle = store.currentPost.title;
+  const setPostTitle = useCallback((val: string) => {
+    store.updateField('title', val);
+    // Auto-generate slug if slug is empty or was auto-generated
+    if (!store.currentPost.slug || store.currentPost.slug === store.generateSlug(store.currentPost.title)) {
+      store.updateField('slug', store.generateSlug(val));
+    }
+  }, [store]);
 
   // Block editor state
   const [blocks, setBlocks] = useState<ContentBlock[]>([
@@ -781,7 +806,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   }, []);
 
   // Featured image state
-  const [featuredImage, setFeaturedImage] = useState<FeaturedImageData | undefined>(initialFeaturedImage);
+  const [featuredImage, setFeaturedImage] = useState<FeaturedImageData | undefined>(undefined);
   const [showFeaturedImage, setShowFeaturedImage] = useState(true);
 
   // Macro info panel state
@@ -806,7 +831,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     format: 'standard',
     excerpt: '',
     customFields: {},
-    ...initialMetadata
+    // Defaults (metadata panel is now powered by PostMetadataSidebar via store)
   });
 
   // SEO Meta state
@@ -1287,7 +1312,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       case 'embed':
         return <EmbedPreview {...panelProps} />;
       case 'seo':
-        return <SEOAnalyzer title="Post Title" {...panelProps} />;
+        return <SEOAnalyzer title={store.currentPost.title || 'Untitled Post'} {...panelProps} />;
       case 'readability':
         return <ReadabilityScore {...panelProps} />;
       case 'keywords':
@@ -1295,15 +1320,15 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       case 'headings':
         return <HeadingStructure {...panelProps} />;
       case 'schema':
-        return <SchemaMarkup postTitle="Post Title" postContent={htmlContent} {...panelProps} />;
+        return <SchemaMarkup postTitle={store.currentPost.title || 'Untitled Post'} postContent={htmlContent} {...panelProps} />;
       case 'links':
         return <InternalLinking {...panelProps} />;
       case 'linkchecker':
         return <LinkChecker {...panelProps} />;
       case 'devices':
-        return <DevicePreview title="Post Title" {...panelProps} />;
+        return <DevicePreview title={store.currentPost.title || 'Untitled Post'} {...panelProps} />;
       case 'social':
-        return <SocialPreview title="Post Title" description="Post description" {...panelProps} />;
+        return <SocialPreview title={store.currentPost.title || 'Untitled Post'} description={store.currentPost.excerpt || 'Post description'} {...panelProps} />;
       case 'outline':
         return <ContentOutline {...panelProps} />;
       case 'versions':
@@ -1396,7 +1421,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       case 'revisions':
         return (
           <RevisionsPanel
-            postId={postId}
+            postId={routeId}
           />
         );
       case 'seoMeta':
@@ -1495,6 +1520,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             }}
           />
         );
+      case 'postSettings':
+        return <PostMetadataSidebar />;
       // Configuration panels
       case 'carouselConfig':
         return (
@@ -1649,7 +1676,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       {/* Top Header Bar */}
       <header className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-b shadow-sm">
         <div className="flex items-center gap-4">
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+          <button onClick={() => navigate('/posts')} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
             <ChevronLeft size={20} />
           </button>
           <div>
@@ -1677,8 +1704,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   onClick={() => handleToolClick(shortcutId as SidebarPanel)}
                   className={clsx(
                     'p-1.5 rounded-lg transition-colors',
-                    isActive
-                      ? `bg-${shortcut.color}-100 text-${shortcut.color}-600 dark:bg-${shortcut.color}-900/30 dark:text-${shortcut.color}-400`
+                    isActive && toolColorClasses[shortcut.color]
+                      ? `${toolColorClasses[shortcut.color].bg} ${toolColorClasses[shortcut.color].iconText} ${toolColorClasses[shortcut.color].darkBg} ${toolColorClasses[shortcut.color].darkText}`
                       : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'
                   )}
                   title={shortcut.label}
@@ -1720,7 +1747,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           </div>
 
           {/* Autosave Indicator */}
-          <AutosaveIndicator isDirty={false} isSaving={false} isOnline={true} />
+          <AutosaveIndicator isDirty={store.isDirty} isSaving={store.isSaving} lastSaved={store.lastSaved || undefined} isOnline={true} />
 
           {/* Word Count */}
           <div className="px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm">
@@ -1734,20 +1761,44 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
           </button>
 
+          {/* Post Settings Toggle */}
           <button
-            onClick={() => onSave?.({ content: htmlContent, title: postTitle, featuredImage, metadata })}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
+            onClick={() => {
+              if (activePanel === 'postSettings') {
+                setActivePanel(null);
+                setRightSidebarOpen(false);
+              } else {
+                setActivePanel('postSettings');
+                setRightSidebarOpen(true);
+              }
+            }}
+            className={clsx(
+              'p-2 rounded-lg transition-colors',
+              activePanel === 'postSettings'
+                ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'
+            )}
+            title="Post Settings"
           >
-            <Save size={16} />
-            Save Draft
+            <Settings size={18} />
           </button>
 
           <button
-            onClick={() => onPublish?.({ content: htmlContent, title: postTitle, featuredImage, metadata })}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            onClick={() => store.saveDraft()}
+            disabled={store.isSaving}
+            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2 disabled:opacity-50"
+          >
+            <Save size={16} />
+            {store.isSaving ? 'Saving...' : 'Save Draft'}
+          </button>
+
+          <button
+            onClick={() => store.publish()}
+            disabled={store.isSaving}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
           >
             <Send size={16} />
-            Publish
+            {store.isSaving ? 'Publishing...' : 'Publish'}
           </button>
         </div>
       </header>
@@ -1819,15 +1870,15 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                               onClick={() => handleToolClick(tool.id as SidebarPanel)}
                               className={clsx(
                                 'flex-1 flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all',
-                                isActive
-                                  ? `bg-${tool.color}-100 text-${tool.color}-700 dark:bg-${tool.color}-900/30 dark:text-${tool.color}-400`
-                                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                                isActive && toolColorClasses[tool.color]
+                                  ? `${toolColorClasses[tool.color].bg} ${toolColorClasses[tool.color].text} ${toolColorClasses[tool.color].darkBg} ${toolColorClasses[tool.color].darkText}`
+                                  : !isActive ? 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300' : ''
                               )}
                             >
-                              <Icon size={18} className={isActive ? `text-${tool.color}-600` : ''} />
+                              <Icon size={18} className={isActive && toolColorClasses[tool.color] ? toolColorClasses[tool.color].iconText : ''} />
                               <span className="flex-1 text-left">{tool.label}</span>
-                              {isActive && (
-                                <div className={`w-2 h-2 rounded-full bg-${tool.color}-500`} />
+                              {isActive && toolColorClasses[tool.color] && (
+                                <div className={`w-2 h-2 rounded-full ${toolColorClasses[tool.color].dot}`} />
                               )}
                             </button>
                             {hasConfig && (
@@ -1835,8 +1886,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                                 onClick={() => handleToolClick(tool.configId as SidebarPanel)}
                                 className={clsx(
                                   'p-2 rounded-lg transition-all',
-                                  isConfigActive
-                                    ? `bg-${tool.color}-100 text-${tool.color}-700 dark:bg-${tool.color}-900/30 dark:text-${tool.color}-400`
+                                  isConfigActive && toolColorClasses[tool.color]
+                                    ? `${toolColorClasses[tool.color].bg} ${toolColorClasses[tool.color].text} ${toolColorClasses[tool.color].darkBg} ${toolColorClasses[tool.color].darkText}`
                                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'
                                 )}
                                 title={`${tool.label} Settings`}

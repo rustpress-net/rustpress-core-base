@@ -16,7 +16,7 @@ COPY crates ./crates
 COPY plugins ./plugins
 
 # Set RUSTFLAGS to allow warnings for MVP release
-ENV RUSTFLAGS="-Aunused -Amismatched_lifetime_syntaxes -Adependency_on_unit_never_type_fallback -Aunused_comparisons"
+ENV RUSTFLAGS="-Aunused -Amismatched_lifetime_syntaxes -Adependency_on_unit_never_type_fallback -Aunused_comparisons -Aambiguous_glob_reexports"
 
 # Build all release binaries
 RUN cargo build --release
@@ -59,5 +59,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
-# Run the server
-CMD ["rustpress"]
+# Run migrations then start server
+CMD ["/bin/bash", "-c", "rustpress-migrate --database-url \"$DATABASE_URL\" --migrations /app/migrations 2>&1 || true; exec rustpress"]

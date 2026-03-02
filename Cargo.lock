@@ -4961,28 +4961,19 @@ checksum = "1a80800c0488c3a21695ea981a54918fbb37abf04f4d0720c453632255e2ff0e"
 
 [[package]]
 name = "pageforge"
-version = "1.0.0"
+version = "0.4.0"
 dependencies = [
- "anyhow",
  "async-trait",
  "axum",
  "chrono",
- "futures",
- "once_cell",
  "rustpress-core",
  "semver",
  "serde",
  "serde_json",
- "slug",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "tokio-test",
- "tower 0.5.2",
- "tower-http",
- "tracing",
  "uuid",
- "validator",
 ]
 
 [[package]]

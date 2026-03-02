@@ -1,0 +1,7 @@
+target/
+.git/
+.team/
+.env
+.env.example
+*.md
+node_modules/

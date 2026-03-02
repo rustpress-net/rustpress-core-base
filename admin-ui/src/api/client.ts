@@ -42,6 +42,15 @@ export interface Post {
   featured_image?: string;
   created_at: string;
   updated_at: string;
+  visibility?: 'public' | 'private' | 'password';
+  password?: string;
+  author_name?: string;
+  categories?: string[];
+  tags?: string[];
+  seo_title?: string;
+  seo_description?: string;
+  focus_keyword?: string;
+  scheduled_at?: string;
 }
 
 export interface Taxonomy {
