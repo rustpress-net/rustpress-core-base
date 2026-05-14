@@ -28,7 +28,7 @@ A modern, high-performance Content Management System (CMS) built with Rust. Rust
 
 ```bash
 # Clone the repository
-git clone https://github.com/rustpress/rustpress.git
+git clone https://github.com/rustpress-net/rustpress-core-base.git
 cd rustpress
 
 # Set up environment variables
@@ -93,15 +93,15 @@ SESSION_SECRET=your-session-secret
 
 Plugins are distributed as separate packages. Install them by adding to your RustPress installation:
 
-- [rustpress-plugin-rustbackup](https://github.com/rustpress/rustpress-plugin-rustbackup) - Backup & restore
-- [rustpress-plugin-rustseo](https://github.com/rustpress/rustpress-plugin-rustseo) - SEO optimization
-- [rustpress-plugin-rustanalytics](https://github.com/rustpress/rustpress-plugin-rustanalytics) - Analytics
-- [rustpress-plugin-rustcommerce](https://github.com/rustpress/rustpress-plugin-rustcommerce) - E-commerce
-- [rustpress-plugin-rustforms](https://github.com/rustpress/rustpress-plugin-rustforms) - Form builder
-- [rustpress-plugin-rustmail](https://github.com/rustpress/rustpress-plugin-rustmail) - Email integration
-- [rustpress-plugin-rustmedia](https://github.com/rustpress/rustpress-plugin-rustmedia) - Media management
-- [rustpress-plugin-rustsecurity](https://github.com/rustpress/rustpress-plugin-rustsecurity) - Security enhancements
-- [rustpress-plugin-rustusers](https://github.com/rustpress/rustpress-plugin-rustusers) - User management
+- [rustpress-plugin-rustbackup](https://github.com/rustpress-net/rustpress-core-base-plugin-rustbackup) - Backup & restore
+- [rustpress-plugin-rustseo](https://github.com/rustpress-net/rustpress-core-base-plugin-rustseo) - SEO optimization
+- [rustpress-plugin-rustanalytics](https://github.com/rustpress-net/rustpress-core-base-plugin-rustanalytics) - Analytics
+- [rustpress-plugin-rustcommerce](https://github.com/rustpress-net/rustpress-core-base-plugin-rustcommerce) - E-commerce
+- [rustpress-plugin-rustforms](https://github.com/rustpress-net/rustpress-core-base-plugin-rustforms) - Form builder
+- [rustpress-plugin-rustmail](https://github.com/rustpress-net/rustpress-core-base-plugin-rustmail) - Email integration
+- [rustpress-plugin-rustmedia](https://github.com/rustpress-net/rustpress-core-base-plugin-rustmedia) - Media management
+- [rustpress-plugin-rustsecurity](https://github.com/rustpress-net/rustpress-core-base-plugin-rustsecurity) - Security enhancements
+- [rustpress-plugin-rustusers](https://github.com/rustpress-net/rustpress-core-base-plugin-rustusers) - User management
 
 ## Development
 

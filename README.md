@@ -29,33 +29,29 @@ A modern, high-performance Content Management System (CMS) built with Rust. Rust
 
 **Linux / macOS:**
 ```bash
-curl -sSL https://raw.githubusercontent.com/rustpress/rustpress/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/rustpress-net/rustpress-core-base/main/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/rustpress/rustpress/main/install.ps1 | iex
-```
-
-### Using Cargo
-
-If you have Rust installed:
-```bash
-cargo install rustpress
+irm https://raw.githubusercontent.com/rustpress-net/rustpress-core-base/main/install.ps1 | iex
 ```
 
 ### Using Docker
 
 ```bash
-docker run -d -p 8080:8080 ghcr.io/rustpress/rustpress:latest
+docker run -d -p 8080:8080 ghcr.io/rustpress-net/rustpress:latest
 ```
+
+> A `cargo install rustpress` path is planned for the v1.0 release once
+> the crate is published. Until then, prefer the installer or Docker.
 
 ### From Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/rustpress-net/core.git
-cd rustpress
+git clone https://github.com/rustpress-net/rustpress-core-base.git
+cd rustpress-core-base
 
 # Set up environment variables
 cp .env.example .env

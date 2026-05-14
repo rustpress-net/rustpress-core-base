@@ -1,9 +1,9 @@
 # RustPress Installer for Windows
-# Usage: irm https://raw.githubusercontent.com/rustpress/rustpress/main/install.ps1 | iex
+# Usage: irm https://raw.githubusercontent.com/rustpress-net/rustpress-core-base/main/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 
-$REPO = "rustpress-net/core"
+$REPO = "rustpress-net/rustpress-core-base"
 $INSTALL_DIR = if ($env:RUSTPRESS_INSTALL_DIR) { $env:RUSTPRESS_INSTALL_DIR } else { "$env:LOCALAPPDATA\RustPress\bin" }
 
 function Write-Info { param($msg) Write-Host "[INFO] $msg" -ForegroundColor Cyan }

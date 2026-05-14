@@ -1,10 +1,10 @@
 #!/bin/bash
 # RustPress Installer
-# Usage: curl -sSL https://raw.githubusercontent.com/rustpress/rustpress/main/install.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/rustpress-net/rustpress-core-base/main/install.sh | bash
 
 set -e
 
-REPO="rustpress-net/core"
+REPO="rustpress-net/rustpress-core-base"
 INSTALL_DIR="${RUSTPRESS_INSTALL_DIR:-/usr/local/bin}"
 TMP_DIR=$(mktemp -d)
 

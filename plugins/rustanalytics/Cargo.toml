@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["RustPress Team"]
 description = "Enterprise Google Analytics integration plugin for RustPress - comprehensive analytics, reporting, and real-time data"
 license = "MIT"
-repository = "https://github.com/rustpress/rustpress"
+repository = "https://github.com/rustpress-net/rustpress-core-base"
 keywords = ["rustpress", "plugin", "analytics", "google-analytics", "enterprise"]
 categories = ["web-programming"]
 

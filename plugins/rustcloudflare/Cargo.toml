@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["RustPress Team <team@rustpress.io>"]
 description = "Seamless Cloudflare integration for RustPress - CDN, DNS, Security, Workers, R2, KV, D1, and more"
 license = "MIT"
-repository = "https://github.com/rustpress/rustcloudflare"
+repository = "https://github.com/rustpress-net/rustpress-plugin-cloudflare"
 keywords = ["cloudflare", "cdn", "security", "rustpress", "plugin"]
 categories = ["web-programming", "caching", "network-programming"]
 

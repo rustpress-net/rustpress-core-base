@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["RustPress Contributors"]
 description = "Health check and readiness probes for RustPress CMS"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/rustpress/rustpress"
+repository = "https://github.com/rustpress-net/rustpress-core-base"
 keywords = ["health", "kubernetes", "probes", "monitoring"]
 categories = ["web-programming"]
 

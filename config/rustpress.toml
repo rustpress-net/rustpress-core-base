@@ -8,4 +8,8 @@ host = "127.0.0.1"
 port = 8089
 
 [auth]
-jwt_secret = "REDACTED_JWT_SECRET"
+# Placeholder only. Set JWT_SECRET in the environment for any non-dev run;
+# the server loads env first and falls back to this value with a warning.
+# The previous literal secret was committed by accident — treat any token
+# signed against it as compromised and rotate.
+jwt_secret = "change-me-in-production"
