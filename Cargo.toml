@@ -29,11 +29,11 @@ members = [
 ]
 
 [workspace.package]
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 edition = "2021"
 authors = ["RustPress Team"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/rustpress-net/core"
+repository = "https://github.com/rustpress-net/rustpress-core-base"
 rust-version = "1.75"
 
 [workspace.dependencies]

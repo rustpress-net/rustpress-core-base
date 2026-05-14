@@ -1,6 +1,6 @@
 [package]
 name = "rustpress-media"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 edition = "2021"
 description = "Media management system for RustPress - image optimization, video processing, media library"
 license = "MIT OR Apache-2.0"
