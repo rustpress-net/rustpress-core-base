@@ -25,7 +25,7 @@ members = [
     "plugins/rustcloudflare",
     "plugins/rustbuilder",
     "plugins/visual-queue-manager",
-    "plugins/pageforge",
+    # plugins/pageforge — source tree absent; see crates/rustpress-server/Cargo.toml note
 ]
 
 [workspace.package]

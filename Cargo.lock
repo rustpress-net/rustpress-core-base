@@ -4960,32 +4960,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a80800c0488c3a21695ea981a54918fbb37abf04f4d0720c453632255e2ff0e"
 
 [[package]]
-name = "pageforge"
-version = "1.0.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "axum",
- "chrono",
- "futures",
- "once_cell",
- "rustpress-core",
- "semver",
- "serde",
- "serde_json",
- "slug",
- "sqlx",
- "thiserror 1.0.69",
- "tokio",
- "tokio-test",
- "tower 0.5.2",
- "tower-http",
- "tracing",
- "uuid",
- "validator",
-]
-
-[[package]]
 name = "papergrid"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6206,7 +6180,7 @@ dependencies = [
 
 [[package]]
 name = "rustbuilder"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "async-trait",
  "axum",
@@ -6408,7 +6382,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-admin"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "anyhow",
  "askama",
@@ -6432,7 +6406,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-api"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6461,7 +6435,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-auth"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "argon2",
  "async-trait",
@@ -6486,7 +6460,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-cache"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "async-trait",
  "chrono",
@@ -6504,7 +6478,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-cdn"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6525,7 +6499,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-cli"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -6556,7 +6530,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-content"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "ammonia 3.3.1",
  "anyhow",
@@ -6586,7 +6560,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-core"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6612,7 +6586,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-database"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "async-trait",
  "chrono",
@@ -6634,7 +6608,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-editor"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "ammonia 4.1.2",
  "anyhow",
@@ -6656,7 +6630,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-events"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "async-trait",
  "chrono",
@@ -6675,7 +6649,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-health"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6695,7 +6669,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-jobs"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "async-trait",
  "chrono",
@@ -6715,7 +6689,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-media"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6741,7 +6715,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-performance"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6782,7 +6756,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-plugins"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6825,7 +6799,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-server"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "anyhow",
  "argon2",
@@ -6843,7 +6817,6 @@ dependencies = [
  "lettre",
  "mime",
  "once_cell",
- "pageforge",
  "parking_lot",
  "prometheus-client",
  "regex",
@@ -6882,7 +6855,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-storage"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "async-trait",
  "bytes",
@@ -6902,7 +6875,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-themes"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6936,7 +6909,7 @@ dependencies = [
 
 [[package]]
 name = "rustpress-users"
-version = "0.4.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "argon2",
  "async-trait",

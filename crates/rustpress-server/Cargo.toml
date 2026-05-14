@@ -19,7 +19,11 @@ rustpress-themes = { path = "../rustpress-themes" }
 rustcloudflare = { path = "../../plugins/rustcloudflare" }
 visual-queue-manager = { path = "../../plugins/visual-queue-manager" }
 rustbuilder = { path = "../../plugins/rustbuilder" }
-pageforge = { path = "../../plugins/pageforge" }
+# `pageforge` plugin was previously path-deped here but its source tree
+# never landed in this repo, which broke the whole workspace `cargo check`.
+# Re-add it once the plugin source is restored (or extracted to its own
+# rustpress-plugin-pageforge repo, matching the rustcommerce/visual-queue
+# pattern).
 
 # Templating
 tera = "1.19"

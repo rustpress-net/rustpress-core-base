@@ -51,3 +51,4 @@ nul
 # Node modules (for admin-ui)
 node_modules/
 tmpclaude-*
+.git-filter-repo-redactions.txt
