@@ -6793,6 +6793,7 @@ dependencies = [
  "walkdir",
  "wasmtime",
  "wasmtime-wasi",
+ "wat",
  "zeroize",
  "zip",
 ]

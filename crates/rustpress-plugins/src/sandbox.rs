@@ -332,91 +332,160 @@ impl WasmPluginSandbox {
         }
     }
 
-    /// Execute a function in the sandbox
+    /// Execute a function in the sandbox.
+    ///
+    /// Requires the `wasm` feature. Without it, this returns
+    /// [`SandboxError::Unsupported`] rather than silently doing nothing.
+    #[cfg(not(feature = "wasm"))]
+    pub fn execute(
+        &self,
+        _wasm_bytes: &[u8],
+        _function: &str,
+        _args: &[WasmValue],
+        _context: HostContext,
+    ) -> std::result::Result<Vec<WasmValue>, SandboxError> {
+        Err(SandboxError::Unsupported(
+            "WASM execution is not compiled in; rebuild rustpress-plugins with the `wasm` feature"
+                .to_string(),
+        ))
+    }
+
+    /// Execute an exported function in a real Wasmtime sandbox with fuel (CPU)
+    /// and memory limits enforced.
+    ///
+    /// v1 scope: self-contained modules with numeric (i32/i64/f32/f64) params
+    /// and results. Modules that import host functions, or calls using
+    /// string/bytes/JSON values, return [`SandboxError::Unsupported`] until the
+    /// linear-memory host ABI lands — never a silent empty result.
+    #[cfg(feature = "wasm")]
     pub fn execute(
         &self,
         wasm_bytes: &[u8],
         function: &str,
         args: &[WasmValue],
-        context: HostContext,
+        _context: HostContext,
     ) -> std::result::Result<Vec<WasmValue>, SandboxError> {
-        let start = Instant::now();
+        use wasmtime::{
+            Config, Engine, Linker, Module, ResourceLimiter, Store, StoreLimits,
+            StoreLimitsBuilder, Val,
+        };
 
-        // Record execution start
+        let start = Instant::now();
         {
             let mut stats = self.execution_stats.write();
             stats.total_calls += 1;
             stats.last_call = Some(chrono::Utc::now());
         }
 
-        // Compile module
-        let module = self.compile_module(wasm_bytes)?;
+        // Convert arguments up front; reject non-numeric values for now.
+        let params: Vec<Val> = args
+            .iter()
+            .map(wasm_value_to_val)
+            .collect::<std::result::Result<_, _>>()?;
 
-        // Create instance with host functions
-        let instance = self.create_instance(&module, &context)?;
+        // Engine configured for fuel metering. Fuel deterministically bounds
+        // CPU (and thus wall-clock) without a cross-thread interrupt, which is
+        // both simpler and avoids racing the in-process trap handler.
+        let mut config = Config::new();
+        config.consume_fuel(true);
+        let engine =
+            Engine::new(&config).map_err(|e| SandboxError::Compilation(e.to_string()))?;
 
-        // Execute function
-        let result = self.call_function(&instance, function, args)?;
-
-        // Update stats
-        let elapsed = start.elapsed();
-        {
-            let mut stats = self.execution_stats.write();
-            stats.total_execution_time += elapsed;
-            if elapsed > stats.max_execution_time {
-                stats.max_execution_time = elapsed;
+        // Compile once, then enforce the import allow-list.
+        let module =
+            Module::new(&engine, wasm_bytes).map_err(|e| SandboxError::Compilation(e.to_string()))?;
+        for import in module.imports() {
+            if !self.config.allowed_imports.iter().any(|a| a == import.name()) {
+                return Err(SandboxError::InvalidImport(format!(
+                    "{}::{}",
+                    import.module(),
+                    import.name()
+                )));
             }
         }
+        // Host functions require a linear-memory ABI that isn't wired yet, so a
+        // module importing anything cannot be linked. Fail clearly rather than
+        // with an opaque "unknown import" trap at instantiation.
+        if module.imports().len() > 0 {
+            return Err(SandboxError::Unsupported(
+                "host function imports are not yet implemented; this build executes \
+                 self-contained modules only"
+                    .to_string(),
+            ));
+        }
 
-        Ok(result)
-    }
+        // Store carries the memory limiter.
+        struct StoreData {
+            limits: StoreLimits,
+        }
+        let limits = StoreLimitsBuilder::new()
+            .memory_size(self.config.max_memory as usize)
+            .build();
+        let mut store = Store::new(&engine, StoreData { limits });
+        store.limiter(|data| &mut data.limits as &mut dyn ResourceLimiter);
 
-    /// Compile a WASM module
-    fn compile_module(
-        &self,
-        wasm_bytes: &[u8],
-    ) -> std::result::Result<CompiledModule, SandboxError> {
-        self.validate_module(wasm_bytes)?;
+        // Fuel bounds CPU. A module with no fuel limit configured is rejected
+        // rather than allowed to run unbounded.
+        let fuel = self.config.max_fuel.ok_or_else(|| {
+            SandboxError::Unsupported("a fuel limit (max_fuel) is required to execute".to_string())
+        })?;
+        store
+            .set_fuel(fuel)
+            .map_err(|e| SandboxError::Execution(e.to_string()))?;
 
-        Ok(CompiledModule {
-            bytes: wasm_bytes.to_vec(),
-            hash: blake3::hash(wasm_bytes).to_hex().to_string(),
-        })
-    }
+        // No host functions are provided (see import check above).
+        let linker: Linker<StoreData> = Linker::new(&engine);
+        let instance = linker
+            .instantiate(&mut store, &module)
+            .map_err(|e| SandboxError::Instantiation(e.to_string()))?;
 
-    /// Validate module imports and structure
-    fn validate_module(&self, _wasm_bytes: &[u8]) -> std::result::Result<(), SandboxError> {
-        // In a real implementation, this would parse the WASM module
-        // and validate that it only imports allowed functions
-        Ok(())
-    }
+        let func = instance
+            .get_func(&mut store, function)
+            .ok_or_else(|| SandboxError::FunctionNotFound(function.to_string()))?;
 
-    /// Create an instance with host functions
-    fn create_instance(
-        &self,
-        _module: &CompiledModule,
-        context: &HostContext,
-    ) -> std::result::Result<WasmInstance, SandboxError> {
-        let host_funcs = self.host_functions.read();
+        let result_count = func.ty(&store).results().len();
+        let mut results = vec![Val::I32(0); result_count];
 
-        Ok(WasmInstance {
-            plugin_id: self.plugin_id.clone(),
-            context: context.clone(),
-            memory_used: 0,
-            fuel_consumed: 0,
-            host_functions: host_funcs.clone(),
-        })
-    }
+        let call_result = func.call(&mut store, &params, &mut results);
 
-    /// Call a function in the instance
-    fn call_function(
-        &self,
-        _instance: &WasmInstance,
-        _function: &str,
-        _args: &[WasmValue],
-    ) -> std::result::Result<Vec<WasmValue>, SandboxError> {
-        // In a real implementation, this would use Wasmtime to execute
-        Ok(Vec::new())
+        match call_result {
+            Ok(()) => {
+                let elapsed = start.elapsed();
+                let fuel_left = store.get_fuel().unwrap_or(0);
+                let mut stats = self.execution_stats.write();
+                stats.total_execution_time += elapsed;
+                if elapsed > stats.max_execution_time {
+                    stats.max_execution_time = elapsed;
+                }
+                if let Some(max) = self.config.max_fuel {
+                    stats.total_fuel_consumed += max.saturating_sub(fuel_left);
+                }
+                drop(stats);
+
+                results
+                    .iter()
+                    .map(val_to_wasm_value)
+                    .collect::<std::result::Result<_, _>>()
+            }
+            Err(err) => {
+                let mut stats = self.execution_stats.write();
+                stats.error_count += 1;
+                let msg = format!("{err:#}");
+                // Classify the trap. Out-of-fuel and epoch-interrupt surface as
+                // trap messages; match on them to return precise errors.
+                if msg.contains("fuel") {
+                    drop(stats);
+                    Err(SandboxError::FuelExhausted)
+                } else if msg.contains("epoch") || msg.contains("interrupt") {
+                    stats.timeout_count += 1;
+                    drop(stats);
+                    Err(SandboxError::Timeout)
+                } else {
+                    drop(stats);
+                    Err(SandboxError::Trap(msg))
+                }
+            }
+        }
     }
 
     /// Register a host function
@@ -448,21 +517,42 @@ impl WasmPluginSandbox {
     }
 }
 
-/// Compiled WASM module
-#[derive(Debug, Clone)]
-struct CompiledModule {
-    bytes: Vec<u8>,
-    hash: String,
+/// Convert a [`WasmValue`] into a Wasmtime [`Val`]. Only numeric core-wasm
+/// types are supported for now; string/bytes/JSON require the linear-memory
+/// host ABI and return [`SandboxError::Unsupported`].
+#[cfg(feature = "wasm")]
+fn wasm_value_to_val(
+    value: &WasmValue,
+) -> std::result::Result<wasmtime::Val, SandboxError> {
+    Ok(match value {
+        WasmValue::I32(v) => wasmtime::Val::I32(*v),
+        WasmValue::I64(v) => wasmtime::Val::I64(*v),
+        WasmValue::F32(v) => wasmtime::Val::F32(v.to_bits()),
+        WasmValue::F64(v) => wasmtime::Val::F64(v.to_bits()),
+        other => {
+            return Err(SandboxError::Unsupported(format!(
+                "argument type {other:?} is not yet supported (numeric values only)"
+            )))
+        }
+    })
 }
 
-/// WASM instance for execution
-#[derive(Debug, Clone)]
-struct WasmInstance {
-    plugin_id: String,
-    context: HostContext,
-    memory_used: u64,
-    fuel_consumed: u64,
-    host_functions: HostFunctions,
+/// Convert a Wasmtime [`Val`] back into a [`WasmValue`].
+#[cfg(feature = "wasm")]
+fn val_to_wasm_value(
+    value: &wasmtime::Val,
+) -> std::result::Result<WasmValue, SandboxError> {
+    Ok(match value {
+        wasmtime::Val::I32(v) => WasmValue::I32(*v),
+        wasmtime::Val::I64(v) => WasmValue::I64(*v),
+        wasmtime::Val::F32(bits) => WasmValue::F32(f32::from_bits(*bits)),
+        wasmtime::Val::F64(bits) => WasmValue::F64(f64::from_bits(*bits)),
+        other => {
+            return Err(SandboxError::Unsupported(format!(
+                "result type {other:?} is not yet supported (numeric values only)"
+            )))
+        }
+    })
 }
 
 /// WASM value type
@@ -607,6 +697,9 @@ pub enum SandboxError {
 
     #[error("Trap: {0}")]
     Trap(String),
+
+    #[error("Unsupported: {0}")]
+    Unsupported(String),
 }
 
 /// Sandbox pool for reusing instances
@@ -909,5 +1002,109 @@ mod tests {
         let val = WasmValue::String("test".to_string());
         assert_eq!(val.as_string(), Some("test"));
         assert_eq!(val.as_i32(), None);
+    }
+}
+
+#[cfg(all(test, feature = "wasm"))]
+mod wasm_execution_tests {
+    use super::*;
+
+    fn ctx() -> HostContext {
+        HostContext {
+            plugin_id: "test".to_string(),
+            user_id: None,
+            site_id: None,
+            request_id: None,
+        }
+    }
+
+    #[test]
+    fn test_executes_numeric_function() {
+        let wat = r#"(module
+            (func (export "add") (param i32 i32) (result i32)
+                local.get 0
+                local.get 1
+                i32.add))"#;
+        let bytes = wat::parse_str(wat).unwrap();
+        let sandbox = WasmPluginSandbox::new("test", WasmSandboxConfig::default());
+
+        let out = sandbox
+            .execute(&bytes, "add", &[WasmValue::I32(2), WasmValue::I32(40)], ctx())
+            .expect("execution should succeed");
+
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0].as_i32(), Some(42));
+        assert_eq!(sandbox.get_stats().total_calls, 1);
+    }
+
+    #[test]
+    fn test_rejects_disallowed_import() {
+        let wat = r#"(module
+            (import "env" "evil" (func))
+            (func (export "noop")))"#;
+        let bytes = wat::parse_str(wat).unwrap();
+        let sandbox = WasmPluginSandbox::new("test", WasmSandboxConfig::default());
+
+        let err = sandbox.execute(&bytes, "noop", &[], ctx()).unwrap_err();
+        assert!(matches!(err, SandboxError::InvalidImport(_)), "got {err:?}");
+    }
+
+    #[test]
+    fn test_missing_export_is_function_not_found() {
+        let wat = r#"(module (func (export "present")))"#;
+        let bytes = wat::parse_str(wat).unwrap();
+        let sandbox = WasmPluginSandbox::new("test", WasmSandboxConfig::default());
+
+        let err = sandbox.execute(&bytes, "absent", &[], ctx()).unwrap_err();
+        assert!(matches!(err, SandboxError::FunctionNotFound(_)), "got {err:?}");
+    }
+
+    #[test]
+    fn test_fuel_is_metered() {
+        // A finite computation consumes a measurable amount of fuel — proves
+        // metering is active without exercising the trap path.
+        let wat = r#"(module
+            (func (export "add") (param i32 i32) (result i32)
+                local.get 0 local.get 1 i32.add))"#;
+        let bytes = wat::parse_str(wat).unwrap();
+        let sandbox = WasmPluginSandbox::new("test", WasmSandboxConfig::default());
+        sandbox
+            .execute(&bytes, "add", &[WasmValue::I32(1), WasmValue::I32(2)], ctx())
+            .unwrap();
+        assert!(sandbox.get_stats().total_fuel_consumed > 0);
+    }
+
+    // Exercises the trap path. wasm trap handling fast-fails under the local
+    // `rust-lld` linker workaround on Windows (the MSVC `link.exe` is blocked by
+    // antivirus on the dev box), so this is skipped there but runs in Linux CI.
+    #[cfg_attr(target_os = "windows", ignore = "wasm trap handling requires native MSVC/Linux linking")]
+    #[test]
+    fn test_infinite_loop_is_bounded() {
+        // An unbounded loop must be stopped by the fuel limit, never hang the
+        // host.
+        let wat = r#"(module (func (export "spin") (loop br 0)))"#;
+        let bytes = wat::parse_str(wat).unwrap();
+        let mut config = WasmSandboxConfig::default();
+        config.max_fuel = Some(100_000);
+        config.max_execution_time = Duration::from_secs(2);
+        let sandbox = WasmPluginSandbox::new("test", config);
+
+        let err = sandbox.execute(&bytes, "spin", &[], ctx()).unwrap_err();
+        assert!(
+            matches!(err, SandboxError::FuelExhausted | SandboxError::Timeout),
+            "got {err:?}"
+        );
+    }
+
+    #[test]
+    fn test_string_argument_is_unsupported_not_silent() {
+        let wat = r#"(module (func (export "noop")))"#;
+        let bytes = wat::parse_str(wat).unwrap();
+        let sandbox = WasmPluginSandbox::new("test", WasmSandboxConfig::default());
+
+        let err = sandbox
+            .execute(&bytes, "noop", &[WasmValue::String("hi".into())], ctx())
+            .unwrap_err();
+        assert!(matches!(err, SandboxError::Unsupported(_)), "got {err:?}");
     }
 }
