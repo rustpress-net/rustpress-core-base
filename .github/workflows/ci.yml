@@ -117,8 +117,10 @@ jobs:
           key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run clippy
-        # Allow all clippy lints for MVP release (to be addressed in future versions)
-        run: cargo clippy --all-targets --all-features -- -A warnings -A clippy::all
+        # Surface the real lint state (Phase 0): warnings are reported but do
+        # not fail the job yet. Flip to `-- -D warnings` once the backlog is
+        # cleared to make clippy a hard gate.
+        run: cargo clippy --all-targets --all-features
 
   build:
     name: Build

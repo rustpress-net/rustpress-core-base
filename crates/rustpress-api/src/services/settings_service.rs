@@ -280,11 +280,9 @@ impl SettingsService {
     }
 }
 
-impl Default for SettingsService {
-    fn default() -> Self {
-        panic!("SettingsService requires a database pool")
-    }
-}
+// No `Default` impl on purpose: a SettingsService is meaningless without a
+// database pool. Construct it via `SettingsService::new(pool)` so the
+// requirement is enforced at compile time instead of panicking at runtime.
 
 #[cfg(test)]
 mod tests {

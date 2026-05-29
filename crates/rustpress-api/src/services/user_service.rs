@@ -245,7 +245,7 @@ impl UserService {
         }
 
         // Hash password
-        let password_hash = self.hash_password(&request.password)?;
+        let password_hash = Self::hash_password(&request.password)?;
 
         let now = Utc::now();
         let user = UserRow {
@@ -440,7 +440,7 @@ impl UserService {
                 .current_password
                 .ok_or_else(|| Error::validation("Current password is required"))?;
 
-            if !self.verify_password(&current, &existing.password_hash)? {
+            if !Self::verify_password(&current, &existing.password_hash)? {
                 return Err(Error::validation("Current password is incorrect"));
             }
         }
@@ -451,7 +451,7 @@ impl UserService {
         }
 
         // Hash new password
-        let password_hash = self.hash_password(&request.new_password)?;
+        let password_hash = Self::hash_password(&request.new_password)?;
 
         sqlx::query("UPDATE users SET password_hash = $2, updated_at = NOW() WHERE id = $1")
             .bind(id)
@@ -578,38 +578,23 @@ fn is_valid_email_impl(email: &str) -> bool {
 }
 
 impl UserService {
-    fn hash_password(&self, password: &str) -> Result<String> {
-        use std::collections::hash_map::DefaultHasher;
-        use std::hash::{Hash, Hasher};
-
-        // Note: In production, use bcrypt or argon2
-        // This is a placeholder for demonstration
-        let mut hasher = DefaultHasher::new();
-        password.hash(&mut hasher);
-        let salt = Uuid::new_v4().to_string();
-        salt.hash(&mut hasher);
-
-        Ok(format!("hash:{:x}", hasher.finish()))
+    /// Hash a password using Argon2 (delegates to the canonical hasher in
+    /// `rustpress-auth`). Never roll a bespoke hasher here — keep a single
+    /// password implementation across the workspace.
+    fn hash_password(password: &str) -> Result<String> {
+        rustpress_auth::PasswordHasher::new().hash(password)
     }
 
-    fn verify_password(&self, _password: &str, hash: &str) -> Result<bool> {
-        // Note: In production, use proper password verification
-        // This is a placeholder for demonstration
-        if hash.starts_with("hash:") {
-            // For demo purposes, we'll just return true
-            // Real implementation would use bcrypt or argon2
-            Ok(true)
-        } else {
-            Ok(false)
-        }
+    /// Verify a password against a stored Argon2 PHC-string hash. Rejects any
+    /// value that is not a valid hash (e.g. legacy `hash:` placeholders).
+    fn verify_password(password: &str, hash: &str) -> Result<bool> {
+        rustpress_auth::PasswordHasher::new().verify(password, hash)
     }
 }
 
-impl Default for UserService {
-    fn default() -> Self {
-        panic!("UserService requires a database pool")
-    }
-}
+// No `Default` impl on purpose: a UserService is meaningless without a database
+// pool. Construct it via `UserService::new(pool)` so the requirement is enforced
+// at compile time instead of panicking at runtime.
 
 #[cfg(test)]
 mod tests {
@@ -638,5 +623,24 @@ mod tests {
         assert!(!is_valid_email_impl("invalid"));
         assert!(!is_valid_email_impl("@domain.com"));
         assert!(!is_valid_email_impl("user@"));
+    }
+
+    #[test]
+    fn test_password_hash_is_argon2_and_roundtrips() {
+        let hash = UserService::hash_password("correct horse battery staple").unwrap();
+        // Argon2 PHC strings start with the algorithm identifier, never "hash:".
+        assert!(hash.starts_with("$argon2"), "expected argon2 PHC hash, got {hash}");
+        assert!(!hash.starts_with("hash:"));
+        assert!(UserService::verify_password("correct horse battery staple", &hash).unwrap());
+        assert!(!UserService::verify_password("wrong password", &hash).unwrap());
+    }
+
+    #[test]
+    fn test_forged_legacy_hash_is_rejected() {
+        // Regression: the old placeholder accepted ANY value beginning with
+        // "hash:" as valid (auth bypass). A forged value must now be rejected
+        // — an unparseable hash returns an error rather than `Ok(true)`.
+        assert!(UserService::verify_password("anything", "hash:deadbeef").is_err());
+        assert!(UserService::verify_password("anything", "not-a-real-hash").is_err());
     }
 }

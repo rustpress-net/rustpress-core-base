@@ -2,11 +2,21 @@
 //!
 //! Provides encryption capabilities for message data and sensitive configuration.
 
+use aes_gcm::{
+    aead::{AeadInPlace, KeyInit, Nonce, Tag},
+    Aes128Gcm, Aes256Gcm,
+};
+use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
+
+/// GCM standard nonce length in bytes (96-bit).
+const GCM_NONCE_LEN: usize = 12;
+/// GCM authentication tag length in bytes (128-bit).
+const GCM_TAG_LEN: usize = 16;
 
 /// Encryption service for data at rest
 pub struct EncryptionService {
@@ -224,7 +234,6 @@ impl EncryptionService {
         &self,
         algorithm: &KeyAlgorithm,
     ) -> Result<Vec<u8>, super::EnterpriseError> {
-        // In a real implementation, this would use a CSPRNG
         let key_size = match algorithm {
             KeyAlgorithm::Aes128Gcm => 16,
             KeyAlgorithm::Aes256Gcm => 32,
@@ -232,41 +241,40 @@ impl EncryptionService {
             KeyAlgorithm::None => 0,
         };
 
-        // Placeholder: generate random bytes
+        // Generate key bytes from a cryptographically secure RNG (OS entropy).
         let mut key = vec![0u8; key_size];
-        for (i, byte) in key.iter_mut().enumerate() {
-            *byte = (i as u8).wrapping_mul(37).wrapping_add(13);
+        if key_size > 0 {
+            rand::rngs::OsRng.fill_bytes(&mut key);
         }
 
         Ok(key)
     }
 
+    /// Encrypt `data` with authenticated encryption (AES-GCM). Returns
+    /// `(ciphertext, nonce, auth_tag)`. A fresh random 96-bit nonce is
+    /// generated per call; the detached 128-bit GCM tag is returned separately.
     fn do_encrypt(
         &self,
         data: &[u8],
-        _key: &[u8],
+        key: &[u8],
         algorithm: &KeyAlgorithm,
     ) -> Result<(Vec<u8>, Vec<u8>, Option<Vec<u8>>), super::EnterpriseError> {
-        // Placeholder encryption - in production, use ring or another crypto library
         match algorithm {
-            KeyAlgorithm::Aes256Gcm | KeyAlgorithm::Aes128Gcm => {
-                // Generate IV
-                let iv = vec![0u8; 12]; // 96-bit IV for GCM
-
-                // Simulate encryption (XOR with key for demo)
-                let ciphertext = data.to_vec();
-
-                // Auth tag
-                let auth_tag = Some(vec![0u8; 16]);
-
-                Ok((ciphertext, iv, auth_tag))
+            KeyAlgorithm::Aes256Gcm => {
+                let cipher = Aes256Gcm::new_from_slice(key)
+                    .map_err(|e| super::EnterpriseError::Encryption(e.to_string()))?;
+                Self::gcm_encrypt(&cipher, data)
             }
-            KeyAlgorithm::ChaCha20Poly1305 => {
-                let iv = vec![0u8; 12];
-                let ciphertext = data.to_vec();
-                let auth_tag = Some(vec![0u8; 16]);
-                Ok((ciphertext, iv, auth_tag))
+            KeyAlgorithm::Aes128Gcm => {
+                let cipher = Aes128Gcm::new_from_slice(key)
+                    .map_err(|e| super::EnterpriseError::Encryption(e.to_string()))?;
+                Self::gcm_encrypt(&cipher, data)
             }
+            KeyAlgorithm::ChaCha20Poly1305 => Err(super::EnterpriseError::Encryption(
+                "ChaCha20-Poly1305 is not yet supported; configure an AES-GCM algorithm".into(),
+            )),
+            // Explicit opt-out of encryption. Never used implicitly as a
+            // fallback for the AEAD algorithms above.
             KeyAlgorithm::None => Ok((data.to_vec(), Vec::new(), None)),
         }
     }
@@ -274,13 +282,83 @@ impl EncryptionService {
     fn do_decrypt(
         &self,
         ciphertext: &[u8],
-        _key: &[u8],
-        _algorithm: &KeyAlgorithm,
-        _iv: &[u8],
-        _auth_tag: &Option<Vec<u8>>,
+        key: &[u8],
+        algorithm: &KeyAlgorithm,
+        iv: &[u8],
+        auth_tag: &Option<Vec<u8>>,
     ) -> Result<Vec<u8>, super::EnterpriseError> {
-        // Placeholder decryption
-        Ok(ciphertext.to_vec())
+        match algorithm {
+            KeyAlgorithm::Aes256Gcm => {
+                let cipher = Aes256Gcm::new_from_slice(key)
+                    .map_err(|e| super::EnterpriseError::Encryption(e.to_string()))?;
+                Self::gcm_decrypt(&cipher, ciphertext, iv, auth_tag)
+            }
+            KeyAlgorithm::Aes128Gcm => {
+                let cipher = Aes128Gcm::new_from_slice(key)
+                    .map_err(|e| super::EnterpriseError::Encryption(e.to_string()))?;
+                Self::gcm_decrypt(&cipher, ciphertext, iv, auth_tag)
+            }
+            KeyAlgorithm::ChaCha20Poly1305 => Err(super::EnterpriseError::Encryption(
+                "ChaCha20-Poly1305 is not yet supported; configure an AES-GCM algorithm".into(),
+            )),
+            KeyAlgorithm::None => Ok(ciphertext.to_vec()),
+        }
+    }
+
+    /// Shared AES-GCM encryption over any concrete cipher implementing
+    /// `AeadInPlace` (AES-128 or AES-256). A fresh random nonce of the cipher's
+    /// required size is generated per call.
+    fn gcm_encrypt<C: AeadInPlace>(
+        cipher: &C,
+        data: &[u8],
+    ) -> Result<(Vec<u8>, Vec<u8>, Option<Vec<u8>>), super::EnterpriseError> {
+        let mut nonce = Nonce::<C>::default();
+        rand::rngs::OsRng.fill_bytes(nonce.as_mut_slice());
+
+        let mut buffer = data.to_vec();
+        let tag = cipher
+            .encrypt_in_place_detached(&nonce, b"", &mut buffer)
+            .map_err(|e| super::EnterpriseError::Encryption(e.to_string()))?;
+
+        Ok((buffer, nonce.to_vec(), Some(tag.to_vec())))
+    }
+
+    /// Shared AES-GCM decryption. Fails closed if the nonce/tag are missing or
+    /// malformed, or if authentication fails (tampered ciphertext).
+    fn gcm_decrypt<C: AeadInPlace>(
+        cipher: &C,
+        ciphertext: &[u8],
+        iv: &[u8],
+        auth_tag: &Option<Vec<u8>>,
+    ) -> Result<Vec<u8>, super::EnterpriseError> {
+        if iv.len() != GCM_NONCE_LEN {
+            return Err(super::EnterpriseError::Encryption(format!(
+                "invalid nonce length: expected {GCM_NONCE_LEN}, got {}",
+                iv.len()
+            )));
+        }
+        let tag_bytes = auth_tag.as_ref().ok_or_else(|| {
+            super::EnterpriseError::Encryption("missing authentication tag".into())
+        })?;
+        if tag_bytes.len() != GCM_TAG_LEN {
+            return Err(super::EnterpriseError::Encryption(format!(
+                "invalid auth tag length: expected {GCM_TAG_LEN}, got {}",
+                tag_bytes.len()
+            )));
+        }
+
+        let nonce = Nonce::<C>::from_slice(iv);
+        let tag = Tag::<C>::from_slice(tag_bytes);
+        let mut buffer = ciphertext.to_vec();
+        cipher
+            .decrypt_in_place_detached(nonce, b"", &mut buffer, tag)
+            .map_err(|_| {
+                super::EnterpriseError::Encryption(
+                    "authentication failed (data tampered or wrong key)".into(),
+                )
+            })?;
+
+        Ok(buffer)
     }
 
     async fn connect_vault(&self) -> Result<(), super::EnterpriseError> {
@@ -492,5 +570,71 @@ impl FieldEncryptor {
             }
         }
         Ok(data)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn enabled_config() -> EncryptionConfig {
+        EncryptionConfig {
+            enabled: true,
+            ..Default::default()
+        }
+    }
+
+    #[tokio::test]
+    async fn test_aes256_roundtrip_and_real_ciphertext() {
+        let svc = EncryptionService::new(enabled_config());
+        let key = svc.generate_key(KeyAlgorithm::Aes256Gcm).await.unwrap();
+        svc.set_active_key(&key.id).await.unwrap();
+
+        let plaintext = b"top secret message body";
+        let enc = svc.encrypt(plaintext).await.unwrap();
+
+        // Regression: ciphertext must NOT equal plaintext, and the nonce/tag
+        // must be populated (the old stub stored plaintext with zero iv/tag).
+        assert_ne!(enc.ciphertext.as_slice(), plaintext.as_slice());
+        assert_eq!(enc.iv.len(), GCM_NONCE_LEN);
+        assert_ne!(enc.iv, vec![0u8; GCM_NONCE_LEN]);
+        assert_eq!(enc.auth_tag.as_ref().unwrap().len(), GCM_TAG_LEN);
+
+        let dec = svc.decrypt(&enc).await.unwrap();
+        assert_eq!(dec.as_slice(), plaintext.as_slice());
+    }
+
+    #[tokio::test]
+    async fn test_nonce_is_unique_per_call() {
+        let svc = EncryptionService::new(enabled_config());
+        let key = svc.generate_key(KeyAlgorithm::Aes256Gcm).await.unwrap();
+        svc.set_active_key(&key.id).await.unwrap();
+
+        let a = svc.encrypt(b"same").await.unwrap();
+        let b = svc.encrypt(b"same").await.unwrap();
+        // Fresh random nonce each time => different nonce and ciphertext.
+        assert_ne!(a.iv, b.iv);
+        assert_ne!(a.ciphertext, b.ciphertext);
+    }
+
+    #[tokio::test]
+    async fn test_tampered_ciphertext_fails_authentication() {
+        let svc = EncryptionService::new(enabled_config());
+        let key = svc.generate_key(KeyAlgorithm::Aes256Gcm).await.unwrap();
+        svc.set_active_key(&key.id).await.unwrap();
+
+        let mut enc = svc.encrypt(b"integrity protected").await.unwrap();
+        enc.ciphertext[0] ^= 0xFF; // flip a bit
+        assert!(svc.decrypt(&enc).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_generated_key_material_is_not_deterministic() {
+        let svc = EncryptionService::new(enabled_config());
+        let k1 = svc.generate_key_material(&KeyAlgorithm::Aes256Gcm).unwrap();
+        let k2 = svc.generate_key_material(&KeyAlgorithm::Aes256Gcm).unwrap();
+        assert_eq!(k1.len(), 32);
+        // Old code produced the same deterministic bytes every time.
+        assert_ne!(k1, k2);
     }
 }

@@ -1486,11 +1486,9 @@ pub struct MediaTypeStats {
     pub size: u64,
 }
 
-impl Default for MediaService {
-    fn default() -> Self {
-        panic!("MediaService requires a database pool")
-    }
-}
+// No `Default` impl on purpose: a MediaService is meaningless without a database
+// pool. Construct it via `MediaService::new(pool)` so the requirement is enforced
+// at compile time instead of panicking at runtime.
 
 /// Allowed file extensions
 pub fn get_allowed_extensions() -> Vec<&'static str> {

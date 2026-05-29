@@ -1038,11 +1038,9 @@ impl PostService {
     }
 }
 
-impl Default for PostService {
-    fn default() -> Self {
-        panic!("PostService requires a database pool")
-    }
-}
+// No `Default` impl on purpose: a PostService is meaningless without a database
+// pool. Construct it via `PostService::new(pool)` so the requirement is enforced
+// at compile time instead of panicking at runtime.
 
 #[cfg(test)]
 mod tests {
