@@ -1,13 +1,17 @@
 //! Main application struct and server setup.
 
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 use axum::{middleware as axum_middleware, Router};
+use std::any::Any;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
+use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::trace::TraceLayer;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 use crate::error::HttpError;
 use crate::metrics::Metrics;
@@ -28,6 +32,32 @@ use crate::shutdown::{
     ShutdownPhase,
 };
 use crate::state::AppState;
+
+/// Panic handler for [`CatchPanicLayer`]. Logs the panic payload and returns a
+/// generic JSON 500 so a single panicking request (e.g. an `.unwrap()` deep in
+/// a service) cannot take down the worker or leak internals to the client.
+fn handle_panic(err: Box<dyn Any + Send + 'static>) -> Response {
+    let details = if let Some(s) = err.downcast_ref::<&str>() {
+        (*s).to_string()
+    } else if let Some(s) = err.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        "unknown panic".to_string()
+    };
+
+    error!(panic = %details, "request handler panicked; returning 500");
+
+    (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        axum::Json(serde_json::json!({
+            "error": {
+                "code": "internal_error",
+                "message": "Internal Server Error"
+            }
+        })),
+    )
+        .into_response()
+}
 
 /// Main application struct
 pub struct App {
@@ -143,6 +173,10 @@ impl App {
                 self.state.clone(),
                 tenant_identification,
             ))
+            // Catch panics from any inner middleware or handler and turn them
+            // into a 500 response instead of aborting the worker task. Added
+            // last so it is the OUTERMOST layer (first to run, wraps everything).
+            .layer(CatchPanicLayer::custom(handle_panic))
     }
 
     /// Run the HTTP server

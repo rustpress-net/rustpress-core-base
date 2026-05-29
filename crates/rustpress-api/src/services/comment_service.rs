@@ -611,11 +611,9 @@ impl CommentService {
     }
 }
 
-impl Default for CommentService {
-    fn default() -> Self {
-        panic!("CommentService requires a database pool")
-    }
-}
+// No `Default` impl on purpose: a CommentService is meaningless without a
+// database pool. Construct it via `CommentService::new(pool)` so the requirement
+// is enforced at compile time instead of panicking at runtime.
 
 #[cfg(test)]
 mod tests {

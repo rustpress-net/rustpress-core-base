@@ -661,11 +661,9 @@ fn generate_page_slug_impl(title: &str) -> String {
         .join("-")
 }
 
-impl Default for PageService {
-    fn default() -> Self {
-        panic!("PageService requires a database pool")
-    }
-}
+// No `Default` impl on purpose: a PageService is meaningless without a database
+// pool. Construct it via `PageService::new(pool)` so the requirement is enforced
+// at compile time instead of panicking at runtime.
 
 #[cfg(test)]
 mod tests {

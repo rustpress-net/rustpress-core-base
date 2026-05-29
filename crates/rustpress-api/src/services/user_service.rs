@@ -592,11 +592,9 @@ impl UserService {
     }
 }
 
-impl Default for UserService {
-    fn default() -> Self {
-        panic!("UserService requires a database pool")
-    }
-}
+// No `Default` impl on purpose: a UserService is meaningless without a database
+// pool. Construct it via `UserService::new(pool)` so the requirement is enforced
+// at compile time instead of panicking at runtime.
 
 #[cfg(test)]
 mod tests {
