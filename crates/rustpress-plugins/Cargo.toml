@@ -84,6 +84,8 @@ parking_lot.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util", "macros"] }
+# Compile inline `.wat` modules to wasm for sandbox tests.
+wat = "1.0"
 
 [features]
 default = []
