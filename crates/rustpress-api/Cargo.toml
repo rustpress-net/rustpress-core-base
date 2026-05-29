@@ -12,7 +12,7 @@ rustpress-database = { path = "../rustpress-database" }
 rustpress-auth = { path = "../rustpress-auth" }
 rustpress-cache = { path = "../rustpress-cache" }
 rustpress-events = { path = "../rustpress-events" }
-rustpress-storage = { path = "../rustpress-storage" }
+rustpress-storage = { path = "../rustpress-storage", features = ["s3"] }
 rustpress-jobs = { path = "../rustpress-jobs" }
 rustpress-admin = { path = "../rustpress-admin" }
 

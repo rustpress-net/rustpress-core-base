@@ -8,9 +8,36 @@
 //! - apps: Application files
 
 use rustpress_core::error::{Error, Result};
+use rustpress_storage::file::UploadRequest;
+use rustpress_storage::{LocalBackend, S3Backend, StorageBackend};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use std::sync::Arc;
 use uuid::Uuid;
+
+/// Best-effort MIME type from a filename extension. Falls back to a generic
+/// binary type so a transfer is never blocked by an unknown extension.
+fn mime_for_path(name: &str) -> String {
+    let ext = name.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
+    let mime = match ext.as_str() {
+        "jpg" | "jpeg" => "image/jpeg",
+        "png" => "image/png",
+        "gif" => "image/gif",
+        "webp" => "image/webp",
+        "svg" => "image/svg+xml",
+        "pdf" => "application/pdf",
+        "json" => "application/json",
+        "txt" => "text/plain",
+        "css" => "text/css",
+        "js" => "application/javascript",
+        "mp4" => "video/mp4",
+        "webm" => "video/webm",
+        "mp3" => "audio/mpeg",
+        "zip" => "application/zip",
+        _ => "application/octet-stream",
+    };
+    mime.to_string()
+}
 
 /// Storage provider types
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1128,7 +1155,31 @@ impl StorageService {
         .await
         .map_err(|e| Error::database_with_source("Failed to fetch migration details", e))?;
 
-        let _migration = migration.ok_or_else(|| Error::not_found("Migration", "not_found"))?;
+        let migration = migration.ok_or_else(|| Error::not_found("Migration", "not_found"))?;
+
+        // Build the source and target storage backends once for the whole run.
+        // Source is the local storage the assets currently live in; target is
+        // derived from the migration's recorded provider + config.
+        let source: Arc<dyn StorageBackend> =
+            Arc::new(LocalBackend::new(Self::source_storage_root()));
+        let target_config: ProviderConfig = serde_json::from_value(migration.target_config.clone())
+            .map_err(|e| Error::validation(format!("invalid target_config: {e}")))?;
+        let target = match Self::build_target_backend(&migration.target_provider, &target_config) {
+            Ok(backend) => backend,
+            Err(e) => {
+                // Configuration is unusable — fail the whole migration cleanly
+                // rather than marking files as transferred.
+                sqlx::query(
+                    "UPDATE storage_migrations SET status = 'failed', error = $1, completed_at = NOW() WHERE id = $2",
+                )
+                .bind(e.to_string())
+                .bind(migration_id)
+                .execute(&pool)
+                .await
+                .ok();
+                return Err(e);
+            }
+        };
 
         // Get pending files to process (supports resume)
         let batch_size = 10;
@@ -1201,8 +1252,8 @@ impl StorageService {
                 .await
                 .ok();
 
-                // Simulate file transfer (replace with actual transfer logic)
-                let transfer_result = Self::transfer_file(&pool, &file).await;
+                // Transfer the file from the source backend to the target.
+                let transfer_result = Self::transfer_file(&source, &target, &file).await;
 
                 match transfer_result {
                     Ok(target_path) => {
@@ -1321,21 +1372,102 @@ impl StorageService {
         Ok(())
     }
 
-    /// Transfer a single file (placeholder - implement actual transfer logic)
-    async fn transfer_file(_pool: &PgPool, file: &PendingFileRow) -> Result<String> {
-        // TODO: Implement actual file transfer based on source and target providers
-        // This should:
-        // 1. Read from source storage
-        // 2. Write to target storage with progress tracking
-        // 3. Verify checksum if available
-        // 4. Return the target path
+    /// Local filesystem root the migration reads source files from. Mirrors the
+    /// server's storage config (`STORAGE_PATH` env, default `./uploads`).
+    fn source_storage_root() -> String {
+        std::env::var("STORAGE_PATH").unwrap_or_else(|_| "./uploads".to_string())
+    }
 
-        // Simulate transfer delay based on file size
-        let delay_ms = std::cmp::min(file.file_size / 1000, 100) as u64;
-        tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+    /// Construct a storage backend for a migration target from its provider id
+    /// and config. Only providers with a real backend are supported; everything
+    /// else returns an explicit error rather than silently "succeeding".
+    ///
+    /// S3-compatible providers (S3, R2, Spaces, MinIO, B2, Wasabi, …) all use
+    /// the S3 backend, with a custom endpoint when one is supplied.
+    fn build_target_backend(
+        provider: &str,
+        config: &ProviderConfig,
+    ) -> Result<Arc<dyn StorageBackend>> {
+        match provider {
+            "local" => {
+                let root = config
+                    .local_path
+                    .clone()
+                    .ok_or_else(|| Error::validation("local target requires 'local_path'"))?;
+                Ok(Arc::new(LocalBackend::new(root)))
+            }
+            "s3" | "cloudflare-r2" | "digitalocean-spaces" | "minio" | "backblaze-b2"
+            | "wasabi" | "linode" | "vultr" => {
+                let bucket = config
+                    .bucket
+                    .clone()
+                    .ok_or_else(|| Error::validation(format!("{provider} target requires 'bucket'")))?;
+                let access_key = config
+                    .access_key
+                    .clone()
+                    .ok_or_else(|| Error::validation(format!("{provider} target requires 'access_key'")))?;
+                let secret_key = config
+                    .secret_key
+                    .clone()
+                    .ok_or_else(|| Error::validation(format!("{provider} target requires 'secret_key'")))?;
 
-        // Return simulated target path
-        Ok(format!("/migrated{}", file.source_path))
+                let backend = if let Some(endpoint) = config.endpoint.clone() {
+                    S3Backend::with_endpoint(bucket, endpoint, access_key, secret_key)?
+                } else {
+                    let region = config
+                        .region
+                        .clone()
+                        .unwrap_or_else(|| "us-east-1".to_string());
+                    S3Backend::new(bucket, region, access_key, secret_key)?
+                };
+                Ok(Arc::new(backend))
+            }
+            other => Err(Error::validation(format!(
+                "storage provider '{other}' is not yet supported for migration"
+            ))),
+        }
+    }
+
+    /// Transfer a single file from the source backend to the target backend.
+    ///
+    /// Reads the object's bytes from the source, writes them to the target, and
+    /// returns the stored target path. The recorded `file_size` is treated as a
+    /// soft check (logged on mismatch) since it may be stale relative to disk.
+    async fn transfer_file(
+        source: &Arc<dyn StorageBackend>,
+        target: &Arc<dyn StorageBackend>,
+        file: &PendingFileRow,
+    ) -> Result<String> {
+        // 1. Read from source storage.
+        let bytes = source.get(&file.source_path).await.map_err(|e| {
+            Error::storage(format!("failed to read source '{}': {}", file.source_path, e))
+        })?;
+
+        // 2. Sanity-check size against the recorded value (non-fatal).
+        if file.file_size >= 0 && bytes.len() as i64 != file.file_size {
+            tracing::warn!(
+                path = %file.source_path,
+                expected = file.file_size,
+                actual = bytes.len(),
+                "source file size differs from recorded size; transferring actual bytes"
+            );
+        }
+
+        // 3. Write to target storage, preserving the source's directory layout.
+        let (directory, filename) = match file.source_path.rsplit_once('/') {
+            Some((dir, name)) => (Some(dir.to_string()), name.to_string()),
+            None => (None, file.source_path.clone()),
+        };
+        let mime_type = mime_for_path(&filename);
+        let mut request = UploadRequest::new(bytes, filename, mime_type);
+        request.directory = directory;
+
+        let stored = target
+            .store(request)
+            .await
+            .map_err(|e| Error::storage(format!("failed to write '{}' to target: {}", file.source_path, e)))?;
+
+        Ok(stored.path)
     }
 
     /// Get migration status
@@ -1520,5 +1652,55 @@ impl TryFrom<FileTransferRow> for FileTransferStatus {
             attempt_count: row.attempt_count as u32,
             last_error: row.last_error,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_transfer_file_local_to_local_roundtrip() {
+        let base = std::env::temp_dir().join(format!("rp-xfer-{}", Uuid::new_v4()));
+        let src_root = base.join("src");
+        let dst_root = base.join("dst");
+        std::fs::create_dir_all(src_root.join("assets")).unwrap();
+        let content: &[u8] = b"hello rustpress migration";
+        std::fs::write(src_root.join("assets").join("photo.png"), content).unwrap();
+
+        let source: Arc<dyn StorageBackend> = Arc::new(LocalBackend::new(src_root.clone()));
+        let target: Arc<dyn StorageBackend> = Arc::new(LocalBackend::new(dst_root.clone()));
+
+        let file = PendingFileRow {
+            id: Uuid::new_v4(),
+            source_path: "assets/photo.png".to_string(),
+            file_size: content.len() as i64,
+            media_id: None,
+        };
+
+        let target_path = StorageService::transfer_file(&source, &target, &file)
+            .await
+            .expect("transfer should succeed");
+
+        // The bytes actually landed in the target backend.
+        let got = target.get(&target_path).await.expect("read back target");
+        assert_eq!(&got[..], content);
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn test_build_target_backend_validation() {
+        // Unsupported providers are rejected, not silently accepted.
+        assert!(StorageService::build_target_backend("ftp", &ProviderConfig::default()).is_err());
+        assert!(StorageService::build_target_backend("azure", &ProviderConfig::default()).is_err());
+        // Local without a path is a config error.
+        assert!(StorageService::build_target_backend("local", &ProviderConfig::default()).is_err());
+        // Local with a path is accepted.
+        let cfg = ProviderConfig {
+            local_path: Some("./uploads".to_string()),
+            ..Default::default()
+        };
+        assert!(StorageService::build_target_backend("local", &cfg).is_ok());
     }
 }
