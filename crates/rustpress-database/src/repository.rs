@@ -70,9 +70,43 @@ pub trait Entity: Send + Sync {
 pub struct QueryHelper;
 
 impl QueryHelper {
-    /// Build ORDER BY clause
+    /// Validate that a string is a safe SQL identifier (column or
+    /// `table.column`). Returns the identifier only if every segment matches
+    /// `^[A-Za-z_][A-Za-z0-9_]*$` and is at most 63 chars (PostgreSQL's
+    /// identifier limit). This is the guard that prevents SQL injection
+    /// through interpolated column names — never interpolate a raw identifier
+    /// without passing it through here first.
+    pub fn safe_identifier(ident: &str) -> Option<String> {
+        let segments: Vec<&str> = ident.split('.').collect();
+        if segments.is_empty() || segments.len() > 2 {
+            return None;
+        }
+        for seg in &segments {
+            if seg.is_empty() || seg.len() > 63 {
+                return None;
+            }
+            let mut chars = seg.chars();
+            let first = chars.next().unwrap();
+            if !(first.is_ascii_alphabetic() || first == '_') {
+                return None;
+            }
+            if !chars.all(|c| c.is_ascii_alphanumeric() || c == '_') {
+                return None;
+            }
+        }
+        Some(segments.join("."))
+    }
+
+    /// Build ORDER BY clause.
+    ///
+    /// `sort_by` is treated as an untrusted identifier: it is only used when it
+    /// passes [`Self::safe_identifier`], otherwise we fall back to the safe
+    /// default `created_at`. The direction is a fixed enum, never interpolated
+    /// user text.
     pub fn order_by(sort_by: Option<&str>, sort_order: SortOrder) -> String {
-        let field = sort_by.unwrap_or("created_at");
+        let field = sort_by
+            .and_then(Self::safe_identifier)
+            .unwrap_or_else(|| "created_at".to_string());
         let direction = match sort_order {
             SortOrder::Asc => "ASC",
             SortOrder::Desc => "DESC",
@@ -85,11 +119,21 @@ impl QueryHelper {
         format!("LIMIT {} OFFSET {}", params.per_page, params.offset())
     }
 
-    /// Build search condition
+    /// Build search condition.
+    ///
+    /// Field names are validated as identifiers (unsafe ones are dropped) and
+    /// the search term is escaped for both LIKE wildcards and the surrounding
+    /// quoted literal, so neither the column list nor the term can break out of
+    /// the query. An explicit `ESCAPE '\'` makes the backslash escaping
+    /// portable regardless of the `standard_conforming_strings` setting.
     pub fn search_condition(search: &str, fields: &[&str]) -> String {
+        // Escape LIKE metacharacters (\, %, _) first, then double single
+        // quotes so the value is inert inside the '...' literal.
+        let escaped = Self::escape_like(search).replace('\'', "''");
         let conditions: Vec<String> = fields
             .iter()
-            .map(|f| format!("{} ILIKE '%{}%'", f, search.replace('\'', "''")))
+            .filter_map(|f| Self::safe_identifier(f))
+            .map(|f| format!("{} ILIKE '%{}%' ESCAPE '\\'", f, escaped))
             .collect();
 
         if conditions.is_empty() {
@@ -2058,5 +2102,51 @@ mod tests {
     fn test_escape_like() {
         assert_eq!(QueryHelper::escape_like("test%"), "test\\%");
         assert_eq!(QueryHelper::escape_like("test_"), "test\\_");
+    }
+
+    #[test]
+    fn test_safe_identifier_accepts_valid() {
+        assert_eq!(QueryHelper::safe_identifier("title").as_deref(), Some("title"));
+        assert_eq!(QueryHelper::safe_identifier("_x9").as_deref(), Some("_x9"));
+        assert_eq!(
+            QueryHelper::safe_identifier("users.created_at").as_deref(),
+            Some("users.created_at")
+        );
+    }
+
+    #[test]
+    fn test_safe_identifier_rejects_injection() {
+        // Classic ORDER BY injection payloads must be rejected entirely.
+        assert!(QueryHelper::safe_identifier("created_at; DROP TABLE users").is_none());
+        assert!(QueryHelper::safe_identifier("1=1").is_none());
+        assert!(QueryHelper::safe_identifier("title)--").is_none());
+        assert!(QueryHelper::safe_identifier("(SELECT 1)").is_none());
+        assert!(QueryHelper::safe_identifier("a.b.c").is_none());
+        assert!(QueryHelper::safe_identifier("").is_none());
+        assert!(QueryHelper::safe_identifier("9lives").is_none());
+    }
+
+    #[test]
+    fn test_order_by_falls_back_on_injection() {
+        // A malicious sort field collapses to the safe default rather than
+        // being interpolated into the query.
+        assert_eq!(
+            QueryHelper::order_by(Some("created_at; DROP TABLE users"), SortOrder::Asc),
+            "ORDER BY created_at ASC"
+        );
+    }
+
+    #[test]
+    fn test_search_condition_escapes_and_filters() {
+        // Quotes can't break out of the literal, wildcards are escaped, and an
+        // unsafe field name is dropped instead of interpolated.
+        let cond = QueryHelper::search_condition("a'b%c_d", &["title", "evil; DROP"]);
+        assert!(cond.contains("title ILIKE"));
+        assert!(!cond.contains("evil"));
+        assert!(cond.contains("a''b\\%c\\_d"));
+        assert!(cond.contains("ESCAPE '\\'"));
+
+        // No safe fields => inert condition, never raw interpolation.
+        assert_eq!(QueryHelper::search_condition("x", &["1=1"]), "1=1");
     }
 }

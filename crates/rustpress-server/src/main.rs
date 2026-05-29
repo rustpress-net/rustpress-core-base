@@ -50,6 +50,9 @@ mod env_vars {
     pub const SERVER_HOST: &str = "RUSTPRESS_HOST";
     pub const SERVER_PORT: &str = "RUSTPRESS_PORT";
     pub const JWT_SECRET: &str = "JWT_SECRET";
+    /// Local-development-only escape hatch that allows booting with a weak or
+    /// default JWT secret. MUST NOT be set in production.
+    pub const ALLOW_INSECURE_JWT: &str = "RUSTPRESS_ALLOW_INSECURE_JWT";
     pub const STORAGE_PATH: &str = "STORAGE_PATH";
     pub const THEMES_PATH: &str = "THEMES_PATH";
     pub const CACHE_MAX_CAPACITY: &str = "CACHE_MAX_CAPACITY";
@@ -177,10 +180,6 @@ fn load_config() -> AppConfig {
 
     if let Ok(secret) = env::var(env_vars::JWT_SECRET) {
         config.auth.jwt_secret = secret;
-    } else if config.auth.jwt_secret.is_empty()
-        || config.auth.jwt_secret == "change-me-in-production"
-    {
-        warn!("JWT_SECRET not set, using default (not recommended for production)");
     }
 
     if let Ok(path) = env::var(env_vars::STORAGE_PATH) {
@@ -188,6 +187,52 @@ fn load_config() -> AppConfig {
     }
 
     config
+}
+
+/// Minimum acceptable length for a production JWT signing secret.
+const MIN_JWT_SECRET_LEN: usize = 32;
+
+/// Returns `true` if a JWT secret is unsuitable for production (empty, the
+/// shipped default, or too short to provide adequate entropy).
+fn is_insecure_jwt_secret(secret: &str) -> bool {
+    secret.is_empty()
+        || secret == "change-me-in-production"
+        || secret.len() < MIN_JWT_SECRET_LEN
+}
+
+/// Fail closed when the configured JWT secret is insecure.
+///
+/// In production this aborts startup. For local development the operator may
+/// explicitly opt in to an insecure secret by setting
+/// `RUSTPRESS_ALLOW_INSECURE_JWT=1`, which downgrades the abort to a warning.
+fn validate_jwt_secret(secret: &str) {
+    if !is_insecure_jwt_secret(secret) {
+        return;
+    }
+
+    let allow_insecure = matches!(
+        env::var(env_vars::ALLOW_INSECURE_JWT).as_deref(),
+        Ok("1") | Ok("true") | Ok("TRUE")
+    );
+
+    if allow_insecure {
+        warn!(
+            "Using an INSECURE JWT secret because {} is set. Never do this in production.",
+            env_vars::ALLOW_INSECURE_JWT
+        );
+        return;
+    }
+
+    error!(
+        "Refusing to start: the JWT secret is missing, the shipped default, or shorter than {} \
+         characters. Set a strong, random {}+ character `{}` environment variable. For local \
+         development only, you may set `{}=1` to bypass this check.",
+        MIN_JWT_SECRET_LEN,
+        MIN_JWT_SECRET_LEN,
+        env_vars::JWT_SECRET,
+        env_vars::ALLOW_INSECURE_JWT
+    );
+    std::process::exit(1);
 }
 
 /// Initialize the database connection pool
@@ -344,6 +389,10 @@ async fn run_app(cli: &Cli) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     info!(host = %config.server.host, port = config.server.port, "Configuration loaded");
+
+    // Secure by default: refuse to start with a missing/default/weak JWT
+    // secret (prevents token forgery from a known signing key). May abort.
+    validate_jwt_secret(&config.auth.jwt_secret);
 
     // Ensure required directories exist
     ensure_directories(&config).await?;
@@ -576,5 +625,19 @@ mod tests {
         let config = load_config();
         let jwt = init_jwt(&config);
         assert!(jwt.config().access_expiry_secs > 0);
+    }
+
+    #[test]
+    fn test_insecure_jwt_secret_detection() {
+        // Rejected: empty, the shipped default, and anything under 32 chars.
+        assert!(is_insecure_jwt_secret(""));
+        assert!(is_insecure_jwt_secret("change-me-in-production"));
+        assert!(is_insecure_jwt_secret("short-secret"));
+        assert!(is_insecure_jwt_secret(&"a".repeat(MIN_JWT_SECRET_LEN - 1)));
+        // Accepted: a sufficiently long, non-default secret.
+        assert!(!is_insecure_jwt_secret(&"a".repeat(MIN_JWT_SECRET_LEN)));
+        assert!(!is_insecure_jwt_secret(
+            "a-strong-random-secret-value-1234567890"
+        ));
     }
 }

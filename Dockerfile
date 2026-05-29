@@ -15,10 +15,10 @@ COPY Cargo.toml Cargo.lock ./
 COPY crates ./crates
 COPY plugins ./plugins
 
-# Set RUSTFLAGS to allow warnings for MVP release
-ENV RUSTFLAGS="-Aunused -Amismatched_lifetime_syntaxes -Adependency_on_unit_never_type_fallback -Aunused_comparisons"
-
-# Build all release binaries
+# Build all release binaries.
+# NOTE: warnings are intentionally NOT suppressed here. They are emitted to the
+# build log so the true compile state is visible; they do not fail the build
+# (no crate denies warnings). Lint cleanup is gated separately in CI clippy.
 RUN cargo build --release
 
 # Runtime stage
